@@ -1,0 +1,3 @@
+fwtest_EXTERNAL_DEPENDS := TBB
+Test1_DEPENDS := Framework DataFormats
+Test2_DEPENDS := Framework

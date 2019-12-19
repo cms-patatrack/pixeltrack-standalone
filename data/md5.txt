@@ -1,0 +1,9 @@
+c9463c7f42ce085354f7e2a67dc854f0  beamspot.bin
+e50297795c095ca4d5a95128f6936770  cablingMap.bin
+1b93e5ab5f57006d8ff8a0e05f4a6953  cpefast.bin
+9a523f4caf72f5032e113df392e8a6ae  digicluster.bin
+df6b7089291ea2f4ea6f1982afd7007d  fedIds.bin
+9d292b8b360887927ddff5f5e136bad3  gain.bin
+0645228331ad1c2083c6df521316c895  raw.bin
+6c1b4100d743a6937ad6c59244d535b3  tracks.bin
+c87e85b4624f830c43f4d2f6fa95152c  vertices.bin

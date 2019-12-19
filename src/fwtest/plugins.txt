@@ -1,0 +1,4 @@
+IntESProducer pluginTest1.so
+TestProducer pluginTest1.so
+TestProducer2 pluginTest2.so
+TestProducer3 pluginTest2.so
