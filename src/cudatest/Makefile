@@ -2,7 +2,7 @@ TARGET_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TARGET_NAME := $(notdir $(TARGET_DIR))
 TARGET := $(BASE_DIR)/$(TARGET_NAME)
 include Makefile.deps
-EXTERNAL_DEPENDS := $(fwtest_EXTERNAL_DEPENDS)
+EXTERNAL_DEPENDS := $(cudatest_EXTERNAL_DEPENDS)
 
 $(TARGET):
 
@@ -36,11 +36,14 @@ $(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 PLUGINS :=
 define PLUGIN_template
 $(1)_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cc)
+$(1)_CUSRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cu)
 $(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
+$(1)_CUOBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_CUSRC:%=%.o))
 $(1)_DEP := $$($(1)_OBJ:$.o=$.d)
 ALL_DEPENDS += $$($(1)_DEP)
 $(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
 PLUGINS += $$($(1)_LIB)
+$(1)_CUDADLINK := $$(if $$($(1)_CUOBJ),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 
 $(1)_LIB: $$($(1)_SRC)
 endef
@@ -62,9 +65,16 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
 	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
-$$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+$(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) -c $$< -o $$@ -MMD
+
+$$($(1)_CUDADLINK): $$($(1)_CUOBJ)
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
+
+$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_OBJ) $$($(1)_CUOBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
