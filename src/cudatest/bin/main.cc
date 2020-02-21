@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   if (not std::filesystem::exists(datadir)) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
-  }  
+  }
   int numberOfDevices;
   auto status = cudaGetDeviceCount(&numberOfDevices);
   if (cudaSuccess != status) {

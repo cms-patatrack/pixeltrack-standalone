@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   if (not std::filesystem::exists(datadir)) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
-  }  
+  }
   int numberOfDevices;
   auto status = cudaGetDeviceCount(&numberOfDevices);
   if (cudaSuccess != status) {
@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
-    esmodules = {"IntESProducer"};
+    edmodules = {"SiPixelRawToClusterCUDA"};
+    esmodules = {"SiPixelFedCablingMapGPUWrapperESProducer", "SiPixelGainCalibrationForHLTGPUESProducer"};
   }
   if (transfer) {
     // add modules for transfer

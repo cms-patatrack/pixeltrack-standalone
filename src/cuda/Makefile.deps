@@ -1,4 +1,6 @@
 cuda_EXTERNAL_DEPENDS := TBB CUDA CUB
 CUDACore_DEPENDS := Framework
-Test1_DEPENDS := Framework CUDACore DataFormats
-Test2_DEPENDS := Framework CUDACore
+CUDADataFormats_DEPENDS := CUDACore DataFormats
+CondFormats_DEPENDS := CUDACore
+SiPixelClusterizer_DEPENDS := Framework CUDACore CUDADataFormats CondFormats DataFormats
+SiPixelRawToDigi_DEPENDS := Framework CUDACore CUDADataFormats CondFormats DataFormats
