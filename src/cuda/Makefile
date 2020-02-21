@@ -2,7 +2,7 @@ TARGET_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 TARGET_NAME := $(notdir $(TARGET_DIR))
 TARGET := $(BASE_DIR)/$(TARGET_NAME)
 include Makefile.deps
-EXTERNAL_DEPENDS := $(cudatest_EXTERNAL_DEPENDS)
+EXTERNAL_DEPENDS := $(cuda_EXTERNAL_DEPENDS)
 
 $(TARGET):
 
