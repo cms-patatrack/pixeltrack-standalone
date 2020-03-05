@@ -20,12 +20,14 @@ export LIB_DIR := $(BASE_DIR)/lib
 
 # System external definitions
 CUDA_BASE := /usr/local/cuda
+CUDA_LIBDIR := $(CUDA_BASE)/lib64
+USER_CUDAFLAGS :=
 export CUDA_DEPS := $(CUDA_BASE)/lib64/libcudart.so
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 CUDA_CUCOMMON := -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70 -O3 -std=c++14 --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared --compiler-options '-O2 -pthread -pipe -Werror=main -Werror=pointer-arith -Werror=overlength-strings -Wno-vla -Werror=overflow -ftree-vectorize -Wstrict-overflow -Werror=array-bounds -Werror=format-contains-nul -Werror=type-limits -fvisibility-inlines-hidden -fno-math-errno --param vect-max-version-for-alias-checks=50 -Xassembler --compress-debug-sections -msse3 -felide-constructors -fmessage-length=0 -Wall -Wno-non-template-friend -Wno-long-long -Wreturn-type -Wunused -Wparentheses -Wno-deprecated -Werror=return-type -Werror=missing-braces -Werror=unused-value -Werror=address -Werror=format -Werror=sign-compare -Werror=write-strings -Werror=delete-non-virtual-dtor -Werror=strict-aliasing -Werror=narrowing -Werror=unused-but-set-variable -Werror=reorder -Werror=unused-variable -Werror=conversion-null -Werror=return-local-addr -Wnon-virtual-dtor -Werror=switch -fdiagnostics-show-option -Wno-unused-local-typedefs -Wno-attributes -Wno-psabi -Ofast -Wno-error=unused-variable -Wno-error=unused-variable -Wno-error=unused-variable -std=c++14  -fPIC'
-export CUDA_CUFLAGS := -dc $(CUDA_CUCOMMON)
+export CUDA_CUFLAGS := -dc $(CUDA_CUCOMMON) $(USER_CUDAFLAGS)
 export CUDA_DLINKFLAGS := -dlink $(CUDA_CUCOMMON)
 
 # Input data definitions
@@ -47,11 +49,22 @@ export CUB_DEPS := $(CUB_BASE)
 export CUB_CXXFLAGS := -I$(CUB_BASE)
 export CUB_LDFLAGS :=
 
+# force the recreation of the environment file any time the Makefile is updated, before building any other target
+-include environment
+
 # Targets and their dependencies on externals
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
 all: $(TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: $(TARGETS) all format clean distclean dataclean external_tbb external_cub
+.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub
+
+environment: env.sh
+env.sh: Makefile
+	@echo '#! /bin/bash' > $@
+	@echo -n 'export LD_LIBRARY_PATH=' >> $@
+	@echo -n '$(TBB_LIBDIR):' >> $@
+	@echo -n '$(CUDA_LIBDIR):' >> $@
+	@echo '$$LD_LIBRARY_PATH' >> $@
 
 define TARGET_template
 include src/$(1)/Makefile.deps

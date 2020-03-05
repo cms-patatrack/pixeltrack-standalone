@@ -2,6 +2,7 @@
 external
 obj
 lib
+env.sh
 data/*.tar.gz
 data/*.bin
 data/data_ok
