@@ -1,3 +1,5 @@
+BeamSpotESProducer pluginBeamSpotProducer.so
+BeamSpotToCUDA pluginBeamSpotProducer.so
 SiPixelFedCablingMapGPUWrapperESProducer pluginSiPixelClusterizer.so
 SiPixelGainCalibrationForHLTGPUESProducer pluginSiPixelClusterizer.so
 SiPixelRawToClusterCUDA pluginSiPixelClusterizer.so

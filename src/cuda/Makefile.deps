@@ -1,4 +1,5 @@
 cuda_EXTERNAL_DEPENDS := TBB CUDA CUB
+BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats
 CondFormats_DEPENDS := CUDACore
