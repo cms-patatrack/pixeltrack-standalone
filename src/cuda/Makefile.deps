@@ -1,8 +1,9 @@
-cuda_EXTERNAL_DEPENDS := TBB CUDA CUB
+cuda_EXTERNAL_DEPENDS := TBB CUDA CUB EIGEN
 BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats
 CondFormats_DEPENDS := CUDACore
+PixelTriplets_DEPENDS := Framework CUDACore CUDADataFormats
 SiPixelClusterizer_DEPENDS := Framework CUDACore CUDADataFormats CondFormats DataFormats
 SiPixelRawToDigi_DEPENDS := Framework CUDACore CUDADataFormats CondFormats DataFormats
 SiPixelRecHits_DEPENDS := Framework CUDACore CUDADataFormats CondFormats

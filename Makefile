@@ -49,6 +49,11 @@ export CUB_DEPS := $(CUB_BASE)
 export CUB_CXXFLAGS := -I$(CUB_BASE)
 export CUB_LDFLAGS :=
 
+EIGEN_BASE := $(EXTERNAL_BASE)/eigen
+export EIGEN_DEPS := $(EIGEN_BASE)
+export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
+export EIGEN_LDFLAGS :=
+
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -56,7 +61,7 @@ export CUB_LDFLAGS :=
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
 all: $(TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub
+.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen
 
 environment: env.sh
 env.sh: Makefile
@@ -118,3 +123,10 @@ external_cub: $(CUB_BASE)
 
 $(CUB_BASE):
 	git clone --branch 1.8.0 https://github.com/NVlabs/cub.git $@
+
+# Eigen
+external_eigen: $(EIGEN_BASE)
+
+$(EIGEN_BASE):
+	git clone https://github.com/cms-externals/eigen-git-mirror $@
+	cd $@ && git checkout -b cms_branch d812f411c3f9
