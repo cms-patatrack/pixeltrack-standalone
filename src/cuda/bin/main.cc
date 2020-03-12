@@ -101,6 +101,9 @@ int main(int argc, char** argv) {
     auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
     assert(capos != edmodules.end());
     edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
+    auto vertpos = std::find(edmodules.begin(), edmodules.end(), "PixelVertexProducerCUDA");
+    assert(vertpos != edmodules.end());
+    edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
   }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);

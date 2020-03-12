@@ -8,4 +8,5 @@ SiPixelDigisSoAFromCUDA pluginSiPixelRawToDigi.so
 PixelCPEFastESProducer pluginSiPixelRecHits.so
 PixelTrackSoAFromCUDA pluginPixelTrackFitting.so
 PixelVertexProducerCUDA pluginPixelVertexFinding.so
+PixelVertexSoAFromCUDA pluginPixelVertexFinding.so
 SiPixelRecHitCUDA pluginSiPixelRecHits.so
