@@ -89,7 +89,8 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"BeamSpotToCUDA", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA"};
+    edmodules = {
+        "BeamSpotToCUDA", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "PixelVertexProducerCUDA"};
     esmodules = {"BeamSpotESProducer",
                  "SiPixelFedCablingMapGPUWrapperESProducer",
                  "SiPixelGainCalibrationForHLTGPUESProducer",
