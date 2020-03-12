@@ -6,5 +6,6 @@ SiPixelGainCalibrationForHLTGPUESProducer pluginSiPixelClusterizer.so
 SiPixelRawToClusterCUDA pluginSiPixelClusterizer.so
 SiPixelDigisSoAFromCUDA pluginSiPixelRawToDigi.so
 PixelCPEFastESProducer pluginSiPixelRecHits.so
+PixelTrackSoAFromCUDA pluginPixelTrackFitting.so
 PixelVertexProducerCUDA pluginPixelVertexFinding.so
 SiPixelRecHitCUDA pluginSiPixelRecHits.so

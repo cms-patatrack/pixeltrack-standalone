@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <chrono>
 #include <iomanip>
@@ -97,7 +98,9 @@ int main(int argc, char** argv) {
                  "PixelCPEFastESProducer"};
   }
   if (transfer) {
-    // add modules for transfer
+    auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
+    assert(capos != edmodules.end());
+    edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
   }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
