@@ -105,6 +105,9 @@ int main(int argc, char** argv) {
     assert(vertpos != edmodules.end());
     edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
   }
+  if (validation) {
+    edmodules.emplace_back("CountValidator");
+  }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
   maxEvents = processor.maxEvents();
