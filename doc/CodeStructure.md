@@ -119,7 +119,7 @@ region ("beam spot") from the host to the device for each event.
 
 | Operation | Description |
 |-----------|-------------|
-| [memcpy H2D 44 B](../src/cuda/CUDADataFormats/BeamSpotCUDA.cc#L8) | Transfer [`BeamSpotCUDA::Data`](../src/cuda/CUDADataFormats/BeamSpotCUDA.h#L12-L21) for  position and other information about the beam spot |
+| [memcpy host-to-device 44 B](../src/cuda/CUDADataFormats/BeamSpotCUDA.cc#L8) | Transfer [`BeamSpotCUDA::Data`](../src/cuda/CUDADataFormats/BeamSpotCUDA.h#L12-L21) for  position and other information about the beam spot |
 
 These essentially only transfer data from CPU to GPU.
 
@@ -132,30 +132,30 @@ pixels on each pixel detector module.
 The following memory transfers are done once per job on the first event from [`SiPixelRawToClusterCUDA.cc`](../src/cuda/plugin-SiPixelRawToDigi/SiPixelRawToClusterCUDA.cc)
 | Operation | Description |
 |-----------|-------------|
-| [memcpy H2D 1.44 MB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L32-L34) | Transfer [`SiPixelFedCablingMapGPU`](../src/cuda/CondFormats/SiPixelFedCablingMapGPU.h#L15-L24) for pixel detector cabling map |
-| [memcpy H2D 57.6 kB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L43-L47) | Transfer [an array of module indices to be unpacked](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.h#L28). This is to support regional unpacking in CMSSW, even though this functionality is not used in this project. |
-| [memcpy H2D 3.09 MB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L26-#L27) | Transfer [gain calibration data](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.h#L19) |
-| [memcpy H2D 24.05 kB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L29-#L30) | Transfer [`SiPixelGainForHLTonGPU`](../src/cuda/CondFormats/SiPixelGainForHLTonGPU.h#L16-L61) for gain calibration |
-| [memcpy H2D 8 B](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L31-#L35) | Set the gain calibration data pointer in `SiPixelGainForHLTonGPU` struct |
+| [memcpy host-to-device 1.44 MB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L32-L34) | Transfer [`SiPixelFedCablingMapGPU`](../src/cuda/CondFormats/SiPixelFedCablingMapGPU.h#L15-L24) for pixel detector cabling map |
+| [memcpy host-to-device 57.6 kB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L43-L47) | Transfer [an array of module indices to be unpacked](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.h#L28). This is to support regional unpacking in CMSSW, even though this functionality is not used in this project. |
+| [memcpy host-to-device 3.09 MB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L26-#L27) | Transfer [gain calibration data](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.h#L19) |
+| [memcpy host-to-device 24.05 kB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L29-#L30) | Transfer [`SiPixelGainForHLTonGPU`](../src/cuda/CondFormats/SiPixelGainForHLTonGPU.h#L16-L61) for gain calibration |
+| [memcpy host-to-device 8 B](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L31-#L35) | Set the gain calibration data pointer in `SiPixelGainForHLTonGPU` struct |
 
 The following CUDA operations are issued for each event from [`SiPixelRawToClusterGPUKernel.cu`](../src/cuda/plugin-SiPixelRawToDigi/SiPixelRawToClusterGPUKernel.cu)
 | Operation | Description |
 |-----------|-------------|
-| [memcpy H2D 40 B](../src/cuda/CUDADataFormats/SiPixelDigisCUDA.cc#L25) | Transfer [`SiPixelDigisCUDA::DeviceConstView`](../src/cuda/CUDADataFormats/SiPixelDigisCUDA.h#L58-L76) for SoA of pixel digis (= unpacked raw data) |
+| [memcpy host-to-device 40 B](../src/cuda/CUDADataFormats/SiPixelDigisCUDA.cc#L25) | Transfer [`SiPixelDigisCUDA::DeviceConstView`](../src/cuda/CUDADataFormats/SiPixelDigisCUDA.h#L58-L76) for SoA of pixel digis (= unpacked raw data) |
 | [memset 3.6 MB](../src/cuda/CUDADataFormats/SiPixelDigiErrorsCUDA.cc#L15) | Zero unpacking error array |
-| [memcpy H2D 16 B](../src/cuda/CUDADataFormats/SiPixelDigiErrorsCUDA.cc#L22) | Transfer `GPU::SimpleVector<PixelErrorcompact>` to provide `std::vector`-like interface for the unpacking error array |
-| [memcpy H2D 32 B](../src/cuda/CUDADataFormats/SiPixelClustersCUDA.cc#L20) | Transfer [`SiPixelClustersCUDA::DeviceConstView`] for SoA of pixel clusters |
-| [memcpy H2D](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L562-L563) | Transfer raw data words |
-| [memcpy H2D](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L564-L565) | Transfer IDs for FEDs that provided data |
-| [`pixelgpudetails::RawToDigi_kernel()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#355-524) | Kernel to unpack the raw data into data structure usable for subsequent kernels |
-| [memcpy D2H 16 B](../src/cuda/CUDADataFormats/SiPixelDigiErrorsCUDA.cc#L26) | Transfer `GPU::SimpleVector<PixelErrorcompact>`, i.e. essentially the number of errors, to host |
-| [`gpuCalibPixel::calibDigis()`](../src/cuda/plugin-SiPixelClusterizer/gpuCalibPixel.h#21-#64) | Calibrate pixel digis (ADC counts) |
-| [`gpuClustering::countModules()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#19-#37) | Fills starting index into the ADC (etc) arrays for each active module |
-| [memcpy D2H 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L628-L629) | Transfer number of active modules to host |
-| [`gpuClustering::findClus()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#39-#302) | Cluster digis on each pixel module |
+| [memcpy host-to-device 16 B](../src/cuda/CUDADataFormats/SiPixelDigiErrorsCUDA.cc#L22) | Transfer `GPU::SimpleVector<PixelErrorcompact>` to provide `std::vector`-like interface for the unpacking error array |
+| [memcpy host-to-device 32 B](../src/cuda/CUDADataFormats/SiPixelClustersCUDA.cc#L20) | Transfer [`SiPixelClustersCUDA::DeviceConstView`](../src/cuda/CUDADataFormats/SiPixelClustersCUDA.h#L40-L56) for SoA of pixel clusters |
+| [memcpy host-to-device X B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L562-L563) | Transfer raw data words |
+| [memcpy host-to-device X B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L564-L565) | Transfer IDs for FEDs that provided data |
+| [`pixelgpudetails::RawToDigi_kernel()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524) | Kernel to unpack the raw data into data structure usable for subsequent kernels |
+| [memcpy device-to-host 16 B](../src/cuda/CUDADataFormats/SiPixelDigiErrorsCUDA.cc#L26) | Transfer `GPU::SimpleVector<PixelErrorcompact>`, i.e. essentially the number of errors, to host |
+| [`gpuCalibPixel::calibDigis()`](../src/cuda/plugin-SiPixelClusterizer/gpuCalibPixel.h#L21-L64) | Calibrate pixel digis (ADC counts) |
+| [`gpuClustering::countModules()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#L19-L37) | Fills starting index into the ADC (etc) arrays for each active module |
+| [memcpy device-to-host 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L628-L629) | Transfer number of active modules to host |
+| [`gpuClustering::findClus()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#L39-L302) | Cluster digis on each pixel module |
 | [`gpuClustering::clusterChargeCut()`](../src/cuda/plugin-SiPixelClusterizer/gpuClusterChargeCut.h#L14-L121) | Select clusters whose aggregated electric charge is above a given threshold |
-| [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#355-524)
-| [memcpy D2H 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L669-L673) | Transfer number of pixel clusters to host |
+| [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524)
+| [memcpy device-to-host 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L669-L673) | Transfer number of pixel clusters to host |
 
 ### RecHits [`SiPixelRecHitCUDA`](../src/cuda/plugin-SiPixelRecHits/SiPixelRecHitCUDA.cc)
 
@@ -164,7 +164,7 @@ This module computes the 3D position estimate for each cluster.
 The following CUDA operations are issued for each event from [`PixelRecHits.cu`](../src/cuda/plugin-SiPixelRecHits/PixelRecHits.cu)
 | Operation | Description |
 |-----------|-------------|
-| [memcpy H2D 152 B](../src/cuda/CUDADataFormats/TrackingRecHit2DHeterogeneous.h#L92) | Transfer [`TrackingRecHit2DSOAView`](../src/cuda/CUDADataFormats/TrackingRecHit2DSOAView.h#L15-L98) for SoA of pixel hits |
+| [memcpy host-to-device 152 B](../src/cuda/CUDADataFormats/TrackingRecHit2DHeterogeneous.h#L92) | Transfer [`TrackingRecHit2DSOAView`](../src/cuda/CUDADataFormats/TrackingRecHit2DSOAView.h#L15-L98) for SoA of pixel hits |
 | [`gpuPixelRecHits::getHits()`](../src/cuda/plugin-SiPixelRecHits/gpuPixelRecHits.h#L16-L215) | Calculates 3D position for each cluster |
 | [`setHitsLayerStart()`](../src/cuda/plugin-SiPixelRecHits/PixelRecHits.cu#L18-L31) | Set index of the first hit for each pixel detector layer |
 | [`cudautils::countFromVector()`](../src/cuda/CUDACore/HistoContainer.h#L25-L39) | First kernel of four to fill a phi-binned histogram of the hits. This kernel counts the number of elements for each bin  |
@@ -209,7 +209,8 @@ The following CUDA operations are issued for each event from [`CAHitNtupletGener
 
 ### Vertexing ([`PixelVertexProducerCUDA`](../src/cuda/plugin-PixelVertexFinding/PixelVertexProducerCUDA.cc))
 
-This module reconstruct vertices, i.e. finds clusters of track "orign
+This module reconstruct vertices, i.e. finds clusters of track "origin
+points" that likely correspond to proton-proton collision points.
 
 The following CUDA operations are issued for each event from [`gpuVertexFinderImpl.h`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinderImpl.h)
 | Operation | Description |
@@ -228,7 +229,7 @@ This module transfers the pixel tracks from the device to the host.
 
 | Operation | Description |
 |-----------|-------------|
-| [memcpy D2H X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`pixeltrack::TrackSoA`](../src/cuda/CUDADataFormats/PixelTrackHeterogeneous.h#L13-L55) |
+| [memcpy device-to-host X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`pixeltrack::TrackSoA`](../src/cuda/CUDADataFormats/PixelTrackHeterogeneous.h#L13-L55) |
 
 ### Transfer vertices to host ([`PixelVertexSoAFromCUDA`](../src/cuda/plugin-PixelVertexFinding/PixelVertexSoAFromCUDA.cc))
 
@@ -236,4 +237,4 @@ This module transfers the pixel vertices from the device to the host.
 
 | Operation | Description |
 |-----------|-------------|
-| [memcpy D2H X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`ZVertexSoA`](../src/cuda/CUDADataFormats/ZVertexSoA.h#L10-L24) |
+| [memcpy device-to-host X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`ZVertexSoA`](../src/cuda/CUDADataFormats/ZVertexSoA.h#L10-L24) |
