@@ -46,14 +46,14 @@ downloaded automatically during the build process.
 
 ## Quick recipe
 
-```console
+```bash
 # Build application with N-fold concurrency
 $ make -j N cuda
 
 # For CUDA installations elsewhere than /usr/local/cuda
 $ make -j N cuda CUDA_BASE=/path/to/cuda
 
-# Source environment (not really necessary now, but will be needed later)
+# Source environment
 $ source env.sh
 
 # Process 1000 events in 1 thread
@@ -126,7 +126,8 @@ Given that the approach of this project is to maintain many programs
 in a single branch, in order to keep the commit history readable, each
 commit should contain changes only for one test program, and the short
 commit message should start with the program name, e.g. `[cuda]`. A
-pull request may touch many test programs.
+pull request may touch many test programs. General commits (e.g.
+top-level Makefile or documentation) can be left without such a prefix.
 
 When starting work for a new portability technology, the first steps
 are to figure out the installation of the necessary external software
