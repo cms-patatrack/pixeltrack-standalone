@@ -191,13 +191,13 @@ The following CUDA operations are issued for each event from [`CAHitNtupletGener
 | [`kernel_connect()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L193-#L264) | Connect compatible pairs/doublets |
 | [`gpuPixelDoublets::fishbone()`](../src/cuda/plugin-PixelTriplets/gpuFishbone.h#L21-#L90) | Identify duplicate ntuplets (a single particle can induce multiple hits per layer because of redundancies in the detector) |
 | [`kernel_find_ntuplets`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L266-#L293) | Find ntuplets from the doublet connection graph (the actual Cellular Automaton) |
-| [`cudautils::finalizeBulk()`](../src/cuda/CUDACore/HistoContainer.h#L123-L126) | ? |
+| [`cudautils::finalizeBulk()`](../src/cuda/CUDACore/HistoContainer.h#L123-L126) |finalize data structures (Histogrammer/OnetoManyAssoc) filled in the previous kernel |
 | [`kernel_earlyDuplicateRemover()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L120-#L151) | Clean duplicate ntuplets |
 | [`kernel_countMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L307-#L323) | Count the number of ntuplets with different numbers of hits |
 | `cub::DeviceScanInitKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
 | `cub::DeviceScanKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
 | [`kernel_fillMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L325-#L341) | Fills a nhit-binned histogram of the ntuplets. |
-| [`kernel_fillHitDetIndices`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L452-#L467) | ? |
+| [`kernel_fillHitDetIndices`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L452-#L467) | fill for each ht-tuple  a tuple with just the det-indices. |
 | [`kernelBLFastFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-#L118) | First step of fitting triplets |
 | [`kernelBLFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-#L187) | Second step of fitting triplets |
 | [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-#L118) | First step of fitting quadruplets |
