@@ -154,7 +154,7 @@ The following CUDA operations are issued for each event from [`SiPixelRawToClust
 | [memcpy device-to-host 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L628-L629) | Transfer number of active modules to host |
 | [`gpuClustering::findClus()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#L39-L302) | Cluster digis on each pixel module |
 | [`gpuClustering::clusterChargeCut()`](../src/cuda/plugin-SiPixelClusterizer/gpuClusterChargeCut.h#L14-L121) | Select clusters whose aggregated electric charge is above a given threshold |
-| [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524)
+| [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524) | find the "location" of the first hit of each module |
 | [memcpy device-to-host 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L669-L673) | Transfer number of pixel clusters to host |
 
 ### RecHits [`SiPixelRecHitCUDA`](../src/cuda/plugin-SiPixelRecHits/SiPixelRecHitCUDA.cc)
