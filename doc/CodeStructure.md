@@ -134,9 +134,9 @@ The following memory transfers are done once per job on the first event from [`S
 |-----------|-------------|
 | [memcpy host-to-device 1.44 MB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L32-L34) | Transfer [`SiPixelFedCablingMapGPU`](../src/cuda/CondFormats/SiPixelFedCablingMapGPU.h#L15-L24) for pixel detector cabling map |
 | [memcpy host-to-device 57.6 kB](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.cc#L43-L47) | Transfer [an array of module indices to be unpacked](../src/cuda/CondFormats/SiPixelFedCablingMapGPUWrapper.h#L28). This is to support regional unpacking in CMSSW, even though this functionality is not used in this project. |
-| [memcpy host-to-device 3.09 MB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L26-#L27) | Transfer [gain calibration data](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.h#L19) |
-| [memcpy host-to-device 24.05 kB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L29-#L30) | Transfer [`SiPixelGainForHLTonGPU`](../src/cuda/CondFormats/SiPixelGainForHLTonGPU.h#L16-L61) for gain calibration |
-| [memcpy host-to-device 8 B](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L31-#L35) | Set the gain calibration data pointer in `SiPixelGainForHLTonGPU` struct |
+| [memcpy host-to-device 3.09 MB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L26-L27) | Transfer [gain calibration data](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.h#L19) |
+| [memcpy host-to-device 24.05 kB](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L29-L30) | Transfer [`SiPixelGainForHLTonGPU`](../src/cuda/CondFormats/SiPixelGainForHLTonGPU.h#L16-L61) for gain calibration |
+| [memcpy host-to-device 8 B](../src/cuda/CondFormats/SiPixelGainCalibrationForHLTGPU.cc#L31-L35) | Set the gain calibration data pointer in `SiPixelGainForHLTonGPU` struct |
 
 The following CUDA operations are issued for each event from [`SiPixelRawToClusterGPUKernel.cu`](../src/cuda/plugin-SiPixelRawToDigi/SiPixelRawToClusterGPUKernel.cu)
 | Operation | Description |
@@ -157,9 +157,32 @@ The following CUDA operations are issued for each event from [`SiPixelRawToClust
 | [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524) | find the "location" of the first hit of each module |
 | [memcpy device-to-host 4 B](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L669-L673) | Transfer number of pixel clusters to host |
 
+#### Kernel timings
+
+Times below report minimum, maximum, mean, and standard deviation in microseconds/event. They are measured with one concurrent event (with two threads in practice) on an otherwise empty node, over the 1000 events.
+
+| Kernel | V100 |
+|--------|------|
+| [`pixelgpudetails::RawToDigi_kernel()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524) | 4.8-8.9 (mean 6.1 stdev 0.5) us |
+| [`gpuCalibPixel::calibDigis()`](../src/cuda/plugin-SiPixelClusterizer/gpuCalibPixel.h#L21-L64) | 3.1-4.6 (mean 3.7 stdev 0.2) us |
+| [`gpuClustering::countModules()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#L19-L37) | 2.9-4.1 (mean 3.3 stdev 0.2) us |
+| [`gpuClustering::findClus()`](../src/cuda/plugin-SiPixelClusterizer/gpuClustering.h#L39-L302) | 43-490 (mean 82 stdev 34) us |
+| [`gpuClustering::clusterChargeCut()`](../src/cuda/plugin-SiPixelClusterizer/gpuClusterChargeCut.h#L14-L121) | 12-15 (mean 12.4 stdev 0.6 ) us |
+| [`pixelgpudetails::fillHitsModuleStart()`](../src/cuda/plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.cu#L355-L524) | 5.4-6.8 (mean 5.8 stdev 0.3) us |
+
+
 ### RecHits [`SiPixelRecHitCUDA`](../src/cuda/plugin-SiPixelRecHits/SiPixelRecHitCUDA.cc)
 
 This module computes the 3D position estimate for each cluster.
+
+The following memory transfers are done once per job on the first event from [`SiPixelRecHitCUDA`](../src/cuda/plugin-SiPixelRecHits/SiPixelRecHitCUDA.cc)
+| Operation | Description |
+|-----------|-------------|
+| [memcpy host-to-device 32 B](../src/cuda/CondFormats/PixelCPEFast.cc#L52-L53) | Transfer [`pixelCPEforGPU::ParamsOnGPU`](../src/cuda/CondFormats/pixelCPEforGPU.h#L54-L74) main `struct` of detector module parameters |
+| [memcpy host-to-device 16 B](../src/cuda/CondFormats/PixelCPEFast.cc#L54-L58) | Transfer [`pixelCPEforGPU::ParamsOnGPU`](../src/cuda/CondFormats/pixelCPEforGPU.h#L54-L74) parameters common to all modules (thickness ,pitch) |
+| [memcpy host-to-device 3.56 kB](../src/cuda/CondFormats/PixelCPEFast.cc#L59-L63) | Transfer [`phase1PixelTopology::AverageGeometry`](../src/cuda/Geometry/phase1PixelTopology.h#L161-L170) parameters of module ladders in barrel, and z positions of first forward disks |
+| [memcpy host-to-device 160 B](../src/cuda/CondFormats/PixelCPEFast.cc#L64-L69) | Transfer [`pixelCPEforGPU::LayerGeometry`](../src/cuda/CondFormats/pixelCPEforGPU.h#L49-L52) layer indices |
+| [memcpy host-to-device 208 kB](../src/cuda/CondFormats/PixelCPEFast.cc#L64-L68) | Transfer [`pixelCPEforGPU::DetParams`](../src/cuda/CondFormats/pixelCPEforGPU.h#L28-L45) detector module parameters |
 
 The following CUDA operations are issued for each event from [`PixelRecHits.cu`](../src/cuda/plugin-SiPixelRecHits/PixelRecHits.cu)
 | Operation | Description |
@@ -171,6 +194,20 @@ The following CUDA operations are issued for each event from [`PixelRecHits.cu`]
 | `cub::DeviceScanInitKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
 | `cub::DeviceScanKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
 | [`cudautils::fillFromVector()`](../src/cuda/CUDACore/HistoContainer.h#L41-L55) | Last kernel of four to fill a phi-binned histogram of the hits. This kernel fills each bin with the hits. |
+
+#### Kernel timings
+
+Times below report minimum, maximum, mean, and standard deviation in microseconds/event. They are measured with one concurrent event (with two threads in practice) on an otherwise empty node, over the 1000 events.
+
+| Kernel | V100 |
+|--------|------|
+| [`gpuPixelRecHits::getHits()`](../src/cuda/plugin-SiPixelRecHits/gpuPixelRecHits.h#L16-L215) | 35-39 (mean 39 stdev 2) us |
+| [`setHitsLayerStart()`](../src/cuda/plugin-SiPixelRecHits/PixelRecHits.cu#L18-L31) | 1.7-3.8 (mean 1.8 stdev 0.1) us |
+| [`cudautils::countFromVector()`](../src/cuda/CUDACore/HistoContainer.h#L25-L39) | 2.4-4.2 (mean 3.1 stdev 0.3) us |
+| `cub::DeviceScanInitKernel()` | 1.1-1.5 (mean 1.18 stdev 0.06) us |
+| `cub::DeviceScanKernel()` | 3.1-4.1 (mean 3.5 stdev 0.2) us |
+| [`cudautils::fillFromVector()`](../src/cuda/CUDACore/HistoContainer.h#L41-L55) | 2.8-4.5 (mean .3. stdev 0.3) us |
+
 
 ### Pattern recognition (with Cellular Automaton) ([`CAHitNtupletCUDA`](../src/cuda/plugin-PixelTriplets/CAHitNtupletCUDA.cc))
 
@@ -188,24 +225,62 @@ The following CUDA operations are issued for each event from [`CAHitNtupletGener
 | [`gpuPixelDoublets::initDoublets()`](../src/cuda/plugin-PixelTriplets/gpuPixelDoublets.h#L68-L78) | Initialize pair/doublet finding data structure |
 | [`gpuPixelDoublets::getDoubletsFromHisto()`](../src/cuda/plugin-PixelTriplets/gpuPixelDoublets.h#L83-L117) | Create the hit pairs/doublets |
 | [memset 131 kB](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernels.cu#L24) | Zero [ntuplet finding data structure](../src/cuda/CUDADataFormats/PixelTrackHeterogeneous.h#L65) |
-| [`kernel_connect()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L193-#L264) | Connect compatible pairs/doublets |
-| [`gpuPixelDoublets::fishbone()`](../src/cuda/plugin-PixelTriplets/gpuFishbone.h#L21-#L90) | Identify duplicate ntuplets (a single particle can induce multiple hits per layer because of redundancies in the detector) |
-| [`kernel_find_ntuplets`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L266-#L293) | Find ntuplets from the doublet connection graph (the actual Cellular Automaton) |
+| [`kernel_connect()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L193-L264) | Connect compatible pairs/doublets |
+| [`gpuPixelDoublets::fishbone()`](../src/cuda/plugin-PixelTriplets/gpuFishbone.h#L21-L90) | Identify duplicate ntuplets (a single particle can induce multiple hits per layer because of redundancies in the detector) |
+| [`kernel_find_ntuplets`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L266-L293) | Find ntuplets from the doublet connection graph (the actual Cellular Automaton) |
 | [`cudautils::finalizeBulk()`](../src/cuda/CUDACore/HistoContainer.h#L123-L126) |finalize data structures (Histogrammer/OnetoManyAssoc) filled in the previous kernel |
-| [`kernel_earlyDuplicateRemover()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L120-#L151) | Clean duplicate ntuplets |
-| [`kernel_countMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L307-#L323) | Count the number of ntuplets with different numbers of hits |
+| [`kernel_earlyDuplicateRemover()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L120-L151) | Clean duplicate ntuplets |
+| [`kernel_countMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L307-L323) | Count the number of ntuplets with different numbers of hits |
 | `cub::DeviceScanInitKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
 | `cub::DeviceScanKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
-| [`kernel_fillMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L325-#L341) | Fills a nhit-binned histogram of the ntuplets. |
-| [`kernel_fillHitDetIndices`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L452-#L467) | fill for each ht-tuple  a tuple with just the det-indices. |
-| [`kernelBLFastFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-#L118) | First step of fitting triplets |
-| [`kernelBLFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-#L187) | Second step of fitting triplets |
-| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-#L118) | First step of fitting quadruplets |
-| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-#L187) | Second step of fitting quadruplets |
-| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-#L118) | First step of fitting pentuplets (only first 4 hits) |
-| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-#L187) | Second step of fitting pentuplets (only first 4 hits) |
-| [`kernel_classifyTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L343-#L409) | Classify fitted tracks according to certain quality criteria |
-| [`kernel_fastDuplicateRemover`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L153-#L191) | Identify duplicate tracks |
+| [`kernel_fillMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L325-L341) | Fills a nhit-binned histogram of the ntuplets. |
+| [`kernel_fillHitDetIndices`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L452-L467) | fill for each ht-tuple  a tuple with just the det-indices. |
+| [`kernelBLFastFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | First step of fitting triplets |
+| [`kernelBLFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | Second step of fitting triplets |
+| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | First step of fitting quadruplets |
+| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | Second step of fitting quadruplets |
+| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | First step of fitting pentuplets (only first 4 hits) |
+| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | Second step of fitting pentuplets (only first 4 hits) |
+| [`kernel_classifyTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L343-L409) | Classify fitted tracks according to certain quality criteria |
+| [`kernel_fastDuplicateRemover`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L153-L191) | Identify duplicate tracks |
+| [`kernel_countHitInTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | Count the number of times each hit is used in any ntuplet |
+| `cub::DeviceScanInitKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
+| `cub::DeviceScanKernel()` | Part of `cub::DeviceScan::InclusiveSum()` called from [`cms::cuda::launchFinalize()`](../src/cuda/CUDACore/HistoContainer.h#L89) |
+| [`kernel_fillHitInTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | Fill a histogram per hit with ntuplets using that hit |
+| [`kernel_tripletCleaner`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | Clean triplets |
+
+#### Kernel timings
+
+Times below report minimum, maximum, mean, and standard deviation in microseconds/event. They are measured with one concurrent event (with two threads in practice) on an otherwise empty node, over the 1000 events.
+
+| Kernel | V100 |
+|--------|------|
+| [`gpuPixelDoublets::initDoublets()`](../src/cuda/plugin-PixelTriplets/gpuPixelDoublets.h#L68-L78) | 1.6-8.2 (mean 4 stdev 1) us |
+| [`gpuPixelDoublets::getDoubletsFromHisto()`](../src/cuda/plugin-PixelTriplets/gpuPixelDoublets.h#L83-L117) | 28.2-195 (mean 85 stdev 27) us |
+| [`kernel_connect()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L193-L264) | 34.0-248 (mean 83 stdev 31) us |
+| [`gpuPixelDoublets::fishbone()`](../src/cuda/plugin-PixelTriplets/gpuFishbone.h#L21-L90) | 12.1-101 (mean 47 stdev 14) us  |
+| [`kernel_find_ntuplets`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L266-L293) | 53.6-366 (mean 177 stdev 51) us |
+| [`cudautils::finalizeBulk()`](../src/cuda/CUDACore/HistoContainer.h#L123-L126) | 1.8-2.4 (mean 2.0 stdev 0.1) us |
+| [`kernel_earlyDuplicateRemover()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L120-L151) | 6.1-27 (mean 15 stdev 3) us |
+| [`kernel_countMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L307-L323) | 2-10 (mean 4.5 stdev 1.4) |
+| `cub::DeviceScanInitKernel()` | 0.9-1.7 (mean 1.07 stdev 0.09) us |
+| `cub::DeviceScanKernel()` | 1.6-3.9 (mean 1.7 stdev 0.1) us |
+| [`kernel_fillMultiplicity()`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L325-L341) | 2.3-10 (mean 4.5 stdev 1.2) us |
+| [`kernel_fillHitDetIndices`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L452-L467) | 3.0-3.7 (mean 3.2 stdev 0.2) us |
+| [`kernelBLFastFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | 6.1-12 (mean 7.1 stdev 0.5) us |
+| [`kernelBLFit<3>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | 47-66 (mean 50 stdev 3) us |
+| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | 6.4-10 (mean 7.7 stdev 0.7) us |
+| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | 60-76 (mean 62 stdev 2) us |
+| [`kernelBLFastFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L27-L118) | 5.0-8.7 (mean 5.8 stdev 0.4) us |
+| [`kernelBLFit<4>()`](../src/cuda/plugin-PixelTriplets/BrokenLineFitOnGPU.h#L120-L187) | 21-27 (mean 23 stdev 1) us |
+| [`kernel_classifyTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L343-L409) | 3.2-6.3 (mean 3.9 stdev 0.4) us |
+| [`kernel_fastDuplicateRemover`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L153-L191) | 8.8-33 (mean 21 stdev 4) us |
+| [`kernel_countHitInTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | 2.2-4.2 (mean 3.5 stdev 0.2) us |
+| `cub::DeviceScanInitKernel()` | 1.1-1.7 (mean 1.2 stdev 0.1) us |
+| `cub::DeviceScanKernel()` | 3.8-5.0 (mean 4.2 stdev 0.2) us |
+| [`kernel_fillHitInTracks`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | 3.2-4.6 (mean 2.6 sedev 0.2) us |
+| [`kernel_tripletCleaner`](../src/cuda/plugin-PixelTriplets/CAHitNtupletGeneratorKernelsImpl.h#L424-L436) | 3.7-11 (mean 6.4 stdev 1.1 us) |
+
 
 ### Vertexing ([`PixelVertexProducerCUDA`](../src/cuda/plugin-PixelVertexFinding/PixelVertexProducerCUDA.cc))
 
@@ -217,11 +292,17 @@ The following CUDA operations are issued for each event from [`gpuVertexFinderIm
 |-----------|-------------|
 | [`gpuVertexFinder::init()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L35-L38) | Zero data structures |
 | [`gpuVertexFinder::loadTracks()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L12-L45) | Fill vertexing data structures with information from tracks |
-| [`gpuVertexFinder::clusterTracksByDensityKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuClusterTracksByDensity.h#L20-L230) | Cluster tracks to vertices |
-| [`gpuVertexFinder::fitVerticesKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuFitVertices.h#L15-L109) | Fit vertex parameters (first pass) |
-| [`gpuVertexFinder::splitVerticesKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuSplitVertices.h#L15-L35) | Split vertices that are likely to be merged from multiple proton-proton interactions |
-| [`gpuVertexFinder::fitVerticesKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuFitVertices.h#L15-L109) | Fit vertex parameters (second pass, for split vertices) |
-| [`gpuVertexFinder::sortByPt2()`](../src/cuda/plugin-PixelVertexFinding/gpuSortByPt2.h) | Sort vertices by the sum of the square of the transverse momentum of the tracks contained by a vertex |
+| [`gpuVertexFinder::vertexFinderOneKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L49-L65) | Vertex reconstruction split into [cluster tracks to vertices](../src/cuda/plugin-PixelVertexFinding/gpuClusterTracksByDensity.h#L20-L220), [Fit vertex parameters (first pass)](../src/cuda/plugin-PixelVertexFinding/gpuFitVertices.h#L15-L102), [split vertices that are likely to be merged from multiple proton-proton interactions](../src/cuda/plugin-PixelVertexFinding/gpuSplitVertices.h#L15-L131), [fit vertex parameters (second pass, after splitting)](../src/cuda/plugin-PixelVertexFinding/gpuFitVertices.h#L15-L102), [sort vertices by the sum of the square of the transverse momentum of the tracks contained by a vertex](../src/cuda/plugin-PixelVertexFinding/gpuSortByPt2.h#L18-L67) |
+
+#### Kernel timings
+
+Times below report minimum, maximum, mean, and standard deviation in microseconds/event. They are measured with one concurrent event (with two threads in practice) on an otherwise empty node, over the 1000 events.
+
+| Kernel | V100 |
+|--------|------|
+| [`gpuVertexFinder::init()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L35-L38) | 1.1-1.7 (mean 1.13 stdev 0.07) us |
+| [`gpuVertexFinder::loadTracks()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L12-L45) | 42.7-4.1 (mean 3.4 stdev 0.2) us |
+| [`gpuVertexFinder::vertexFinderOneKernel()`](../src/cuda/plugin-PixelVertexFinding/gpuVertexFinder.h#L49-L65) | 63.9-237 (mean 100 stdev 21) us |
 
 ### Transfer tracks to host ([`PixelTrackSoAFromCUDA`](../src/cuda/plugin-PixelTrackFitting/PixelTrackSoAFromCUDA.cc))
 
@@ -229,7 +310,7 @@ This module transfers the pixel tracks from the device to the host.
 
 | Operation | Description |
 |-----------|-------------|
-| [memcpy device-to-host X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`pixeltrack::TrackSoA`](../src/cuda/CUDADataFormats/PixelTrackHeterogeneous.h#L13-L55) |
+| [memcpy device-to-host 3.97 MB](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`pixeltrack::TrackSoA`](../src/cuda/CUDADataFormats/PixelTrackHeterogeneous.h#L13-L55) |
 
 ### Transfer vertices to host ([`PixelVertexSoAFromCUDA`](../src/cuda/plugin-PixelVertexFinding/PixelVertexSoAFromCUDA.cc))
 
@@ -237,4 +318,4 @@ This module transfers the pixel vertices from the device to the host.
 
 | Operation | Description |
 |-----------|-------------|
-| [memcpy device-to-host X B](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`ZVertexSoA`](../src/cuda/CUDADataFormats/ZVertexSoA.h#L10-L24) |
+| [memcpy device-to-host 117 kB](../src/cuda/CUDADataFormats/HeterogeneousSoA.h#L42) | Transfer [`ZVertexSoA`](../src/cuda/CUDADataFormats/ZVertexSoA.h#L10-L24) |
