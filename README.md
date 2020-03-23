@@ -21,7 +21,7 @@ tracking application. The version here corresponds to
 The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
-* CUDA runtime and drivers (tested with CUDA 10.2)
+* CUDA 10.2 runtime and drivers (real drivers are not needed for building)
 
 All other external dependencies (listed below) are downloaded and built automatically.
 * [TBB](https://github.com/intel/tbb)
