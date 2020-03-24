@@ -20,6 +20,7 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
+  * CMake for `kokkostest` program
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
 * CUDA 10.2 runtime and drivers (real drivers are not needed for building)
 
@@ -84,6 +85,18 @@ Options
 | `distclean`     | `clean` and remove all externals    |
 | `dataclean`     | Remove downloaded data files        |
 | `format`        | Format the code with `clang-format` |
+
+### Test program specific notes (if any)
+
+#### Kokkos
+
+If `nvcc` is not in your `$PATH`, the build recipe is
+```bash
+$ make environment [CUDA_BASE=...]
+$ source env.sh
+$ make -j N kokkostest [CUDA_BASE=...]
+```
+Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
 
 ## Code structure
 

@@ -54,6 +54,21 @@ export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
 export EIGEN_LDFLAGS :=
 
+KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
+KOKKOS_SRC := $(KOKKOS_BASE)/source
+KOKKOS_BUILD := $(KOKKOS_BASE)/build
+KOKKOS_INSTALL := $(KOKKOS_BASE)/install
+KOKKOS_LIB := $(KOKKOS_INSTALL)/lib/libkokkoscore.a
+KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
+KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
+                     -DKokkos_CXX_STANDARD=14 \
+                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_PASCAL60=On
+# if without CUDA, replace the above line with
+#                     -DCMAKE_CXX_COMPILER=g++
+export KOKKOS_DEPS := $(KOKKOS_LIB)
+export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
+export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib
+
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -61,7 +76,7 @@ export EIGEN_LDFLAGS :=
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
 all: $(TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen
+.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos
 
 environment: env.sh
 env.sh: Makefile
@@ -70,6 +85,8 @@ env.sh: Makefile
 	@echo -n '$(TBB_LIBDIR):' >> $@
 	@echo -n '$(CUDA_LIBDIR):' >> $@
 	@echo '$$LD_LIBRARY_PATH' >> $@
+	@echo >> $@
+	@echo 'export PATH=$$PATH:$(CUDA_BASE)/bin' >> $@
 
 define TARGET_template
 include src/$(1)/Makefile.deps
@@ -130,3 +147,19 @@ external_eigen: $(EIGEN_BASE)
 $(EIGEN_BASE):
 	git clone https://github.com/cms-externals/eigen-git-mirror $@
 	cd $@ && git checkout -b cms_branch d812f411c3f9
+
+# Kokkos
+external_kokkos: $(KOKKOS_INSTALL)
+
+$(KOKKOS_SRC):
+	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
+
+$(KOKKOS_BUILD):
+	mkdir -p $@
+
+$(KOKKOS_MAKEFILE): $(KOKKOS_BUILD) $(KOKKOS_SRC)
+	cd $(KOKKOS_BUILD) && cmake $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
+
+$(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
+	$(MAKE) -C $(KOKKOS_BUILD)
+	$(MAKE) -C $(KOKKOS_BUILD) install
