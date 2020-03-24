@@ -24,9 +24,9 @@ The application is designed to require minimal dependencies on the system:
 * CUDA 10.2 runtime and drivers (real drivers are not needed for building)
 
 All other external dependencies (listed below) are downloaded and built automatically.
-* [TBB](https://github.com/intel/tbb)
-* [CUB](https://nvlabs.github.io/cub/)
-* [Eigen](http://eigen.tuxfamily.org/)
+* [TBB](https://github.com/intel/tbb) (all programs)
+* [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
+* [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
