@@ -1,0 +1,3 @@
+kokkostest_EXTERNAL_DEPENDS := TBB KOKKOS
+Test1_DEPENDS := Framework DataFormats
+Test2_DEPENDS := Framework

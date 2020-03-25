@@ -20,13 +20,15 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
+  * CMake for `kokkostest` program
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
 * CUDA 10.2 runtime and drivers (real drivers are not needed for building)
 
 All other external dependencies (listed below) are downloaded and built automatically.
-* [TBB](https://github.com/intel/tbb)
-* [CUB](https://nvlabs.github.io/cub/)
-* [Eigen](http://eigen.tuxfamily.org/)
+* [TBB](https://github.com/intel/tbb) (all programs)
+* [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
+* [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
+* [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` program)
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
@@ -37,11 +39,12 @@ downloaded automatically during the build process.
 
 ## Status
 
-| Application | Description    | Framework          | Device framework   | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
-|-------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| `fwtest`    | Framework test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
-| `cudatest`  | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cuda`      | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Application  | Description    | Framework          | Device framework   | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
+|--------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| `fwtest`     | Framework test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
+| `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
 
 
 ## Quick recipe
@@ -82,6 +85,18 @@ Options
 | `distclean`     | `clean` and remove all externals    |
 | `dataclean`     | Remove downloaded data files        |
 | `format`        | Format the code with `clang-format` |
+
+### Test program specific notes (if any)
+
+#### Kokkos
+
+If `nvcc` is not in your `$PATH`, the build recipe is
+```bash
+$ make environment [CUDA_BASE=...]
+$ source env.sh
+$ make -j N kokkostest [CUDA_BASE=...]
+```
+Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
 
 ## Code structure
 
