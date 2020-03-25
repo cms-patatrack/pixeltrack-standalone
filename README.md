@@ -27,6 +27,7 @@ All other external dependencies (listed below) are downloaded and built automati
 * [TBB](https://github.com/intel/tbb) (all programs)
 * [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
 * [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
+* [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` program)
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
@@ -37,11 +38,12 @@ downloaded automatically during the build process.
 
 ## Status
 
-| Application | Description    | Framework          | Device framework   | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
-|-------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| `fwtest`    | Framework test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
-| `cudatest`  | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cuda`      | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Application  | Description    | Framework          | Device framework   | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
+|--------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| `fwtest`     | Framework test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
+| `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
 
 
 ## Quick recipe
