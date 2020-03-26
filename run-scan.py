@@ -12,7 +12,7 @@ import multiprocessing
 n_events_unit = 1000
 n_blocks_per_stream = {
     "fwtest": 1,
-    "cuda": 400
+    "cuda": {"": 400, "transfer": 350}
 }
 
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")
@@ -77,9 +77,16 @@ def main(opts):
 
     nev_per_stream = opts.eventsPerStream
     if nev_per_stream is None:
-        eventBlocksPerStream = n_blocks_per_stream.get(os.path.basename(opts.program), None)
-        if eventBlocksPerStream is None:
+        tmp = n_blocks_per_stream.get(os.path.basename(opts.program), None)
+        if tmp is None:
             raise Exception("No default number of event blocks for program %s, and --eventsPerStream was not given" % opts.program)
+        if isinstance(tmp, dict):
+            if "--transfer" in opts.args:
+                eventBlocksPerStream = tmp["transfer"]
+            else:
+                eventBlocksPerStream = tmp[""]
+        else:
+            eventBlocksPerStream = tmp
         nev_per_stream = eventBlocksPerStream * n_events_unit
 
     data = dict(
@@ -155,7 +162,7 @@ if __name__ == "__main__":
     parser.add_argument("--numStreams", type=str, default="",
                         help="Comma separated list of numbers of streams to use in the scan (default: empty for always the same as the number of threads). If both number of threads and number of streams have more than 1 element, a 2D scan is done with all the combinations")
     parser.add_argument("--eventsPerStream", type=int, default=None,
-                        help="Number of events to be used per EDM stream (default: 85*4kev for variant 1)")
+                        help="Number of events to be used per EDM stream (default: 400*4kev for cuda, others also hardcoded in the top of the script file)")
     parser.add_argument("--stopAfterWallTime", type=int, default=-1,
                         help="Stop running after the wall time of the job reaches this many in seconds (default: -1 for no limit)")
     parser.add_argument("--repeat", type=int, default=1,
