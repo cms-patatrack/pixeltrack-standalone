@@ -8,6 +8,7 @@ export LDFLAGS := -pthread -Wl,-E -lstdc++fs
 export SO_LDFLAGS := -Wl,-z,defs
 
 CLANG_FORMAT := clang-format-8
+CMAKE := cmake
 
 # Source code
 export SRC_DIR := $(BASE_DIR)/src
@@ -61,6 +62,7 @@ KOKKOS_INSTALL := $(KOKKOS_BASE)/install
 KOKKOS_LIB := $(KOKKOS_INSTALL)/lib/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
+                     -DCMAKE_INSTALL_LIBDIR=lib \
                      -DKokkos_CXX_STANDARD=14 \
                      -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_PASCAL60=On
 # if without CUDA, replace the above line with
@@ -158,7 +160,7 @@ $(KOKKOS_BUILD):
 	mkdir -p $@
 
 $(KOKKOS_MAKEFILE): $(KOKKOS_BUILD) $(KOKKOS_SRC)
-	cd $(KOKKOS_BUILD) && cmake $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
+	cd $(KOKKOS_BUILD) && $(CMAKE) $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
 
 $(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
 	$(MAKE) -C $(KOKKOS_BUILD)
