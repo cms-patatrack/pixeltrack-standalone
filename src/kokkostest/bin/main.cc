@@ -8,6 +8,8 @@
 
 #include <tbb/task_scheduler_init.h>
 
+#include "KokkosCore/kokkosConfigCommon.h"
+
 #include "EventProcessor.h"
 
 namespace {
@@ -77,6 +79,9 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+
+  // Initialize Kokkos
+  kokkos_common::InitializeScopeGuard kokkosGuard;
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
