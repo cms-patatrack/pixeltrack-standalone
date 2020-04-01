@@ -70,6 +70,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib
+export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
@@ -151,7 +152,7 @@ $(EIGEN_BASE):
 	cd $@ && git checkout -b cms_branch d812f411c3f9
 
 # Kokkos
-external_kokkos: $(KOKKOS_INSTALL)
+external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
 	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
@@ -159,7 +160,7 @@ $(KOKKOS_SRC):
 $(KOKKOS_BUILD):
 	mkdir -p $@
 
-$(KOKKOS_MAKEFILE): $(KOKKOS_BUILD) $(KOKKOS_SRC)
+$(KOKKOS_MAKEFILE): $(KOKKOS_SRC) | $(KOKKOS_BUILD)
 	cd $(KOKKOS_BUILD) && $(CMAKE) $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
 
 $(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
