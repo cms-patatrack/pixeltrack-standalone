@@ -41,7 +41,7 @@ $(1)_DEP := $$($(1)_OBJ:$.o=$.d)
 ALL_DEPENDS += $$($(1)_DEP)
 $(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
 PLUGINS += $$($(1)_LIB)
-$(1)_CUDADLINK := $$(if $$($(1)_CUOBJ),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
+$(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
