@@ -16,9 +16,11 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name
-        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
-           "[--empty]\n\n"
+        << ": --serial|--cuda [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+           "[--transfer] [--validation] [--empty]\n\n"
         << "Options\n"
+        << " --serial            Use CPU Serial backend (default)\n"
+        << " --cuda              Use CUDA backend\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -28,11 +30,14 @@ namespace {
         << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
+
+  enum class Backend { SERIAL, CUDA };
 }  // namespace
 
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  Backend backend = Backend::SERIAL;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -44,6 +49,10 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+    } else if (*i == "--serial") {
+      backend = Backend::SERIAL;
+    } else if (*i == "--cuda") {
+      backend = Backend::CUDA;
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -87,7 +96,12 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
+    //edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
+    if (backend == Backend::SERIAL) {
+      edmodules = {"kokkos_serial::TestProducer"};
+    } else if (backend == Backend::CUDA) {
+      edmodules = {"kokkos_cuda::TestProducer"};
+    }
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer
