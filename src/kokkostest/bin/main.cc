@@ -98,9 +98,9 @@ int main(int argc, char** argv) {
   if (not empty) {
     //edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
     if (backend == Backend::SERIAL) {
-      edmodules = {"kokkos_serial::TestProducer"};
+      edmodules = {"kokkos_serial::TestProducer", "kokkos_serial::TestProducer2"};
     } else if (backend == Backend::CUDA) {
-      edmodules = {"kokkos_cuda::TestProducer"};
+      edmodules = {"kokkos_cuda::TestProducer", "kokkos_cuda::TestProducer2"};
     }
     esmodules = {"IntESProducer"};
     if (transfer) {
