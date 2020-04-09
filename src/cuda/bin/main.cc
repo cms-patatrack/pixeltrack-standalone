@@ -96,17 +96,17 @@ int main(int argc, char** argv) {
                  "SiPixelFedCablingMapGPUWrapperESProducer",
                  "SiPixelGainCalibrationForHLTGPUESProducer",
                  "PixelCPEFastESProducer"};
-  }
-  if (transfer) {
-    auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
-    assert(capos != edmodules.end());
-    edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
-    auto vertpos = std::find(edmodules.begin(), edmodules.end(), "PixelVertexProducerCUDA");
-    assert(vertpos != edmodules.end());
-    edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
-  }
-  if (validation) {
-    edmodules.emplace_back("CountValidator");
+    if (transfer) {
+      auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
+      assert(capos != edmodules.end());
+      edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
+      auto vertpos = std::find(edmodules.begin(), edmodules.end(), "PixelVertexProducerCUDA");
+      assert(vertpos != edmodules.end());
+      edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
+    }
+    if (validation) {
+      edmodules.emplace_back("CountValidator");
+    }
   }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
