@@ -91,9 +91,9 @@ int main(int argc, char** argv) {
   if (not empty) {
     edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
     esmodules = {"IntESProducer"};
-  }
-  if (transfer) {
-    // add modules for transfer
+    if (transfer) {
+      // add modules for transfer
+    }
   }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
