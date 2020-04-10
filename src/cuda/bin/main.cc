@@ -16,7 +16,9 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] [--empty]\n\n"
+        << name
+        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
+           "[--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
