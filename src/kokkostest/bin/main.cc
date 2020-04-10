@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <chrono>
 #include <iomanip>
@@ -16,10 +17,10 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name
-        << ": --serial|--cuda [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation] [--empty]\n\n"
+        << ": [--serial] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+           "[--transfer] [--validation]\n\n"
         << "Options\n"
-        << " --serial            Use CPU Serial backend (default)\n"
+        << " --serial            Use CPU Serial backend\n"
         << " --cuda              Use CUDA backend\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
@@ -27,7 +28,6 @@ namespace {
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
-        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -37,22 +37,21 @@ namespace {
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
-  Backend backend = Backend::SERIAL;
+  std::vector<Backend> backends;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
-  bool empty = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
     } else if (*i == "--serial") {
-      backend = Backend::SERIAL;
+      backends.emplace_back(Backend::SERIAL);
     } else if (*i == "--cuda") {
-      backend = Backend::CUDA;
+      backends.emplace_back(Backend::CUDA);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -70,8 +69,6 @@ int main(int argc, char** argv) {
     } else if (*i == "--validation") {
       transfer = true;
       validation = true;
-    } else if (*i == "--empty") {
-      empty = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -95,13 +92,16 @@ int main(int argc, char** argv) {
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not empty) {
+  if (not backends.empty()) {
     //edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
-    if (backend == Backend::SERIAL) {
-      edmodules = {"kokkos_serial::TestProducer", "kokkos_serial::TestProducer2"};
-    } else if (backend == Backend::CUDA) {
-      edmodules = {"kokkos_cuda::TestProducer", "kokkos_cuda::TestProducer2"};
-    }
+    auto addModules = [&](std::string const& prefix, Backend backend) {
+      if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+        edmodules.emplace_back(prefix + "TestProducer");
+        edmodules.emplace_back(prefix + "TestProducer2");
+      }
+    };
+    addModules("kokkos_serial::", Backend::SERIAL);
+    addModules("kokkos_cuda::", Backend::CUDA);
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer
