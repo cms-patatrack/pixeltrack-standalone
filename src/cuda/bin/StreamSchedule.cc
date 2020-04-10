@@ -57,6 +57,7 @@ namespace edm {
     if (event) {
       // Pass the event object ownership to the "end-of-event" task
       // Pass a non-owning pointer to the event to preceding tasks
+      //std::cout << "Begin processing event " << event->eventID() << std::endl;
       auto eventPtr = event.get();
       auto nextEventTask =
           make_waiting_task(tbb::task::allocate_root(),
@@ -71,6 +72,10 @@ namespace edm {
                                 processOneEventAsync(std::move(h));
                               }
                             });
+      // To guarantee that the nextEventTask is spawned also in
+      // absence of Workers, and also to prevent spawning it before
+      // all workers have been processed (should not happen though)
+      auto nextEventTaskHolder = WaitingTaskHolder(nextEventTask);
 
       for (auto iWorker = path_.rbegin(); iWorker != path_.rend(); ++iWorker) {
         //std::cout << "calling doWorkAsync for " << iWorker->get() << " with nextEventTask " << nextEventTask << std::endl;
