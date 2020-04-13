@@ -46,6 +46,7 @@ downloaded automatically during the build process.
 | `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
 
+The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
 
 ## Quick recipe
 
@@ -78,13 +79,14 @@ Options
 
 ### Additional make targets
 
-| Target          | Description                         |
-|-----------------|-------------------------------------|
-| `all` (default) | Build all programs                  |
-| `clean`         | Remove all build artifacts          |
-| `distclean`     | `clean` and remove all externals    |
-| `dataclean`     | Remove downloaded data files        |
-| `format`        | Format the code with `clang-format` |
+| Target                  | Description                                     |
+|-------------------------|-------------------------------------------------|
+| `all` (default)         | Build all programs                              |
+| `format`                | Format the code with `clang-format`             |
+| `clean`                 | Remove all build artifacts                      |
+| `distclean`             | `clean` and remove all externals                |
+| `dataclean`             | Remove downloaded data files                    |
+| `external_kokkos_clean` | Remove Kokkos build and installation directory  |
 
 ### Test program specific notes (if any)
 
@@ -95,8 +97,13 @@ If `nvcc` is not in your `$PATH`, the build recipe is
 $ make environment [CUDA_BASE=...]
 $ source env.sh
 $ make -j N kokkostest [CUDA_BASE=...]
+$ ./kokkostest --cuda
 ```
-Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
+* Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
+* The CMake executable can be set with `CMAKE` in case the default one is too old.
+* The backend(s) need to be set explicitly via command line parameters (`--serial` for CPU serial backend, `--cuda` for CUDA backend)
+  * Note that the `./kokkostest --serial` is **very** slow
+* Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
 
 ## Code structure
 

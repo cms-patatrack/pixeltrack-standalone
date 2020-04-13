@@ -32,8 +32,13 @@ namespace edm {
 
     template <typename T>
     void put(std::unique_ptr<T> prod) {
+#ifdef __cpp_lib_unordered_map_try_emplace
       auto succeeded =
           typeToProduct_.try_emplace(std::type_index(typeid(T)), std::make_unique<ESWrapper<T>>(std::move(prod)));
+#else
+      auto succeeded =
+          typeToProduct_.emplace(std::type_index(typeid(T)), std::make_unique<ESWrapper<T>>(std::move(prod)));
+#endif
       if (not succeeded.second) {
         throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " already exists");
       }

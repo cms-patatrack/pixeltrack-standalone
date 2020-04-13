@@ -58,18 +58,20 @@ export EIGEN_LDFLAGS :=
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
-KOKKOS_INSTALL := $(KOKKOS_BASE)/install
-KOKKOS_LIB := $(KOKKOS_INSTALL)/lib/libkokkoscore.a
+export KOKKOS_INSTALL := $(KOKKOS_BASE)/install
+KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
+export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
+                     -DBUILD_SHARED_LIBS=On \
                      -DKokkos_CXX_STANDARD=14 \
                      -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_PASCAL60=On
 # if without CUDA, replace the above line with
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
-export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib
+export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
@@ -79,7 +81,7 @@ export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
 all: $(TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos
+.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
 
 environment: env.sh
 env.sh: Makefile
@@ -87,6 +89,7 @@ env.sh: Makefile
 	@echo -n 'export LD_LIBRARY_PATH=' >> $@
 	@echo -n '$(TBB_LIBDIR):' >> $@
 	@echo -n '$(CUDA_LIBDIR):' >> $@
+	@echo -n '$(KOKKOS_LIBDIR):' >> $@
 	@echo '$$LD_LIBRARY_PATH' >> $@
 	@echo >> $@
 	@echo 'export PATH=$$PATH:$(CUDA_BASE)/bin' >> $@
@@ -156,6 +159,7 @@ external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
 	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
+	cd $(KOKKOS_SRC) && patch -p1 < ../../../nvcc_wrapper.patch
 
 $(KOKKOS_BUILD):
 	mkdir -p $@
@@ -166,3 +170,6 @@ $(KOKKOS_MAKEFILE): $(KOKKOS_SRC) | $(KOKKOS_BUILD)
 $(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
 	$(MAKE) -C $(KOKKOS_BUILD)
 	$(MAKE) -C $(KOKKOS_BUILD) install
+
+external_kokkos_clean:
+	rm -fR $(KOKKOS_BUILD) $(KOKKOS_INSTALL)
