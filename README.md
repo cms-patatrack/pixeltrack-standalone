@@ -20,7 +20,7 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
-  * CMake for `kokkostest` program
+  * CMake for `kokkostest` and `kokkos` programs
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
 * CUDA 10.2 runtime and drivers (real drivers are not needed for building)
 
@@ -28,7 +28,7 @@ All other external dependencies (listed below) are downloaded and built automati
 * [TBB](https://github.com/intel/tbb) (all programs)
 * [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
 * [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
-* [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` program)
+* [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` and `kokkos` programs)
 * [Boost](https://www.boost.org/) (`alpakatest` and `alpaka` programs)
   * Boost libraries from the system can also be used, but they need to be newer than 1.65.1
 * [Alpaka](https://github.com/alpaka-group/alpaka) (`alpakatest` and `alpaka` programs)
@@ -48,6 +48,7 @@ downloaded automatically during the build process.
 | `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
 | `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `kokkos`     | Kokkos version | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
 | `alpakatest` | Alpaka FW test | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
 | `alpaka`     | Alpaka version | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
 
@@ -104,8 +105,8 @@ If `nvcc` is not in your `$PATH`, the build recipe is
 ```bash
 $ make environment [CUDA_BASE=...]
 $ source env.sh
-$ make -j N kokkostest [CUDA_BASE=...]
-$ ./kokkostest --cuda
+$ make -j N kokkos [CUDA_BASE=...]
+$ ./kokkos --cuda
 ```
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
 * The CMake executable can be set with `CMAKE` in case the default one is too old.
