@@ -19,11 +19,11 @@ namespace KOKKOS_NAMESPACE {
   private:
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
-    edm::EDGetTokenT<Kokkos::View<float*, KokkosExecSpace>> getToken_;
+    edm::EDGetTokenT<Kokkos::View<const float*, KokkosExecSpace>> getToken_;
   };
 
   TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-      : getToken_(reg.consumes<Kokkos::View<float*, KokkosExecSpace>>()) {}
+      : getToken_(reg.consumes<Kokkos::View<const float*, KokkosExecSpace>>()) {}
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;

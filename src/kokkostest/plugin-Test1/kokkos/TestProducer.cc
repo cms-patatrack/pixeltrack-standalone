@@ -20,12 +20,12 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<Kokkos::View<float*, KokkosExecSpace>> putToken_;
+    edm::EDPutTokenT<Kokkos::View<const float*, KokkosExecSpace>> putToken_;
   };
 
   TestProducer::TestProducer(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        putToken_(reg.produces<Kokkos::View<float*, KokkosExecSpace>>()) {}
+        putToken_(reg.produces<Kokkos::View<const float*, KokkosExecSpace>>()) {}
 
   void TestProducer::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     auto const value = event.get(rawGetToken_).FEDData(1200).size();
