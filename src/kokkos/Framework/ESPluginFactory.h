@@ -1,7 +1,6 @@
 #ifndef PluginFactory_h
 #define PluginFactory_h
 
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -18,13 +17,13 @@ namespace edm {
       public:
         virtual ~MakerBase() = default;
 
-        virtual std::unique_ptr<ESProducer> create(std::filesystem::path const& datadir) const = 0;
+        virtual std::unique_ptr<ESProducer> create(std::string const& datadir) const = 0;
       };
 
       template <typename T>
       class Maker : public MakerBase {
       public:
-        virtual std::unique_ptr<ESProducer> create(std::filesystem::path const& datadir) const override {
+        virtual std::unique_ptr<ESProducer> create(std::string const& datadir) const override {
           return std::make_unique<T>(datadir);
         };
       };
@@ -47,7 +46,7 @@ namespace edm {
       };
     }  // namespace impl
 
-    std::unique_ptr<ESProducer> create(std::string const& name, std::filesystem::path const& datadir);
+    std::unique_ptr<ESProducer> create(std::string const& name, std::string const& datadir);
   }  // namespace ESPluginFactory
 }  // namespace edm
 
