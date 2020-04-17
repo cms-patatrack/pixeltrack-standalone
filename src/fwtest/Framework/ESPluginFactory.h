@@ -51,6 +51,9 @@ namespace edm {
   }  // namespace ESPluginFactory
 }  // namespace edm
 
-#define DEFINE_FWK_EVENTSETUP_MODULE(name) static edm::ESPluginFactory::impl::Registrar<name> reg_##name(#name);
+#define EDM_ES_PLUGIN_SYM(x, y) EDM_ES_PLUGIN_SYM2(x, y)
+#define EDM_ES_PLUGIN_SYM2(x, y) x##y
+
+#define DEFINE_FWK_EVENTSETUP_MODULE(type) static edm::ESPluginFactory::impl::Registrar<type> EDM_ES_PLUGIN_SYM(maker, __LINE__)(#type);
 
 #endif
