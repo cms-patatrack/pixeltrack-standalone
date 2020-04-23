@@ -79,14 +79,17 @@ Options
 
 ### Additional make targets
 
-| Target                  | Description                                     |
-|-------------------------|-------------------------------------------------|
-| `all` (default)         | Build all programs                              |
-| `format`                | Format the code with `clang-format`             |
-| `clean`                 | Remove all build artifacts                      |
-| `distclean`             | `clean` and remove all externals                |
-| `dataclean`             | Remove downloaded data files                    |
-| `external_kokkos_clean` | Remove Kokkos build and installation directory  |
+| Target                  | Description                                             |
+|-------------------------|---------------------------------------------------------|
+| `all` (default)         | Build all programs                                      |
+| `format`                | Format the code with `clang-format`                     |
+| `test`                  | Run all tests (each program with small number of events |
+| `test_cpu`              | Run tests for CPU test programs                         |
+| `test_cuda`             | Run tests for CUDA test programs                        |
+| `clean`                 | Remove all build artifacts                              |
+| `distclean`             | `clean` and remove all externals                        |
+| `dataclean`             | Remove downloaded data files                            |
+| `external_kokkos_clean` | Remove Kokkos build and installation directory          |
 
 ### Test program specific notes (if any)
 

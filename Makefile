@@ -79,9 +79,15 @@ export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # Targets and their dependencies on externals
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
+TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
+TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS))
 all: $(TARGETS)
+test: test_cpu test_cuda
+test_cpu: $(TEST_CPU_TARGETS)
+test_cuda: $(TEST_CUDA_TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: $(TARGETS) all environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
+.PHONY: all $(TARGETS) test test_cpu test_cuda $(TEST_CPU_TARGETS) $(TEST_CUDA_TARGETS)
+.PHONY: environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
 
 environment: env.sh
 env.sh: Makefile
@@ -98,6 +104,18 @@ define TARGET_template
 include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
+
+test_$(1)_cpu: $(1)
+	@echo
+	@echo "Testing $(1) for CPU backend"
+	+$(MAKE) -C src/$(1) test_cpu
+	@echo
+
+test_$(1)_cuda: $(1)
+	@echo
+	@echo "Testing $(1) for CUDA backend"
+	+$(MAKE) -C src/$(1) test_cuda
+	@echo
 endef
 $(foreach target,$(TARGETS),$(eval $(call TARGET_template,$(target))))
 

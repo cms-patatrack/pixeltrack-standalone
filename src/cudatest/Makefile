@@ -5,6 +5,9 @@ include Makefile.deps
 EXTERNAL_DEPENDS := $(cudatest_EXTERNAL_DEPENDS)
 
 $(TARGET):
+test_cpu:
+test_cuda: $(TARGET)
+	$(TARGET) --maxEvents 2
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
