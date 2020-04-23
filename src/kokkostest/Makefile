@@ -5,6 +5,10 @@ include Makefile.deps
 EXTERNAL_DEPENDS := $(kokkostest_EXTERNAL_DEPENDS)
 
 $(TARGET):
+test_cpu: $(TARGET)
+	$(TARGET) --maxEvents 1 --serial
+test_cuda: $(TARGET)
+	$(TARGET) --maxEvents 2 --cuda
 
 KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
 
