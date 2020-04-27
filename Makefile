@@ -60,6 +60,10 @@ export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
 
+ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
+export ALPAKA_DEPS := $(ALPAKA_BASE) $(BOOST_DEPS)
+export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
+
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
@@ -189,6 +193,13 @@ $(BOOST_BASE):
 	cd $(BOOST_TMP)/boost_1_72_0 && ./bootstrap.sh && ./b2 install --prefix=$@
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
+
+# Alpaka
+.PHONY: external_alpaka
+external_alpaka: $(ALPAKA_BASE)
+
+$(ALPAKA_BASE):
+	git clone git@github.com:alpaka-group/alpaka.git -b release-0.4.1 $@
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
