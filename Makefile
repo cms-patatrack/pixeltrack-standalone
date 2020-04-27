@@ -55,6 +55,11 @@ export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
 export EIGEN_LDFLAGS :=
 
+BOOST_BASE := $(EXTERNAL_BASE)/boost
+export BOOST_DEPS := $(BOOST_BASE)
+export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
+export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
@@ -171,6 +176,19 @@ external_eigen: $(EIGEN_BASE)
 $(EIGEN_BASE):
 	git clone https://github.com/cms-externals/eigen-git-mirror $@
 	cd $@ && git checkout -b cms_branch d812f411c3f9
+
+# Boost
+.PHONY: external_boost
+external_boost: $(BOOST_BASE)
+
+# Let Boost define its own CXXFLAGS
+$(BOOST_BASE): CXXFLAGS:=
+$(BOOST_BASE):
+	$(eval BOOST_TMP := $(shell mktemp -d))
+	wget -nv https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
+	cd $(BOOST_TMP)/boost_1_72_0 && ./bootstrap.sh && ./b2 install --prefix=$@
+	@rm -rf $(BOOST_TMP)
+	$(eval undefine BOOST_TMP)
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
