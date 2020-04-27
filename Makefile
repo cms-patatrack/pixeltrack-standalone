@@ -64,6 +64,11 @@ ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE) $(BOOST_DEPS)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
 
+CUPLA_BASE := $(EXTERNAL_BASE)/cupla
+export CUPLA_DEPS := $(CUPLA_BASE)/lib
+export CUPLA_CXXFLAGS := -I$(CUPLA_BASE)/include
+export CUPLA_LDFLAGS := -L$(CUPLA_BASE)/lib
+
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
@@ -200,6 +205,18 @@ external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
 	git clone git@github.com:alpaka-group/alpaka.git -b release-0.4.1 $@
+
+# Cupla
+.PHONY: external_cupla
+external_cupla: $(CUPLA_BASE)/lib
+
+$(CUPLA_BASE):
+	git clone git@github.com:alpaka-group/cupla.git -b master $@
+	cd $@ && git reset --hard 0.2.0
+	cd $@ && git config core.sparsecheckout true && echo -e '/*\n!/alpaka' > .git/info/sparse-checkout && git read-tree -mu HEAD
+
+$(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)
+	$(MAKE) -C $(CUPLA_BASE) -f $(BASE_DIR)/Makefile.cupla CUDA_BASE=$(CUDA_BASE) BOOST_BASE=$(BOOST_BASE) TBB_BASE=$(TBB_BASE) ALPAKA_BASE=$(ALPAKA_BASE)
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)

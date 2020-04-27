@@ -1,0 +1,209 @@
+.PHONY: all library clean install
+
+# installation path
+INSTALL_PREFIX := /usr/local
+
+# external tools and dependencies
+
+# CUDA installation, leave empty to disable CUDA support
+CUDA_BASE       := /usr/local/cuda
+
+# boost installation, leave empty to use the system installation
+BOOST_BASE      :=
+
+# TBB installation, leave empty to use the system installation
+TBB_BASE        :=
+
+# Alpaka installation, leave empty to use the version bundled with Cupla
+ALPAKA_BASE     :=
+
+# host compiler
+CXX             := g++
+CXXFLAGS        := -std=c++14 -O2 -g
+HOST_CXXFLAGS   := -pthread -fPIC -Wall -Wextra
+
+# OpenMP flags
+OMP_FLAGS       := -fopenmp -foffload=disable
+
+# CUDA compiler
+ifdef CUDA_BASE
+NVCC            := $(CUDA_BASE)/bin/nvcc
+NVCC_FLAGS      := --generate-line-info --source-in-ptx --expt-extended-lambda --expt-relaxed-constexpr --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70 --generate-code arch=compute_70,code=compute_70 --cudart shared -ccbin $(CXX) -Xcudafe --display_error_number -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+CUDA_CXXFLAGS   := -I$(CUDA_BASE)/include
+CUDA_LDFLAGS    := -L$(CUDA_BASE)/lib64 -lcudart
+endif
+
+# boost library
+ifdef BOOST_BASE
+BOOST_CXXFLAGS  := -I$(BOOST_BASE)/include
+else
+BOOST_CXXFLAGS  :=
+endif
+
+# TBB library
+ifdef TBB_BASE
+TBB_CXXFLAGS    := -I$(TBB_BASE)/include
+TBB_LDFLAGS     := -L$(TBB_BASE)/lib -lrt
+else
+TBB_CXXFLAGS    :=
+TBB_LDFLAGS     := -lrt
+endif
+
+# Alpaka library
+ifdef ALPAKA_BASE
+ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include -DALPAKA_DEBUG=0
+else
+ALPAKA_CXXFLAGS := -Ialpaka/include -DALPAKA_DEBUG=0
+endif
+
+# source files
+SRC=$(wildcard src/*.cpp src/manager/*.cpp)
+
+
+all: library
+
+library: lib/libcupla-cuda.so lib/libcupla-serial.so lib/libcupla-threads.so lib/libcupla-omp2-threads.so lib/libcupla-omp2-blocks.so lib/libcupla-omp4.so lib/libcupla-tbb.so
+
+clean:
+	rm -rf build lib
+
+install: library
+	mkdir -p $(INSTALL_PREFIX)/cupla
+	cp -ar include src lib $(INSTALL_PREFIX)/cupla
+
+# compile the CUDA GPU backend only if CUDA support is available
+ifdef CUDA_BASE
+
+# CUDA GPU backend with synchronous queues
+CUDA_SYNC_OBJ = $(SRC:src/%.cpp=build/cuda-sync/%.o)
+
+$(CUDA_SYNC_OBJ): build/cuda-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(NVCC) -x cu $(CXXFLAGS) $(NVCC_FLAGS) -Xcompiler '$(HOST_CXXFLAGS)' $(CUDA_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_GPU_CUDA_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# CUDA GPU backend with asynchronous queues
+CUDA_ASYNC_OBJ = $(SRC:src/%.cpp=build/cuda-async/%.o)
+
+$(CUDA_ASYNC_OBJ): build/cuda-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(NVCC) -x cu $(CXXFLAGS) $(NVCC_FLAGS) -Xcompiler '$(HOST_CXXFLAGS)' $(CUDA_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_GPU_CUDA_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the CUDA GPU backend
+lib/libcupla-cuda.so: $(CUDA_SYNC_OBJ) $(CUDA_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $^ $(CUDA_LDFLAGS) -shared -o $@
+endif
+
+# serial CPU backend with synchronous queues
+SEQ_SEQ_SYNC_OBJ = $(SRC:src/%.cpp=build/seq-seq-sync/%.o)
+
+$(SEQ_SEQ_SYNC_OBJ): build/seq-seq-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# serial CPU backend with asynchronous queues
+SEQ_SEQ_ASYNC_OBJ = $(SRC:src/%.cpp=build/seq-seq-async/%.o)
+
+$(SEQ_SEQ_ASYNC_OBJ): build/seq-seq-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the serial CPU backend
+lib/libcupla-serial.so: $(SEQ_SEQ_SYNC_OBJ) $(SEQ_SEQ_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $^ -shared -o $@
+
+# std::thread CPU backend with synchronous queues
+SEQ_THREADS_SYNC_OBJ = $(SRC:src/%.cpp=build/seq-threads-sync/%.o)
+
+$(SEQ_THREADS_SYNC_OBJ): build/seq-threads-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# std::thread CPU backend with asynchronous queues
+SEQ_THREADS_ASYNC_OBJ = $(SRC:src/%.cpp=build/seq-threads-async/%.o)
+
+$(SEQ_THREADS_ASYNC_OBJ): build/seq-threads-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the std::thread CPU backend
+lib/libcupla-threads.so: $(SEQ_THREADS_SYNC_OBJ) $(SEQ_THREADS_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $^ -shared -o $@
+
+# OpenMP 2.0 parallel threads CPU backend with synchronous queues
+SEQ_OMP2_SYNC_OBJ = $(SRC:src/%.cpp=build/seq-omp2-sync/%.o)
+
+$(SEQ_OMP2_SYNC_OBJ): build/seq-omp2-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_OMP2_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# OpenMP 2.0 parallel threads CPU backend with asynchronous queues
+SEQ_OMP2_ASYNC_OBJ = $(SRC:src/%.cpp=build/seq-omp2-async/%.o)
+
+$(SEQ_OMP2_ASYNC_OBJ): build/seq-omp2-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_SEQ_T_OMP2_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the OpenMP 2.0 parallel threads CPU backend
+lib/libcupla-omp2-threads.so: $(SEQ_OMP2_SYNC_OBJ) $(SEQ_OMP2_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $^ -shared -o $@
+
+# OpenMP 2.0 parallel blocks CPU backend with synchronous queues
+OMP2_SEQ_SYNC_OBJ = $(SRC:src/%.cpp=build/omp2-seq-sync/%.o)
+
+$(OMP2_SEQ_SYNC_OBJ): build/omp2-seq-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# OpenMP 2.0 parallel blocks CPU backend with asynchronous queues
+OMP2_SEQ_ASYNC_OBJ = $(SRC:src/%.cpp=build/omp2-seq-async/%.o)
+
+$(OMP2_SEQ_ASYNC_OBJ): build/omp2-seq-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the OpenMP 2.0 parallel blocks CPU backend
+lib/libcupla-omp2-blocks.so: $(OMP2_SEQ_SYNC_OBJ) $(OMP2_SEQ_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $^ -shared -o $@
+
+# OpenMP 4.0 parallel CPU backend with synchronous queues
+OMP4_SYNC_OBJ = $(SRC:src/%.cpp=build/omp4-sync/%.o)
+
+$(OMP4_SYNC_OBJ): build/omp4-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_BT_OMP4_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# OpenMP 4.0 parallel CPU backend with asynchronous queues
+OMP4_ASYNC_OBJ = $(SRC:src/%.cpp=build/omp4-async/%.o)
+
+$(OMP4_ASYNC_OBJ): build/omp4-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_BT_OMP4_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the OpenMP 4.0 parallel CPU backend
+lib/libcupla-omp4.so: $(OMP4_SYNC_OBJ) $(OMP4_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $^ -shared -o $@
+
+# TBB parallel blocks CPU backend with synchronous queues
+TBB_SEQ_SYNC_OBJ = $(SRC:src/%.cpp=build/tbb-seq-sync/%.o)
+
+$(TBB_SEQ_SYNC_OBJ): build/tbb-seq-sync/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(TBB_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+
+# TBB parallel blocks CPU backend with asynchronous queues
+TBB_SEQ_ASYNC_OBJ = $(SRC:src/%.cpp=build/tbb-seq-async/%.o)
+
+$(TBB_SEQ_ASYNC_OBJ): build/tbb-seq-async/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(TBB_CXXFLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+
+# cupla shared library for the TBB parallel blocks CPU backend
+lib/libcupla-tbb.so: $(TBB_SEQ_SYNC_OBJ) $(TBB_SEQ_ASYNC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $^ $(TBB_LDFLAGS) -shared -o $@
