@@ -55,6 +55,20 @@ export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
 export EIGEN_LDFLAGS :=
 
+BOOST_BASE := $(EXTERNAL_BASE)/boost
+export BOOST_DEPS := $(BOOST_BASE)
+export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
+export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+
+ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
+export ALPAKA_DEPS := $(ALPAKA_BASE) $(BOOST_DEPS)
+export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
+
+CUPLA_BASE := $(EXTERNAL_BASE)/cupla
+export CUPLA_DEPS := $(CUPLA_BASE)/lib
+export CUPLA_CXXFLAGS := -I$(CUPLA_BASE)/include
+export CUPLA_LDFLAGS := -L$(CUPLA_BASE)/lib
+
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
@@ -171,6 +185,38 @@ external_eigen: $(EIGEN_BASE)
 $(EIGEN_BASE):
 	git clone https://github.com/cms-externals/eigen-git-mirror $@
 	cd $@ && git checkout -b cms_branch d812f411c3f9
+
+# Boost
+.PHONY: external_boost
+external_boost: $(BOOST_BASE)
+
+# Let Boost define its own CXXFLAGS
+$(BOOST_BASE): CXXFLAGS:=
+$(BOOST_BASE):
+	$(eval BOOST_TMP := $(shell mktemp -d))
+	wget -nv https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
+	cd $(BOOST_TMP)/boost_1_72_0 && ./bootstrap.sh && ./b2 install --prefix=$@
+	@rm -rf $(BOOST_TMP)
+	$(eval undefine BOOST_TMP)
+
+# Alpaka
+.PHONY: external_alpaka
+external_alpaka: $(ALPAKA_BASE)
+
+$(ALPAKA_BASE):
+	git clone git@github.com:alpaka-group/alpaka.git -b release-0.4.1 $@
+
+# Cupla
+.PHONY: external_cupla
+external_cupla: $(CUPLA_BASE)/lib
+
+$(CUPLA_BASE):
+	git clone git@github.com:alpaka-group/cupla.git -b master $@
+	cd $@ && git reset --hard 0.2.0
+	cd $@ && git config core.sparsecheckout true && echo -e '/*\n!/alpaka' > .git/info/sparse-checkout && git read-tree -mu HEAD
+
+$(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)
+	$(MAKE) -C $(CUPLA_BASE) -f $(BASE_DIR)/Makefile.cupla CUDA_BASE=$(CUDA_BASE) BOOST_BASE=$(BOOST_BASE) TBB_BASE=$(TBB_BASE) ALPAKA_BASE=$(ALPAKA_BASE)
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
