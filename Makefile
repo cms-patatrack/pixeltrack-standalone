@@ -55,13 +55,25 @@ export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
 export EIGEN_LDFLAGS :=
 
+ifeq ($(wildcard /usr/include/boost/version.hpp),)
+NEED_BOOST := true
+else
+NEED_BOOST := $(shell (( $$(cat /usr/include/boost/version.hpp | grep '\#define BOOST_VERSION\>' | awk '{ print $$3 }') > 106300 )) || echo true)
+endif
+ifeq ($(NEED_BOOST),true)
 BOOST_BASE := $(EXTERNAL_BASE)/boost
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+else
+BOOST_BASE := /usr
+export BOOST_DEPS :=
+export BOOST_CXXFLAGS :=
+export BOOST_LDFLAGS :=
+endif
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
-export ALPAKA_DEPS := $(ALPAKA_BASE) $(BOOST_DEPS)
+export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
 
 CUPLA_BASE := $(EXTERNAL_BASE)/cupla
