@@ -19,7 +19,7 @@ $(DEBUG):
 	mkdir -p $(DEBUG)
 
 # configure external tool here
-BOOST_BASE  :=
+BOOST_BASE  := /cvmfs/cms.cern.ch/slc7_amd64_gcc820/external/boost/1.67.0-pafccj
 TBB_BASE    :=
 CUDA_BASE   := /usr/local/cuda-10.2.89
 ALPAKA_BASE := ../../external/alpaka
@@ -95,33 +95,33 @@ ifdef CUDA_LIBDIR
 	@echo -n '$(CUDA_LIBDIR):' >> $@
 endif
 	@echo '$$LD_LIBRARY_PATH' >> $@
-	@echo -e $(GREEN)Environment file$(RESET) regenerated, load the new environment with
+	@echo -e $(GREEN)Environment file$(RESET) regenerated, load the new envirnment with
 	@echo
 	@echo -e \ \ $(WHITE)source env.sh$(RESET)
 	@echo
 
 
 ifdef ALPAKA_BASE
-alpaka: test-alpaka-serial test-alpaka-tbb test-alpaka-omp2 test-alpaka-omp4 test-alpaka-cuda test-alpaka
+alpaka: test-alpaka-serial #test-alpaka-tbb test-alpaka-omp2 test-alpaka-omp4 test-alpaka-cuda test-alpaka
 	@echo -e $(GREEN)Alpaka targets built$(RESET)
 
 alpaka-debug: debug-alpaka-serial debug-alpaka-tbb debug-alpaka-omp2 debug-alpaka-omp4 debug-alpaka-cuda debug-alpaka
 	@echo -e $(GREEN)Alpaka debug targets built$(RESET)
 
 # Alpaka implementation, compiled for the CPU serial backend
-$(BUILD)/#name.serial.o: #Add files | $(BUILD)
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+# $(BUILD)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/#analyzer_name.serial.o: #Add files | $(BUILD)
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+# $(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
+# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/main_name.serial.o: #Add files | $(BUILD)
+$(BUILD)/main_alpaka.serial.o: plugin-SiPixelClusterizer/clustering_alpaka.cc plugin-SiPixelClusterizer/clustering_alpaka.h AlpakaCore/alpakaConfig.h| $(BUILD)
 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
-test-alpaka-serial: $(BUILD)/main_alpaka.serial.o $(BUILD)/#analyzer_name.serial.o $(BUILD)/name.serial.o
+test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.serial.o
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(ALPAKA_LD_FLAGS)
 
-# $(DEBUG)/rawtodigi_alpaka.serial.o: #Add files | $(DEBUG)
+# $(DEBUG)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 # 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
 
 # $(DEBUG)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
@@ -279,7 +279,7 @@ test-alpaka-serial: $(BUILD)/main_alpaka.serial.o $(BUILD)/#analyzer_name.serial
 # alpaka:
 # 	@echo -e $(YELLOW)Alpaka not found$(RESET), Alpaka targets will not be built
 
-# endif
+endif
 
 
  
