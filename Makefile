@@ -58,7 +58,7 @@ export EIGEN_LDFLAGS :=
 ifeq ($(wildcard /usr/include/boost/version.hpp),)
 NEED_BOOST := true
 else
-NEED_BOOST := $(shell (( $$(cat /usr/include/boost/version.hpp | grep '\#define BOOST_VERSION\>' | awk '{ print $$3 }') > 106300 )) || echo true)
+NEED_BOOST := $(shell test $$(cat /usr/include/boost/version.hpp | grep '\#define BOOST_VERSION\>' | awk '{ print $$3 }') -ge 106300 || echo true)
 endif
 ifeq ($(NEED_BOOST),true)
 BOOST_BASE := $(EXTERNAL_BASE)/boost
