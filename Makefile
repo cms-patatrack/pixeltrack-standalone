@@ -97,6 +97,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
+export KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 

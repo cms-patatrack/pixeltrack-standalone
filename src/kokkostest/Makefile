@@ -10,8 +10,6 @@ test_cpu: $(TARGET)
 test_cuda: $(TARGET)
 	$(TARGET) --maxEvents 2 --cuda
 
-KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
-
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
