@@ -29,6 +29,9 @@ All other external dependencies (listed below) are downloaded and built automati
 * [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
 * [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
 * [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` program)
+* [Boost](https://www.boost.org/) (`alpakatest` and `alpakatest` programs)
+  * Boost libraries from the system can also be used, but they need to be newer than 1.63.0
+* [Alpaka](https://github.com/alpaka-group/alpaka) (`alpakatest` and `alpakatest` programs)
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
@@ -39,12 +42,14 @@ downloaded automatically during the build process.
 
 ## Status
 
-| Application  | Description    | Framework          | Device framework   | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
-|--------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| `fwtest`     | Framework test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
-| `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |
+| Application  | Description    | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
+|--------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| `fwtest`     | Framework test | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `alpakatest` | Alpaka FW test | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
+| `alpaka`     | Alpaka version | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
 
@@ -105,7 +110,6 @@ $ ./kokkostest --cuda
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
 * The CMake executable can be set with `CMAKE` in case the default one is too old.
 * The backend(s) need to be set explicitly via command line parameters (`--serial` for CPU serial backend, `--cuda` for CUDA backend)
-  * Note that the `./kokkostest --serial` is **very** slow
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
 
 ## Code structure
