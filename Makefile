@@ -106,6 +106,8 @@ export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # Targets and their dependencies on externals
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
+# Remove alpaka target until it has been included in the build system
+TARGETS := $(filter-out alpaka,$(TARGETS))
 TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
 TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS))
 all: $(TARGETS)
