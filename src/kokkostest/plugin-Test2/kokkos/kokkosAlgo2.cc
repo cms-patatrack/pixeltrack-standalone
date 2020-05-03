@@ -1,7 +1,7 @@
 #include "kokkosAlgo2.h"
 
 namespace {
-  constexpr int NUM_VALUES = 4000;
+  constexpr int NUM_VALUES = 1000;
 
   KOKKOS_INLINE_FUNCTION void vectorProd(const Kokkos::View<float*, KokkosExecSpace> a,
                                          const Kokkos::View<float*, KokkosExecSpace> b,
