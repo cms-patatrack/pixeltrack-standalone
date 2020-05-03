@@ -4,7 +4,7 @@
 #include "CUDACore/host_unique_ptr.h"
 
 namespace {
-  constexpr int NUM_VALUES = 4000;
+  constexpr int NUM_VALUES = 1000;
 
   template <typename T>
   __global__ void vectorAdd(const T *a, const T *b, T *c, int numElements) {
