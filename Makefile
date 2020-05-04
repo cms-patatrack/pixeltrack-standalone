@@ -75,6 +75,7 @@ endif
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
+export ALPAKA_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
 
 CUPLA_BASE := $(EXTERNAL_BASE)/cupla
 export CUPLA_DEPS := $(CUPLA_BASE)/lib

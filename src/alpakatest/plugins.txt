@@ -1,0 +1,10 @@
+IntESProducer pluginTest1.so
+alpaka_serial_sync::TestProducer pluginTest1.so
+alpaka_tbb_async::TestProducer pluginTest1.so
+alpaka_cuda_async::TestProducer pluginTest1.so
+alpaka_serial_sync::TestProducer2 pluginTest2.so
+alpaka_tbb_async::TestProducer2 pluginTest2.so
+alpaka_cuda_async::TestProducer2 pluginTest2.so
+alpaka_serial_sync::TestProducer3 pluginTest2.so
+alpaka_tbb_async::TestProducer3 pluginTest2.so
+alpaka_cuda_async::TestProducer3 pluginTest2.so
