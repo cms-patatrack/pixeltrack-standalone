@@ -3,7 +3,8 @@ export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Build flags
 export CXX := g++
 USER_CXXFLAGS :=
-export CXXFLAGS := -O2 -std=c++1z -pthread -pipe -fPIC -ftree-vectorize -fvisibility-inlines-hidden -fno-math-errno --param vect-max-version-for-alias-checks=50 -Xassembler --compress-debug-sections -msse3 -felide-constructors -fmessage-length=0 -fdiagnostics-show-option -Werror=main -Werror=pointer-arith -Werror=overlength-strings -Wno-vla -Werror=overflow -Wstrict-overflow -Werror=array-bounds -Werror=format-contains-nul -Werror=type-limits -Wall -Wno-non-template-friend -Wno-long-long -Wreturn-type -Wunused -Wparentheses -Wno-deprecated -Werror=return-type -Werror=missing-braces -Werror=unused-value -Werror=address -Werror=format -Werror=sign-compare -Werror=write-strings -Werror=delete-non-virtual-dtor -Werror=strict-aliasing -Werror=narrowing -Werror=unused-but-set-variable -Werror=reorder -Werror=unused-variable -Werror=conversion-null -Werror=return-local-addr -Wnon-virtual-dtor -Werror=switch -Wno-unused-local-typedefs -Wno-attributes -Wno-psabi -Wno-error=unused-variable $(USER_CXXFLAGS)
+HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Xassembler --compress-debug-sections -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
+export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
 export LDFLAGS := -pthread -Wl,-E -lstdc++fs
 export SO_LDFLAGS := -Wl,-z,defs
 
@@ -24,12 +25,14 @@ CUDA_BASE := /usr/local/cuda
 CUDA_LIBDIR := $(CUDA_BASE)/lib64
 USER_CUDAFLAGS :=
 export CUDA_DEPS := $(CUDA_BASE)/lib64/libcudart.so
+export CUDA_ARCH := 35 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
-CUDA_CUCOMMON := -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70 -O3 -std=c++14 --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared --compiler-options '-O2 -pthread -pipe -Werror=main -Werror=pointer-arith -Werror=overlength-strings -Wno-vla -Werror=overflow -ftree-vectorize -Wstrict-overflow -Werror=array-bounds -Werror=format-contains-nul -Werror=type-limits -fvisibility-inlines-hidden -fno-math-errno --param vect-max-version-for-alias-checks=50 -Xassembler --compress-debug-sections -msse3 -felide-constructors -fmessage-length=0 -Wall -Wno-non-template-friend -Wno-long-long -Wreturn-type -Wunused -Wparentheses -Wno-deprecated -Werror=return-type -Werror=missing-braces -Werror=unused-value -Werror=address -Werror=format -Werror=sign-compare -Werror=write-strings -Werror=delete-non-virtual-dtor -Werror=strict-aliasing -Werror=narrowing -Werror=unused-but-set-variable -Werror=reorder -Werror=unused-variable -Werror=conversion-null -Werror=return-local-addr -Wnon-virtual-dtor -Werror=switch -fdiagnostics-show-option -Wno-unused-local-typedefs -Wno-attributes -Wno-psabi -Ofast -Wno-error=unused-variable -Wno-error=unused-variable -Wno-error=unused-variable -std=c++14  -fPIC'
-export CUDA_CUFLAGS := -dc $(CUDA_CUCOMMON) $(USER_CUDAFLAGS)
-export CUDA_DLINKFLAGS := -dlink $(CUDA_CUCOMMON)
+NVCC_FLAGS := $(foreach ARCH,$(CUDA_ARCH), -gencode arch=compute_$(ARCH),code=sm_$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
+NVCC_COMMON := -std=c++14 -O3 $(NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+export CUDA_CUFLAGS := -dc $(NVCC_COMMON) $(USER_CUDAFLAGS)
+export CUDA_DLINKFLAGS := -dlink $(NVCC_COMMON)
 
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
@@ -238,10 +241,10 @@ external_cupla: $(CUPLA_BASE)/lib
 $(CUPLA_BASE):
 	git clone git@github.com:alpaka-group/cupla.git -b master $@
 	cd $@ && git reset --hard 0.2.0
-	cd $@ && git config core.sparsecheckout true && echo -e '/*\n!/alpaka' > .git/info/sparse-checkout && git read-tree -mu HEAD
+	cd $@ && git config core.sparsecheckout true && /usr/bin/echo -e '/*\n!/alpaka\n!/build\n!/lib' > .git/info/sparse-checkout && git read-tree -v -mu HEAD
 
 $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)
-	$(MAKE) -C $(CUPLA_BASE) -f $(BASE_DIR)/Makefile.cupla CUDA_BASE=$(CUDA_BASE) BOOST_BASE=$(BOOST_BASE) TBB_BASE=$(TBB_BASE) ALPAKA_BASE=$(ALPAKA_BASE)
+	$(MAKE) -C $(CUPLA_BASE) -f $(BASE_DIR)/Makefile.cupla CXX=$(CXX) CUDA_BASE=$(CUDA_BASE) BOOST_BASE=$(BOOST_BASE) TBB_BASE=$(TBB_BASE) ALPAKA_BASE=$(ALPAKA_BASE)
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
