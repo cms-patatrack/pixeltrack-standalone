@@ -38,6 +38,7 @@ DATA_TAR_GZ := $(DATA_BASE)/data.tar.gz
 
 # External definitions
 EXTERNAL_BASE := $(BASE_DIR)/external
+
 TBB_BASE := $(EXTERNAL_BASE)/tbb
 TBB_LIBDIR := $(TBB_BASE)/lib
 TBB_LIB := $(TBB_LIBDIR)/libtbb.so
@@ -55,22 +56,21 @@ export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
 export EIGEN_LDFLAGS :=
 
-ifeq ($(wildcard /usr/include/boost/version.hpp),)
+BOOST_BASE := /usr
+# Minimum required version of Boost, e.g. 1.65.1
+BOOST_MIN_VERSION := 106501
+# Check if an external version of Boost is present and recent enough
+ifeq ($(wildcard $(BOOST_BASE)/include/boost/version.hpp),)
 NEED_BOOST := true
 else
-NEED_BOOST := $(shell (( $$(cat /usr/include/boost/version.hpp | grep '\#define BOOST_VERSION\>' | awk '{ print $$3 }') > 106300 )) || echo true)
+NEED_BOOST := $(shell awk '/\#define BOOST_VERSION\>/ { if ($$3 < $(BOOST_MIN_VERSION)) print "true" }' $(BOOST_BASE)/include/boost/version.hpp )
 endif
 ifeq ($(NEED_BOOST),true)
 BOOST_BASE := $(EXTERNAL_BASE)/boost
+endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
-else
-BOOST_BASE := /usr
-export BOOST_DEPS :=
-export BOOST_CXXFLAGS :=
-export BOOST_LDFLAGS :=
-endif
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
@@ -79,8 +79,9 @@ export ALPAKA_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_default
 
 CUPLA_BASE := $(EXTERNAL_BASE)/cupla
 export CUPLA_DEPS := $(CUPLA_BASE)/lib
+export CUPLA_LIBDIR := $(CUPLA_BASE)/lib
 export CUPLA_CXXFLAGS := -I$(CUPLA_BASE)/include
-export CUPLA_LDFLAGS := -L$(CUPLA_BASE)/lib
+export CUPLA_LDFLAGS := -L$(CUPLA_LIBDIR)
 
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
@@ -121,14 +122,22 @@ test_cuda: $(TEST_CUDA_TARGETS)
 
 environment: env.sh
 env.sh: Makefile
-	@echo '#! /bin/bash' > $@
-	@echo -n 'export LD_LIBRARY_PATH=' >> $@
-	@echo -n '$(TBB_LIBDIR):' >> $@
-	@echo -n '$(CUDA_LIBDIR):' >> $@
-	@echo -n '$(KOKKOS_LIBDIR):' >> $@
-	@echo '$$LD_LIBRARY_PATH' >> $@
-	@echo >> $@
-	@echo 'export PATH=$$PATH:$(CUDA_BASE)/bin' >> $@
+	@echo '#! /bin/bash'                                                    > $@
+	@echo 'if [ -f .original_env ]; then'                                   >> $@
+	@echo '  source .original_env'                                          >> $@
+	@echo 'else'                                                            >> $@
+	@echo '  echo "#! /bin/bash"                       >  .original_env'    >> $@
+	@echo '  echo "PATH=$$PATH"                         >> .original_env'   >> $@
+	@echo '  echo "LD_LIBRARY_PATH=$$LD_LIBRARY_PATH"   >> .original_env'   >> $@
+	@echo 'fi'                                                              >> $@
+	@echo                                                                   >> $@
+	@echo -n 'export LD_LIBRARY_PATH='                                      >> $@
+	@echo -n '$(TBB_LIBDIR):'                                               >> $@
+	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
+	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
+	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
+	@echo '$$LD_LIBRARY_PATH'                                               >> $@
+	@echo 'export PATH=$$PATH:$(CUDA_BASE)/bin'                             >> $@
 
 define TARGET_template
 include src/$(1)/Makefile.deps
@@ -156,7 +165,7 @@ clean:
 	rm -fR lib obj $(TARGETS)
 
 distclean: | clean
-	rm -fR external
+	rm -fR external .original_env
 
 dataclean:
 	rm -fR data/*.tar.gz data/*.bin data/data_ok
@@ -210,8 +219,8 @@ external_boost: $(BOOST_BASE)
 $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
-	wget -nv https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_72_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
-	cd $(BOOST_TMP)/boost_1_72_0 && ./bootstrap.sh && ./b2 install --prefix=$@
+	wget -nv https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
+	cd $(BOOST_TMP)/boost_1_73_0 && ./bootstrap.sh && ./b2 install --prefix=$@
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
 

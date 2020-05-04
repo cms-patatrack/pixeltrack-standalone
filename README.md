@@ -29,9 +29,9 @@ All other external dependencies (listed below) are downloaded and built automati
 * [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
 * [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
 * [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` program)
-* [Boost](https://www.boost.org/) (`alpakatest` and `alpakatest` programs)
-  * Boost libraries from the system can also be used, but they need to be newer than 1.63.0
-* [Alpaka](https://github.com/alpaka-group/alpaka) (`alpakatest` and `alpakatest` programs)
+* [Boost](https://www.boost.org/) (`alpakatest` and `alpaka` programs)
+  * Boost libraries from the system can also be used, but they need to be newer than 1.65.1
+* [Alpaka](https://github.com/alpaka-group/alpaka) (`alpakatest` and `alpaka` programs)
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
