@@ -30,13 +30,12 @@ namespace {
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
         << std::endl;
   }
-
-  enum class Backend { SERIAL, CUDA };
 }  // namespace
 
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  using Backend = kokkos_common::InitializeScopeGuard::Backend;
   std::vector<Backend> backends;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
@@ -87,7 +86,7 @@ int main(int argc, char** argv) {
   }
 
   // Initialize Kokkos
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard(backends);
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
