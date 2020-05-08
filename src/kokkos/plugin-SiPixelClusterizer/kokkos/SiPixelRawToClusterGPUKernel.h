@@ -7,12 +7,7 @@
 
 #include "KokkosDataFormats/SiPixelDigisKokkos.h"
 #include "KokkosDataFormats/SiPixelDigiErrorsKokkos.h"
-#ifdef TODO
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDACore/GPUSimpleVector.h"
-#include "CUDACore/host_unique_ptr.h"
-#include "CUDACore/host_noncached_unique_ptr.h"
-#endif
+#include "KokkosDataFormats/SiPixelClustersKokkos.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -207,9 +202,7 @@ namespace KOKKOS_NAMESPACE {
       cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
 #endif
       SiPixelDigisKokkos<KokkosExecSpace> digis_d;
-#ifdef TODO
-      SiPixelClustersCUDA clusters_d;
-#endif
+      SiPixelClustersKokkos<KokkosExecSpace> clusters_d;
       SiPixelDigiErrorsKokkos<KokkosExecSpace> digiErrors_d;
     };
 

@@ -44,7 +44,7 @@ public:
     // determine what averaged data block we are in (there should be 1 or 2 of these depending on if plaquette is 1 by X or 2 by X
     unsigned int lengthOfColumnData = (range.second - range.first) / nCols;
     unsigned int lengthOfAveragedDataInEachColumn = 2;  // we always only have two values per column averaged block
-    unsigned int numberOfDataBlocksToSkip = row / fields[0].numberOfRowsAveragedOver_;
+    unsigned int numberOfDataBlocksToSkip = row / fields.data()->numberOfRowsAveragedOver_;
 
     auto offset = range.first + col * lengthOfColumnData + lengthOfAveragedDataInEachColumn * numberOfDataBlocksToSkip;
 
