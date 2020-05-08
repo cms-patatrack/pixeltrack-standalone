@@ -46,13 +46,13 @@ public:
   KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> pdigi() const { return pdigi_d; }
   KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> rawIdArr() const { return rawIdArr_d; }
 
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_xx() const { return xx_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_yy() const { return yy_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_adc() const { return adc_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_moduleInd() const { return moduleInd_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<int32_t const*, MemorySpace> c_clus() const { return clus_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_pdigi() const { return pdigi_d(); }
-  KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_rawIdArr() const { return rawIdArr_d(); }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_xx() const { return xx_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_yy() const { return yy_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_adc() const { return adc_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint16_t const*, MemorySpace> c_moduleInd() const { return moduleInd_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<int32_t const*, MemorySpace> c_clus() const { return clus_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_pdigi() const { return pdigi_d; }
+  KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_rawIdArr() const { return rawIdArr_d; }
 
 #ifdef TODO
   cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;

@@ -21,8 +21,8 @@
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-#ifdef TODO
 #include "gpuCalibPixel.h"
+#ifdef TODO
 #include "gpuClusterChargeCut.h"
 #include "gpuClustering.h"
 #endif
@@ -539,9 +539,9 @@ namespace KOKKOS_NAMESPACE {
       if (includeErrors) {
         digiErrors_d = SiPixelDigiErrorsKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
       }
-#ifdef TODO
-      clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules, stream);
+      clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(gpuClustering::MaxNumModules);
 
+#ifdef TODO
       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
 #endif
 
@@ -593,8 +593,6 @@ namespace KOKKOS_NAMESPACE {
                                  i);
               });
         }
-        Kokkos::fence();
-
 #ifdef TODO
         if (includeErrors) {
           digiErrors_d.copyErrorToHostAsync(stream);
@@ -602,28 +600,38 @@ namespace KOKKOS_NAMESPACE {
 #endif
       }
       // End of Raw2Digi and passing data for clustering
-#ifdef TODO
 
       {
         // clusterizer ...
         using namespace gpuClustering;
-        int threadsPerBlock = 256;
-        int blocks =
-            (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
+        {
+          auto xx_d = digis_d.c_xx();
+          auto yy_d = digis_d.c_yy();
+          auto adc_d = digis_d.adc();
+          auto moduleInd_d = digis_d.moduleInd();
+          auto moduleStart_d = clusters_d.moduleStart();
+          auto clusInModule_d = clusters_d.clusInModule();
+          auto clusModuleStart_d = clusters_d.clusModuleStart();
 
-        gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0, stream>>>(digis_d.moduleInd(),
-                                                                          digis_d.c_xx(),
-                                                                          digis_d.c_yy(),
-                                                                          digis_d.adc(),
-                                                                          gains,
-                                                                          wordCounter,
-                                                                          clusters_d.moduleStart(),
-                                                                          clusters_d.clusInModule(),
-                                                                          clusters_d.clusModuleStart());
-        cudaCheck(cudaGetLastError());
+          Kokkos::parallel_for(
+              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(gpuClustering::MaxNumModules))),
+              KOKKOS_LAMBDA(const size_t i) {
+                gpuCalibPixel::calibDigis(moduleInd_d,
+                                          xx_d,
+                                          yy_d,
+                                          adc_d,
+                                          gains,
+                                          wordCounter,
+                                          moduleStart_d,
+                                          clusInModule_d,
+                                          clusModuleStart_d,
+                                          i);
+              });
+        }
+        Kokkos::fence();
+
 #ifdef GPU_DEBUG
-        cudaDeviceSynchronize();
-        cudaCheck(cudaGetLastError());
+        Kokkos::fence();
 #endif
 
 #ifdef GPU_DEBUG
@@ -631,6 +639,7 @@ namespace KOKKOS_NAMESPACE {
                   << " threads\n";
 #endif
 
+#ifdef TODO
         countModules<<<blocks, threadsPerBlock, 0, stream>>>(
             digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
         cudaCheck(cudaGetLastError());
@@ -687,9 +696,8 @@ namespace KOKKOS_NAMESPACE {
         cudaDeviceSynchronize();
         cudaCheck(cudaGetLastError());
 #endif
-
-      }  // end clusterizer scope
 #endif   // TODO
+      }  // end clusterizer scope
     }
   }  // namespace pixelgpudetails
 }  // namespace KOKKOS_NAMESPACE
