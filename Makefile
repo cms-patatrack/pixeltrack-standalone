@@ -250,7 +250,7 @@ $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA
 external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
-	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
+	git clone --branch 3.1.01 https://github.com/kokkos/kokkos.git $@
 	cd $(KOKKOS_SRC) && patch -p1 < ../../../nvcc_wrapper.patch
 
 $(KOKKOS_BUILD):
