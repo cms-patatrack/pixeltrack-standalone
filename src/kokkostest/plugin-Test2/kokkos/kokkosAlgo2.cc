@@ -25,8 +25,8 @@ namespace KOKKOS_NAMESPACE {
       h_b[i] = i * i;
     }
 
-    Kokkos::deep_copy(d_a, h_a);
-    Kokkos::deep_copy(d_b, h_b);
+    Kokkos::deep_copy(KokkosExecSpace(), d_a, h_a);
+    Kokkos::deep_copy(KokkosExecSpace(), d_b, h_b);
 
     Kokkos::View<float*, KokkosExecSpace> d_c{"d_c", NUM_VALUES};
     Kokkos::parallel_for(
