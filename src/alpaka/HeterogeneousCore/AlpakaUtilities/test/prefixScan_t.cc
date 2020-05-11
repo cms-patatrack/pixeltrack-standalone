@@ -94,7 +94,6 @@ struct init {
       int index = threadIdxInGrid * threadDimension + i;
       if (index < n) {
         v[index] = val;
-        // printf("init: index: %d %d \n", index, v[index] );
       }
 
       if (index == 0)
@@ -112,7 +111,6 @@ struct verify {
     for (int i = 0; i < threadDimension; ++i) {
       int index = threadIdxInGrid * threadDimension + i;
       if (index < n)
-        // printf("verify: index: %d %d \n", index, v[index] );
         assert(v[index] == index + 1);
       if (index == 0)
         printf("verify\n");
@@ -182,7 +180,6 @@ int main() {
   for (int ksize = 1; ksize < 4; ++ksize) {
     // test multiblock
     std::cout << "multiblock" << std::endl;
-    // Declare, allocate, and initialize device-accessible pointers for input and output
     num_items *= 8;
     uint32_t* d_in;
     uint32_t* d_out1;

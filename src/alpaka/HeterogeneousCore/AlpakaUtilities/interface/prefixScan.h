@@ -132,12 +132,6 @@ namespace cms {
 #endif
     }
 
-    // same as above, may remove
-    // limited to 32*32 elements....
-    // struct blockPrefixScan {
-    // ....... copy from ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE...
-    // };
-
     // limited to 1024*1024 elements....
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
@@ -190,10 +184,10 @@ namespace cms {
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
         for (int elemId = 0; elemId < threadDimension; ++elemId) {
-          int first = threadIdx * threadDimension + elemId;  // + blockDimension * blockIdx
+          int first = threadIdx * threadDimension + elemId;  
           for (int i = first + blockDimension * threadDimension; i < size;
-               i += blockDimension * threadDimension) {       //  *gridDimension) {
-            auto k = i / (blockDimension * threadDimension);  // block
+               i += blockDimension * threadDimension) {       
+            auto k = i / (blockDimension * threadDimension);  
             co[i] += psum[k];
           }
         }
