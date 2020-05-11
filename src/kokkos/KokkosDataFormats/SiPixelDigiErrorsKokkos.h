@@ -10,12 +10,13 @@ template <typename MemorySpace>
 class SiPixelDigiErrorsKokkos {
 public:
   SiPixelDigiErrorsKokkos() = default;
-  explicit SiPixelDigiErrorsKokkos(size_t maxFedWords, PixelFormatterErrors errors)
+  template <typename ExecSpace>
+  explicit SiPixelDigiErrorsKokkos(size_t maxFedWords, PixelFormatterErrors errors, ExecSpace const& execSpace)
       : data_d{"data_d", maxFedWords}, error_d{"error_d"}, error_h{"error_h"}, formatterErrors_h{std::move(errors)} {
     error_h.data()->construct(maxFedWords, data_d.data());
     assert(error_h.data()->empty());
     assert(error_h.data()->capacity() == static_cast<int>(maxFedWords));
-    Kokkos::deep_copy(error_d, error_h);
+    Kokkos::deep_copy(execSpace, error_d, error_h);
   }
   ~SiPixelDigiErrorsKokkos() = default;
 

@@ -32,15 +32,14 @@ namespace KOKKOS_NAMESPACE {
     Kokkos::View<SiPixelFedCablingMapGPU, KokkosExecSpace> cablingMap_d("cablingMap_d");
     auto cablingMap_h = Kokkos::create_mirror_view(cablingMap_d);
     (*cablingMap_h.data()) = obj;
-    Kokkos::deep_copy(cablingMap_d, cablingMap_h);
+    Kokkos::deep_copy(KokkosExecSpace(), cablingMap_d, cablingMap_h);
     eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper<KokkosExecSpace>>(std::move(cablingMap_d), true));
 
     Kokkos::View<unsigned char*, KokkosExecSpace> modToUnp_d("modToUnp_d", modToUnpDefSize);
     auto modToUnp_h = Kokkos::create_mirror_view(modToUnp_d);
     std::copy(modToUnpDefault.begin(), modToUnpDefault.end(), modToUnp_h.data());
-    Kokkos::deep_copy(modToUnp_d, modToUnp_h);
+    Kokkos::deep_copy(KokkosExecSpace(), modToUnp_d, modToUnp_h);
     eventSetup.put(std::make_unique<Kokkos::View<const unsigned char*, KokkosExecSpace>>(std::move(modToUnp_d)));
-    Kokkos::fence();
   }
 }  // namespace KOKKOS_NAMESPACE
 

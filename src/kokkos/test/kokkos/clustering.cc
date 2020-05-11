@@ -230,11 +230,11 @@ void test() {
     size_t size16 = n * sizeof(unsigned short);
     // size_t size8 = n * sizeof(uint8_t);
 
-    Kokkos::deep_copy(d_moduleStart, 0);
-    Kokkos::deep_copy(d_id, h_id);
-    Kokkos::deep_copy(d_x, h_x);
-    Kokkos::deep_copy(d_y, h_y);
-    Kokkos::deep_copy(d_adc, h_adc);
+    Kokkos::deep_copy(KokkosExecSpace(), d_moduleStart, 0);
+    Kokkos::deep_copy(KokkosExecSpace(), d_id, h_id);
+    Kokkos::deep_copy(KokkosExecSpace(), d_x, h_x);
+    Kokkos::deep_copy(KokkosExecSpace(), d_y, h_y);
+    Kokkos::deep_copy(KokkosExecSpace(), d_adc, h_adc);
 
     // Launch Kokkos Kernels
     std::cout << "Kokkos countModules kernel launch\n";
