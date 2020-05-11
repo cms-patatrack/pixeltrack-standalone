@@ -22,10 +22,8 @@
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 #include "gpuCalibPixel.h"
-#ifdef TODO
 #include "gpuClusterChargeCut.h"
 #include "gpuClustering.h"
-#endif
 
 // local includes
 #include "SiPixelRawToClusterGPUKernel.h"
@@ -539,7 +537,7 @@ namespace KOKKOS_NAMESPACE {
       if (includeErrors) {
         digiErrors_d = SiPixelDigiErrorsKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
       }
-      clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(gpuClustering::MaxNumModules);
+      clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
 
 #ifdef TODO
       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
@@ -614,7 +612,7 @@ namespace KOKKOS_NAMESPACE {
           auto clusModuleStart_d = clusters_d.clusModuleStart();
 
           Kokkos::parallel_for(
-              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(gpuClustering::MaxNumModules))),
+              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {
                 gpuCalibPixel::calibDigis(moduleInd_d,
                                           xx_d,
