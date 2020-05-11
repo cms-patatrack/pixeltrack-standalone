@@ -626,7 +626,6 @@ namespace KOKKOS_NAMESPACE {
                                           i);
               });
         }
-        Kokkos::fence();
 
 #ifdef GPU_DEBUG
         Kokkos::fence();
@@ -637,11 +636,24 @@ namespace KOKKOS_NAMESPACE {
                   << " threads\n";
 #endif
 
-#ifdef TODO
-        countModules<<<blocks, threadsPerBlock, 0, stream>>>(
-            digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
-        cudaCheck(cudaGetLastError());
 
+        using namespace gpuClustering;
+        {
+        auto moduleInd_d = digis_d.moduleInd();
+        auto moduleStart_d = clusters_d.moduleStart();
+        auto clusStart_d = digis_d.clus();
+        Kokkos::parallel_for(
+            Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+            KOKKOS_LAMBDA(const size_t i) {
+                gpuClustering::countModules(moduleInd_d,
+                                            moduleStart_d,
+                                            clusStart_d,
+                                            wordCounter,
+                                            i);
+        });
+        }
+        KokkosExecSpace().fence();
+#ifdef TODO
         // read the number of modules into a data member, used by getProduct())
         cudaCheck(cudaMemcpyAsync(
             &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
