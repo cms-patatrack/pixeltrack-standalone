@@ -7,7 +7,8 @@
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
 template <typename T>
-ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {
+ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(
+    uint32_t laneId, T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {
   // ci and co may be the same
   auto x = ci[i];
 #pragma unroll
@@ -37,7 +38,8 @@ namespace cms {
   namespace Alpaka {
     // limited to 32*32 elements....
     template <typename T_Acc, typename T>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE  void blockPrefixScan(const T_Acc& acc, T const* __restrict__ ci,
+    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
+                                                             T const* __restrict__ ci,
                                                              T* __restrict__ co,
                                                              uint32_t size,
                                                              T* ws
@@ -68,8 +70,7 @@ namespace cms {
       alpaka::block::sync::syncBlockThreads(acc);
       if (size <= 32)
         return;
-      if (blockThreadIdx < 32)
-      {
+      if (blockThreadIdx < 32) {
         warpPrefixScan(laneId, ws, blockThreadIdx, 0xffffffff);
       }
       alpaka::block::sync::syncBlockThreads(acc);
@@ -86,12 +87,12 @@ namespace cms {
     }
 
     template <typename T_Acc, typename T>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc, 
-                                                            T* __restrict__ c,
-                                                            uint32_t size,
-                                                            T* __restrict__ ws
+    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
+                                                             T* __restrict__ c,
+                                                             uint32_t size,
+                                                             T* __restrict__ ws
 #ifndef ALPAKA_ACC_GPU_CUDA_ENABLED
-                                                            = nullptr
+                                                             = nullptr
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
@@ -106,7 +107,7 @@ namespace cms {
       auto laneId = blockThreadIdx & 0x1f;
 
       for (auto i = first; i < size; i += blockDimension) {
-        warpPrefixScan(laneId,c, i, mask);
+        warpPrefixScan(laneId, c, i, mask);
         auto warpId = i / 32;
         assert(warpId < 32);
         if (31 == laneId)
@@ -116,8 +117,7 @@ namespace cms {
       alpaka::block::sync::syncBlockThreads(acc);
       if (size <= 32)
         return;
-      if (blockThreadIdx < 32)
-      {
+      if (blockThreadIdx < 32) {
         warpPrefixScan(laneId, ws, blockThreadIdx, 0xffffffff);
       }
       alpaka::block::sync::syncBlockThreads(acc);
@@ -131,7 +131,7 @@ namespace cms {
         c[i] += c[i - 1];
 #endif
     }
-    
+
     // same as above, may remove
     // limited to 32*32 elements....
     // struct blockPrefixScan {
@@ -141,67 +141,65 @@ namespace cms {
     // limited to 1024*1024 elements....
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
-    template<typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, T* psum,  int32_t size) const {
-      uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      template <typename T_Acc>
+      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, T* psum, int32_t size) const {
+        uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-      uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      
-      auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
-      // first each block does a scan of size 1024; (better be enough blocks....)
-      assert(gridDimension/threadDimension <= 1024);
-      int off = blockDimension * blockIdx *threadDimension ;
-      if (size - off > 0)
-        blockPrefixScan(acc, ci + off, co + off, std::min(int(blockDimension*threadDimension), size - off), ws);
-    }
+        uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+
+        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        // first each block does a scan of size 1024; (better be enough blocks....)
+        assert(gridDimension / threadDimension <= 1024);
+        int off = blockDimension * blockIdx * threadDimension;
+        if (size - off > 0)
+          blockPrefixScan(acc, ci + off, co + off, std::min(int(blockDimension * threadDimension), size - off), ws);
+      }
     };
 
-
-        // limited to 1024*1024 elements....
+    // limited to 1024*1024 elements....
     template <typename T>
     struct multiBlockPrefixScanSecondStep {
-    template<typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, T* psum,  int32_t size, int32_t numBlocks) const {
-      uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      template <typename T_Acc>
+      ALPAKA_FN_ACC void operator()(
+          const T_Acc& acc, T const* ci, T* co, T* psum, int32_t size, int32_t numBlocks) const {
+        uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-      uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      
-      auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
-      // first each block does a scan of size 1024; (better be enough blocks....)
-      assert(blockDimension*threadDimension >=numBlocks);
-      for(int elemId = 0; elemId<threadDimension; ++elemId)
-      {
-        int index =+ threadIdx*threadDimension+elemId;
-        
-        if(index < numBlocks)
-        {
-          int lastElementOfPreviousBlockId = index*blockDimension*threadDimension -1;
-          psum[index] = (lastElementOfPreviousBlockId < size and lastElementOfPreviousBlockId >= 0) ? co[lastElementOfPreviousBlockId] : T(0);
+        uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+
+        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        // first each block does a scan of size 1024; (better be enough blocks....)
+        assert(blockDimension * threadDimension >= numBlocks);
+        for (int elemId = 0; elemId < threadDimension; ++elemId) {
+          int index = +threadIdx * threadDimension + elemId;
+
+          if (index < numBlocks) {
+            int lastElementOfPreviousBlockId = index * blockDimension * threadDimension - 1;
+            psum[index] = (lastElementOfPreviousBlockId < size and lastElementOfPreviousBlockId >= 0)
+                              ? co[lastElementOfPreviousBlockId]
+                              : T(0);
+          }
+        }
+
+        alpaka::block::sync::syncBlockThreads(acc);
+
+        blockPrefixScan(acc, psum, psum, numBlocks, ws);
+
+        for (int elemId = 0; elemId < threadDimension; ++elemId) {
+          int first = threadIdx * threadDimension + elemId;  // + blockDimension * blockIdx
+          for (int i = first + blockDimension * threadDimension; i < size;
+               i += blockDimension * threadDimension) {       //  *gridDimension) {
+            auto k = i / (blockDimension * threadDimension);  // block
+            co[i] += psum[k];
+          }
         }
       }
-    
-      alpaka::block::sync::syncBlockThreads(acc);
-
-      blockPrefixScan(acc, psum, psum, numBlocks, ws);
-
-      for(int elemId = 0; elemId < threadDimension; ++elemId)
-      {
-        int first = threadIdx * threadDimension+elemId;                                 // + blockDimension * blockIdx
-        for (int i = first + blockDimension* threadDimension; i < size; i += blockDimension* threadDimension) {  //  *gridDimension) {
-          auto k = i / (blockDimension* threadDimension);                                     // block
-          co[i] += psum[k];
-        }
-      }
-    
-
-    }
     };
-  }  // namespace alpaka
+  }  // namespace Alpaka
 }  // namespace cms
 
 #endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
