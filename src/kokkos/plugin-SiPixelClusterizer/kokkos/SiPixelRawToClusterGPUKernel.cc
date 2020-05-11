@@ -535,7 +535,8 @@ namespace KOKKOS_NAMESPACE {
 
       digis_d = SiPixelDigisKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d = SiPixelDigiErrorsKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+        digiErrors_d = SiPixelDigiErrorsKokkos<KokkosExecSpace>(
+            pixelgpudetails::MAX_FED_WORDS, std::move(errors), KokkosExecSpace());
       }
       clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
 
@@ -558,8 +559,8 @@ namespace KOKKOS_NAMESPACE {
         //Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", wordCounter);
         Kokkos::View<unsigned int *, KokkosExecSpace> word_d("word_d", MAX_FED_WORDS);
         Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", MAX_FED_WORDS);
-        Kokkos::deep_copy(word_d, wordFed.word());
-        Kokkos::deep_copy(fedId_d, wordFed.fedId());
+        Kokkos::deep_copy(KokkosExecSpace(), word_d, wordFed.word());
+        Kokkos::deep_copy(KokkosExecSpace(), fedId_d, wordFed.fedId());
 
         {
           // need Kokkos::Views as local variables to pass to the lambda
@@ -626,10 +627,10 @@ namespace KOKKOS_NAMESPACE {
                                           i);
               });
         }
-        Kokkos::fence();
+        KokkosExecSpace().fence();
 
 #ifdef GPU_DEBUG
-        Kokkos::fence();
+        KokkosExecSpace().fence();
 #endif
 
 #ifdef GPU_DEBUG
