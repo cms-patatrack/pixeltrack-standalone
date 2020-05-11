@@ -63,8 +63,8 @@ endif
 # alpaka flags
 ifdef ALPAKA_BASE
 ALPAKA_CXX_FLAGS  := $(BOOST_CXX_FLAGS) -I$(ALPAKA_BASE)/include
-ALPAKA_NVCC_FLAGS := $(BOOST_CXX_FLAGS) -I$(ALPAKA_BASE)/include -Xcompiler -pthread
-ALPAKA_LD_FLAGS   := -pthread
+ALPAKA_NVCC_FLAGS := $(BOOST_CXX_FLAGS) -I$(ALPAKA_BASE)/include -Xcompiler
+ALPAKA_LD_FLAGS   := 
 ALPAKA_DEBUG      := -DALPAKA_DEBUG=1
 endif
 
@@ -102,7 +102,7 @@ endif
 
 
 ifdef ALPAKA_BASE
-alpaka: test-alpaka-serial #test-alpaka-tbb test-alpaka-omp2 test-alpaka-omp4 test-alpaka-cuda test-alpaka
+alpaka: test-alpaka-serial test-alpaka-cuda #test-alpaka-tbb test-alpaka-omp2 test-alpaka-omp4 test-alpaka
 	@echo -e $(GREEN)Alpaka targets built$(RESET)
 
 alpaka-debug: debug-alpaka-serial debug-alpaka-tbb debug-alpaka-omp2 debug-alpaka-omp4 debug-alpaka-cuda debug-alpaka
@@ -115,8 +115,8 @@ alpaka-debug: debug-alpaka-serial debug-alpaka-tbb debug-alpaka-omp2 debug-alpak
 # $(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 # 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
-$(BUILD)/main_alpaka.serial.o: plugin-SiPixelClusterizer/clustering_alpaka.cc plugin-SiPixelClusterizer/clustering_alpaka.h AlpakaCore/alpakaConfig.h| $(BUILD)
-	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+$(BUILD)/main_alpaka.serial.o: HeterogeneousCore/AlpakaUtilities/test/prefixScan_t.cc HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h | $(BUILD)
+	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
 
 test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.serial.o
 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(ALPAKA_LD_FLAGS)
@@ -208,7 +208,7 @@ test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.seri
 # debug-alpaka-omp4: $(DEBUG)/main_alpaka.omp4.o $(DEBUG)/analyzer_alpaka.omp4.o $(DEBUG)/rawtodigi_alpaka.omp4.o
 # 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
 
-# ifdef CUDA_BASE
+ifdef CUDA_BASE
 # # Alpaka implementation, compiled for the GPU CUDA backend
 # $(BUILD)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
 # 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) -o $@ -x cu -dc $<
@@ -219,11 +219,11 @@ test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.seri
 # $(BUILD)/alpaka.dlink.o: $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o
 # 	$(NVCC) $(NVCC_FLAGS) -o $@ -dlink $^
 
-# $(BUILD)/main_alpaka.cuda.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+$(BUILD)/main_alpaka.cuda.o: HeterogeneousCore/AlpakaUtilities/test/prefixScan_t.cc HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h | $(BUILD)
+	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@  -x cu -dc $<
 
-# test-alpaka-cuda: $(BUILD)/main_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/alpaka.dlink.o
-# 	$(CXX) $(CXX_FLAGS) $(ALPAKA_CXX_FLAGS) -o $@ $+ $(CUDA_LD_FLAGS) $(ALPAKA_LD_FLAGS)
+test-alpaka-cuda: $(BUILD)/main_alpaka.cuda.o
+	$(NVCC) $(NVCC_FLAGS) $(ALPAKA_CXX_FLAGS) -o $@ $+ $(CUDA_LD_FLAGS) $(ALPAKA_LD_FLAGS)
 
 # $(DEBUG)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
 # 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) $(ALPAKA_DEBUG) -o $@ -x cu -dc $<
@@ -273,7 +273,7 @@ test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.seri
 # debug-alpaka: $(DEBUG)/main_alpaka.o $(DEBUG)/rawtodigi_alpaka.serial.o $(DEBUG)/rawtodigi_alpaka.tbb.o $(DEBUG)/rawtodigi_alpaka.omp2.o $(DEBUG)/rawtodigi_alpaka.omp4.o $(DEBUG)/analyzer_alpaka.serial.o $(DEBUG)/analyzer_alpaka.tbb.o $(DEBUG)/analyzer_alpaka.omp2.o $(DEBUG)/analyzer_alpaka.omp4.o
 # 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(TBB_LD_FLAGS) $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
 
-# endif
+endif
 
 # else
 # alpaka:
