@@ -391,7 +391,7 @@ void test() {
 }
 
 int main(void) {
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
   test();
   return 0;
 }
