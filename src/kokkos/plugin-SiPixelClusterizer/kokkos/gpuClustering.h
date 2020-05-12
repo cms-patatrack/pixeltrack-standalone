@@ -15,32 +15,30 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuClustering {
 
-
 #ifdef GPU_DEBUG
     __device__ uint32_t gMaxHit = 0;
 #endif
 
-    KOKKOS_INLINE_FUNCTION void countModules(
-            Kokkos::View<uint16_t const*,KokkosExecSpace> id,
-            Kokkos::View<uint32_t*,KokkosExecSpace> moduleStart,
-            Kokkos::View<int32_t*,KokkosExecSpace> clusterId,
-            int numElements,
-            const size_t index) {
-        clusterId[index] = index;
-        if (::gpuClustering::InvId == id[index])
-          return;
-        int j = index - 1;
-        while (j >= 0 and id[j] == ::gpuClustering::InvId)
-          --j;
-        if (j < 0 or id[j] != id[index]) {
-          // boundary... replacing atomicInc with explicit logic
-          auto loc = moduleStart[0];
-          if( moduleStart[0] >= ::gpuClustering::MaxNumModules)
-            moduleStart[0] = 0;
-          else
-            moduleStart[0] = moduleStart[0] + 1;
-          moduleStart[loc + 1] = index;
-        }
+    KOKKOS_INLINE_FUNCTION void countModules(Kokkos::View<uint16_t const*, KokkosExecSpace> id,
+                                             Kokkos::View<uint32_t*, KokkosExecSpace> moduleStart,
+                                             Kokkos::View<int32_t*, KokkosExecSpace> clusterId,
+                                             int numElements,
+                                             const size_t index) {
+      clusterId[index] = index;
+      if (::gpuClustering::InvId == id[index])
+        return;
+      int j = index - 1;
+      while (j >= 0 and id[j] == ::gpuClustering::InvId)
+        --j;
+      if (j < 0 or id[j] != id[index]) {
+        // boundary... replacing atomicInc with explicit logic
+        auto loc = moduleStart[0];
+        if (moduleStart[0] >= ::gpuClustering::MaxNumModules)
+          moduleStart[0] = 0;
+        else
+          moduleStart[0] = moduleStart[0] + 1;
+        moduleStart[loc + 1] = index;
+      }
     }
 #ifdef TODO
     __global__
