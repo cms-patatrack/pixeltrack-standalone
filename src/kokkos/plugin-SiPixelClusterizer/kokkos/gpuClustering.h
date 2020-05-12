@@ -34,11 +34,8 @@ namespace KOKKOS_NAMESPACE {
           --j;
         if (j < 0 or id[j] != id[index]) {
           // boundary... replacing atomicInc with explicit logic
-          auto loc = moduleStart[0];
-          if( moduleStart[0] >= ::gpuClustering::MaxNumModules)
-            moduleStart[0] = 0;
-          else
-            moduleStart[0] = moduleStart[0] + 1;
+          auto loc = Kokkos::atomic_compare_exchange(moduleStart,::gpuClustering::MaxNumModules,0);
+          Kokkos::atomic_increment(moduleStart);
           moduleStart[loc + 1] = index;
         }
     }
