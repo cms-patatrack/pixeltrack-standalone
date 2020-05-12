@@ -636,21 +636,16 @@ namespace KOKKOS_NAMESPACE {
                   << " threads\n";
 #endif
 
-
         using namespace gpuClustering;
         {
-        auto moduleInd_d = digis_d.moduleInd();
-        auto moduleStart_d = clusters_d.moduleStart();
-        auto clusStart_d = digis_d.clus();
-        Kokkos::parallel_for(
-            Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
-            KOKKOS_LAMBDA(const size_t i) {
-                gpuClustering::countModules(moduleInd_d,
-                                            moduleStart_d,
-                                            clusStart_d,
-                                            wordCounter,
-                                            i);
-        });
+          auto moduleInd_d = digis_d.moduleInd();
+          auto moduleStart_d = clusters_d.moduleStart();
+          auto clusStart_d = digis_d.clus();
+          Kokkos::parallel_for(
+              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+              KOKKOS_LAMBDA(const size_t i) {
+                gpuClustering::countModules(moduleInd_d, moduleStart_d, clusStart_d, wordCounter, i);
+              });
         }
         KokkosExecSpace().fence();
 #ifdef TODO
