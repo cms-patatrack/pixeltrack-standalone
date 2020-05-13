@@ -32,7 +32,7 @@ namespace KOKKOS_NAMESPACE {
         --j;
       if (j < 0 or id[j] != id[index]) {
         // boundary... replacing atomicInc with explicit logic
-        auto loc = Kokkos::atomic_fetch_add(&moduleStart[0],1);
+        auto loc = Kokkos::atomic_fetch_add(&moduleStart[0], 1);
         assert(moduleStart[0] < ::gpuClustering::MaxNumModules);
         moduleStart[loc + 1] = index;
       }
