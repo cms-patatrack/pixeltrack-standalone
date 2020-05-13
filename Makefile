@@ -97,7 +97,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
                      -DBUILD_SHARED_LIBS=On \
                      -DKokkos_CXX_STANDARD=14 \
-                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_PASCAL60=On
+                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_VOLTA70=On
 # if without CUDA, replace the above line with
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
