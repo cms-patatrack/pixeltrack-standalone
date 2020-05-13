@@ -15,31 +15,29 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuClustering {
 
-#ifdef TODO
 #ifdef GPU_DEBUG
     __device__ uint32_t gMaxHit = 0;
 #endif
 
-    KOKKOS_INLINE_FUNCTION void countModules(uint16_t const* __restrict__ id,
-                                             uint32_t* __restrict__ moduleStart,
-                                             int32_t* __restrict__ clusterId,
-                                             int numElements) {
-      int first = blockDim.x * blockIdx.x + threadIdx.x;
-      for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
-        clusterId[i] = i;
-        if (InvId == id[i])
-          continue;
-        auto j = i - 1;
-        while (j >= 0 and id[j] == InvId)
-          --j;
-        if (j < 0 or id[j] != id[i]) {
-          // boundary...
-          auto loc = atomicInc(moduleStart, MaxNumModules);
-          moduleStart[loc + 1] = i;
-        }
+    KOKKOS_INLINE_FUNCTION void countModules(Kokkos::View<uint16_t const*, KokkosExecSpace> id,
+                                             Kokkos::View<uint32_t*, KokkosExecSpace> moduleStart,
+                                             Kokkos::View<int32_t*, KokkosExecSpace> clusterId,
+                                             int numElements,
+                                             const size_t index) {
+      clusterId[index] = index;
+      if (::gpuClustering::InvId == id[index])
+        return;
+      int j = index - 1;
+      while (j >= 0 and id[j] == ::gpuClustering::InvId)
+        --j;
+      if (j < 0 or id[j] != id[index]) {
+        // boundary... replacing atomicInc with explicit logic
+        auto loc = Kokkos::atomic_fetch_add(&moduleStart[0], 1);
+        assert(moduleStart[0] < ::gpuClustering::MaxNumModules);
+        moduleStart[loc + 1] = index;
       }
     }
-
+#ifdef TODO
     __global__
         //  __launch_bounds__(256,4)
         void
