@@ -184,10 +184,9 @@ namespace cms {
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
         for (int elemId = 0; elemId < threadDimension; ++elemId) {
-          int first = threadIdx * threadDimension + elemId;  
-          for (int i = first + blockDimension * threadDimension; i < size;
-               i += blockDimension * threadDimension) {       
-            auto k = i / (blockDimension * threadDimension);  
+          int first = threadIdx * threadDimension + elemId;
+          for (int i = first + blockDimension * threadDimension; i < size; i += blockDimension * threadDimension) {
+            auto k = i / (blockDimension * threadDimension);
             co[i] += psum[k];
           }
         }
