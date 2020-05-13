@@ -628,7 +628,7 @@ namespace KOKKOS_NAMESPACE {
         }
 
 #ifdef GPU_DEBUG
-        Kokkos::fence();
+        KokkosExecSpace().fence();
 #endif
 
 #ifdef GPU_DEBUG
