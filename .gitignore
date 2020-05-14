@@ -2,6 +2,7 @@
 external
 obj
 lib
+./test
 .original_env
 env.sh
 data/*.tar.gz
