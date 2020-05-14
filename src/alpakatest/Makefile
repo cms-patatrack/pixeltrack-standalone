@@ -6,15 +6,22 @@ EXTERNAL_DEPENDS := $(alpakatest_EXTERNAL_DEPENDS)
 
 $(TARGET):
 test_cpu: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --serial --tbb
+	@echo "Succeeded"
 test_cuda: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --cuda
+	@echo "Succeeded"
+.PHONY: test_cpu test_cuda
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
-LIBNAMES := $(filter-out plugin-% bin Makefile% plugins.txt%,$(wildcard *))
+LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
@@ -76,13 +83,42 @@ PLUGINS += $$($(1)_LIB)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
+# Files for unit tests
+TESTS_PORTABLE_SRC := $(wildcard $(TARGET_DIR)/test/alpaka/*.cc)
+# serial backend
+TESTS_SERIAL_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.serial.o))
+TESTS_SERIAL_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
+TESTS_SERIAL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.serial,$(TESTS_PORTABLE_SRC))
+# TBB backend
+TESTS_TBB_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=tbb.serial.o))
+TESTS_TBB_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
+TESTS_TBB_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.tbb,$(TESTS_PORTABLE_SRC))
+# CUDA backend
+TESTS_CUDA_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.cuda.o))
+TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
+TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
+#
+TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE)
+TESTS_CUOBJ := $(TESTS_CUDA_OBJ)
+TESTS_CUDADLINK := $(TESTS_CUOBJ:$cu.o=$cudadlink.o)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP)
+
+define RUNTEST_template
+run_$(1): $(1)
+	@echo
+	@echo "Running test $(1)"
+	@$(1)
+	@echo "Succeeded"
+test_$(2): run_$(1)
+endef
+$(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_TBB_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),cuda)))
+
 -include $(ALL_DEPENDS)
 
-bar:
-	@echo $(Test1_CUDADLINK)
-
 # Build targets
-$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS)
+$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) | $(TESTS_EXE)
 	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
@@ -145,3 +181,44 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.d.tmp >> $(@D)/$*.cc.d; \
 	  rm $(@D)/$*.cc.d.tmp
+
+# Tests, assume all are portable
+# Serial backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.serial.d $(@D)/$*.cc.serial.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.serial.d.tmp > $(@D)/$*.cc.serial.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.serial.d.tmp >> $(@D)/$*.cc.serial.d; \
+	  rm $(@D)/$*.cc.serial.d.tmp
+
+$(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+
+# TBB backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.tbb.d $(@D)/$*.cc.tbb.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.tbb.d.tmp > $(@D)/$*.cc.tbb.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.tbb.d.tmp >> $(@D)/$*.cc.tbb.d; \
+	  rm $(@D)/$*.cc.tbb.d.tmp
+
+$(TEST_DIR)/$(TARGET_NAME)/%.tbb: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+
+# CUDA backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.o
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
+
+$(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
