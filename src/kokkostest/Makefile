@@ -6,15 +6,22 @@ EXTERNAL_DEPENDS := $(kokkostest_EXTERNAL_DEPENDS)
 
 $(TARGET):
 test_cpu: $(TARGET)
-	$(TARGET) --maxEvents 1 --serial
+	@echo
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --serial
+	@echo "Succeeded"
 test_cuda: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --cuda
+	@echo "Succeeded"
+.PHONY: test_cpu test_cuda
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
-LIBNAMES := $(filter-out plugin-% bin Makefile% plugins.txt%,$(wildcard *))
+LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
@@ -80,10 +87,37 @@ PLUGINS += $$($(1)_LIB)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
+# Files for unit tests
+TESTS_PORTABLE_SRC := $(wildcard $(TARGET_DIR)/test/kokkos/*.cc)
+# serial backend
+TESTS_SERIAL_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.serial.o))
+TESTS_SERIAL_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
+TESTS_SERIAL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.serial,$(TESTS_PORTABLE_SRC))
+# CUDA backend
+TESTS_CUDA_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.cuda.o))
+TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
+TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
+#
+TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_CUDA_EXE)
+TESTS_CUOBJ := $(TESTS_SERIAL_OBJ) $(TESTS_CUDA_OBJ)
+TESTS_CUDADLINK := $(TESTS_CUOBJ:$cu.o=$cudadlink.o)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_CUDA_DEP)
+
+define RUNTEST_template
+run_$(1): $(1)
+	@echo
+	@echo "Running test $(1)"
+	@$(1)
+	@echo "Succeeded"
+test_$(2): run_$(1)
+endef
+$(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),cuda)))
+
 -include $(ALL_DEPENDS)
 
 # Build targets
-$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS)
+$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) | $(TESTS_EXE)
 	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
@@ -132,3 +166,26 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.d.tmp >> $(@D)/$*.cc.d; \
 	  rm $(@D)/$*.cc.d.tmp
+
+# Tests, assume all are portable
+# device link rule can be shared
+$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.o
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
+
+# Serial backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_SERIAL $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+
+# CUDA backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
