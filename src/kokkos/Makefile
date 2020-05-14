@@ -117,7 +117,6 @@ $(OBJ_DIR)/$(2)/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
-	@echo $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
 endef
 
