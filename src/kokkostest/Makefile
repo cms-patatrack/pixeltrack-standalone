@@ -46,7 +46,7 @@ $(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.
 $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
 # CUDA backend
 $(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
-$(1)_CUDA_DEP := $$($(1)_CUD_AOBJ:$.o=$.d)
+$(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
 # this means all built kokkos objects...
 $(1)_CUOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/$(1)/lib$(1)_cudalink.o)
@@ -151,7 +151,6 @@ $(OBJ_DIR)/$(2)/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
-	@echo $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
 endef
 
