@@ -168,7 +168,7 @@ format:
 	$(CLANG_FORMAT) -i $(shell find src -name "*.h" -o -name "*.cc" -o -name "*.cu")
 
 clean:
-	rm -fR lib obj $(TARGETS)
+	rm -fR lib obj test $(TARGETS)
 
 distclean: | clean
 	rm -fR external .original_env
