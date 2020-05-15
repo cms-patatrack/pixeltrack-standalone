@@ -20,6 +20,9 @@ export OBJ_DIR := $(BASE_DIR)/obj
 # Directory where to put libraries
 export LIB_DIR := $(BASE_DIR)/lib
 
+# Directory where to put unit test executables
+export TEST_DIR := $(BASE_DIR)/test
+
 # System external definitions
 CUDA_BASE := /usr/local/cuda
 CUDA_LIBDIR := $(CUDA_BASE)/lib64

@@ -7,13 +7,17 @@ EXTERNAL_DEPENDS := $(cuda_EXTERNAL_DEPENDS)
 $(TARGET):
 test_cpu:
 test_cuda: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2
+	@echo "Succeeded"
+.PHONY: test_cpu test_cuda
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
-LIBNAMES := $(filter-out plugin-% bin Makefile% plugins.txt%,$(wildcard *))
+LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
@@ -48,10 +52,34 @@ $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugi
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
+# Files for unit tests
+TESTS_SRC := $(wildcard $(TARGET_DIR)/test/*.cc)
+TESTS_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_SRC:%=%.o))
+TESTS_DEP := $(TESTS_OBJ:$.o=$.d)
+TESTS_CUSRC := $(wildcard $(TARGET_DIR)/test/*.cu)
+TESTS_CUOBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_CUSRC:%=%.o))
+TESTS_CUDADLINK := $(TESTS_CUOBJ:$cu.o=$cudadlink.o)
+TESTS_CUDEP := $(TESTS_CUOBJ:$.o=$.d)
+TESTS_EXE_CPU := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_SRC))
+TESTS_EXE_CUDA :=  $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cu,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_CUSRC))
+TESTS_EXE := $(TESTS_EXE_CPU) $(TESTS_EXE_CUDA)
+ALL_DEPENDS += $(TESTS_DEP) $(TESTS_CUDEP)
+
+define RUNTEST_template
+run_$(1): $(1)
+	@echo
+	@echo "Running test $(1)"
+	@$(1)
+	@echo "Succeeded"
+test_$(2): run_$(1)
+endef
+$(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_EXE_CUDA),$(eval $(call RUNTEST_template,$(test),cuda)))
+
 -include $(ALL_DEPENDS)
 
 # Build targets
-$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS)
+$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) | $(TESTS_EXE)
 	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
@@ -87,3 +115,28 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.d.tmp >> $(@D)/$*.cc.d; \
 	  rm $(@D)/$*.cc.d.tmp
+
+# Tests
+$(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.d $(@D)/$*.cc.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.d.tmp > $(@D)/$*.cc.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.d.tmp >> $(@D)/$*.cc.d; \
+	  rm $(@D)/$*.cc.d.tmp
+
+$(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $< $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+
+$(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cu
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(OBJ_DIR)/$(TARGET_NAME)/test/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
+
+$(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o $(OBJ_DIR)/$(TARGET_NAME)/test/%.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
