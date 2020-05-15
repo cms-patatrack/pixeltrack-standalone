@@ -76,7 +76,8 @@ run_$(1): $(1)
 test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
-$(foreach test,$(TESTS_EXE_CUDA),$(eval $(call RUNTEST_template,$(test),cuda)))
+TEST_EXE_CUDA_RUN := $(filter-out $(TEST_DIR)/$(TARGET_NAME)/testEigenGPUNoFit,$(TESTS_EXE_CUDA))
+$(foreach test,$(TEST_EXE_CUDA_RUN),$(eval $(call RUNTEST_template,$(test),cuda)))
 
 -include $(ALL_DEPENDS)
 
