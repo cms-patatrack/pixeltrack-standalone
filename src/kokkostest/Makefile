@@ -102,6 +102,8 @@ TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_CUDA_EXE)
 TESTS_CUOBJ := $(TESTS_SERIAL_OBJ) $(TESTS_CUDA_OBJ)
 TESTS_CUDADLINK := $(TESTS_CUOBJ:$cu.o=$cudadlink.o)
 ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_CUDA_DEP)
+# Needed to keep the unit test object files after building $(TARGET)
+.SECONDARY: $(TESTS_CUOBJ) $(TESTS_CUDADLINK)
 
 define RUNTEST_template
 run_$(1): $(1)

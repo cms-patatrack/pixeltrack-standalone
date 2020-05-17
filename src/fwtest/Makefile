@@ -55,6 +55,8 @@ TESTS_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_SRC:%=%.o))
 TESTS_DEP := $(TESTS_OBJ:$.o=$.d)
 TESTS_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_SRC))
 ALL_DEPENDS += $(TESTS_DEP)
+# Needed to keep the unit test object files after building $(TARGET)
+.SECONDARY: $(TESTS_OBJ)
 
 define RUNTEST_template
 run_$(1): $(1)

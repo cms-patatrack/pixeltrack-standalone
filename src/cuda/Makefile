@@ -64,6 +64,8 @@ TESTS_EXE_CPU := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TA
 TESTS_EXE_CUDA :=  $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cu,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_CUSRC))
 TESTS_EXE := $(TESTS_EXE_CPU) $(TESTS_EXE_CUDA)
 ALL_DEPENDS += $(TESTS_DEP) $(TESTS_CUDEP)
+# Needed to keep the unit test object files after building $(TARGET)
+.SECONDARY: $(TESTS_OBJ) $(TESTS_CUOBJ) $(TESTS_CUDADLINK)
 
 define RUNTEST_template
 run_$(1): $(1)
@@ -74,7 +76,8 @@ run_$(1): $(1)
 test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
-$(foreach test,$(TESTS_EXE_CUDA),$(eval $(call RUNTEST_template,$(test),cuda)))
+TEST_EXE_CUDA_RUN := $(filter-out $(TEST_DIR)/$(TARGET_NAME)/testEigenGPUNoFit,$(TESTS_EXE_CUDA))
+$(foreach test,$(TEST_EXE_CUDA_RUN),$(eval $(call RUNTEST_template,$(test),cuda)))
 
 -include $(ALL_DEPENDS)
 

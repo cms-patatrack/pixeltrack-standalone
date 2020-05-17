@@ -59,7 +59,7 @@ export CUB_LDFLAGS :=
 
 EIGEN_BASE := $(EXTERNAL_BASE)/eigen
 export EIGEN_DEPS := $(EIGEN_BASE)
-export EIGEN_CXXFLAGS := -I$(EIGEN_BASE)
+export EIGEN_CXXFLAGS := -I$(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
 export EIGEN_LDFLAGS :=
 
 BOOST_BASE := /usr
@@ -168,7 +168,7 @@ format:
 	$(CLANG_FORMAT) -i $(shell find src -name "*.h" -o -name "*.cc" -o -name "*.cu")
 
 clean:
-	rm -fR lib obj $(TARGETS)
+	rm -fR lib obj test $(TARGETS)
 
 distclean: | clean
 	rm -fR external .original_env
