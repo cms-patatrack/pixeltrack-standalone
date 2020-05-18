@@ -69,52 +69,6 @@ void test(){
 
 
 } // test()
-//
-//KOKKOS_FUNCTION update(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> dc,
-//                       Kokkos::View<uint32_t*,KokkosExecSpace> ind,
-//                       Kokkos::View<uint32_t*,KokkosExecSpace> cont,
-//                       uint32_t n,
-//                       const member_type &teamMember) {
-//  auto i = teamMember.league_rank() * teamMember.league_size() + teamMember.team_rank();
-//  if (i >= n)
-//    return;
-//
-//  auto m = i % 11;
-//  m = m % 6 + 1;  // max 6, no 0
-//  auto c = dc->add(m);
-//  assert(c.m < n);
-//  ind[c.m] = c.n;
-//  for (int j = c.n; j < c.n + m; ++j)
-//    cont[j] = i;
-//};
-//
-//KOKKOS_FUNCTION void finalize(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> dc,
-//                              Kokkos::View<uint32_t*,KokkosExecSpace> ind,
-//                              Kokkos::View<uint32_t*,KokkosExecSpace> cont,
-//                              uint32_t n,
-//                              const member_type &teamMember) {
-//  assert(dc->get().m == n);
-//  ind[n] = dc->get().n;
-//}
-
-//KOKKOS_FUNCTION void verify(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> dc,
-//                            Kokkos::View<uint32_t*,KokkosExecSpace> ind,
-//                            Kokkos::View<uint32_t*,KokkosExecSpace> cont,
-//                            uint32_t n,
-//                            const member_type &teamMember) {
-//  auto i = teamMember.league_rank() * teamMember.league_size() + teamMember.team_rank();
-//  if (i >= n)
-//    return;
-//  assert(0 == ind[0]);
-//  assert(dc->get().m == n);
-//  assert(ind[n] == dc->get().n);
-//  auto ib = ind[i];
-//  auto ie = ind[i + 1];
-//  auto k = cont[ib++];
-//  assert(k < n);
-//  for (; ib < ie; ++ib)
-//    assert(cont[ib] == k);
-//}
 
 int main(void) {
   kokkos_common::InitializeScopeGuard kokkosGuard;
