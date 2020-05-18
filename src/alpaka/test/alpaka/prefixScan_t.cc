@@ -4,12 +4,7 @@
 #include "AlpakaCore/prefixScan.h"
 
 using namespace cms::Alpaka;
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
-using namespace alpaka_serial_sync;
-#endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-using namespace alpaka_cuda_async;
-#endif
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
 struct format_traits {
