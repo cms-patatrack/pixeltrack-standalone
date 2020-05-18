@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "HeterogeneousCore/AlpakaCore/alpakaConfig.h"
-#include "HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/prefixScan.h"
 
 using namespace cms::Alpaka;
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND

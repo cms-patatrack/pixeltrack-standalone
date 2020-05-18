@@ -2,7 +2,7 @@
 #define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 
 #include <cstdint>
-#include <HeterogeneousCore/AlpakaCore/alpakaConfig.h>
+#include "AlpakaCore/alpakaConfig.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
