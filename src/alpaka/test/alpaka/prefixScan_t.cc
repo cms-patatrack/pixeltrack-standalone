@@ -85,9 +85,9 @@ struct init {
     uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
     uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
-    for (int i = 0; i < threadDimension; ++i) {
+    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
       int index = threadIdxInGrid * threadDimension + i;
-      if (index < n) {
+      if (index < static_cast<int>(n)) {
         v[index] = val;
       }
 
@@ -103,10 +103,10 @@ struct verify {
     uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
     uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
-    for (int i = 0; i < threadDimension; ++i) {
+    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
       int index = threadIdxInGrid * threadDimension + i;
-      if (index < n)
-        assert(v[index] == index + 1);
+      if (index < static_cast<int>(n))
+        assert(static_cast<int>(v[index]) == index + 1);
       if (index == 0)
         printf("verify\n");
     }

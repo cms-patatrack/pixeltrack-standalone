@@ -167,8 +167,8 @@ namespace cms {
 
         auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
         // first each block does a scan of size 1024; (better be enough blocks....)
-        assert(blockDimension * threadDimension >= numBlocks);
-        for (int elemId = 0; elemId < threadDimension; ++elemId) {
+        assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
+        for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
 
           if (index < numBlocks) {
@@ -183,7 +183,7 @@ namespace cms {
 
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
-        for (int elemId = 0; elemId < threadDimension; ++elemId) {
+        for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int first = threadIdx * threadDimension + elemId;
           for (int i = first + blockDimension * threadDimension; i < size; i += blockDimension * threadDimension) {
             auto k = i / (blockDimension * threadDimension);
