@@ -23,7 +23,11 @@ namespace edm {
     EDPutTokenT<T> produces() {
       const std::type_index ti{typeid(T)};
       const unsigned int ind = typeToIndex_.size();
+#ifdef __cpp_lib_unordered_map_try_emplace
       auto succeeded = typeToIndex_.try_emplace(ti, currentModuleIndex_, ind);
+#else
+      auto succeeded = typeToIndex_.emplace(ti, Indices{currentModuleIndex_, ind});
+#endif
       if (not succeeded.second) {
         throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " already exists");
       }
