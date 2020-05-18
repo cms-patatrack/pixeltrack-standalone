@@ -66,8 +66,6 @@ void test(){
 
   std::cout << dc_h(0).get().n << ' ' << dc_h(0).get().m << std::endl;
 
-
-
 } // test()
 
 int main(void) {
