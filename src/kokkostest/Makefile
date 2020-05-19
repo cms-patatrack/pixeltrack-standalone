@@ -153,7 +153,7 @@ $(OBJ_DIR)/$(2)/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
-	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $$($(1)_CUOBJ) $(KOKKOS_LDFLAGS) $(CUDA_LDFLAGS) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
@@ -171,7 +171,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 # Tests, assume all are portable
 # device link rule can be shared
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.o
-	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $< $(KOKKOS_LDFLAGS) $(CUDA_LDFLAGS) -o $@
 
 # Serial backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc

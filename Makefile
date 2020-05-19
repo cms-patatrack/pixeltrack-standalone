@@ -94,11 +94,10 @@ KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
 export KOKKOS_INSTALL := $(KOKKOS_BASE)/install
 KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
-export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
+export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
-                     -DBUILD_SHARED_LIBS=On \
                      -DKokkos_CXX_STANDARD=14 \
                      -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_VOLTA70=On
 # if without CUDA, replace the above line with
@@ -106,7 +105,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 export KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
-export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore
+export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
@@ -254,7 +253,6 @@ external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
 	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
-	cd $(KOKKOS_SRC) && patch -p1 < ../../../nvcc_wrapper.patch
 
 $(KOKKOS_BUILD):
 	mkdir -p $@
