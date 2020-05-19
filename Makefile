@@ -32,10 +32,15 @@ export CUDA_ARCH := 35 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
-NVCC_FLAGS := $(foreach ARCH,$(CUDA_ARCH), -gencode arch=compute_$(ARCH),code=sm_$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
-NVCC_COMMON := -std=c++14 -O3 $(NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
-export CUDA_CUFLAGS := -dc $(NVCC_COMMON) $(USER_CUDAFLAGS)
-export CUDA_DLINKFLAGS := -dlink $(NVCC_COMMON)
+define CUFLAGS_template
+$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
+$(2)NVCC_COMMON := -std=c++14 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+$(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
+$(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
+endef
+$(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
+export CUDA_CUFLAGS
+export CUDA_DLINKFLAGS
 
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
@@ -104,8 +109,11 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
-export KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+KOKKOS_CUDA_ARCH := 70
+$(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
+export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
+export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
