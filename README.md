@@ -42,15 +42,17 @@ downloaded automatically during the build process.
 
 ## Status
 
-| Application  | Description    | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
-|--------------|----------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| `fwtest`     | Framework test | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cudatest`   | CUDA FW test   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cuda`       | CUDA version   | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `kokkostest` | Kokkos FW test | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `kokkos`     | Kokkos version | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: |                    |                    |                    |                    |
-| `alpakatest` | Alpaka FW test | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
-| `alpaka`     | Alpaka version | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
+| Application  | Description                      | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
+|--------------|----------------------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| `fwtest`     | Framework test                   | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cudatest`   | CUDA FW test                     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :white_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `kokkostest` | Kokkos FW test                   | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: |                    |                    |                    |                    |
+| `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
+| `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
 
@@ -99,7 +101,19 @@ Options
 
 ### Test program specific notes (if any)
 
-#### Kokkos
+#### `cuda`
+
+This program is frozen to correspond to CMSSW_11_1_0_pre4.
+
+#### `cudadev`
+
+This program contains developments after CMSSW_11_1_0_pre4.
+
+#### `cudauvm`
+
+The purpose of this program is to test the performance of the CUDA managed memory.
+
+#### `kokkos` and `kokkostest`
 
 If `nvcc` is not in your `$PATH`, the build recipe is
 ```bash
@@ -167,3 +181,9 @@ program (e.g. `footest` for a technology `foo`), adjust the test
 modules to exercise the API of the technology (see `cudatest` for
 examples), and start crafting the tools package (`CUDACore` in
 `cuda`). 
+
+Pull requests are expected to build (`make all` succeeds) and pass
+tests (`make test`). Programs to have build errors should primarily be
+filtered out from `$(TARGETS)`, and failing tests should primarily be
+removed from the set of tests run by default. Breakages can, however,
+be accepted for short periods of time with a good justification.

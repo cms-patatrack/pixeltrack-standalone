@@ -32,10 +32,15 @@ export CUDA_ARCH := 35 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
-NVCC_FLAGS := $(foreach ARCH,$(CUDA_ARCH), -gencode arch=compute_$(ARCH),code=sm_$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
-NVCC_COMMON := -std=c++14 -O3 $(NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
-export CUDA_CUFLAGS := -dc $(NVCC_COMMON) $(USER_CUDAFLAGS)
-export CUDA_DLINKFLAGS := -dlink $(NVCC_COMMON)
+define CUFLAGS_template
+$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
+$(2)NVCC_COMMON := -std=c++14 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+$(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
+$(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
+endef
+$(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
+export CUDA_CUFLAGS
+export CUDA_DLINKFLAGS
 
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
@@ -94,19 +99,21 @@ KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
 export KOKKOS_INSTALL := $(KOKKOS_BASE)/install
 KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
-export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
+export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
-                     -DBUILD_SHARED_LIBS=On \
                      -DKokkos_CXX_STANDARD=14 \
                      -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_VOLTA70=On
 # if without CUDA, replace the above line with
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
-export KOKKOS_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
-export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore
+KOKKOS_CUDA_ARCH := 70
+$(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
+export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
+export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
@@ -114,8 +121,6 @@ export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # Targets and their dependencies on externals
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
-# Remove alpaka target until it has been included in the build system
-TARGETS := $(filter-out alpaka,$(TARGETS))
 TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
 TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS))
 all: $(TARGETS)
@@ -254,7 +259,6 @@ external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
 	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
-	cd $(KOKKOS_SRC) && patch -p1 < ../../../nvcc_wrapper.patch
 
 $(KOKKOS_BUILD):
 	mkdir -p $@
