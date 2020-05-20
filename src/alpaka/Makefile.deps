@@ -1,3 +1,2 @@
-alpaka_EXTERNAL_DEPENDS := TBB CUDA EIGEN ALPAKA
-CondFormats_DEPENDS := AlpakaCore
-SiPixelClusterizer_DEPENDS := Framework CondFormats DataFormats AlpakaCore
+alpaka_EXTERNAL_DEPENDS := TBB CUDA EIGEN ALPAKA BOOST
+SiPixelClusterizer_DEPENDS := Framework AlpakaCore AlpakaDataFormats DataFormats

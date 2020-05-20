@@ -1,15 +1,10 @@
 #include <iostream>
 
-#include "HeterogeneousCore/AlpakaCore/alpakaConfig.h"
-#include "HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/prefixScan.h"
 
 using namespace cms::Alpaka;
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
-using namespace alpaka_serial_sync;
-#endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-using namespace alpaka_cuda_async;
-#endif
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
 struct format_traits {
@@ -90,9 +85,9 @@ struct init {
     uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
     uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
-    for (int i = 0; i < threadDimension; ++i) {
+    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
       int index = threadIdxInGrid * threadDimension + i;
-      if (index < n) {
+      if (index < static_cast<int>(n)) {
         v[index] = val;
       }
 
@@ -108,10 +103,10 @@ struct verify {
     uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
     uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
-    for (int i = 0; i < threadDimension; ++i) {
+    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
       int index = threadIdxInGrid * threadDimension + i;
-      if (index < n)
-        assert(v[index] == index + 1);
+      if (index < static_cast<int>(n))
+        assert(static_cast<int>(v[index]) == index + 1);
       if (index == 0)
         printf("verify\n");
     }

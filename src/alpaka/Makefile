@@ -1,286 +1,224 @@
-TARGETS = alpaka 
-BUILD   = build
-DEBUG   = build/debug
+TARGET_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+TARGET_NAME := $(notdir $(TARGET_DIR))
+TARGET := $(BASE_DIR)/$(TARGET_NAME)
+include Makefile.deps
+EXTERNAL_DEPENDS := $(alpaka_EXTERNAL_DEPENDS)
 
-.PHONY: all debug clean $(TARGETS)
-
-# general rules and targets
-all: $(TARGETS)
-
-debug: $(TARGETS:%=%-debug)
-
-clean:
-	rm -r -f test-* debug-* $(BUILD)  $(DEBUG) env.sh
-
-$(BUILD):
-	mkdir -p $(BUILD)
-
-$(DEBUG):
-	mkdir -p $(DEBUG)
-
-# configure external tool here
-BOOST_BASE  := /cvmfs/cms.cern.ch/slc7_amd64_gcc820/external/boost/1.67.0-pafccj
-TBB_BASE    :=
-CUDA_BASE   := /usr/local/cuda-10.2.89
-ALPAKA_BASE := ../../external/alpaka
-
-# host compiler
-CXX := g++
-CXX_FLAGS := -O2 -std=c++14
-CXX_DEBUG := -g
-OMP_CXX_FLAGS := -fopenmp -foffload=disable
-OMP_LD_FLAGS  := -fopenmp -foffload=disable
-
-# CUDA compiler
-ifdef CUDA_BASE
-NVCC := $(CUDA_BASE)/bin/nvcc -ccbin $(CXX)
-NVCC_FLAGS := -O2 -std=c++14 --expt-relaxed-constexpr -w --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70
-NVCC_DEBUG := -g -lineinfo
-
-# CUDA flags for the host linker
-CUDA_LIBDIR   := $(CUDA_BASE)/lib64
-CUDA_LD_FLAGS := -L$(CUDA_LIBDIR) -lcudart -lcuda
-endif
-
-# boost flags
-ifdef BOOST_BASE
-BOOST_CXX_FLAGS := -I$(BOOST_BASE)/include
-else
-BOOST_CXX_FLAGS :=
-endif
-
-# TBB flags
-ifdef TBB_BASE
-TBB_LIBDIR    := $(TBB_BASE)/lib
-TBB_CXX_FLAGS := -I$(TBB_BASE)/include
-TBB_LD_FLAGS  := -L$(TBB_LIBDIR) -ltbb -lrt
-else
-TBB_LIBDIR    :=
-TBB_CXX_FLAGS :=
-TBB_LD_FLAGS  := -ltbb -lrt
-endif
-
-# alpaka flags
-ifdef ALPAKA_BASE
-ALPAKA_CXX_FLAGS  := $(BOOST_CXX_FLAGS) -I$(ALPAKA_BASE)/include
-ALPAKA_NVCC_FLAGS := $(BOOST_CXX_FLAGS) -I$(ALPAKA_BASE)/include -Xcompiler
-ALPAKA_LD_FLAGS   := 
-ALPAKA_DEBUG      := -DALPAKA_DEBUG=1
-endif
-
-
-# color highlights for ANSI terminals
-GREEN  := '\033[32m'
-RED    := '\033[31m'
-YELLOW := '\033[38;5;220m'
-WHITE  := '\033[97m'
-RESET  := '\033[0m'
-
-# force the recreation of the environment file any time the Makefile is updated, before building any other target
--include environment
-.PHONY: environment
-
-environment: env.sh
-
-env.sh: Makefile
-	@echo '#! /bin/bash' > $@
-ifdef ONEAPI_LIBDIR
-	@echo 'export PATH=$(ONEAPI_BASE)/bin:$$PATH' >> $@
-endif
-	@echo -n 'export LD_LIBRARY_PATH=' >> $@
-ifdef TBB_LIBDIR
-	@echo -n '$(TBB_LIBDIR):' >> $@
-endif
-ifdef CUDA_LIBDIR
-	@echo -n '$(CUDA_LIBDIR):' >> $@
-endif
-	@echo '$$LD_LIBRARY_PATH' >> $@
-	@echo -e $(GREEN)Environment file$(RESET) regenerated, load the new envirnment with
+$(TARGET):
+test_cpu: $(TARGET)
 	@echo
-	@echo -e \ \ $(WHITE)source env.sh$(RESET)
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --serial --tbb
+	@echo "Succeeded"
+test_cuda: $(TARGET)
 	@echo
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --cuda
+	@echo "Succeeded"
+.PHONY: test_cpu test_cuda
 
+EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
+EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
+EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
-ifdef ALPAKA_BASE
-alpaka: test-alpaka-serial test-alpaka-cuda #test-alpaka-tbb test-alpaka-omp2 test-alpaka-omp4 test-alpaka
-	@echo -e $(GREEN)Alpaka targets built$(RESET)
+LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
+PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
+MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
+MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
+LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
 
-alpaka-debug: debug-alpaka-serial debug-alpaka-tbb debug-alpaka-omp2 debug-alpaka-omp4 debug-alpaka-cuda debug-alpaka
-	@echo -e $(GREEN)Alpaka debug targets built$(RESET)
+ALL_DEPENDS := $(EXE_DEP)
+# Files for libraries
+LIBS :=
+define LIB_template
+$(1)_SRC := $$(wildcard $(TARGET_DIR)/$(1)/*.cc)
+$(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
+$(1)_DEP := $$($(1)_OBJ:$.o=$.d)
+# portable alpaka code
+$(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/$(1)/alpaka/*.cc)
+# serial backend
+$(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
+$(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
+# TBB backend
+$(1)_TBB_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.tbb.o))
+$(1)_TBB_DEP := $$($(1)_TBB_OBJ:$.o=$.d)
+# CUDA backend
+$(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
+$(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
+#
+$(1)_CUOBJ := $$($(1)_CUDA_OBJ)
+$(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/$(1)/lib$(1)_cudalink.o)
 
-# Alpaka implementation, compiled for the CPU serial backend
-# $(BUILD)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
+$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1).so
+LIBS += $$($(1)_LIB)
+$(1)_LDFLAGS := -l$(1)
+endef
+$(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 
-# $(BUILD)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+# Files for plugins
+PLUGINS :=
+define PLUGIN_template
+$(1)_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cc)
+$(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
+$(1)_DEP := $$($(1)_OBJ:$.o=$.d)
+# portable alpaka code
+$(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/alpaka/*.cc)
+# serial backend
+$(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
+$(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
+# TBB backend
+$(1)_TBB_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.tbb.o))
+$(1)_TBB_DEP := $$($(1)_TBB_OBJ:$.o=$.d)
+# CUDA backend
+$(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
+$(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
+#
+$(1)_CUOBJ := $$($(1)_CUDA_OBJ)
+$(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 
-$(BUILD)/main_alpaka.serial.o: HeterogeneousCore/AlpakaUtilities/test/prefixScan_t.cc HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h | $(BUILD)
-	$(CXX) $(CXX_FLAGS) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
+$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
+PLUGINS += $$($(1)_LIB)
+endef
+$(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
-test-alpaka-serial: $(BUILD)/main_alpaka.serial.o #$(BUILD)/analyzer_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.serial.o
-	$(CXX) $(CXX_FLAGS) -o $@ $+ $(ALPAKA_LD_FLAGS)
+# Files for unit tests
+TESTS_PORTABLE_SRC := $(wildcard $(TARGET_DIR)/test/alpaka/*.cc)
+# serial backend
+TESTS_SERIAL_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.serial.o))
+TESTS_SERIAL_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
+TESTS_SERIAL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.serial,$(TESTS_PORTABLE_SRC))
+# TBB backend
+TESTS_TBB_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=tbb.serial.o))
+TESTS_TBB_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
+TESTS_TBB_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.tbb,$(TESTS_PORTABLE_SRC))
+# CUDA backend
+TESTS_CUDA_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.cuda.o))
+TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
+TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
+#
+TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE)
+TESTS_CUOBJ := $(TESTS_CUDA_OBJ)
+TESTS_CUDADLINK := $(TESTS_CUOBJ:$cu.o=$cudadlink.o)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP)
 
-# $(DEBUG)/rawtodigi_alpaka.serial.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
+define RUNTEST_template
+run_$(1): $(1)
+	@echo
+	@echo "Running test $(1)"
+	@$(1)
+	@echo "Succeeded"
+test_$(2): run_$(1)
+endef
+$(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_TBB_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),cuda)))
 
-# $(DEBUG)/analyzer_alpaka.serial.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
+-include $(ALL_DEPENDS)
 
-# $(DEBUG)/main_alpaka.serial.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
+# Build targets
+$(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) | $(TESTS_EXE)
+	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
-# debug-alpaka-serial: $(DEBUG)/main_alpaka.serial.o $(DEBUG)/analyzer_alpaka.serial.o $(DEBUG)/rawtodigi_alpaka.serial.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(ALPAKA_LD_FLAGS)
+define BUILD_template
+$(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	@cp $(OBJ_DIR)/$(2)/$$*.cc.d $(OBJ_DIR)/$(2)/$$*.cc.d.tmp; \
+	  sed 's#\($(2)/$$*\)\.o[ :]*#\1.o \1.d : #g' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp > $(OBJ_DIR)/$(2)/$$*.cc.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' \
+	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
+	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
-# # Alpaka implementation, compiled for the CPU parallel TBB backend
-# $(BUILD)/rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(TBB_CXX_FLAGS) -o $@ -c $<
+$(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
-# $(BUILD)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(TBB_CXX_FLAGS) -o $@ -c $<
+$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_TBB_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_TBB_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
-# $(BUILD)/main_alpaka.tbb.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(TBB_CXX_FLAGS) -o $@ -c $<
+# Anything depending on Alpaka
+# Portable code, for serial backend
+$(OBJ_DIR)/$(2)/alpaka/%.cc.serial.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	@cp $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d.tmp; \
+	  sed 's#\($(2)/alpaka/$$*\)\.o[ :]*#\1.o \1.d : #g' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d.tmp > $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' \
+	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d.tmp >> $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d; \
+	  rm $(OBJ_DIR)/$(2)/alpaka/$$*.cc.serial.d.tmp
 
-# test-alpaka-tbb: $(BUILD)/main_alpaka.tbb.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.tbb.o
-# 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(TBB_LD_FLAGS) $(ALPAKA_LD_FLAGS)
+# Portable code, for TBB backend
+$(OBJ_DIR)/$(2)/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	@cp $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp; \
+	  sed 's#\($(2)/alpaka/$$*\)\.o[ :]*#\1.o \1.d : #g' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp > $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' \
+	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp >> $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d; \
+	  rm $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp
 
-# $(DEBUG)/rawtodigi_alpaka.tbb.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(TBB_CXX_FLAGS) -o $@ -c $<
+# Portable code, for CUDA backend
+$(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
-# $(DEBUG)/analyzer_alpaka.tbb.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(TBB_CXX_FLAGS) -o $@ -c $<
+$$($(1)_CUDADLINK): $$($(1)_CUOBJ)
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
 
-# $(DEBUG)/main_alpaka.tbb.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(TBB_CXX_FLAGS) -o $@ -c $<
+endef
 
-# debug-alpaka-tbb: $(DEBUG)/main_alpaka.tbb.o $(DEBUG)/analyzer_alpaka.tbb.o $(DEBUG)/rawtodigi_alpaka.tbb.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(TBB_LD_FLAGS) $(ALPAKA_LD_FLAGS)
+$(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
+$(foreach lib,$(PLUGINNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/plugin-$(lib))))
 
-# # Alpaka implementation, compiled for the CPU parallel OpenMP 2.0 backend
-# $(BUILD)/rawtodigi_alpaka.omp2.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
+$(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.d $(@D)/$*.cc.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.d.tmp > $(@D)/$*.cc.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.d.tmp >> $(@D)/$*.cc.d; \
+	  rm $(@D)/$*.cc.d.tmp
 
-# $(BUILD)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
+# Tests, assume all are portable
+# Serial backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.serial.d $(@D)/$*.cc.serial.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.serial.d.tmp > $(@D)/$*.cc.serial.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.serial.d.tmp >> $(@D)/$*.cc.serial.d; \
+	  rm $(@D)/$*.cc.serial.d.tmp
 
-# $(BUILD)/main_alpaka.omp2.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
+$(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
-# test-alpaka-omp2: $(BUILD)/main_alpaka.omp2.o $(BUILD)/analyzer_alpaka.omp2.o $(BUILD)/rawtodigi_alpaka.omp2.o
-# 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
+# TBB backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED $(CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	@cp $(@D)/$*.cc.tbb.d $(@D)/$*.cc.tbb.d.tmp; \
+	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.tbb.d.tmp > $(@D)/$*.cc.tbb.d; \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' -e 's/ *//' < $(@D)/$*.cc.tbb.d.tmp >> $(@D)/$*.cc.tbb.d; \
+	  rm $(@D)/$*.cc.tbb.d.tmp
 
-# $(DEBUG)/rawtodigi_alpaka.omp2.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
+$(TEST_DIR)/$(TARGET_NAME)/%.tbb: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
-# $(DEBUG)/analyzer_alpaka.omp2.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
+# CUDA backend
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 
-# $(DEBUG)/main_alpaka.omp2.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.o
+	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
 
-# debug-alpaka-omp2: $(DEBUG)/main_alpaka.omp2.o $(DEBUG)/analyzer_alpaka.omp2.o $(DEBUG)/rawtodigi_alpaka.omp2.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# # Alpaka implementation, compiled for the CPU parallel OpenMP 4.0 backend
-# $(BUILD)/rawtodigi_alpaka.omp4.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# $(BUILD)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# $(BUILD)/main_alpaka.omp4.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# test-alpaka-omp4: $(BUILD)/main_alpaka.omp4.o $(BUILD)/analyzer_alpaka.omp4.o $(BUILD)/rawtodigi_alpaka.omp4.o
-# 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# $(DEBUG)/rawtodigi_alpaka.omp4.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# $(DEBUG)/analyzer_alpaka.omp4.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ENABLED $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# $(DEBUG)/main_alpaka.omp4.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) $(OMP_CXX_FLAGS) -o $@ -c $<
-
-# debug-alpaka-omp4: $(DEBUG)/main_alpaka.omp4.o $(DEBUG)/analyzer_alpaka.omp4.o $(DEBUG)/rawtodigi_alpaka.omp4.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-ifdef CUDA_BASE
-# # Alpaka implementation, compiled for the GPU CUDA backend
-# $(BUILD)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) -o $@ -x cu -dc $<
-
-# $(BUILD)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(BUILD)
-# 	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) -o $@ -x cu -dc $<
-
-# $(BUILD)/alpaka.dlink.o: $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.cuda.o
-# 	$(NVCC) $(NVCC_FLAGS) -o $@ -dlink $^
-
-$(BUILD)/main_alpaka.cuda.o: HeterogeneousCore/AlpakaUtilities/test/prefixScan_t.cc HeterogeneousCore/AlpakaUtilities/interface/prefixScan.h | $(BUILD)
-	$(NVCC) $(NVCC_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@  -x cu -dc $<
-
-test-alpaka-cuda: $(BUILD)/main_alpaka.cuda.o
-	$(NVCC) $(NVCC_FLAGS) $(ALPAKA_CXX_FLAGS) -o $@ $+ $(CUDA_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# $(DEBUG)/rawtodigi_alpaka.cuda.o: rawtodigi_alpaka.cc GPUSimpleVector.h alpakaConfig.h input.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) $(ALPAKA_DEBUG) -o $@ -x cu -dc $<
-
-# $(DEBUG)/analyzer_alpaka.cuda.o: analyzer_alpaka.cc GPUSimpleVector.h alpakaConfig.h analyzer_alpaka.h input.h loops.h output.h pixelgpudetails.h rawtodigi_alpaka.h | $(DEBUG)
-# 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_NVCC_FLAGS) $(ALPAKA_DEBUG) -o $@ -x cu -dc $<
-
-# $(DEBUG)/alpaka.dlink.o: $(DEBUG)/rawtodigi_alpaka.cuda.o $(DEBUG)/analyzer_alpaka.cuda.o
-# 	$(NVCC) $(NVCC_FLAGS) $(NVCC_DEBUG) -o $@ -dlink $^
-
-# $(DEBUG)/main_alpaka.cuda.o: main_alpaka.cc analyzer_alpaka.h alpakaConfig.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
-
-# debug-alpaka-cuda: $(DEBUG)/main_alpaka.cuda.o $(DEBUG)/analyzer_alpaka.cuda.o $(DEBUG)/rawtodigi_alpaka.cuda.o $(DEBUG)/alpaka.dlink.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ $+ $(CUDA_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# # Alpaka implementation with run-time device choice
-# $(BUILD)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
-
-# test-alpaka: $(BUILD)/main_alpaka.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.omp2.o $(BUILD)/rawtodigi_alpaka.omp4.o $(BUILD)/rawtodigi_alpaka.cuda.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/analyzer_alpaka.omp2.o $(BUILD)/analyzer_alpaka.omp4.o $(BUILD)/analyzer_alpaka.cuda.o $(BUILD)/alpaka.dlink.o
-# 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(CUDA_LD_FLAGS) $(TBB_LD_FLAGS) $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# $(DEBUG)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
-
-# debug-alpaka: $(DEBUG)/main_alpaka.o $(DEBUG)/rawtodigi_alpaka.serial.o $(DEBUG)/rawtodigi_alpaka.tbb.o $(DEBUG)/rawtodigi_alpaka.omp2.o $(DEBUG)/rawtodigi_alpaka.omp4.o $(DEBUG)/rawtodigi_alpaka.cuda.o $(DEBUG)/analyzer_alpaka.serial.o $(DEBUG)/analyzer_alpaka.tbb.o $(DEBUG)/analyzer_alpaka.omp2.o $(DEBUG)/analyzer_alpaka.omp4.o $(DEBUG)/analyzer_alpaka.cuda.o $(DEBUG)/alpaka.dlink.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(CUDA_LD_FLAGS) $(TBB_LD_FLAGS) $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# else
-# test-alpaka-cuda:
-# 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Alpaka targets using CUDA will not be built
-
-# debug-alpaka-cuda:
-# 	@echo -e $(YELLOW)NVIDIA CUDA not found$(RESET), Alpaka debug targets using CUDA will not be built
-
-# # Alpaka implementation with run-time device choice, with the CUDA backend disabled
-# $(BUILD)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(BUILD)
-# 	$(CXX) $(CXX_FLAGS) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) -o $@ -c $<
-
-# test-alpaka: $(BUILD)/main_alpaka.o $(BUILD)/rawtodigi_alpaka.serial.o $(BUILD)/rawtodigi_alpaka.tbb.o $(BUILD)/rawtodigi_alpaka.omp2.o $(BUILD)/rawtodigi_alpaka.omp4.o $(BUILD)/analyzer_alpaka.serial.o $(BUILD)/analyzer_alpaka.tbb.o $(BUILD)/analyzer_alpaka.omp2.o $(BUILD)/analyzer_alpaka.omp4.o
-# 	$(CXX) $(CXX_FLAGS) -o $@ $+ $(TBB_LD_FLAGS) $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-# $(DEBUG)/main_alpaka.o: main_alpaka.cc analyzer_alpaka.h input.h pixelgpudetails.h modules.h output.h GPUSimpleVector.h | $(DEBUG)
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -DDIGI_ALPAKA -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND -DALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND $(ALPAKA_CXX_FLAGS) $(ALPAKA_DEBUG) -o $@ -c $<
-
-# debug-alpaka: $(DEBUG)/main_alpaka.o $(DEBUG)/rawtodigi_alpaka.serial.o $(DEBUG)/rawtodigi_alpaka.tbb.o $(DEBUG)/rawtodigi_alpaka.omp2.o $(DEBUG)/rawtodigi_alpaka.omp4.o $(DEBUG)/analyzer_alpaka.serial.o $(DEBUG)/analyzer_alpaka.tbb.o $(DEBUG)/analyzer_alpaka.omp2.o $(DEBUG)/analyzer_alpaka.omp4.o
-# 	$(CXX) $(CXX_FLAGS) $(CXX_DEBUG) -o $@ $+ $(TBB_LD_FLAGS) $(OMP_LD_FLAGS) $(ALPAKA_LD_FLAGS)
-
-endif
-
-# else
-# alpaka:
-# 	@echo -e $(YELLOW)Alpaka not found$(RESET), Alpaka targets will not be built
-
-endif
-
-
- 
-
+$(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
