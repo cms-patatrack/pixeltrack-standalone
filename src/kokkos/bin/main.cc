@@ -12,6 +12,7 @@
 #include "KokkosCore/kokkosConfigCommon.h"
 
 #include "EventProcessor.h"
+#include "PluginManager.h"
 
 namespace {
   void print_help(std::string const& name) {
@@ -86,8 +87,11 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // Initialize Kokkos
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  edmplugin::PluginManager pluginManager;
+
+  // Initialize Kokkos, needs to go through a plugin to avoid CUDA device symbol collisions
+  pluginManager.load("InitializeScopeGuard");
+  auto kokkosGuard = kokkos_common::PluginFactory::create("InitializeScopeGuard");
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
@@ -108,7 +112,7 @@ int main(int argc, char** argv) {
     }
   }
   edm::EventProcessor processor(
-      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation, pluginManager);
   maxEvents = processor.maxEvents();
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
