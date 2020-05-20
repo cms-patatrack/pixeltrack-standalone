@@ -2,7 +2,7 @@
 #define HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
 
 #include <cstdint>
-#include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/InitializeScopeGuard.h"
 
 class AtomicPairCounter {
 public:
