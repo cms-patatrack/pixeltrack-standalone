@@ -1,8 +1,8 @@
-IntESProducer pluginTest1.so
-kokkos_cuda::TestProducer pluginTest1.so
-kokkos_serial::TestProducer pluginTest1.so
-kokkos_cuda::TestProducer2 pluginTest2.so
-kokkos_serial::TestProducer2 pluginTest2.so
-kokkos_cuda::TestProducer3 pluginTest2.so
-kokkos_serial::TestProducer3 pluginTest2.so
-InitializeScopeGuard pluginKokkosCoreImpl.so
+IntESProducer pluginKokkos.so
+kokkos_cuda::TestProducer pluginKokkos.so
+kokkos_serial::TestProducer pluginKokkos.so
+kokkos_cuda::TestProducer2 pluginKokkos.so
+kokkos_serial::TestProducer2 pluginKokkos.so
+kokkos_cuda::TestProducer3 pluginKokkos.so
+kokkos_serial::TestProducer3 pluginKokkos.so
+InitializeScopeGuard pluginKokkos.so

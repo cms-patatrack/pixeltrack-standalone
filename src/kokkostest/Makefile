@@ -59,7 +59,9 @@ endef
 $(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 
 # Files for plugins
-PLUGINS :=
+PLUGINS := $(LIB_DIR)/$(TARGET_NAME)/pluginKokkos.so
+PLUGIN_OBJ :=
+PLUGIN_CUOBJ :=
 define PLUGIN_template
 # host code
 $(1)_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cc)
@@ -79,13 +81,17 @@ $(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cu
 $(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
 # this means all built kokkos objects...
 $(1)_CUOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ)
-$(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudalink.o)
+#$(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudalink.o)
+
+PLUGIN_OBJ += $$($(1)_OBJ)
+PLUGIN_CUOBJ += $$($(1)_CUOBJ)
 
 ALL_DEPENDS += $$($(1)_DEP) $$($(1)_HOST_DEP) $$($(1)_SERIAL_DEP) $$($(1)_CUDA_DEP)
-$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
-PLUGINS += $$($(1)_LIB)
+#$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
+#PLUGINS += $$($(1)_LIB)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
+PLUGIN_CUDADLINK := $(if $(strip $(PLUGIN_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/pluginKokkos_cudalink.o)
 
 # Files for unit tests
 TESTS_PORTABLE_SRC := $(wildcard $(TARGET_DIR)/test/kokkos/*.cc)
@@ -132,10 +138,6 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
 	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
-$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
-	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
-
 # Anything depending on Kokkos
 # Host-only code, need a special rule because have to build with nvcc if CUDA backend is enabled
 $(OBJ_DIR)/$(2)/kokkoshost/%.cc.o: $(SRC_DIR)/$(2)/kokkoshost/%.cc
@@ -151,13 +153,25 @@ $(OBJ_DIR)/$(2)/kokkos/%.cc.serial.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 $(OBJ_DIR)/$(2)/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+endef
 
-$$($(1)_CUDADLINK): $$($(1)_CUOBJ)
-	$(CUDA_NVCC) $(KOKKOS_DLINKFLAGS) $$($(1)_CUOBJ) $(KOKKOS_LDFLAGS) $(CUDA_LDFLAGS) -o $$@
+define LIB_template
+$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
+$(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib),$(TARGET_NAME)/$(lib))))
 $(foreach lib,$(PLUGINNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/plugin-$(lib))))
+
+$(PLUGINS): $(PLUGIN_OBJ) $(PLUGIN_CUOBJ) $(PLUGIN_CUDADLINK) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_DEPS)) $(foreach lib,$(PLUGIN_DEPENDS),$($(lib)_LIB))
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $(PLUGIN_OBJ) $(PLUGIN_CUOBJ) $(PLUGIN_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $(foreach lib,$(PLUGIN_DEPENDS),$($(lib)_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS)) -o $@
+
+$(PLUGIN_CUDADLINK): $(PLUGIN_CUOBJ)
+	$(CUDA_NVCC) $(KOKKOS_DLINKFLAGS) $(PLUGIN_CUOBJ) $(KOKKOS_LDFLAGS) $(CUDA_LDFLAGS) -o $@
+
 
 $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
