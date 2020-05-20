@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "KokkosCore/kokkosConfigCommon.h"
+#include "KokkosCore/InitializeScopeGuard.h"
 #include "KokkosCore/kokkosConfig.h"
 
 int main() {

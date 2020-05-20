@@ -9,7 +9,7 @@
 #include <set>
 #include <vector>
 
-#include "KokkosCore/kokkosConfigCommon.h"
+#include "KokkosCore/InitializeScopeGuard.h"
 #include "KokkosCore/kokkosConfig.h"
 
 // dirty, but works
