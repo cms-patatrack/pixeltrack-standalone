@@ -7,12 +7,9 @@
 
 #include "Framework/EventSetup.h"
 
+#include "PluginManager.h"
 #include "StreamSchedule.h"
 #include "Source.h"
-
-namespace edmplugin {
-  class PluginManager;
-}
 
 namespace edm {
   class EventProcessor {
@@ -22,15 +19,14 @@ namespace edm {
                             std::vector<std::string> const& path,
                             std::vector<std::string> const& esproducers,
                             std::filesystem::path const& datadir,
-                            bool validation,
-                            edmplugin::PluginManager& pluginManager);
+                            bool validation);
 
     int maxEvents() const { return source_.maxEvents(); }
 
     void runToCompletion();
 
   private:
-    edmplugin::PluginManager& pluginManager_;
+    edmplugin::PluginManager pluginManager_;
     ProductRegistry registry_;
     Source source_;
     EventSetup eventSetup_;
