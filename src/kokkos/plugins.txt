@@ -5,5 +5,3 @@ kokkos_cuda::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
 kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
-InitializeScopeGuard pluginKokkosCoreImpl.so
-
