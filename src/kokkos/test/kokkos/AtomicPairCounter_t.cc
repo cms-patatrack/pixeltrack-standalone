@@ -22,9 +22,16 @@ void test(){
   Kokkos::View<uint32_t*,KokkosExecSpace> m_d("m_d",M);
 
   const uint32_t n = 10000;
-  auto league_size = 2000;
-  auto team_size = 512;
-  Kokkos::parallel_for("update",team_policy(league_size,team_size),
+#ifdef KOKKOS_BACKEND_CUDA
+  auto league_size = n/10;
+#elif KOKKOS_BACKEND_SERIAL
+  auto league_size = n*2;
+#else
+  auto league_size = n/2;
+#endif
+  auto team_size = Kokkos::AUTO();
+  std::cout << "league size = " << league_size << std::endl;
+  Kokkos::parallel_for("update",team_policy(league_size,Kokkos::AUTO()),
                        KOKKOS_LAMBDA(const member_type &teamMember){
     uint32_t i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
     if (i >= n)
