@@ -20,13 +20,13 @@ void test(){
 
   Kokkos::View<uint32_t*,KokkosExecSpace> n_d("n_d",N);
   Kokkos::View<uint32_t*,KokkosExecSpace> m_d("m_d",M);
-  Kokkos::View<uint32_t*,KokkosExecSpace>::HostMirror n_h("n_h",N);
-  Kokkos::View<uint32_t*,KokkosExecSpace>::HostMirror m_h("m_h",M);
 
   const uint32_t n = 10000;
-  Kokkos::parallel_for("update",team_policy(2000,512),
+  auto league_size = 2000;
+  auto team_size = 512;
+  Kokkos::parallel_for("update",team_policy(league_size,team_size),
                        KOKKOS_LAMBDA(const member_type &teamMember){
-    uint32_t i = teamMember.league_rank() * teamMember.league_size() + teamMember.team_rank();
+    uint32_t i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
     if (i >= n)
       return;
 
@@ -37,8 +37,7 @@ void test(){
     n_d[c.m] = c.n;
     for (uint32_t j = c.n; j < c.n + m; ++j)
       m_d[j] = i;
-
-   });
+  });
 
   Kokkos::parallel_for("finalize",team_policy(1,1),
                        KOKKOS_LAMBDA(const member_type &teamMember){
@@ -46,9 +45,9 @@ void test(){
     n_d[n] = dc_d(0).get().n;
   });
 
-  Kokkos::parallel_for("verify",team_policy(2000,512),
+  Kokkos::parallel_for("verify",team_policy(league_size,team_size),
                        KOKKOS_LAMBDA(const member_type &teamMember){
-    uint32_t i = teamMember.league_rank() * teamMember.league_size() + teamMember.team_rank();
+    uint32_t i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
     if (i >= n)
       return;
     assert(0 == n_d[0]);
