@@ -8,21 +8,14 @@ struct SiPixelGainForHLTonGPU_DecodingStructure;
 
 class SiPixelGainCalibrationForHLTGPU {
 public:
-  explicit SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const &gain, std::vector<char> gainData);
+  explicit SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain, std::vector<char> const& gainData);
   ~SiPixelGainCalibrationForHLTGPU();
 
-  const SiPixelGainForHLTonGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
-  const SiPixelGainForHLTonGPU *getCPUProduct() const { return gainForHLTonHost_; }
+  const SiPixelGainForHLTonGPU* get() const { return gainForHLT_; }
 
 private:
-  SiPixelGainForHLTonGPU *gainForHLTonHost_ = nullptr;
-  std::vector<char> gainData_;
-  struct GPUData {
-    ~GPUData();
-    SiPixelGainForHLTonGPU *gainForHLTonGPU = nullptr;
-    SiPixelGainForHLTonGPU_DecodingStructure *gainDataOnGPU = nullptr;
-  };
-  cms::cuda::ESProduct<GPUData> gpuData_;
+  SiPixelGainForHLTonGPU* gainForHLT_ = nullptr;
+  SiPixelGainForHLTonGPU_DecodingStructure* gainData_ = nullptr;
 };
 
 #endif  // CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h

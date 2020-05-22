@@ -77,7 +77,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
+  const auto* gpuGains = hgains.get();
 
   auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
 
