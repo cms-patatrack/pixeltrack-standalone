@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-
 class AtomicPairCounter {
 public:
   using c_type = unsigned long long int;
