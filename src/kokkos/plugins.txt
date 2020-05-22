@@ -1,8 +1,7 @@
-kokkos_cuda::SiPixelRawToCluster pluginKokkos.so
-kokkos_serial::SiPixelRawToCluster pluginKokkos.so
-SiPixelFedIdsESProducer pluginKokkos.so
-kokkos_cuda::SiPixelFedCablingMapESProducer pluginKokkos.so
-kokkos_serial::SiPixelFedCablingMapESProducer pluginKokkos.so
-kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginKokkos.so
-kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginKokkos.so
-InitializeScopeGuard pluginKokkos.so
+kokkos_cuda::SiPixelRawToCluster pluginSiPixelClusterizer.so
+kokkos_serial::SiPixelRawToCluster pluginSiPixelClusterizer.so
+SiPixelFedIdsESProducer pluginSiPixelClusterizer.so
+kokkos_cuda::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
+kokkos_serial::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
+kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
+kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so

@@ -4,7 +4,6 @@
 #include "Framework/WaitingTaskHolder.h"
 
 #include "EventProcessor.h"
-#include "PluginManager.h"
 
 namespace edm {
   EventProcessor::EventProcessor(int maxEvents,
@@ -12,9 +11,8 @@ namespace edm {
                                  std::vector<std::string> const& path,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
-                                 bool validation,
-                                 edmplugin::PluginManager& pluginManager)
-      : pluginManager_(pluginManager), source_(maxEvents, registry_, datadir, validation) {
+                                 bool validation)
+      : source_(maxEvents, registry_, datadir, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
