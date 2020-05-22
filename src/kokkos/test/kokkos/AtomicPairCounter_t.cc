@@ -1,9 +1,8 @@
-
-#include "KokkosCore/InitializeScopeGuard.h"
+#include "KokkosCore/kokkosConfigCommon.h"
 #include "KokkosCore/kokkosConfig.h"
 
+#include <cassert>
 #include <iostream>
-// dirty, but works
 #include "KokkosCore/AtomicPairCounter.h"
 
 typedef Kokkos::TeamPolicy<KokkosExecSpace> team_policy;
