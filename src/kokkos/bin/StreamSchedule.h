@@ -35,6 +35,8 @@ namespace edm {
 
     void runToCompletionAsync(WaitingTaskHolder h);
 
+    void endJob();
+
   private:
     void processOneEventAsync(WaitingTaskHolder h);
 
