@@ -30,6 +30,9 @@ namespace edm {
     virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask) = 0;
 
     // not thread safe
+    virtual void doEndJob() = 0;
+
+    // not thread safe
     void reset() {
       prefetchRequested_ = false;
       doReset();
@@ -93,6 +96,8 @@ namespace edm {
         prefetchAsync(event, eventSetup, moduleTask);
       }
     }
+
+    void doEndJob() override { producer_.doEndJob(); }
 
   private:
     void doReset() override {
