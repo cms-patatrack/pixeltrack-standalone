@@ -25,6 +25,8 @@ namespace edm {
 
     void runToCompletion();
 
+    void endJob();
+
   private:
     edmplugin::PluginManager pluginManager_;
     ProductRegistry registry_;

@@ -85,4 +85,10 @@ namespace edm {
       h.doneWaiting(std::exception_ptr{});
     }
   }
+
+  void StreamSchedule::endJob() {
+    for (auto& w : path_) {
+      w->doEndJob();
+    }
+  }
 }  // namespace edm

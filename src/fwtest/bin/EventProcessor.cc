@@ -37,4 +37,9 @@ namespace edm {
       std::rethrow_exception(*(globalWaitTask->exceptionPtr()));
     }
   }
+
+  void EventProcessor::endJob() {
+    // Only on the first stream...
+    schedules_[0].endJob();
+  }
 }  // namespace edm

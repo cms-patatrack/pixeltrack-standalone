@@ -20,6 +20,10 @@ namespace edm {
 
     virtual void produce(Event& event, EventSetup const& eventSetup) = 0;
 
+    void doEndJob() { endJob(); }
+
+    virtual void endJob() {}
+
   private:
   };
 
@@ -38,6 +42,9 @@ namespace edm {
 
     virtual void acquire(Event const& event, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) = 0;
     virtual void produce(Event& event, EventSetup const& eventSetup) = 0;
+
+    void doEndJob() { endJob(); }
+    virtual void endJob() {}
 
   private:
   };

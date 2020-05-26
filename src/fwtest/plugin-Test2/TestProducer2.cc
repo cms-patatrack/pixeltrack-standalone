@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cassert>
 #include <future>
 #include <iostream>
@@ -6,6 +7,10 @@
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
+
+namespace {
+  std::atomic<int> nevents = 0;
+}
 
 class TestProducer2 : public edm::EDProducerExternalWork {
 public:
@@ -16,6 +21,8 @@ private:
                edm::EventSetup const& eventSetup,
                edm::WaitingTaskWithArenaHolder holder) override;
   void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
+
+  void endJob() override;
 
   edm::EDGetTokenT<unsigned int> getToken_;
   std::future<int> future_;
@@ -43,6 +50,11 @@ void TestProducer2::acquire(edm::Event const& event,
 void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << " from future "
             << future_.get() << std::endl;
+  ++nevents;
+}
+
+void TestProducer2::endJob() {
+  std::cout << "TestProducer2::endJob processed " << nevents.load() << " events" << std::endl;
 }
 
 DEFINE_FWK_MODULE(TestProducer2);

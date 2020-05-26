@@ -10,6 +10,10 @@
 
 #include "alpakaAlgo2.h"
 
+namespace {
+  std::atomic<int> nevents;
+}
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class TestProducer2 : public edm::EDProducerExternalWork {
   public:
@@ -20,6 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                  edm::EventSetup const& eventSetup,
                  edm::WaitingTaskWithArenaHolder holder) override;
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
+    void endJob() override;
 
 #ifdef TODO
     edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
@@ -31,6 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
 #endif
   {
+    nevents = 0;
   }
 
   void TestProducer2::acquire(edm::Event const& event,
@@ -54,6 +60,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
+    ++nevents;
+  }
+
+  void TestProducer2::endJob() {
+    std::cout << "TestProducer2::endJob processed " << nevents.load() << " events" << std::endl;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
