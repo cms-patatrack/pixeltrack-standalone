@@ -6,80 +6,65 @@
 
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/deviceCount.h"
+#include "CUDACore/ScopedSetDevice.h"
+#include "CUDACore/StreamCache.h"
 #include "CondFormats/PixelCPEFast.h"
-
-// Services
-// this is needed to get errors from templates
-
-namespace {
-  constexpr float micronsToCm = 1.0e-4;
-}
 
 //-----------------------------------------------------------------------------
 //!  The constructor.
 //-----------------------------------------------------------------------------
 PixelCPEFast::PixelCPEFast(std::string const &path) {
+  unsigned int ndetParams;
+
+  cudaCheck(cudaMallocManaged(&m_params, sizeof(pixelCPEforGPU::ParamsOnGPU)));
+  cudaCheck(cudaMallocManaged(&m_commonParams, sizeof(pixelCPEforGPU::CommonParams)));
+  cudaCheck(cudaMallocManaged(&m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry)));
+  cudaCheck(cudaMallocManaged(&m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry)));
+
   {
     std::ifstream in(path, std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
-    in.read(reinterpret_cast<char *>(&m_commonParamsGPU), sizeof(pixelCPEforGPU::CommonParams));
-    unsigned int ndetParams;
+    in.read(reinterpret_cast<char *>(m_commonParams), sizeof(pixelCPEforGPU::CommonParams));
     in.read(reinterpret_cast<char *>(&ndetParams), sizeof(unsigned int));
-    m_detParamsGPU.resize(ndetParams);
-    in.read(reinterpret_cast<char *>(m_detParamsGPU.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
-    in.read(reinterpret_cast<char *>(&m_averageGeometry), sizeof(pixelCPEforGPU::AverageGeometry));
-    in.read(reinterpret_cast<char *>(&m_layerGeometry), sizeof(pixelCPEforGPU::LayerGeometry));
+    cudaCheck(cudaMallocManaged(&m_detParams, ndetParams * sizeof(pixelCPEforGPU::DetParams)));
+    in.read(reinterpret_cast<char *>(m_detParams), ndetParams * sizeof(pixelCPEforGPU::DetParams));
+    in.read(reinterpret_cast<char *>(m_averageGeometry), sizeof(pixelCPEforGPU::AverageGeometry));
+    in.read(reinterpret_cast<char *>(m_layerGeometry), sizeof(pixelCPEforGPU::LayerGeometry));
   }
 
-  cpuData_ = {
-      &m_commonParamsGPU,
-      m_detParamsGPU.data(),
-      &m_layerGeometry,
-      &m_averageGeometry,
-  };
-}
+  m_params->m_commonParams = m_commonParams;
+  m_params->m_detParams = m_detParams;
+  m_params->m_layerGeometry = m_layerGeometry;
+  m_params->m_averageGeometry = m_averageGeometry;
 
-const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(cudaStream_t cudaStream) const {
-  const auto &data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData &data, cudaStream_t stream) {
-    // and now copy to device...
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_commonParams, sizeof(pixelCPEforGPU::CommonParams)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_detParams,
-                         this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry)));
-    cudaCheck(cudaMalloc((void **)&data.d_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU)));
-
-    cudaCheck(cudaMemcpyAsync(
-        data.d_paramsOnGPU, &data.h_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU), cudaMemcpyDefault, stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_commonParams,
-                              &this->m_commonParamsGPU,
-                              sizeof(pixelCPEforGPU::CommonParams),
-                              cudaMemcpyDefault,
-                              stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_averageGeometry,
-                              &this->m_averageGeometry,
-                              sizeof(pixelCPEforGPU::AverageGeometry),
-                              cudaMemcpyDefault,
-                              stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_layerGeometry,
-                              &this->m_layerGeometry,
-                              sizeof(pixelCPEforGPU::LayerGeometry),
-                              cudaMemcpyDefault,
-                              stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_detParams,
-                              this->m_detParamsGPU.data(),
-                              this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams),
-                              cudaMemcpyDefault,
-                              stream));
-  });
-  return data.d_paramsOnGPU;
-}
-
-PixelCPEFast::GPUData::~GPUData() {
-  if (d_paramsOnGPU != nullptr) {
-    cudaFree((void *)h_paramsOnGPU.m_commonParams);
-    cudaFree((void *)h_paramsOnGPU.m_detParams);
-    cudaFree((void *)h_paramsOnGPU.m_averageGeometry);
-    cudaFree(d_paramsOnGPU);
+  for (int device = 0, ndev = cms::cuda::deviceCount(); device < ndev; ++device) {
+#ifndef CUDAUVM_DISABLE_ADVICE
+    cudaCheck(cudaMemAdvise(m_params, sizeof(pixelCPEforGPU::ParamsOnGPU), cudaMemAdviseSetReadMostly, device));
+    cudaCheck(cudaMemAdvise(m_commonParams, sizeof(pixelCPEforGPU::CommonParams), cudaMemAdviseSetReadMostly, device));
+    cudaCheck(
+        cudaMemAdvise(m_detParams, ndetParams * sizeof(pixelCPEforGPU::DetParams), cudaMemAdviseSetReadMostly, device));
+    cudaCheck(
+        cudaMemAdvise(m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry), cudaMemAdviseSetReadMostly, device));
+    cudaCheck(
+        cudaMemAdvise(m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry), cudaMemAdviseSetReadMostly, device));
+#endif
+#ifndef CUDAUVM_DISABLE_PREFETCH
+    cms::cuda::ScopedSetDevice guard{device};
+    auto stream = cms::cuda::getStreamCache().get();
+    cudaCheck(cudaMemPrefetchAsync(m_params, sizeof(pixelCPEforGPU::ParamsOnGPU), device, stream.get()));
+    cudaCheck(cudaMemPrefetchAsync(m_commonParams, sizeof(pixelCPEforGPU::CommonParams), device, stream.get()));
+    cudaCheck(cudaMemPrefetchAsync(m_detParams, ndetParams * sizeof(pixelCPEforGPU::DetParams), device, stream.get()));
+    cudaCheck(cudaMemPrefetchAsync(m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry), device, stream.get()));
+    cudaCheck(cudaMemPrefetchAsync(m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry), device, stream.get()));
+#endif
   }
+}
+
+PixelCPEFast::~PixelCPEFast() {
+  cudaFree(m_params);
+  cudaFree(m_commonParams);
+  cudaFree(m_detParams);
+  cudaFree(m_layerGeometry);
+  cudaFree(m_averageGeometry);
 }
