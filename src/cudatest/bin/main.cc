@@ -125,6 +125,22 @@ int main(int argc, char** argv) {
   }
   auto stop = std::chrono::high_resolution_clock::now();
 
+  // Run endJob
+  try {
+    processor.endJob();
+  } catch (std::runtime_error& e) {
+    std::cout << "\n----------\nCaught std::runtime_error" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (std::exception& e) {
+    std::cout << "\n----------\nCaught std::exception" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cout << "\n----------\nCaught exception of unknown type" << std::endl;
+    return EXIT_FAILURE;
+  }
+
   // Work done, report timing
   auto diff = stop - start;
   auto time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(diff).count()) / 1e6;

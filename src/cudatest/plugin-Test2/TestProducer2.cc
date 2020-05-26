@@ -11,6 +11,10 @@
 
 #include "gpuAlgo2.h"
 
+namespace {
+  std::atomic<int> nevents = 0;
+}
+
 class TestProducer2 : public edm::EDProducerExternalWork {
 public:
   explicit TestProducer2(edm::ProductRegistry& reg);
@@ -20,6 +24,7 @@ private:
                edm::EventSetup const& eventSetup,
                edm::WaitingTaskWithArenaHolder holder) override;
   void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
+  void endJob() override;
 
   edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
 };
@@ -43,6 +48,11 @@ void TestProducer2::acquire(edm::Event const& event,
 
 void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
+  ++nevents;
+}
+
+void TestProducer2::endJob() {
+  std::cout << "TestProducer2::endJob processed " << nevents.load() << " events" << std::endl;
 }
 
 DEFINE_FWK_MODULE(TestProducer2);
