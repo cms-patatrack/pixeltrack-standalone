@@ -21,7 +21,7 @@ public:
 
   BeamSpotKokkos() = default;
   BeamSpotKokkos(Data const* data): data_d{"data_d"} {
-    Kokkos::View<Data, MemorySpace>::HostMirror data_h = Kokkos::create_mirror_view(data_d);
+    typename Kokkos::View<Data, MemorySpace>::HostMirror data_h = Kokkos::create_mirror_view(data_d);
     std::memcpy(data_h.data(), data, sizeof(Data));
     Kokkos::deep_copy(data_d, data_h);
   }
