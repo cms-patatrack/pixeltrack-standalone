@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
     esmodules = {"SiPixelFedIdsESProducer"};
     auto addModules = [&](std::string const& prefix, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+        edmodules.emplace_back(prefix + "BeamSpotToKokkos");
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
         esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
