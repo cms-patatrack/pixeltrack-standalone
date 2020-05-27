@@ -75,7 +75,7 @@ void go() {
 //    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
     Kokkos::deep_copy(v_d,v_h);
 
-    cms::kokkos::fillManyFromVector<Kokkos::View<Hist*,KokkosExecSpace>,T>(h_d, ws_d, nParts, v_d, off_d, (uint32_t)off_h(10), 256);
+    cms::kokkos::fillManyFromVector(h_d, ws_d, nParts, v_d, off_d, off_h(10), 256);
 //    cudaCheck(cudaMemcpy(&h, h_d.get(), sizeof(Hist), cudaMemcpyDeviceToHost));
     Kokkos::deep_copy(h_h,h_d);
 

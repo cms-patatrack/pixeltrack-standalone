@@ -91,7 +91,7 @@ namespace cms {
 
 
     template <typename Histo, typename T>
-    inline void fillManyFromVector(Histo h,
+    inline void fillManyFromVector(Kokkos::View<Histo*,KokkosExecSpace> h,
                                    Kokkos::View<uint8_t*,KokkosExecSpace> ws,
                                    const uint32_t nh,
                                    Kokkos::View<T* const,KokkosExecSpace> v,
