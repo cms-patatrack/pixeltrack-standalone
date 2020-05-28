@@ -13,116 +13,99 @@ using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
 namespace cms {
   namespace kokkos {
-
     template <typename Histo, typename T>
     KOKKOS_FUNCTION void countFromVector(Kokkos::View<Histo*,KokkosExecSpace> h,
-                                         uint32_t nh,
-                                         Kokkos::View<T* const,KokkosExecSpace> v,
-                                         Kokkos::View<uint32_t* const,KokkosExecSpace> offsets,
-                                         const size_t index) {
-//      int first = blockDim.x * blockIdx.x + threadIdx.x;
-      int first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-      int total_threads = teamMember.league_size() * teamMember.team_size();
-      for (int i = index, nt = offsets(nh); i < nt; i += total_threads) {
-//        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
-        uint32_t* off = 0;
-        for(uint32_t* offtmp = &offsets(0);offtmp < &offsets(0) + nh + 1;offtmp += sizeof(offsets(0))){
-          if( (*offtmp) > i){
-             off = offtmp;
+                                         const uint32_t nh,
+                                         Kokkos::View<T const*,KokkosExecSpace> v,
+                                         Kokkos::View<uint32_t const*,KokkosExecSpace> offsets,
+                                         const member_type& teamMember) {
+      uint32_t first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
+      uint32_t total_threads = teamMember.league_size() * teamMember.team_size();
+      for (uint32_t i = first, nt = offsets(nh); i < nt; i += total_threads) {
+        uint32_t index = 0;
+        for(uint32_t j = 0;j<=nh;++j){
+          if(offsets(j) > i){
+             index = j;
              break;
           }
         }
-        assert((*off) > 0);
-        int32_t ih = off - offsets - 1;
+        assert(offsets(index) > 0);
+        int32_t ih = &offsets(index) - &offsets(0) - 1;
         assert(ih >= 0);
         assert(ih < int(nh));
-        h(0)->count(v(i), ih);
+        h(0).count(v(i), ih);
       }
     }
+
 
     template <typename Histo, typename T>
     KOKKOS_FUNCTION void fillFromVector(Kokkos::View<Histo*,KokkosExecSpace> h,
                                         uint32_t nh,
-                                        Kokkos::View<T* const,KokkosExecSpace> v,
-                                        Kokkos::View<uint32_t* const,KokkosExecSpace> offsets,
-                                        const size_t index) {
+                                        Kokkos::View<T const*,KokkosExecSpace> v,
+                                        Kokkos::View<uint32_t const*,KokkosExecSpace> offsets,
+                                        const member_type& teamMember) {
       int first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       int total_threads = teamMember.league_size() * teamMember.team_size();
-//      int first = blockDim.x * blockIdx.x + threadIdx.x;
-      for (int i = first, nt = offsets(nh); i < nt; i += total_threads) {
-//        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
-        uint32_t* off = 0;
-        for(uint32_t* offtmp = &offsets(0);offtmp < &offsets(0) + nh + 1;offtmp += sizeof(offsets(0))){
-          if( (*offtmp) > i){
-             off = offtmp;
+
+      for (uint32_t i = first, nt = offsets(nh); i < nt; i += total_threads) {
+        uint32_t index = 0;
+        for(uint32_t j = 0;j<=nh;++j){
+          if(offsets(j) > i){
+             index = j;
              break;
           }
         }
-        assert((*off) > 0);
-        int32_t ih = off - offsets - 1;
+        assert(offsets(index) > 0);
+        int32_t ih = &offsets(index) - &offsets(0) - 1;
         assert(ih >= 0);
         assert(ih < int(nh));
-        h(0)->fill(v(i), i, ih);
+        h(0).fill(v(i), i, ih);
       }
     }
 
     template <typename Histo>
     inline void launchZero(Kokkos::View<Histo*,KokkosExecSpace> h) {
       Kokkos::parallel_for(Histo::totbins(),KOKKOS_LAMBDA(const size_t i) {
-        h(0)->offset[0] = 0;
+        h(0).off[i] = 0;
       });
     }
 
     template <typename Histo>
-    inline void launchFinalize(Kokkos::View<Histo*,KokkosExecSpace> h,
-                               Kokkos::View<uint8_t*,KokkosExecSpace> ws
-    ) {
-      assert(ws);
-      uint32_t *off = (uint32_t *)((char *)(h) + offsetof(Histo, off));
-      size_t wss = Histo::wsSize();
-      assert(wss > 0);
-
-      Kokkos::parallel_scan(wss, KOKKOS_LAMBDA(const int& i, float& upd, const bool% final){
-        upd += h(0)->off[i];
+    inline void launchFinalize(Kokkos::View<Histo*,KokkosExecSpace> h) {
+      Kokkos::parallel_scan(Histo::totbins(), KOKKOS_LAMBDA(const int& i, float& upd, const bool& final){
+        upd += h(0).off[i];
         if(final)
-          h(0)->off[i] = upd;
+          h(0).off[i] = upd;
       });
     }
 
 
     template <typename Histo, typename T>
     inline void fillManyFromVector(Kokkos::View<Histo*,KokkosExecSpace> h,
-                                   Kokkos::View<uint8_t*,KokkosExecSpace> ws,
                                    const uint32_t nh,
-                                   Kokkos::View<T* const,KokkosExecSpace> v,
-                                   Kokkos::View<uint32_t* const,KokkosExecSpace> offsets,
+                                   Kokkos::View<T const *,KokkosExecSpace> v,
+                                   Kokkos::View<uint32_t const *,KokkosExecSpace> offsets,
                                    const uint32_t totSize,
                                    const int nthreads
     ) {
       launchZero(h);
       auto nblocks = (totSize + nthreads - 1) / nthreads;
-//      countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-//      cudaCheck(cudaGetLastError());
-      Kokkos::parallel_for("countFromVector",team_policy(nbocks,nthreads),
-                           KOKKOS_LAMBDA(const size_t index){
-        countFromVector(h,nh,v,offsets,index);
+      Kokkos::parallel_for("countFromVector",team_policy(nblocks,nthreads),
+                           KOKKOS_LAMBDA(const member_type& teamMember){
+        countFromVector(h,nh,v,offsets,teamMember);
       });
-      launchFinalize(h, ws, stream);
-//      fillFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-//      cudaCheck(cudaGetLastError());
-      Kokkos::parallel_for("countFromVector",team_policy(nbocks,nthreads),
-                           KOKKOS_LAMBDA(const size_t index){
-        fillFromVector(h,nh,v,offsets,index);
+      launchFinalize(h);
+      Kokkos::parallel_for("countFromVector",team_policy(nblocks,nthreads),
+                           KOKKOS_LAMBDA(const member_type& teamMember){
+        fillFromVector(h,nh,v,offsets,teamMember);
       });
     }
 
-#ifdef TODO
     template <typename Assoc>
     __global__ void finalizeBulk(AtomicPairCounter const *apc, Assoc *__restrict__ assoc) {
       assoc->bulkFinalizeFill(*apc);
     }
 
-#endif // TODO
 
   }  // namespace cuda
 }  // namespace cms
@@ -225,22 +208,12 @@ public:
     }
   }
 
-  static __host__ __device__ __forceinline__ uint32_t atomicIncrement(Counter &x) {
-#ifdef __CUDA_ARCH__
-    return atomicAdd(&x, 1);
-#else
-    auto &a = (std::atomic<Counter> &)(x);
-    return a++;
-#endif
+  static KOKKOS_INLINE_FUNCTION uint32_t atomicIncrement(Counter &x) {
+    return Kokkos::atomic_fetch_add(&x, 1);
   }
 
-  static __host__ __device__ __forceinline__ uint32_t atomicDecrement(Counter &x) {
-#ifdef __CUDA_ARCH__
-    return atomicSub(&x, 1);
-#else
-    auto &a = (std::atomic<Counter> &)(x);
-    return a--;
-#endif
+  static KOKKOS_INLINE_FUNCTION uint32_t atomicDecrement(Counter &x) {
+    return Kokkos::atomic_fetch_sub(&x, 1);
   }
 
   __host__ __device__ __forceinline__ void countDirect(T b) {
@@ -282,13 +255,13 @@ public:
     }
   }
 
-  __host__ __device__ __forceinline__ void count(T t) {
+  KOKKOS_INLINE_FUNCTION void count(T t) {
     uint32_t b = bin(t);
     assert(b < nbins());
     atomicIncrement(off[b]);
   }
 
-  __host__ __device__ __forceinline__ void fill(T t, index_type j) {
+  KOKKOS_INLINE_FUNCTION void fill(T t, index_type j) {
     uint32_t b = bin(t);
     assert(b < nbins());
     auto w = atomicDecrement(off[b]);
@@ -296,7 +269,7 @@ public:
     bins[w - 1] = j;
   }
 
-  __host__ __device__ __forceinline__ void count(T t, uint32_t nh) {
+  KOKKOS_INLINE_FUNCTION void count(T t, uint32_t nh) {
     uint32_t b = bin(t);
     assert(b < nbins());
     b += histOff(nh);
@@ -304,7 +277,7 @@ public:
     atomicIncrement(off[b]);
   }
 
-  __host__ __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
+  KOKKOS_INLINE_FUNCTION void fill(T t, index_type j, uint32_t nh) {
     uint32_t b = bin(t);
     assert(b < nbins());
     b += histOff(nh);
