@@ -1,5 +1,6 @@
-kokkos_serial::BeamSpotToKokkos pluginBeamSpotProducer.so
+BeamSpotESProducer pluginBeamSpotProducer.so
 kokkos_cuda::BeamSpotToKokkos pluginBeamSpotProducer.so
+kokkos_serial::BeamSpotToKokkos pluginBeamSpotProducer.so
 kokkos_cuda::SiPixelRawToCluster pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelRawToCluster pluginSiPixelClusterizer.so
 SiPixelFedIdsESProducer pluginSiPixelClusterizer.so

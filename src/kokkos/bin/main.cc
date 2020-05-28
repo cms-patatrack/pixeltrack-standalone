@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not backends.empty()) {
-    esmodules = {"SiPixelFedIdsESProducer"};
+    esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
     auto addModules = [&](std::string const& prefix, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "BeamSpotToKokkos");

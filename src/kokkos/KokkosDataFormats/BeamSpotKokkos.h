@@ -2,19 +2,9 @@
 #define CUDADataFormats_BeamSpot_interface_BeamSpotKokkos_h
 
 #include "KokkosCore/kokkosConfig.h"
+#include "DataFormats/BeamSpotPOD.h"
 
 #include <cstring>
-
-struct BeamSpotPOD {
-  float x, y, z;  // position
-  // TODO: add covariance matrix
-
-  float sigmaZ;
-  float beamWidthX, beamWidthY;
-  float dxdz, dydz;
-  float emittanceX, emittanceY;
-  float betaStar;
-};
 
 template <typename MemorySpace>
 class BeamSpotKokkos {
