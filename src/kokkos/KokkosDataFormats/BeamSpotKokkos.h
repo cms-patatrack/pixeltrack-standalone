@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_BeamSpot_interface_BeamSpotKokkos_h
-#define CUDADataFormats_BeamSpot_interface_BeamSpotKokkos_h
+#ifndef KokkosDataFormats_BeamSpot_interface_BeamSpotKokkos_h
+#define KokkosDataFormats_BeamSpot_interface_BeamSpotKokkos_h
 
 #include "KokkosCore/kokkosConfig.h"
 #include "DataFormats/BeamSpotPOD.h"
