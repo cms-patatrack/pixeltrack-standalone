@@ -1,2 +1,3 @@
 kokkos_EXTERNAL_DEPENDS := TBB CUDA KOKKOS
 SiPixelClusterizer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats
+BeamSpotProducer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats
