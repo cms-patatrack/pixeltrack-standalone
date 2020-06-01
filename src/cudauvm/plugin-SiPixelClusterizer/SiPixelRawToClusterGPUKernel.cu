@@ -27,6 +27,7 @@
 // CMSSW includes
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/currentDevice.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
 
@@ -44,10 +45,17 @@ namespace pixelgpudetails {
   // number of words for all the FEDs
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
     word_ = cms::cuda::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
     fedId_ = cms::cuda::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
   }
+#else
+  SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender(cudaStream_t stream) {
+    word_ = cms::cuda::make_managed_unique<unsigned int[]>(MAX_FED_WORDS, stream);
+    fedId_ = cms::cuda::make_managed_unique<unsigned char[]>(MAX_FED_WORDS, stream);
+  }
+#endif
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                         unsigned int wordCounterGPU,
@@ -56,6 +64,24 @@ namespace pixelgpudetails {
     std::memcpy(word_.get() + wordCounterGPU, src, sizeof(uint32_t) * length);
     std::memset(fedId_.get() + wordCounterGPU / 2, fedId - 1200, length / 2);
   }
+
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+  void SiPixelRawToClusterGPUKernel::WordFedAppender::memAdvise() {
+#ifndef CUDAUVM_DISABLE_ADVISE
+    auto dev = cms::cuda::currentDevice();
+    cudaCheck(cudaMemAdvise(word_.get(), MAX_FED_WORDS * sizeof(unsigned int), cudaMemAdviseSetReadMostly, dev));
+    cudaCheck(cudaMemAdvise(fedId_.get(), MAX_FED_WORDS * sizeof(unsigned char), cudaMemAdviseSetReadMostly, dev));
+#endif
+  }
+
+  void SiPixelRawToClusterGPUKernel::WordFedAppender::clearAdvise() {
+#ifndef CUDAUVM_DISABLE_ADVISE
+    auto dev = cms::cuda::currentDevice();
+    cudaCheck(cudaMemAdvise(word_.get(), MAX_FED_WORDS * sizeof(unsigned int), cudaMemAdviseUnsetReadMostly, dev));
+    cudaCheck(cudaMemAdvise(fedId_.get(), MAX_FED_WORDS * sizeof(unsigned char), cudaMemAdviseUnsetReadMostly, dev));
+#endif
+  }
+#endif  // CUDAUVM_DISABLE_MANAGED_CLUSTERING
 
   ////////////////////
 
@@ -536,6 +562,9 @@ namespace pixelgpudetails {
                                                        bool debug,
                                                        cudaStream_t stream) {
     nDigis = wordCounter;
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+    const auto currentDevice = cms::cuda::currentDevice();
+#endif
 
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
@@ -554,23 +583,34 @@ namespace pixelgpudetails {
       const int threadsPerBlock = 512;
       const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
 
-      assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
+      assert(0 == wordCounter % 2);
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       auto word_d = cms::cuda::make_device_unique<uint32_t[]>(wordCounter, stream);
       auto fedId_d = cms::cuda::make_device_unique<uint8_t[]>(wordCounter, stream);
-
       cudaCheck(
           cudaMemcpyAsync(word_d.get(), wordFed.word(), wordCounter * sizeof(uint32_t), cudaMemcpyDefault, stream));
       cudaCheck(cudaMemcpyAsync(
           fedId_d.get(), wordFed.fedId(), wordCounter * sizeof(uint8_t) / 2, cudaMemcpyDefault, stream));
+#else
+#ifndef CUDAUVM_DISABLE_PREFETCH
+      cudaCheck(cudaMemPrefetchAsync(wordFed.word(), wordCounter * sizeof(uint32_t), currentDevice, stream));
+      cudaCheck(cudaMemPrefetchAsync(wordFed.fedId(), wordCounter * sizeof(uint8_t) / 2, currentDevice, stream));
+#endif
+#endif
 
       // Launch rawToDigi kernel
       RawToDigi_kernel<<<blocks, threadsPerBlock, 0, stream>>>(
           cablingMap,
           modToUnp,
           wordCounter,
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
           word_d.get(),
           fedId_d.get(),
+#else
+          wordFed.word(),
+          wordFed.fedId(),
+#endif
           digis_d.xx(),
           digis_d.yy(),
           digis_d.adc(),

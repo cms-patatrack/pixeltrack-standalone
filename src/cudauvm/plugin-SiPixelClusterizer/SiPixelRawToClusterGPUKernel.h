@@ -8,8 +8,12 @@
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDACore/GPUSimpleVector.h"
-#include "CUDACore/host_unique_ptr.h"
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
 #include "CUDACore/host_noncached_unique_ptr.h"
+#else
+#include "CUDACore/host_unique_ptr.h"
+#endif
+#include "CUDACore/managed_unique_ptr.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -146,17 +150,31 @@ namespace pixelgpudetails {
   public:
     class WordFedAppender {
     public:
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       WordFedAppender();
+#else
+      WordFedAppender(cudaStream_t stream);
+#endif
       ~WordFedAppender() = default;
 
       void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
+
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+      void memAdvise();
+      void clearAdvise();
+#endif
 
       const unsigned int* word() const { return word_.get(); }
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       cms::cuda::host::noncached::unique_ptr<unsigned int[]> word_;
       cms::cuda::host::noncached::unique_ptr<unsigned char[]> fedId_;
+#else
+      cms::cuda::managed::unique_ptr<unsigned int[]> word_;
+      cms::cuda::managed::unique_ptr<unsigned char[]> fedId_;
+#endif
     };
 
     SiPixelRawToClusterGPUKernel() = default;

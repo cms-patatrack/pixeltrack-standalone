@@ -57,8 +57,9 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
   if (includeErrors_) {
     digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
   }
-
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
+#endif
 }
 
 void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
@@ -92,6 +93,9 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   // In CPU algorithm this loop is part of PixelDataFormatter::interpretRawData()
   ErrorChecker errorcheck;
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+  wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>(ctx.stream());
+#endif
   for (int fedId : fedIds_) {
     if (fedId == 40)
       continue;  // skip pilot blade data
@@ -145,6 +149,9 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   }  // end of for loop
 
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+  wordFedAppender_->memAdvise();
+#endif
   gpuAlgo_.makeClustersAsync(gpuMap,
                              gpuModulesToUnpack,
                              gpuGains,
@@ -167,6 +174,10 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   if (includeErrors_) {
     ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
   }
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+  wordFedAppender_->clearAdvise();
+  wordFedAppender_.reset();
+#endif
 }
 
 // define as framework plugin
