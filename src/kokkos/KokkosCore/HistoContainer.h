@@ -287,7 +287,7 @@ public:
     bins[w - 1] = j;
   }
 
-  __device__ __host__ __forceinline__ void finalize(Counter *ws = nullptr) {
+  KOKKOS_INLINE_FUNCTION void finalize(Counter *ws = nullptr) {
     assert(off[totbins() - 1] == 0);
     blockPrefixScan(off, totbins(), ws);
     assert(off[totbins() - 1] == off[totbins() - 2]);
