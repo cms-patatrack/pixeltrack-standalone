@@ -9,35 +9,18 @@
 
 class PixelCPEFast {
 public:
-  PixelCPEFast(std::string const &path);
+  PixelCPEFast(std::string const& path);
 
-  ~PixelCPEFast() = default;
+  ~PixelCPEFast();
 
-  // The return value can only be used safely in kernels launched on
-  // the same cudaStream, or after cudaStreamSynchronize.
-  const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
-
-  pixelCPEforGPU::ParamsOnGPU const &getCPUProduct() const { return cpuData_; }
+  pixelCPEforGPU::ParamsOnGPU const* get() const { return m_params; }
 
 private:
-  // allocate it with posix malloc to be ocmpatible with cpu wf
-  std::vector<pixelCPEforGPU::DetParams> m_detParamsGPU;
-  // std::vector<pixelCPEforGPU::DetParams, CUDAHostAllocator<pixelCPEforGPU::DetParams>> m_detParamsGPU;
-  pixelCPEforGPU::CommonParams m_commonParamsGPU;
-  pixelCPEforGPU::LayerGeometry m_layerGeometry;
-  pixelCPEforGPU::AverageGeometry m_averageGeometry;
-
-  pixelCPEforGPU::ParamsOnGPU cpuData_;
-
-  struct GPUData {
-    ~GPUData();
-    // not needed if not used on CPU...
-    pixelCPEforGPU::ParamsOnGPU h_paramsOnGPU;
-    pixelCPEforGPU::ParamsOnGPU *d_paramsOnGPU = nullptr;  // copy of the above on the Device
-  };
-  cms::cuda::ESProduct<GPUData> gpuData_;
-
-  void fillParamsForGpu();
+  pixelCPEforGPU::ParamsOnGPU* m_params = nullptr;
+  pixelCPEforGPU::CommonParams* m_commonParams = nullptr;
+  pixelCPEforGPU::DetParams* m_detParams = nullptr;
+  pixelCPEforGPU::LayerGeometry* m_layerGeometry = nullptr;
+  pixelCPEforGPU::AverageGeometry* m_averageGeometry = nullptr;
 };
 
 #endif  // RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h

@@ -72,12 +72,12 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                              ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
   }
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
-  const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
+  const auto* gpuMap = hgpuMap.cablingMap();
+  const unsigned char* gpuModulesToUnpack = hgpuMap.modToUnpAll();
 
   auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
+  const auto* gpuGains = hgains.get();
 
   auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
 
