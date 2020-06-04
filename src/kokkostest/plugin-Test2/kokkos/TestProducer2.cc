@@ -8,6 +8,8 @@
 #include "Framework/PluginFactory.h"
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/Product.h"
+#include "KokkosCore/ScopedContext.h"
 
 #include "kokkosAlgo2.h"
 
@@ -24,18 +26,19 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
-    edm::EDGetTokenT<Kokkos::View<const float*, KokkosExecSpace>> getToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<Kokkos::View<const float*, KokkosExecSpace>>> getToken_;
   };
 
   TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-      : getToken_(reg.consumes<Kokkos::View<const float*, KokkosExecSpace>>()) {
+      : getToken_(reg.consumes<cms::kokkos::Product<Kokkos::View<const float*, KokkosExecSpace>>>()) {
     nevents = 0;
   }
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
+    cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{event.get(getToken_)};
 
-    kokkosAlgo2();
+    kokkosAlgo2(ctx.execSpace());
     ++nevents;
   }
 
