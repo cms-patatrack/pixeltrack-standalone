@@ -1,38 +1,37 @@
+#include <cstring>
+
 #include <cuda.h>
 
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/deviceCount.h"
+#include "CUDACore/ScopedSetDevice.h"
+#include "CUDACore/StreamCache.h"
 
 SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
-                                                                 std::vector<char> gainData)
-    : gainData_(std::move(gainData)) {
-  cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
-  *gainForHLTonHost_ = gain;
+                                                                 std::vector<char> const& gainData) {
+  cudaCheck(cudaMallocManaged(&gainForHLT_, sizeof(SiPixelGainForHLTonGPU)));
+  *gainForHLT_ = gain;
+  cudaCheck(cudaMallocManaged(&gainData_, gainData.size()));
+  gainForHLT_->v_pedestals = gainData_;
+
+  std::memcpy(gainData_, gainData.data(), gainData.size());
+  for (int device = 0, ndev = cms::cuda::deviceCount(); device < ndev; ++device) {
+#ifndef CUDAUVM_DISABLE_ADVICE
+    cudaCheck(cudaMemAdvise(gainForHLT_, sizeof(SiPixelGainForHLTonGPU), cudaMemAdviseSetReadMostly, device));
+    cudaCheck(cudaMemAdvise(gainData_, gainData.size(), cudaMemAdviseSetReadMostly, device));
+#endif
+#ifndef CUDAUVM_DISABLE_PREFETCH
+    cms::cuda::ScopedSetDevice guard{device};
+    auto stream = cms::cuda::getStreamCache().get();
+    cudaCheck(cudaMemPrefetchAsync(gainForHLT_, sizeof(SiPixelGainForHLTonGPU), device, stream.get()));
+    cudaCheck(cudaMemPrefetchAsync(gainData_, gainData.size(), device, stream.get()));
+#endif
+  }
 }
 
-SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() { cudaCheck(cudaFreeHost(gainForHLTonHost_)); }
-
-SiPixelGainCalibrationForHLTGPU::GPUData::~GPUData() {
-  cudaCheck(cudaFree(gainForHLTonGPU));
-  cudaCheck(cudaFree(gainDataOnGPU));
-}
-
-const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsync(cudaStream_t cudaStream) const {
-  const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, cudaStream_t stream) {
-    cudaCheck(cudaMalloc((void**)&data.gainForHLTonGPU, sizeof(SiPixelGainForHLTonGPU)));
-    cudaCheck(cudaMalloc((void**)&data.gainDataOnGPU, this->gainData_.size()));
-    // gains.data().data() is used also for non-GPU code, we cannot allocate it on aligned and write-combined memory
-    cudaCheck(
-        cudaMemcpyAsync(data.gainDataOnGPU, this->gainData_.data(), this->gainData_.size(), cudaMemcpyDefault, stream));
-
-    cudaCheck(cudaMemcpyAsync(
-        data.gainForHLTonGPU, this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU), cudaMemcpyDefault, stream));
-    cudaCheck(cudaMemcpyAsync(&(data.gainForHLTonGPU->v_pedestals),
-                              &(data.gainDataOnGPU),
-                              sizeof(SiPixelGainForHLTonGPU_DecodingStructure*),
-                              cudaMemcpyDefault,
-                              stream));
-  });
-  return data.gainForHLTonGPU;
+SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() {
+  cudaCheck(cudaFree(gainForHLT_));
+  cudaCheck(cudaFree(gainData_));
 }

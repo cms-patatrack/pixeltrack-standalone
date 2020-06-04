@@ -12,7 +12,8 @@ import multiprocessing
 n_events_unit = 1000
 n_blocks_per_stream = {
     "fwtest": 1,
-    "cuda": {"": 400, "transfer": 350}
+    "cuda": {"": 400, "transfer": 350},
+    "cudauvm": {"": 400, "transfer": 350},
 }
 
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")

@@ -12,8 +12,14 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 
+#include <atomic>
 #include <iostream>
 #include <sstream>
+
+namespace {
+  std::atomic<int> allEvents = 0;
+  std::atomic<int> goodEvents = 0;
+}  // namespace
 
 class CountValidator : public edm::EDProducer {
 public:
@@ -21,6 +27,7 @@ public:
 
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  void endJob() override;
 
   edm::EDGetTokenT<DigiClusterCount> digiClusterCountToken_;
   edm::EDGetTokenT<TrackCount> trackCountToken_;
@@ -88,11 +95,21 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     }
   }
 
+  ++allEvents;
   if (ok) {
-    ss << "OK!";
+    ++goodEvents;
+  } else {
+    std::cout << ss.str() << std::endl;
   }
+}
 
-  std::cout << ss.str() << std::endl;
+void CountValidator::endJob() {
+  if (allEvents == goodEvents) {
+    std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
+  } else {
+    std::cout << "CountValidator: " << (allEvents - goodEvents) << " events failed validation (see details above)\n";
+    throw std::runtime_error("CountValidator failed");
+  }
 }
 
 DEFINE_FWK_MODULE(CountValidator);
