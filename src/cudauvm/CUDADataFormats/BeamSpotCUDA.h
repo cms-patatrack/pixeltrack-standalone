@@ -1,7 +1,7 @@
 #ifndef CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 #define CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 
-#include "CUDACore/device_unique_ptr.h"
+#include "CUDACore/managed_unique_ptr.h"
 
 #include <cuda_runtime.h>
 
@@ -21,12 +21,12 @@ public:
   };
 
   BeamSpotCUDA() = default;
-  BeamSpotCUDA(Data const* data_h, cudaStream_t stream);
+  BeamSpotCUDA(Data const& data_h, int device, cudaStream_t stream);
 
   Data const* data() const { return data_d_.get(); }
 
 private:
-  cms::cuda::device::unique_ptr<Data> data_d_;
+  cms::cuda::managed::unique_ptr<Data> data_d_;
 };
 
 #endif
