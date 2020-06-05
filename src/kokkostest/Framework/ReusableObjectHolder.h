@@ -146,7 +146,7 @@ namespace edm {
 
   private:
     std::unique_ptr<T> makeUnique(T* ptr) {
-      static_assert(std::is_same_v<Deleter, std::default_delete<T>>,
+      static_assert(std::is_same<Deleter, std::default_delete<T>>::value,
                     "Generating functions returning raw pointers are supported only with std::default_delete<T>");
       return std::unique_ptr<T>{ptr};
     }
