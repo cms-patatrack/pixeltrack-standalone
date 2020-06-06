@@ -22,7 +22,7 @@ SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCabling
   cudaCheck(cudaMallocManaged(&modToUnpDefault_, modToUnp.size()));
   std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault_);
   for (int device = 0, ndev = cms::cuda::deviceCount(); device < ndev; ++device) {
-#ifndef CUDAUVM_DISABLE_ADVICE
+#ifndef CUDAUVM_DISABLE_ADVISE
     cudaCheck(cudaMemAdvise(cablingMap_, sizeof(SiPixelFedCablingMapGPU), cudaMemAdviseSetReadMostly, device));
     cudaCheck(cudaMemAdvise(modToUnpDefault_, sizeof(modToUnp.size()), cudaMemAdviseSetReadMostly, device));
 #endif

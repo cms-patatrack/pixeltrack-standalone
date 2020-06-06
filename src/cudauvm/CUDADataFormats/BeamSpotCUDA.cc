@@ -6,7 +6,7 @@
 BeamSpotCUDA::BeamSpotCUDA(Data const& data_h, int device, cudaStream_t stream) {
   data_d_ = cms::cuda::make_managed_unique<Data>(stream);
   *data_d_ = data_h;
-#ifndef CUDAUVM_DISABLE_ADVICE
+#ifndef CUDAUVM_DISABLE_ADVISE
   cudaCheck(cudaMemAdvise(data_d_.get(), sizeof(Data), cudaMemAdviseSetReadMostly, device));
 #endif
 #ifndef CUDAUVM_DISABLE_PREFETCH

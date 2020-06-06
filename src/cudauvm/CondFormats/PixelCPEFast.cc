@@ -39,7 +39,7 @@ PixelCPEFast::PixelCPEFast(std::string const &path) {
   m_params->m_averageGeometry = m_averageGeometry;
 
   for (int device = 0, ndev = cms::cuda::deviceCount(); device < ndev; ++device) {
-#ifndef CUDAUVM_DISABLE_ADVICE
+#ifndef CUDAUVM_DISABLE_ADVISE
     cudaCheck(cudaMemAdvise(m_params, sizeof(pixelCPEforGPU::ParamsOnGPU), cudaMemAdviseSetReadMostly, device));
     cudaCheck(cudaMemAdvise(m_commonParams, sizeof(pixelCPEforGPU::CommonParams), cudaMemAdviseSetReadMostly, device));
     cudaCheck(

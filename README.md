@@ -113,6 +113,16 @@ This program contains developments after CMSSW_11_1_0_pre4.
 
 The purpose of this program is to test the performance of the CUDA managed memory.
 
+To disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`, compile with
+```
+make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
+```
+
+To disable `cudaMemPrefetchAsync`, compile with
+```
+make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_PREFETCH"
+```
+
 #### `kokkos` and `kokkostest`
 
 If `nvcc` is not in your `$PATH`, the build recipe is
