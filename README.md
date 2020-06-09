@@ -119,10 +119,13 @@ If `nvcc` is not in your `$PATH`, the build recipe is
 ```bash
 $ make environment [CUDA_BASE=...]
 $ source env.sh
-$ make -j N kokkos [CUDA_BASE=...]
+$ make -j N kokkos [CUDA_BASE=...] [KOKKOS_CUDA_ARCH=...]
 $ ./kokkos --cuda
 ```
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
+* The target CUDA architecture needs to be set explicitly with `KOKKOS_CUDA_ARCH`
+  * Default value is `70` (7.0) for Volta
+  * Other accepted values are `75` (Turing), the list can be extended as neeeded
 * The CMake executable can be set with `CMAKE` in case the default one is too old.
 * The backend(s) need to be set explicitly via command line parameters (`--serial` for CPU serial backend, `--cuda` for CUDA backend)
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
