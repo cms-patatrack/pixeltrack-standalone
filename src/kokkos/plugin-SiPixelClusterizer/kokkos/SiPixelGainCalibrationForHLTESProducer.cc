@@ -51,7 +51,7 @@ namespace KOKKOS_NAMESPACE {
         "ped_d", gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
     auto ped_h = Kokkos::create_mirror_view(ped_d);
     memcpy(ped_h.data(), gainData.data(), gainData.size());
-    Kokkos::deep_copy(ped_d, ped_h);
+    Kokkos::deep_copy(KokkosExecSpace(), ped_d, ped_h);
 
     typename SiPixelGainForHLTonGPU<KokkosExecSpace>::RangeAndColsWritableView rangeAndCols_d("rangeAndCols_d");
     auto rangeAndCols_h = Kokkos::create_mirror_view(rangeAndCols_d);
@@ -60,7 +60,7 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::make_pair(Kokkos::make_pair(gain.rangeAndCols[i].first.first, gain.rangeAndCols[i].first.second),
                             gain.rangeAndCols[i].second);
     }
-    Kokkos::deep_copy(rangeAndCols_d, rangeAndCols_h);
+    Kokkos::deep_copy(KokkosExecSpace(), rangeAndCols_d, rangeAndCols_h);
 
     typename SiPixelGainForHLTonGPU<KokkosExecSpace>::FieldsWritableView fields_d("fields_d");
     auto fields_h = Kokkos::create_mirror_view(fields_d);
@@ -76,11 +76,10 @@ namespace KOKKOS_NAMESPACE {
     COPY(deadFlag_);
     COPY(noisyFlag_);
 #undef COPY
-    Kokkos::deep_copy(fields_d, fields_h);
+    Kokkos::deep_copy(KokkosExecSpace(), fields_d, fields_h);
 
     eventSetup.put(std::make_unique<SiPixelGainForHLTonGPU<KokkosExecSpace>>(
         std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
-    Kokkos::fence();
   }
 }  // namespace KOKKOS_NAMESPACE
 
