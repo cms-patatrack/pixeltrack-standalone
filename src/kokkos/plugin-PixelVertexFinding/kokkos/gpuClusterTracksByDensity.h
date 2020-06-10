@@ -27,6 +27,7 @@ namespace KOKKOS_NAMESPACE {
         float errmax,   // max error to be "seed"
         float chi2max,  // max normalized distance to cluster
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+#ifdef TODO
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto id = team_member.league_rank() * team_member.team_size() + team_member.team_rank();
@@ -38,6 +39,7 @@ namespace KOKKOS_NAMESPACE {
 
       auto& __restrict__ data = *vdata.data();
       auto& __restrict__ ws = *vws.data();
+
       auto nt = ws.ntrks;
       float const* __restrict__ zt = ws.zt;
       float const* __restrict__ ezt2 = ws.ezt2;
@@ -49,7 +51,6 @@ namespace KOKKOS_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-#ifdef TODO
       assert(vdata.data());
       assert(zt);
 
