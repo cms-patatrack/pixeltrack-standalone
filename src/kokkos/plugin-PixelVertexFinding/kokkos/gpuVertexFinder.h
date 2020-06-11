@@ -3,7 +3,7 @@
 
 #include "KokkosDataFormats/ZVertexHeterogeneous.h"
 
-namespace KOKKOS_NAMESPACE{
+namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
     using ZVertices = ZVertexSoA;
@@ -23,7 +23,6 @@ namespace KOKKOS_NAMESPACE{
       int32_t iv[MAXTRACKS];     // vertex index for each associated track
 
       uint32_t nvIntermediate;  // the number of vertices after splitting pruning etc.
-
     };
 
     class Producer {

@@ -12,6 +12,5 @@ struct ZVertexSoA {
   int32_t ndof[MAXTRACKS];   // vertices number of dof (reused as workspace for the number of nearest neighbours FIXME)
   uint16_t sortInd[MAXVTX];  // sorted index (by pt2)  ascending
   uint32_t nvFinal;          // the number of vertices
-
 };
 #endif  // DataFormats_ZVertexSoA_h
