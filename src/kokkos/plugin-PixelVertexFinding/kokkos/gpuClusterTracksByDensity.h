@@ -1,10 +1,6 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-
 #ifdef TODO
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
@@ -230,14 +226,15 @@ namespace KOKKOS_NAMESPACE {
 #endif  // TODO
     }
 
-    KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(gpuVertexFinder::ZVertices* pdata,
-                                                             gpuVertexFinder::WorkSpace* pws,
-                                                             int minT,      // min number of neighbours to be "seed"
-                                                             float eps,     // max absolute distance to cluster
-                                                             float errmax,  // max error to be "seed"
-                                                             float chi2max  // max normalized distance to cluster
-    ) {
-      //clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
+    KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(
+        Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
+        Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+        int minT,       // min number of neighbours to be "seed"
+        float eps,      // max absolute distance to cluster
+        float errmax,   // max error to be "seed"
+        float chi2max,  // max normalized distance to cluster
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+      clusterTracksByDensity(vdata, vws, minT, eps, errmax, chi2max, team_member);
     }
 
   }  // namespace gpuVertexFinder
