@@ -137,7 +137,7 @@ $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) 
 else
 $$($(1)_LIB): $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) $$($(1)_OBJ) $$($(1)_CUOBJ) $(LDFLAGS_NVCC) -shared $(SO_LDFLAGS_NVCC) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
+	$(CUDA_NVCC) $$($(1)_OBJ) $$($(1)_CUOBJ) $(LDFLAGS_NVCC) -shared $(SO_LDFLAGS_NVCC) $(LIB_LDFLAGS) $(MY_LDFLAGS_NVCC)  $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
 endif
 
 # Anything depending on Kokkos
