@@ -7,7 +7,9 @@ namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
     using ZVertices = ZVertexSoA;
-    //using TkSoA = pixelTrack::TrackSoA;
+#ifdef TODO
+    using TkSoA = pixelTrack::TrackSoA;
+#endif
 
     // workspace used in the vertex reco algos
     struct WorkSpace {
@@ -29,8 +31,9 @@ namespace KOKKOS_NAMESPACE {
     public:
       using ZVertices = ZVertexSoA;
       using WorkSpace = gpuVertexFinder::WorkSpace;
-      //using TkSoA = pixelTrack::TrackSoA;
-
+#ifdef TODO
+      using TkSoA = pixelTrack::TrackSoA;
+#endif
       Producer(bool oneKernel,
                bool useDensity,
                bool useDBSCAN,
@@ -51,8 +54,10 @@ namespace KOKKOS_NAMESPACE {
 
       ~Producer() = default;
 
-      //ZVertexHeterogeneous makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const;
-      //ZVertexHeterogeneous make(TkSoA const* tksoa, float ptMin) const;
+#ifdef TODO
+      ZVertexHeterogeneous makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const;
+      ZVertexHeterogeneous make(TkSoA const* tksoa, float ptMin) const;
+#endif
 
     private:
       const bool oneKernel_;

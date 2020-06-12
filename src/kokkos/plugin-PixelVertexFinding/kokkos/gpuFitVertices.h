@@ -2,7 +2,6 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 
 #ifdef TODO
-#include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
 #endif  // TODO
 
@@ -15,7 +14,6 @@ namespace KOKKOS_NAMESPACE {
                                             Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
                                             float chi2Max,  // for outlier rejection
                                             const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
-#ifdef TODO
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -34,15 +32,17 @@ namespace KOKKOS_NAMESPACE {
 
       auto id = team_member.league_rank() * team_member.team_size() + team_member.team_rank();
 
+#ifdef TODO
       assert(pdata);
       assert(zt);
 
       assert(nvFinal <= nvIntermediate);
+#endif
       nvFinal = nvIntermediate;
       auto foundClusters = nvFinal;
 
       // zero
-      for (auto i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
         zv[i] = 0;
         wv[i] = 0;
         chi2[i] = 0;
@@ -56,14 +56,16 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       // compute cluster location
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (iv[i] > 9990) {
           if (verbose)
             Kokkos::atomic_add(noise, 1);
           continue;
         }
+#ifdef TODO
         assert(iv[i] >= 0);
         assert(iv[i] < int(foundClusters));
+#endif
         auto w = 1.f / ezt2[i];
         Kokkos::atomic_add(&zv[iv[i]], zt[i] * w);
         Kokkos::atomic_add(&wv[iv[i]], w);
@@ -71,15 +73,17 @@ namespace KOKKOS_NAMESPACE {
 
       team_member.team_barrier();
       // reuse nn
-      for (auto i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
+#ifdef TODO
         assert(wv[i] > 0.f);
+#endif
         zv[i] /= wv[i];
         nn[i] = -1;  // ndof
       }
       team_member.team_barrier();
 
       // compute chi2
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (iv[i] > 9990)
           continue;
 
@@ -93,7 +97,7 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::atomic_add(&nn[iv[i]], 1);
       }
       team_member.team_barrier();
-      for (auto i = team_member.team_rank(); i < foundClusters; i += team_member.team_size())
+      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size())
         if (nn[i] > 0)
           wv[i] *= float(nn[i]) / chi2[i];
 
@@ -101,7 +105,6 @@ namespace KOKKOS_NAMESPACE {
         printf("found %d proto clusters ", foundClusters);
       if (verbose && 0 == id)
         printf("and %d noise\n", noise[0]);
-#endif  // TODO
     }
 
     KOKKOS_INLINE_FUNCTION void fitVerticesKernel(Kokkos::View<ZVertices*, KokkosExecSpace> vdata,

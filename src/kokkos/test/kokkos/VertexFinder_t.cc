@@ -104,7 +104,6 @@ struct ClusterGenerator {
 };
 
 // a macro SORRY
-#define LOC_ONGPU(M) ((char*)(onGPU_d.data()) + offsetof(ZVertices, M))
 #define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(WorkSpace, M))
 
 void test() {
@@ -294,7 +293,7 @@ void test() {
 }
 
 int main(void) {
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
   test();
   return 0;
 }

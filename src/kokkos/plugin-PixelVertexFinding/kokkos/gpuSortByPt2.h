@@ -1,11 +1,11 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 
-#ifdef TODO
 #ifdef __CUDA_ARCH__
+#ifdef TODO
 #include "CUDACore/radixSort.h"
-#endif
 #endif  // TODO
+#endif
 
 #include "gpuVertexFinder.h"
 

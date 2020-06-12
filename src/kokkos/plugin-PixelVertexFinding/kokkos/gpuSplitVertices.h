@@ -2,7 +2,6 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 
 #ifdef TODO
-#include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
 #endif  // TODO
 
@@ -15,7 +14,6 @@ namespace KOKKOS_NAMESPACE {
                                               Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
                                               float maxChi2,
                                               const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
-#ifdef TODO
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -31,33 +29,43 @@ namespace KOKKOS_NAMESPACE {
       int32_t const* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
+#ifdef TODO
       assert(vdata.data());
       assert(zt);
+#endif
 
       // one vertex per block
-      for (auto kv = blockIdx.x; kv < nvFinal; kv += gridDim.x) {
+      for (unsigned kv = team_member.league_rank(); kv < nvFinal; kv += team_member.league_size()) {
         if (nn[kv] < 4)
           continue;
         if (chi2[kv] < maxChi2 * float(nn[kv]))
           continue;
 
         constexpr int MAXTK = 512;
+#ifdef TODO
         assert(nn[kv] < MAXTK);
+#endif
         if (nn[kv] >= MAXTK)
-          continue;                      // too bad FIXME
-        __shared__ uint32_t it[MAXTK];   // track index
-        __shared__ float zz[MAXTK];      // z pos
-        __shared__ uint8_t newV[MAXTK];  // 0 or 1
-        __shared__ float ww[MAXTK];      // z weight
+          continue;                                                                              // too bad FIXME
+        uint32_t* it = (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t) * MAXTK);  // track index
+        float* zz = (float*)team_member.team_shmem().get_shmem(sizeof(float) * MAXTK);           // z pos
+        uint8_t* newV = (uint8_t*)team_member.team_shmem().get_shmem(sizeof(uint8_t) * MAXTK);   // 0 or 1
+        float* ww = (float*)team_member.team_shmem().get_shmem(sizeof(float) * MAXTK);           // z weight
 
-        __shared__ uint32_t nq;  // number of track for this vertex
-        nq = 0;
-        __syncthreads();
+        uint32_t* nq =
+            (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t));  // number of track for this vertx
+        nq[0] = 0;
+        team_member.team_barrier();
 
         // copy to local
-        for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
+        for (unsigned k = team_member.team_rank(); k < nt; k += team_member.team_size()) {
           if (iv[k] == int(kv)) {
-            auto old = atomicInc(&nq, MAXTK);
+            uint32_t old;
+            if (nq[0] >= MAXTK) {
+              old = Kokkos::atomic_exchange(nq, 0);
+            } else {
+              old = Kokkos::atomic_fetch_add(nq, 1);
+            }
             zz[old] = zt[k] - zv[kv];
             newV[old] = zz[old] < 0 ? 0 : 1;
             ww[old] = 1.f / ezt2[k];
@@ -65,43 +73,56 @@ namespace KOKKOS_NAMESPACE {
           }
         }
 
-        __shared__ float znew[2], wnew[2];  // the new vertices
+        // the new vertices
+        float* znew = (float*)team_member.team_shmem().get_shmem(sizeof(float) * 2);
+        float* wnew = (float*)team_member.team_shmem().get_shmem(sizeof(float) * 2);
 
-        __syncthreads();
-        assert(int(nq) == nn[kv] + 1);
+        team_member.team_barrier();
+#ifdef TODO
+        assert(int(nq[0]) == nn[kv] + 1);
+#endif
 
         int maxiter = 20;
+
         // kt-min....
         bool more = true;
-        while (__syncthreads_or(more)) {
-          more = false;
-          if (0 == threadIdx.x) {
+        bool* more_list = (bool*)team_member.team_shmem().get_shmem(sizeof(bool) * team_member.team_size());
+        while (more) {
+          more_list[team_member.team_rank()] = false;
+          if (0 == team_member.team_rank()) {
             znew[0] = 0;
             znew[1] = 0;
             wnew[0] = 0;
             wnew[1] = 0;
           }
-          __syncthreads();
-          for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+          team_member.team_barrier();
+          for (unsigned k = team_member.team_rank(); k < nq[0]; k += team_member.team_size()) {
             auto i = newV[k];
-            atomicAdd(&znew[i], zz[k] * ww[k]);
-            atomicAdd(&wnew[i], ww[k]);
+            Kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
+            Kokkos::atomic_add(&wnew[i], ww[k]);
           }
-          __syncthreads();
-          if (0 == threadIdx.x) {
+          team_member.team_barrier();
+          if (0 == team_member.team_rank()) {
             znew[0] /= wnew[0];
             znew[1] /= wnew[1];
           }
-          __syncthreads();
-          for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+          team_member.team_barrier();
+          for (unsigned k = team_member.team_rank(); k < nq[0]; k += team_member.team_size()) {
             auto d0 = fabs(zz[k] - znew[0]);
             auto d1 = fabs(zz[k] - znew[1]);
             auto newer = d0 < d1 ? 0 : 1;
-            more |= newer != newV[k];
+            more_list[team_member.team_rank()] |= newer != newV[k];
             newV[k] = newer;
           }
           --maxiter;
           if (maxiter <= 0)
+            more_list[team_member.team_rank()] = false;
+          team_member.team_barrier();
+
+          int sum = 0;
+          for (int i = 0; i < team_member.team_size(); i++)
+            sum += int(more_list[i]);
+          if (sum == 0)
             more = false;
         }
 
@@ -114,24 +135,24 @@ namespace KOKKOS_NAMESPACE {
 
         auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-        if (verbose && 0 == threadIdx.x)
+        if (verbose && 0 == team_member.team_rank())
           printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
 
         if (chi2Dist < 4)
           continue;
 
         // get a new global vertex
-        __shared__ uint32_t igv;
-        if (0 == threadIdx.x)
-          igv = atomicAdd(&ws.nvIntermediate, 1);
-        __syncthreads();
-        for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+        uint32_t* igv = (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t));
+
+        if (0 == team_member.team_rank())
+          igv[0] = Kokkos::atomic_fetch_add(&ws.nvIntermediate, 1);
+        team_member.team_barrier();
+        for (unsigned k = team_member.team_rank(); k < nq[0]; k += team_member.team_size()) {
           if (1 == newV[k])
-            iv[it[k]] = igv;
+            iv[it[k]] = igv[0];
         }
 
       }  // loop on vertices
-#endif   // TODO
     }
 
     KOKKOS_INLINE_FUNCTION void splitVerticesKernel(
