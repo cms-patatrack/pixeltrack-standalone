@@ -23,7 +23,6 @@ namespace KOKKOS_NAMESPACE {
         float errmax,   // max error to be "seed"
         float chi2max,  // max normalized distance to cluster
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
-#ifdef TODO
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto id = team_member.league_rank() * team_member.team_size() + team_member.team_rank();
@@ -47,6 +46,7 @@ namespace KOKKOS_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
+#ifdef TODO
       assert(vdata.data());
       assert(zt);
 
@@ -56,7 +56,7 @@ namespace KOKKOS_NAMESPACE {
       Hist* hist = (Hist*)team_member.team_shmem().get_shmem(sizeof(Hist));
       Hist::Counter* hws = (Hist::Counter*)team_member.team_shmem().get_shmem(sizeof(Hist::Counter) * 32);
 
-      for (auto j = team_member.team_rank(); j < Hist::totbins(); j += team_member.team_size()) {
+      for (unsigned j = team_member.team_rank(); j < Hist::totbins(); j += team_member.team_size()) {
         hist->off[j] = 0;
       }
 
@@ -68,7 +68,7 @@ namespace KOKKOS_NAMESPACE {
       assert(nt <= hist->capacity());
 
       // fill hist  (bin shall be wider than "eps")
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         assert(i < ZVertices::MAXTRACKS);
         int iz = int(zt[i] * 10.);  // valid if eps<=0.1
         // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
@@ -87,13 +87,14 @@ namespace KOKKOS_NAMESPACE {
       hist->finalize(hws);
       team_member.team_barrier();
       assert(hist->size() == nt);
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         hist->fill(izt[i], uint16_t(i));
       }
+#endif
       team_member.team_barrier();
 
       // count neighbours
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (ezt2[i] > er2mx)
           continue;
         auto loop = [&](uint32_t j) {
@@ -107,13 +108,15 @@ namespace KOKKOS_NAMESPACE {
           nn[i]++;
         };
 
+#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
+#endif
       }
 
       team_member.team_barrier();
 
       // find closest above me .... (we ignore the possibility of two j at same distance from i)
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         float mdist = eps;
         auto loop = [&](uint32_t j) {
           if (nn[j] < nn[i])
@@ -128,22 +131,27 @@ namespace KOKKOS_NAMESPACE {
           mdist = dist;
           iv[i] = j;  // assign to cluster (better be unique??)
         };
+#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
+#endif
       }
 
       team_member.team_barrier();
 
 #ifdef GPU_DEBUG
       //  mini verification
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
-        if (iv[i] != int(i))
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+        if (iv[i] != int(i)) {
+#ifdef TODO
           assert(iv[iv[i]] != int(i));
+#endif
+        }
       }
       team_member.team_barrier();
 #endif
 
       // consolidate graph (percolate index of seed)
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         auto m = iv[i];
         while (m != iv[m])
           m = iv[m];
@@ -153,15 +161,18 @@ namespace KOKKOS_NAMESPACE {
 #ifdef GPU_DEBUG
       team_member.team_barrier();
       //  mini verification
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
-        if (iv[i] != int(i))
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+        if (iv[i] != int(i)) {
+#ifdef TODO
           assert(iv[iv[i]] != int(i));
+#endif
+        }
       }
 #endif
 
 #ifdef GPU_DEBUG
       // and verify that we did not spit any cluster...
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         auto minJ = i;
         auto mdist = eps;
         auto loop = [&](uint32_t j) {
@@ -177,10 +188,12 @@ namespace KOKKOS_NAMESPACE {
           mdist = dist;
           minJ = j;
         };
+#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
         // should belong to the same cluster...
         assert(iv[i] == iv[minJ]);
         assert(nn[i] <= nn[iv[i]]);
+#endif
       }
       team_member.team_barrier();
 #endif
@@ -191,10 +204,10 @@ namespace KOKKOS_NAMESPACE {
 
       // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
       // mark these tracks with a negative id.
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (iv[i] == int(i)) {
           if (nn[i] >= minT) {
-            auto old = Kokkos::atomic_increment(foundClusters);
+            auto old = Kokkos::atomic_fetch_add(foundClusters, 1);
             iv[i] = -(old + 1);
           } else {  // noise
             iv[i] = -9998;
@@ -203,10 +216,12 @@ namespace KOKKOS_NAMESPACE {
       }
       team_member.team_barrier();
 
+#ifdef TODO
       assert(foundClusters[0] < ZVertices::MAXVTX);
+#endif
 
       // propagate the negative id to all the tracks in the cluster.
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (iv[i] >= 0) {
           // mark each track in a cluster with the same id as the first one
           iv[i] = iv[iv[i]];
@@ -215,7 +230,7 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       // adjust the cluster id to be a positive value starting from 0
-      for (auto i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         iv[i] = -iv[i] - 1;
       }
 
@@ -223,7 +238,6 @@ namespace KOKKOS_NAMESPACE {
 
       if (verbose && 0 == id)
         printf("found %d proto vertices\n", foundClusters[0]);
-#endif  // TODO
     }
 
     KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(
