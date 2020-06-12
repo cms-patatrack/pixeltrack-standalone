@@ -8,3 +8,5 @@ kokkos_cuda::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelFedCablingMapESProducer pluginSiPixelClusterizer.so
 kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
+kokkos_cuda::PixelCPEFastESProducer pluginSiPixelRecHits.so
+kokkos_serial::PixelCPEFastESProducer pluginSiPixelRecHits.so
