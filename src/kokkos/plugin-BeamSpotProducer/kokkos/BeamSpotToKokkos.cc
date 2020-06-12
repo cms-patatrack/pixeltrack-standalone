@@ -24,7 +24,7 @@ namespace KOKKOS_NAMESPACE {
 
   void BeamSpotToKokkos::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
-    BeamSpotKokkos<KokkosExecSpace> bs{&bsRaw};
+    BeamSpotKokkos<KokkosExecSpace> bs{&bsRaw, KokkosExecSpace()};
 
     iEvent.emplace(bsPutToken_, std::move(bs));
   }

@@ -4,7 +4,7 @@
 #include "KokkosCore/kokkosConfig.h"
 
 int main() {
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
   std::cout << "World" << std::endl;
 
   Kokkos::parallel_for(

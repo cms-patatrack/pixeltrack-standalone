@@ -5,7 +5,6 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "CUDACore/ScopedContext.h"
-#include "CUDACore/host_noncached_unique_ptr.h"
 
 #include <cuda_runtime.h>
 
@@ -20,20 +19,17 @@ public:
 
 private:
   edm::EDPutTokenT<cms::cuda::Product<BeamSpotCUDA>> bsPutToken_;
-
-  cms::cuda::host::noncached::unique_ptr<BeamSpotCUDA::Data> bsHost;
 };
 
 BeamSpotToCUDA::BeamSpotToCUDA(edm::ProductRegistry& reg)
-    : bsPutToken_{reg.produces<cms::cuda::Product<BeamSpotCUDA>>()},
-      bsHost{cms::cuda::make_host_noncached_unique<BeamSpotCUDA::Data>(cudaHostAllocWriteCombined)} {}
+    : bsPutToken_{reg.produces<cms::cuda::Product<BeamSpotCUDA>>()} {}
 
 void BeamSpotToCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  *bsHost = iSetup.get<BeamSpotCUDA::Data>();
+  auto const& bs = iSetup.get<BeamSpotCUDA::Data>();
 
   cms::cuda::ScopedContextProduce ctx{iEvent.streamID()};
 
-  ctx.emplace(iEvent, bsPutToken_, bsHost.get(), ctx.stream());
+  ctx.emplace(iEvent, bsPutToken_, bs, ctx.device(), ctx.stream());
 }
 
 DEFINE_FWK_MODULE(BeamSpotToCUDA);

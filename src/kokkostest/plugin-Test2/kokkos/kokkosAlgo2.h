@@ -4,7 +4,7 @@
 #include "KokkosCore/kokkosConfig.h"
 
 namespace KOKKOS_NAMESPACE {
-  Kokkos::View<float*, KokkosExecSpace> kokkosAlgo2();
+  Kokkos::View<float*, KokkosExecSpace> kokkosAlgo2(KokkosExecSpace const& execSpace);
 }
 
 #endif

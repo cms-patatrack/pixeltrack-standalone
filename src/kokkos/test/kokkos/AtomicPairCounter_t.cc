@@ -62,14 +62,14 @@ void test() {
           assert(m_d[ib] == k);
       });
 
-  Kokkos::deep_copy(dc_h, dc_d);
+  Kokkos::deep_copy(KokkosExecSpace(), dc_h, dc_d);
 
   std::cout << dc_h(0).get().n << ' ' << dc_h(0).get().m << std::endl;
 
 }  // test()
 
 int main(void) {
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
   test();
   return 0;
 }

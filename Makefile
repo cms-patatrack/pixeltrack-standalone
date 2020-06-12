@@ -6,7 +6,7 @@ USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Xassembler --compress-debug-sections -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
 export LDFLAGS := -pthread -Wl,-E -lstdc++fs
-export LDFLAGS_NVCC := --linker-options '-E' --linker-options '-lstdc++fs'
+export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
 
@@ -103,15 +103,23 @@ export KOKKOS_INSTALL := $(KOKKOS_BASE)/install
 KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
 export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
+KOKKOS_CUDA_ARCH := 70
+KOKKOS_CMAKE_CUDA_ARCH := 70
+ifeq ($(KOKKOS_CUDA_ARCH),70)
+  KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_VOLTA70=On
+else ifeq ($(KOKKOS_CUDA_ARCH),75)
+  KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_TURING75=On
+else
+  $(error Unsupported KOKKOS_CUDA_ARCH $(KOKKOS_CUDA_ARCH). Likely it is sufficient just add another case in the Makefile)
+endif
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
                      -DKokkos_CXX_STANDARD=14 \
-                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_CUDA_DIR=$(CUDA_BASE) -DKokkos_ARCH_VOLTA70=On
+                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_CUDA_DIR=$(CUDA_BASE) $(KOKKOS_CMAKE_CUDA_ARCH)
 # if without CUDA, replace the above line with
 #                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
-KOKKOS_CUDA_ARCH := 70
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 KOKKOS_CUDA_CUFLAGS := $(KOKKOS_NVCC_COMMON) $(USER_CUDAFLAGS)
 export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
@@ -261,7 +269,7 @@ $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA
 external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
-	git clone --branch 3.0.00 https://github.com/kokkos/kokkos.git $@
+	git clone --branch 3.1.01 https://github.com/kokkos/kokkos.git $@
 
 $(KOKKOS_BUILD):
 	mkdir -p $@
