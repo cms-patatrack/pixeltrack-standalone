@@ -576,7 +576,9 @@ namespace pixelgpudetails {
     }
     clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules, stream);
 
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
     nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
+#endif
 
     if (wordCounter)  // protect in case of empty event....
     {
@@ -660,10 +662,6 @@ namespace pixelgpudetails {
           digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
       cudaCheck(cudaGetLastError());
 
-      // read the number of modules into a data member, used by getProduct())
-      cudaCheck(cudaMemcpyAsync(
-          &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
-
       threadsPerBlock = 256;
       blocks = MaxNumModules;
 #ifdef GPU_DEBUG
@@ -700,28 +698,39 @@ namespace pixelgpudetails {
 
       // MUST be ONE block
       fillHitsModuleStart<<<1, 1024, 0, stream>>>(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
+    }  // end clusterizer scope
 
-      // transfers to host
-      if (includeErrors) {
+    // transfers to host
+    if (includeErrors) {
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-        digiErrors_d.copyErrorToHostAsync(stream);
+      digiErrors_d.copyErrorToHostAsync(stream);
 #else
-        digiErrors_d.prefetchAsync(cudaCpuDeviceId, stream);
+      digiErrors_d.prefetchAsync(cudaCpuDeviceId, stream);
 #endif
-      }
+    }
 
-      // last element holds the number of all clusters
-      cudaCheck(cudaMemcpyAsync(&(nModules_Clusters_h[1]),
-                                clusters_d.clusModuleStart() + gpuClustering::MaxNumModules,
-                                sizeof(uint32_t),
-                                cudaMemcpyDefault,
-                                stream));
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+    // read the number of modules into a data member, used by getProduct())
+    cudaCheck(cudaMemcpyAsync(
+        &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
+
+    // last element holds the number of all clusters
+    cudaCheck(cudaMemcpyAsync(&(nModules_Clusters_h[1]),
+                              clusters_d.clusModuleStart() + gpuClustering::MaxNumModules,
+                              sizeof(uint32_t),
+                              cudaMemcpyDefault,
+                              stream));
+#else
+    // read the number of modules into a data member, used by getProduct())
+    cudaCheck(cudaMemPrefetchAsync(clusters_d.moduleStart(), sizeof(uint32_t), cudaCpuDeviceId, stream));
+    // last element holds the number of all clusters
+    cudaCheck(cudaMemPrefetchAsync(
+        clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, sizeof(uint32_t), cudaCpuDeviceId, stream));
+#endif
 
 #ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
+    cudaDeviceSynchronize();
+    cudaCheck(cudaGetLastError());
 #endif
-
-    }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails

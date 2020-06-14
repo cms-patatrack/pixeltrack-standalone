@@ -7,10 +7,10 @@
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/GPUSimpleVector.h"
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
 #include "CUDACore/host_noncached_unique_ptr.h"
-#else
 #include "CUDACore/host_unique_ptr.h"
 #endif
 #include "CUDACore/managed_unique_ptr.h"
@@ -198,6 +198,7 @@ namespace pixelgpudetails {
                            cudaStream_t stream);
 
     std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);
       clusters_d.setNClusters(nModules_Clusters_h[1]);
       // need to explicitly deallocate while the associated CUDA
@@ -207,6 +208,10 @@ namespace pixelgpudetails {
       // the CUDA streams are cached within the cms::cuda::StreamCache, but it is
       // still better to release as early as possible
       nModules_Clusters_h.reset();
+#else
+      digis_d.setNModulesDigis(clusters_d.moduleStart()[0], nDigis);
+      clusters_d.setNClusters(clusters_d.clusModuleStart()[gpuClustering::MaxNumModules]);
+#endif
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
     }
 
@@ -216,7 +221,9 @@ namespace pixelgpudetails {
     uint32_t nDigis = 0;
 
     // Data to be put in the event
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
     cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
+#endif
     SiPixelDigisCUDA digis_d;
     SiPixelClustersCUDA clusters_d;
     SiPixelDigiErrorsCUDA digiErrors_d;
