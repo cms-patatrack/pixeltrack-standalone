@@ -123,7 +123,7 @@ void test() {
       gen(ev);
 
       Kokkos::parallel_for(
-          "init", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
+          "init", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
             onGPU_d.data()->nvFinal = 0;
             ws_d.data()->ntrks = 0;
             ws_d.data()->nvIntermediate = 0;
@@ -156,27 +156,27 @@ void test() {
 
       uint32_t nv = 0;
       Kokkos::parallel_for(
-          "print", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
+          "print", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
             printf("nt,nv %d %d,%d\n", ws_d.data()->ntrks, onGPU_d.data()->nvFinal, ws_d.data()->nvIntermediate);
           });
 
       KokkosExecSpace().fence();
 
 #ifdef ONE_KERNEL
-      team_policy policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) {
             vertexFinderOneKernel(onGPU_d, ws_d, kk, par[0], par[1], par[2], team_member);
           });
 #else
-      team_policy policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) {
             CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], team_member);
           });
 #endif
       Kokkos::parallel_for(
-          "print", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
+          "print", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
             printf("nt,nv %d %d,%d\n", ws_d.data()->ntrks, onGPU_d.data()->nvFinal, ws_d.data()->nvIntermediate);
           });
 
@@ -221,9 +221,9 @@ void test() {
       }
 
 #ifdef KOKKOS_BACKEND_CUDA
-      policy = team_policy(1024, 64).set_scratch_size(0, Kokkos::PerTeam(1024));
+      policy = team_policy(KokkosExecSpace(), 1024, 64).set_scratch_size(0, Kokkos::PerTeam(1024));
 #else
-      policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
 #endif
       Kokkos::parallel_for(
           policy,
@@ -233,7 +233,7 @@ void test() {
 
       std::cout << "after split " << nv << std::endl;
 
-      policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
       Kokkos::parallel_for(
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 5000.f, team_member); });
