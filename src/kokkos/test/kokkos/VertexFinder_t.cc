@@ -107,8 +107,8 @@ struct ClusterGenerator {
 #define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(WorkSpace, M))
 
 void test() {
-  Kokkos::View<ZVertices*, KokkosExecSpace> onGPU_d("onGPU_d", 1);
-  Kokkos::View<WorkSpace*, KokkosExecSpace> ws_d("ws_d", 1);
+  Kokkos::View<ZVertices, KokkosExecSpace> onGPU_d("onGPU_d");
+  Kokkos::View<WorkSpace, KokkosExecSpace> ws_d("ws_d");
 
   Event ev;
 
@@ -124,9 +124,9 @@ void test() {
 
       Kokkos::parallel_for(
           "init", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
-            onGPU_d(0).nvFinal = 0;
-            ws_d(0).ntrks = 0;
-            ws_d(0).nvIntermediate = 0;
+            onGPU_d.data()->nvFinal = 0;
+            ws_d.data()->ntrks = 0;
+            ws_d.data()->nvIntermediate = 0;
           });
 
       std::cout << "v,t size " << ev.zvert.size() << ' ' << ev.ztrack.size() << std::endl;
@@ -141,7 +141,7 @@ void test() {
       ::memcpy(LOC_WS(ezt2), ev.eztrack.data(), sizeof(float) * ev.eztrack.size());
       ::memcpy(LOC_WS(ptt2), ev.pttrack.data(), sizeof(float) * ev.eztrack.size());
       // deep copy from host to device
-      Kokkos::deep_copy(ws_d, ws_h);
+      Kokkos::deep_copy(KokkosExecSpace(), ws_d, ws_h);
 
       std::cout << "M eps, pset " << kk << ' ' << eps << ' ' << (i % 4) << std::endl;
 
@@ -157,10 +157,10 @@ void test() {
       uint32_t nv = 0;
       Kokkos::parallel_for(
           "print", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
-            printf("nt,nv %d %d,%d\n", ws_d(0).ntrks, onGPU_d(0).nvFinal, ws_d(0).nvIntermediate);
+            printf("nt,nv %d %d,%d\n", ws_d.data()->ntrks, onGPU_d.data()->nvFinal, ws_d.data()->nvIntermediate);
           });
 
-      Kokkos::fence();
+      KokkosExecSpace().fence();
 
 #ifdef ONE_KERNEL
       team_policy policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
@@ -177,16 +177,18 @@ void test() {
 #endif
       Kokkos::parallel_for(
           "print", team_policy(1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
-            printf("nt,nv %d %d,%d\n", ws_d(0).ntrks, onGPU_d(0).nvFinal, ws_d(0).nvIntermediate);
+            printf("nt,nv %d %d,%d\n", ws_d.data()->ntrks, onGPU_d.data()->nvFinal, ws_d.data()->nvIntermediate);
           });
 
-      Kokkos::fence();
+      KokkosExecSpace().fence();
 
       Kokkos::parallel_for(
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member); });
       // deep copy from device to host
-      Kokkos::deep_copy(onGPU_h, onGPU_d);
+      Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
+      KokkosExecSpace().fence();
+
       nv = onGPU_h.data()->nvFinal;
 
       if (nv == 0) {
@@ -205,7 +207,9 @@ void test() {
       Kokkos::parallel_for(
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member); });
-      Kokkos::deep_copy(onGPU_h, onGPU_d);
+      Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
+      KokkosExecSpace().fence();
+
       nv = onGPU_h.data()->nvFinal;
 
       for (auto j = 0U; j < nv; ++j)
@@ -216,7 +220,7 @@ void test() {
         std::cout << "before splitting nv, min max chi2 " << nv << " " << *mx.first << ' ' << *mx.second << std::endl;
       }
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef KOKKOS_BACKEND_CUDA
       policy = team_policy(1024, 64).set_scratch_size(0, Kokkos::PerTeam(1024));
 #else
       policy = team_policy(1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
@@ -224,7 +228,7 @@ void test() {
       Kokkos::parallel_for(
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { splitVerticesKernel(onGPU_d, ws_d, 9.f, team_member); });
-      Kokkos::deep_copy(ws_h, ws_d);
+      Kokkos::deep_copy(KokkosExecSpace(), ws_h, ws_d);
       nv = ws_d.data()->nvIntermediate;
 
       std::cout << "after split " << nv << std::endl;
@@ -236,7 +240,7 @@ void test() {
 
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2Kernel(onGPU_d, ws_d, team_member); });
-      Kokkos::deep_copy(onGPU_h, onGPU_d);
+      Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
       nv = onGPU_h.data()->nvFinal;
 
       if (nv == 0) {
@@ -262,13 +266,13 @@ void test() {
         std::cout << "min max ptv2 " << *mx.first << ' ' << *mx.second << std::endl;
         auto ind_0 = onGPU_h.data()->sortInd[0];
         auto ind_nvminus1 = onGPU_h.data()->sortInd[nv - 1];
-        std::cout << "min max ptv2 " << onGPU_h.data()->ptv2[ind_0] << ' ' << onGPU_h(0).ptv2[ind_nvminus1] << " at "
-                  << ind_0 << ' ' << ind_nvminus1 << std::endl;
+        std::cout << "min max ptv2 " << onGPU_h.data()->ptv2[ind_0] << ' ' << onGPU_h.data()->ptv2[ind_nvminus1]
+                  << " at " << ind_0 << ' ' << ind_nvminus1 << std::endl;
       }
 
       float dd[nv];
       for (auto kv = 0U; kv < nv; ++kv) {
-        auto zr = onGPU_h(0).zv[kv];
+        auto zr = onGPU_h.data()->zv[kv];
         auto md = 500.0f;
         for (auto zs : ev.ztrack) {
           auto d = std::abs(zr - zs);

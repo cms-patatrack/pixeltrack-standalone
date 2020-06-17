@@ -12,8 +12,8 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void sortByPt2(Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
-                                          Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+    KOKKOS_INLINE_FUNCTION void sortByPt2(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+                                          Kokkos::View<WorkSpace, KokkosExecSpace> vws,
                                           const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       auto& __restrict__ data = *vdata.data();
       auto& __restrict__ ws = *vws.data();
@@ -68,8 +68,8 @@ namespace KOKKOS_NAMESPACE {
 #endif
     }
 
-    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
-                                                Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+                                                Kokkos::View<WorkSpace, KokkosExecSpace> vws,
                                                 const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       sortByPt2(vdata, vws, team_member);
     }

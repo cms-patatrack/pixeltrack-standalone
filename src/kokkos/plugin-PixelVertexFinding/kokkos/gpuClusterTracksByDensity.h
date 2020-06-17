@@ -16,8 +16,8 @@ namespace KOKKOS_NAMESPACE {
     // based on Rodrighez&Laio algo
     //
     KOKKOS_INLINE_FUNCTION void clusterTracksByDensity(
-        Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -53,8 +53,8 @@ namespace KOKKOS_NAMESPACE {
       using Hist = HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
 
       // Get shared team allocations on the scratch pad
-      Hist* hist = (Hist*)team_member.team_shmem().get_shmem(sizeof(Hist));
-      Hist::Counter* hws = (Hist::Counter*)team_member.team_shmem().get_shmem(sizeof(Hist::Counter) * 32);
+      Hist* hist = static_cast<Hist*>(team_member.team_shmem().get_shmem(sizeof(Hist)));
+      Hist::Counter* hws = static_cast<Hist::Counter*>(team_member.team_shmem().get_shmem(sizeof(Hist::Counter) * 32));
 
       for (unsigned j = team_member.team_rank(); j < Hist::totbins(); j += team_member.team_size()) {
         hist->off[j] = 0;
@@ -198,7 +198,8 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 #endif
 
-      unsigned int* foundClusters = (unsigned int*)team_member.team_shmem().get_shmem(sizeof(unsigned int));
+      unsigned int* foundClusters =
+          static_cast<unsigned int*>(team_member.team_shmem().get_shmem(sizeof(unsigned int)));
       foundClusters[0] = 0;
       team_member.team_barrier();
 
@@ -241,8 +242,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(
-        Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
