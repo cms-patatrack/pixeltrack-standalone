@@ -119,11 +119,14 @@ namespace KOKKOS_NAMESPACE {
             more_list[team_member.team_rank()] = false;
           team_member.team_barrier();
 
-          int sum = 0;
-          for (int i = 0; i < team_member.team_size(); i++)
-            sum += int(more_list[i]);
-          if (sum == 0)
-            more = false;
+          if (team_member.team_rank() == 0) {
+            int sum = 0;
+            for (int i = 0; i < team_member.team_size(); i++)
+              sum += int(more_list[i]);
+            if (sum == 0)
+              more = false;
+          }
+          team_member.team_barrier();
         }
 
         // avoid empty vertices
