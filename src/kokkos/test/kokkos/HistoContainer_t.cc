@@ -145,7 +145,7 @@ void go() {
 }
 
 int main() {
-  kokkos_common::InitializeScopeGuard kokkosGuard;
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
   go<int16_t>();
   go<int8_t>();
 
