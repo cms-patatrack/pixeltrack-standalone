@@ -24,7 +24,7 @@ void go() {
   std::default_random_engine generator (1234);
   std::uniform_int_distribution<T> rgen(rmin, rmax);
 
-  constexpr uint32_t N = 20000;
+  constexpr uint32_t N = 12000;
   Kokkos::View<T*,KokkosExecSpace> v_d("v_d",N);
   typename Kokkos::View<T*,KokkosExecSpace>::HostMirror v_h("v_h",N);
 
