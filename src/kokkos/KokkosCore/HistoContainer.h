@@ -122,19 +122,20 @@ __host__ __device__ __forceinline__ void forEachInBins(Hist const &hist, V value
     func(*pj);
   }
 }
+#endif // TODO
 
 // iteratate over bins containing all values in window wmin, wmax
 template <typename Hist, typename V, typename Func>
-__host__ __device__ __forceinline__ void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
+KOKKOS_INLINE_FUNCTION void forEachInWindow(Kokkos::View<Hist*,KokkosExecSpace> hist, V wmin, V wmax, Func const &func) {
   auto bs = Hist::bin(wmin);
   auto be = Hist::bin(wmax);
   assert(be >= bs);
-  for (auto pj = hist.begin(bs); pj < hist.end(be); ++pj) {
+  for (auto pj = hist(0).begin(bs); pj < hist(0).end(be); ++pj) {
     func(*pj);
   }
 }
 
-#endif // TODO
+
 
 template <typename T,                  // the type of the discretized input values
           uint32_t NBINS,              // number of bins
@@ -215,7 +216,7 @@ public:
   static KOKKOS_INLINE_FUNCTION uint32_t atomicDecrement(Counter &x) {
     return Kokkos::atomic_fetch_sub(&x, 1);
   }
-
+#ifdef TODO
   __host__ __device__ __forceinline__ void countDirect(T b) {
     assert(b < nbins());
     atomicIncrement(off[b]);
@@ -254,6 +255,7 @@ public:
       off[i] = n;
     }
   }
+#endif // TODO
 
   KOKKOS_INLINE_FUNCTION void count(T t) {
     uint32_t b = bin(t);
@@ -287,10 +289,21 @@ public:
     bins[w - 1] = j;
   }
 
-  KOKKOS_INLINE_FUNCTION void finalize(Counter *ws = nullptr) {
-    assert(off[totbins() - 1] == 0);
-    blockPrefixScan(off, totbins(), ws);
-    assert(off[totbins() - 1] == off[totbins() - 2]);
+  #pragma hd_warning_disable
+  template<typename Histo>
+  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo*,KokkosExecSpace> histo) {
+    // assert(off[totbins() - 1] == 0);
+    // for(uint32_t i=0;i<totbins();++i)
+    //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
+    Kokkos::parallel_scan("finalize",Histo::totbins(),
+      KOKKOS_LAMBDA(const int& i, uint32_t& update, const bool& final){
+        update += histo(0).off[i];
+        if(final)
+          histo(0).off[i] = update;
+      });
+    // for(uint32_t i=0;i<totbins();++i)
+    //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
+    // assert(off[totbins() - 1] == off[totbins() - 2]);
   }
 
   constexpr auto size() const { return uint32_t(off[totbins() - 1]); }
