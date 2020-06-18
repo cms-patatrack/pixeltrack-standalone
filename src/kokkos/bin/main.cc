@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
         esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+        esmodules.emplace_back(prefix + "PixelCPEFastESProducer");
       }
     };
     addModules("kokkos_serial::", Backend::SERIAL);
