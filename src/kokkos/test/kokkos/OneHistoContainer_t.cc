@@ -33,8 +33,7 @@ void go() {
             << (rmax - rmin) / Hist::nbins() << std::endl;
   std::cout << "bins " << int(Hist::bin(0)) << ' ' << int(Hist::bin(rmin)) << ' ' << int(Hist::bin(rmax)) << std::endl;
 
-  for (int it = 0; it < 1; ++it) {
-    // printf("it = %2i\n",it);
+  for (int it = 0; it < 5; ++it) {
     for (long long j = 0; j < N; j++)
       v_h(j) = rgen(eng);
     if (it == 2)
