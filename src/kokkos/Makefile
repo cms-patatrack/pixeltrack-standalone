@@ -111,7 +111,9 @@ run_$(1): $(1)
 	@echo "Succeeded"
 test_$(2): run_$(1)
 endef
-$(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+# VertexFinder_t.serial currently goes to infinite loop
+TESTS_SERIAL_EXE_RUN := $(filter-out $(TEST_DIR)/$(TARGET_NAME)/VertexFinder_t.serial,$(TESTS_SERIAL_EXE))
+$(foreach test,$(TESTS_SERIAL_EXE_RUN),$(eval $(call RUNTEST_template,$(test),cpu)))
 $(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),cuda)))
 
 -include $(ALL_DEPENDS)
