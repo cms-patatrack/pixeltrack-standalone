@@ -2,9 +2,6 @@
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
 #include "KokkosDataFormats/TrackingRecHit2DSOAView.h"
-#ifdef TODO
-#include "CUDADataFormats/HeterogeneousSoA.h"
-#endif
 
 template <typename MemorySpace>
 class TrackingRecHit2DKokkos {
@@ -28,17 +25,19 @@ public:
   TrackingRecHit2DKokkos(TrackingRecHit2DKokkos&&) = default;
   TrackingRecHit2DKokkos& operator=(TrackingRecHit2DKokkos&&) = default;
 
-#ifdef TODO
-  TrackingRecHit2DSOAView* view() { return m_view.get(); }
-  TrackingRecHit2DSOAView const* view() const { return m_view.get(); }
+  TrackingRecHit2DSOAView* view() { return m_view.data(); }
+  TrackingRecHit2DSOAView const* view() const { return m_view.data(); }
 
   auto nHits() const { return m_nHits; }
 
-  auto hitsModuleStart() const { return m_hitsModuleStart; }
-  auto hitsLayerStart() { return m_hitsLayerStart; }
+  Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
+  Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
+#ifdef TODO
   auto phiBinner() { return m_hist; }
-  auto iphi() { return m_iphi; }
+#endif
+  Kokkos::View<uint16_t, MemorySpace> iphi() { return m_iphi; }
 
+#ifdef TODO
   // only the local coord and detector index
   cms::cuda::host::unique_ptr<float[]> localCoordToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
@@ -46,114 +45,96 @@ public:
 #endif
 
 private:
+  // local coord
+  Kokkos::View<float*, MemorySpace> m_xl;
+  Kokkos::View<float*, MemorySpace> m_yl;
+  Kokkos::View<float*, MemorySpace> m_xerr;
+  Kokkos::View<float*, MemorySpace> m_yerr;
+
+  // global coord
+  Kokkos::View<float*, MemorySpace> m_xg;
+  Kokkos::View<float*, MemorySpace> m_yg;
+  Kokkos::View<float*, MemorySpace> m_zg;
+  Kokkos::View<float*, MemorySpace> m_rg;
+  Kokkos::View<int16_t*, MemorySpace> m_iphi;
+
+  // cluster properties
+  Kokkos::View<int32_t*, MemorySpace> m_charge;
+  Kokkos::View<int16_t*, MemorySpace> m_xsize;
+  Kokkos::View<int16_t*, MemorySpace> m_ysize;
+  Kokkos::View<uint16_t*, MemorySpace> m_detInd;
+
 #ifdef TODO
-  static constexpr uint32_t n16 = 4;
-  static constexpr uint32_t n32 = 9;
-  static_assert(sizeof(uint32_t) == sizeof(float));  // just stating the obvious
-
-  unique_ptr<uint16_t[]> m_store16;  //!
-  unique_ptr<float[]> m_store32;     //!
-
-  unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;                        //!
-  unique_ptr<TrackingRecHit2DSOAView::AverageGeometry> m_AverageGeometryStore;  //!
-
-  unique_ptr<TrackingRecHit2DSOAView> m_view;  //!
+  unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;  //!
 #endif
+  Kokkos::View<TrackingRecHit2DSOAView::AverageGeometry> m_AverageGeometryStore;  //!
+
+  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
 
   uint32_t m_nHits;
   Kokkos::View<uint32_t const*, MemorySpace> m_hitsModuleStart;  // needed for legacy, this is on GPU!
-#ifdef TODO
 
+#ifdef TODO
   // needed as kernel params...
   Hist* m_hist;
-  uint32_t* m_hitsLayerStart;
-  int16_t* m_iphi;
 #endif
+  Kokkos::View<uint32_t*, MemorySpace> m_hitsLayerStart;
 };
 
 template <typename MemorySpace>
 template <typename ExecSpace>
-TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(uint32_t nHits,
-                                                            Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, MemorySpace> cpeParams,
-                                                            Kokkos::View<uint32_t const*, MemorySpace>  hitsModuleStart,
-                                                            ExecSpace const& execSpace)
-: m_nHits(nHits), m_hitsModuleStart(std::move(hitsModuleStart)) {
-#ifdef TODO
-  auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
+TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
+    uint32_t nHits,
+    Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, MemorySpace> cpeParams,
+    Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart,
+    ExecSpace const& execSpace)
+    : m_nHits(nHits),
+      m_xl("m_xl", nHits),
+      m_yl("m_yl", nHits),
+      m_xerr("m_xerr", nHits),
+      m_yerr("m_yerr", nHits),
+      m_xg("m_xg", nHits),
+      m_yg("m_yg", nHits),
+      m_zg("m_zg", nHits),
+      m_rg("m_rg", nHits),
+      m_iphi("m_iphi", nHits),
+      m_charge("m_charge", nHits),
+      m_xsize("m_xsize", nHits),
+      m_ysize("m_ysize", nHits),
+      m_detInd("m_detInd", nHits),
+      m_AverageGeometryStore("m_AverageGeometryStore"),
+      m_view("m_view"),
+      m_hitsModuleStart(std::move(hitsModuleStart)),
+      m_hitsLayerStart("m_hitsLayerStart", nHits) {
+  // should I deal with no hits case?
 
-  view->m_nHits = nHits;
-  m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
-  m_AverageGeometryStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::AverageGeometry>(stream);
-  view->m_averageGeometry = m_AverageGeometryStore.get();
-  view->m_cpeParams = cpeParams;
-  view->m_hitsModuleStart = hitsModuleStart;
-
-  // if empy do not bother
-  if (0 == nHits) {
-    if
-#ifndef __CUDACC__
-        constexpr
-#endif
-        (std::is_same<Traits, cudaCompat::GPUTraits>::value) {
-      cms::cuda::copyAsync(m_view, view, stream);
-    } else {
-      m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-    }
-    return;
-  }
-
-  // the single arrays are not 128 bit alligned...
   // the hits are actually accessed in order only in building
   // if ordering is relevant they may have to be stored phi-ordered by layer or so
   // this will break 1to1 correspondence with cluster and module locality
   // so unless proven VERY inefficient we keep it ordered as generated
-  m_store16 = Traits::template make_device_unique<uint16_t[]>(nHits * n16, stream);
-  m_store32 = Traits::template make_device_unique<float[]>(nHits * n32 + 11, stream);
-  m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
 
-  auto get16 = [&](int i) { return m_store16.get() + i * nHits; };
-  auto get32 = [&](int i) { return m_store32.get() + i * nHits; };
+  auto view_h = Kokkos::create_mirror_view(m_view);
+#define SET(name) view_h().name = name.data()
+  SET(m_xl);
+  SET(m_yl);
+  SET(m_xerr);
+  SET(m_yerr);
+  SET(m_xg);
+  SET(m_yg);
+  SET(m_zg);
+  SET(m_rg);
+  SET(m_iphi);
+  SET(m_charge);
+  SET(m_xsize);
+  SET(m_ysize);
+  SET(m_detInd);
+#undef SET
+  view_h().m_nHits = nHits;
+  view_h().m_averageGeometry = m_AverageGeometryStore.data();
+  view_h().m_cpeParams = cpeParams.data();
+  view_h().m_hitsModuleStart = m_hitsModuleStart.data();
 
-  // copy all the pointers
-  m_hist = view->m_hist = m_HistStore.get();
-
-  view->m_xl = get32(0);
-  view->m_yl = get32(1);
-  view->m_xerr = get32(2);
-  view->m_yerr = get32(3);
-
-  view->m_xg = get32(4);
-  view->m_yg = get32(5);
-  view->m_zg = get32(6);
-  view->m_rg = get32(7);
-
-  m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
-
-  view->m_charge = reinterpret_cast<int32_t*>(get32(8));
-  view->m_xsize = reinterpret_cast<int16_t*>(get16(2));
-  view->m_ysize = reinterpret_cast<int16_t*>(get16(3));
-  view->m_detInd = get16(1);
-
-  m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
-
-  // transfer view
-  if
-#ifndef __CUDACC__
-      constexpr
-#endif
-      (std::is_same<Traits, cudaCompat::GPUTraits>::value) {
-    cms::cuda::copyAsync(m_view, view, stream);
-  } else {
-    m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-  }
-#endif
+  Kokkos::deep_copy(execSpace, m_view, view_h);
 }
-
-#ifdef TODO
-using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous<cudaCompat::GPUTraits>;
-using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous<cudaCompat::GPUTraits>;
-using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous<cudaCompat::CPUTraits>;
-using TrackingRecHit2DHost = TrackingRecHit2DHeterogeneous<cudaCompat::HostTraits>;
-#endif
 
 #endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h

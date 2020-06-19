@@ -1,7 +1,7 @@
 #ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 
-#include <cuda_runtime.h>
+#include <Kokkos_Core.hpp>
 
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 #ifdef TODO
@@ -13,8 +13,6 @@ namespace pixelCPEforGPU {
   struct ParamsOnGPU;
 }
 
-#ifdef TODO
-template <typename MemorySpace>
 class TrackingRecHit2DSOAView {
 public:
   static constexpr uint32_t maxHits() { return gpuClustering::MaxNumClusters; }
@@ -27,60 +25,59 @@ public:
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
 
   template <typename>
-  friend class TrackingRecHit2DHeterogeneous;
+  friend class TrackingRecHit2DKokkos;
 
-  __device__ __forceinline__ uint32_t nHits() const { return m_nHits; }
+  KOKKOS_INLINE_FUNCTION uint32_t nHits() const { return m_nHits; }
 
-  __device__ __forceinline__ float& xLocal(int i) { return m_xl[i]; }
-  __device__ __forceinline__ float xLocal(int i) const { return __ldg(m_xl + i); }
-  __device__ __forceinline__ float& yLocal(int i) { return m_yl[i]; }
-  __device__ __forceinline__ float yLocal(int i) const { return __ldg(m_yl + i); }
+  KOKKOS_INLINE_FUNCTION float& xLocal(int i) { return m_xl[i]; }
+  KOKKOS_INLINE_FUNCTION float xLocal(int i) const { return m_xl[i]; }
+  KOKKOS_INLINE_FUNCTION float& yLocal(int i) { return m_yl[i]; }
+  KOKKOS_INLINE_FUNCTION float yLocal(int i) const { return m_yl[i]; }
 
-  __device__ __forceinline__ float& xerrLocal(int i) { return m_xerr[i]; }
-  __device__ __forceinline__ float xerrLocal(int i) const { return __ldg(m_xerr + i); }
-  __device__ __forceinline__ float& yerrLocal(int i) { return m_yerr[i]; }
-  __device__ __forceinline__ float yerrLocal(int i) const { return __ldg(m_yerr + i); }
+  KOKKOS_INLINE_FUNCTION float& xerrLocal(int i) { return m_xerr[i]; }
+  KOKKOS_INLINE_FUNCTION float xerrLocal(int i) const { return m_xerr[i]; }
+  KOKKOS_INLINE_FUNCTION float& yerrLocal(int i) { return m_yerr[i]; }
+  KOKKOS_INLINE_FUNCTION float yerrLocal(int i) const { return m_yerr[i]; }
 
-  __device__ __forceinline__ float& xGlobal(int i) { return m_xg[i]; }
-  __device__ __forceinline__ float xGlobal(int i) const { return __ldg(m_xg + i); }
-  __device__ __forceinline__ float& yGlobal(int i) { return m_yg[i]; }
-  __device__ __forceinline__ float yGlobal(int i) const { return __ldg(m_yg + i); }
-  __device__ __forceinline__ float& zGlobal(int i) { return m_zg[i]; }
-  __device__ __forceinline__ float zGlobal(int i) const { return __ldg(m_zg + i); }
-  __device__ __forceinline__ float& rGlobal(int i) { return m_rg[i]; }
-  __device__ __forceinline__ float rGlobal(int i) const { return __ldg(m_rg + i); }
+  KOKKOS_INLINE_FUNCTION float& xGlobal(int i) { return m_xg[i]; }
+  KOKKOS_INLINE_FUNCTION float xGlobal(int i) const { return m_xg[i]; }
+  KOKKOS_INLINE_FUNCTION float& yGlobal(int i) { return m_yg[i]; }
+  KOKKOS_INLINE_FUNCTION float yGlobal(int i) const { return m_yg[i]; }
+  KOKKOS_INLINE_FUNCTION float& zGlobal(int i) { return m_zg[i]; }
+  KOKKOS_INLINE_FUNCTION float zGlobal(int i) const { return m_zg[i]; }
+  KOKKOS_INLINE_FUNCTION float& rGlobal(int i) { return m_rg[i]; }
+  KOKKOS_INLINE_FUNCTION float rGlobal(int i) const { return m_rg[i]; }
 
-  __device__ __forceinline__ int16_t& iphi(int i) { return m_iphi[i]; }
-  __device__ __forceinline__ int16_t iphi(int i) const { return __ldg(m_iphi + i); }
+  KOKKOS_INLINE_FUNCTION int16_t& iphi(int i) { return m_iphi[i]; }
+  KOKKOS_INLINE_FUNCTION int16_t iphi(int i) const { return m_iphi[i]; }
 
-  __device__ __forceinline__ int32_t& charge(int i) { return m_charge[i]; }
-  __device__ __forceinline__ int32_t charge(int i) const { return __ldg(m_charge + i); }
-  __device__ __forceinline__ int16_t& clusterSizeX(int i) { return m_xsize[i]; }
-  __device__ __forceinline__ int16_t clusterSizeX(int i) const { return __ldg(m_xsize + i); }
-  __device__ __forceinline__ int16_t& clusterSizeY(int i) { return m_ysize[i]; }
-  __device__ __forceinline__ int16_t clusterSizeY(int i) const { return __ldg(m_ysize + i); }
-  __device__ __forceinline__ uint16_t& detectorIndex(int i) { return m_detInd[i]; }
-  __device__ __forceinline__ uint16_t detectorIndex(int i) const { return __ldg(m_detInd + i); }
+  KOKKOS_INLINE_FUNCTION int32_t& charge(int i) { return m_charge[i]; }
+  KOKKOS_INLINE_FUNCTION int32_t charge(int i) const { return m_charge[i]; }
+  KOKKOS_INLINE_FUNCTION int16_t& clusterSizeX(int i) { return m_xsize[i]; }
+  KOKKOS_INLINE_FUNCTION int16_t clusterSizeX(int i) const { return m_xsize[i]; }
+  KOKKOS_INLINE_FUNCTION int16_t& clusterSizeY(int i) { return m_ysize[i]; }
+  KOKKOS_INLINE_FUNCTION int16_t clusterSizeY(int i) const { return m_ysize[i]; }
+  KOKKOS_INLINE_FUNCTION uint16_t& detectorIndex(int i) { return m_detInd[i]; }
+  KOKKOS_INLINE_FUNCTION uint16_t detectorIndex(int i) const { return m_detInd[i]; }
 
-  __device__ __forceinline__ pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
+  KOKKOS_INLINE_FUNCTION pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
 
-  __device__ __forceinline__ uint32_t hitsModuleStart(int i) const { return __ldg(m_hitsModuleStart + i); }
+  KOKKOS_INLINE_FUNCTION uint32_t hitsModuleStart(int i) const { return m_hitsModuleStart[i]; }
 
-  __device__ __forceinline__ uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
-  __device__ __forceinline__ uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
+  KOKKOS_INLINE_FUNCTION uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
+  KOKKOS_INLINE_FUNCTION uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
 
 #ifdef TODO
-  __device__ __forceinline__ Hist& phiBinner() { return *m_hist; }
-  __device__ __forceinline__ Hist const& phiBinner() const { return *m_hist; }
+  KOKKOS_INLINE_FUNCTION Hist& phiBinner() { return *m_hist; }
+  KOKKOS_INLINE_FUNCTION Hist const& phiBinner() const { return *m_hist; }
 #endif
 
-  __device__ __forceinline__ AverageGeometry& averageGeometry() { return *m_averageGeometry; }
-  __device__ __forceinline__ AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
+  KOKKOS_INLINE_FUNCTION AverageGeometry& averageGeometry() { return *m_averageGeometry; }
+  KOKKOS_INLINE_FUNCTION AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
 
 private:
   // local coord
-  Kokkos::View<float *, MemorySpace> m_xl;
-  Kokkos::View<float *, MemorySpace> m_yl;
+  float *m_xl, *m_yl;
   float *m_xerr, *m_yerr;
 
   // global coord
@@ -106,6 +103,5 @@ private:
 
   uint32_t m_nHits;
 };
-#endif
 
 #endif

@@ -38,27 +38,25 @@ public:
   Kokkos::View<uint32_t const *, MemorySpace> c_moduleId() const { return moduleId_d; }
   Kokkos::View<uint32_t const *, MemorySpace> c_clusModuleStart() const { return clusModuleStart_d; }
 
-#ifdef TODO
   class DeviceConstView {
   public:
     // DeviceConstView() = default;
 
-    __device__ __forceinline__ uint32_t moduleStart(int i) const { return __ldg(moduleStart_ + i); }
-    __device__ __forceinline__ uint32_t clusInModule(int i) const { return __ldg(clusInModule_ + i); }
-    __device__ __forceinline__ uint32_t moduleId(int i) const { return __ldg(moduleId_ + i); }
-    __device__ __forceinline__ uint32_t clusModuleStart(int i) const { return __ldg(clusModuleStart_ + i); }
+    KOKKOS_INLINE_FUNCTION uint32_t moduleStart(int i) const { return moduleStart_[i]; }
+    KOKKOS_INLINE_FUNCTION uint32_t clusInModule(int i) const { return clusInModule_[i]; }
+    KOKKOS_INLINE_FUNCTION uint32_t moduleId(int i) const { return moduleId_[i]; }
+    KOKKOS_INLINE_FUNCTION uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
 
     friend SiPixelClustersKokkos;
 
-    //   private:
-    uint32_t const *moduleStart_;
-    uint32_t const *clusInModule_;
-    uint32_t const *moduleId_;
-    uint32_t const *clusModuleStart_;
+    // private:
+    Kokkos::View<uint32_t const *, MemorySpace> moduleStart_;
+    Kokkos::View<uint32_t const *, MemorySpace> clusInModule_;
+    Kokkos::View<uint32_t const *, MemorySpace> moduleId_;
+    Kokkos::View<uint32_t const *, MemorySpace> clusModuleStart_;
   };
 
-  DeviceConstView *view() const { return view_d.get(); }
-#endif
+  DeviceConstView view() const { return DeviceConstView{moduleStart_d, clusInModule_d, moduleId_d, clusModuleStart_d}; }
 
 private:
   Kokkos::View<uint32_t *, MemorySpace> moduleStart_d;   // index of the first pixel of each module
