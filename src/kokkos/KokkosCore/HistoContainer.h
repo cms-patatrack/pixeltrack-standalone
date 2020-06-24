@@ -102,8 +102,13 @@ namespace cms {
     }
 
     template <typename Assoc>
-    __global__ void finalizeBulk(AtomicPairCounter const *apc, Assoc *__restrict__ assoc) {
-      assoc->bulkFinalizeFill(*apc);
+    void finalizeBulk(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc,
+                                      Kokkos::View<Assoc*,KokkosExecSpace> assoc,
+                                      const uint32_t& n) {
+      Kokkos::parallel_for("finalizeBulk",Kokkos::RangePolicy<KokkosExecSpace>(0,n),
+        KOKKOS_LAMBDA(const int& i){
+          assoc(0).bulkFinalizeFill(apc,i);
+        });
     }
 
 
@@ -193,21 +198,29 @@ public:
     return (t >> shift) & mask;
   }
 
-  __host__ __device__ void zero() {
+  KOKKOS_INLINE_FUNCTION void zero() {
     for (auto &i : off)
       i = 0;
   }
 
-  __host__ __device__ void add(CountersOnly const &co) {
+  KOKKOS_INLINE_FUNCTION void add(Kokkos::View<CountersOnly*,KokkosExecSpace> co) {
     for (uint32_t i = 0; i < totbins(); ++i) {
-#ifdef __CUDA_ARCH__
-      atomicAdd(off + i, co.off[i]);
-#else
-      auto &a = (std::atomic<Counter> &)(off[i]);
-      a += co.off[i];
-#endif
+      Kokkos::atomic_fetch_add(off + i, co(0).off[i]);
     }
   }
+  KOKKOS_INLINE_FUNCTION void add(Kokkos::View<CountersOnly*,KokkosExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged> co) {
+    for (uint32_t i = 0; i < totbins(); ++i) {
+      Kokkos::atomic_fetch_add(off + i, co(0).off[i]);
+    }
+  }
+
+  // template <typename HistoType>
+  // KOKKOS_INLINE_FUNCTION static void add(Kokkos::View<HistoType*,KokkosExecSpace> const histo,Kokkos::View<CountersOnly*,KokkosExecSpace> const co){
+  //   Kokkos::parallel_for("histo_add",Kokkos::RangePolicy<KokkosExecSpace>(0,totbins()),
+  //     KOKKOS_LAMBDA(const int& i){
+  //       Kokkos::atomic_fetch_add(histo(0).off + i,co(0).off[i]);
+  //     });
+  // }
 
   static KOKKOS_INLINE_FUNCTION uint32_t atomicIncrement(Counter &x) {
     return Kokkos::atomic_fetch_add(&x, 1);
@@ -216,21 +229,21 @@ public:
   static KOKKOS_INLINE_FUNCTION uint32_t atomicDecrement(Counter &x) {
     return Kokkos::atomic_fetch_sub(&x, 1);
   }
-#ifdef TODO
-  __host__ __device__ __forceinline__ void countDirect(T b) {
+
+  KOKKOS_INLINE_FUNCTION void countDirect(T b) {
     assert(b < nbins());
     atomicIncrement(off[b]);
   }
 
-  __host__ __device__ __forceinline__ void fillDirect(T b, index_type j) {
+  KOKKOS_INLINE_FUNCTION void fillDirect(T b, index_type j) {
     assert(b < nbins());
     auto w = atomicDecrement(off[b]);
     assert(w > 0);
     bins[w - 1] = j;
   }
 
-  __device__ __host__ __forceinline__ int32_t bulkFill(AtomicPairCounter &apc, index_type const *v, uint32_t n) {
-    auto c = apc.add(n);
+  KOKKOS_INLINE_FUNCTION int32_t bulkFill(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> apc, index_type const *v, uint32_t n) {
+    auto c = apc(0).add(n);
     if (c.m >= nbins())
       return -int32_t(c.m);
     off[c.m] = c.n;
@@ -239,23 +252,19 @@ public:
     return c.m;
   }
 
-  __device__ __host__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) {
-    off[apc.get().m] = apc.get().n;
+  KOKKOS_INLINE_FUNCTION void bulkFinalize(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc) {
+    off[apc(0).get().m] = apc(0).get().n;
   }
 
-  __device__ __host__ __forceinline__ void bulkFinalizeFill(AtomicPairCounter const &apc) {
-    auto m = apc.get().m;
-    auto n = apc.get().n;
+  KOKKOS_INLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc,const int& i) {
+    auto m = apc(0).get().m;
+    auto n = apc(0).get().n;
     if (m >= nbins()) {  // overflow!
       off[nbins()] = uint32_t(off[nbins() - 1]);
       return;
     }
-    auto first = m + blockDim.x * blockIdx.x + threadIdx.x;
-    for (auto i = first; i < totbins(); i += gridDim.x * blockDim.x) {
-      off[i] = n;
-    }
+    off[m+i] = n;
   }
-#endif // TODO
 
   KOKKOS_INLINE_FUNCTION void count(T t) {
     uint32_t b = bin(t);

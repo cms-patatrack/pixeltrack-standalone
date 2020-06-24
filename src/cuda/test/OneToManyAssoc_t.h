@@ -59,8 +59,10 @@ __global__ void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int3
     assert(j < 4);
     if (k >= n)
       return;
-    if (tk[k][j] < MaxElem)
+    if (tk[k][j] < MaxElem){
+      printf("11 tk[%03d][%03d] = %06d\n",k,j,tk[k][j]);
       assoc->countDirect(tk[k][j]);
+    }
   }
 }
 
@@ -96,6 +98,7 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
+  cudaDeviceSetLimit(cudaLimitPrintfFifoSize,1024*1024*1024);
 #ifdef __CUDACC__
   auto current_device = cms::cuda::currentDevice();
 #else
@@ -178,12 +181,19 @@ int main() {
 #endif
 
   cms::cuda::launchZero(a_d.get(), 0);
+  Assoc la;
+  cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
+  for( uint32_t i = 0; i < la.totbins();++i)
+    printf("0 a[%06d] = %06d\n",i,la.off[i]);
 
 #ifdef __CUDACC__
   auto nThreads = 256;
   auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
   count<<<nBlocks, nThreads>>>(v_d.get(), a_d.get(), N);
+  cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
+  for( uint32_t i = 0; i < la.totbins();++i)
+    printf("1 a[%06d] = %06d\n",i,la.off[i]);
 
   cms::cuda::launchFinalize(a_d.get(), ws_d.get(), 0);
   verify<<<1, 1>>>(a_d.get());
@@ -195,7 +205,7 @@ int main() {
   fill(v_d, a_d.get(), N);
 #endif
 
-  Assoc la;
+  
 
 #ifdef __CUDACC__
   cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
@@ -203,6 +213,8 @@ int main() {
   memcpy(&la, a_d.get(), sizeof(Assoc));  // not required, easier
 #endif
 
+  for( uint32_t i = 0; i < la.totbins();++i)
+    printf("2 a[%06d] = %06d\n",i,la.off[i]);
   std::cout << la.size() << std::endl;
   imax = 0;
   ave = 0;
