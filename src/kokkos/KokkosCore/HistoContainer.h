@@ -103,9 +103,8 @@ namespace cms {
 
     template <typename Assoc>
     void finalizeBulk(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc,
-                                      Kokkos::View<Assoc*,KokkosExecSpace> assoc,
-                                      const uint32_t& n) {
-      Kokkos::parallel_for("finalizeBulk",Kokkos::RangePolicy<KokkosExecSpace>(0,n),
+                      Kokkos::View<Assoc*,KokkosExecSpace> assoc) {
+      Kokkos::parallel_for("finalizeBulk",Kokkos::RangePolicy<KokkosExecSpace>(0,Assoc::totbins()),
         KOKKOS_LAMBDA(const int& i){
           assoc(0).bulkFinalizeFill(apc,i);
         });
@@ -256,14 +255,17 @@ public:
     off[apc(0).get().m] = apc(0).get().n;
   }
 
-  KOKKOS_INLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc,const int& i) {
+  KOKKOS_INLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> const apc,const int& threadId) {
     auto m = apc(0).get().m;
     auto n = apc(0).get().n;
     if (m >= nbins()) {  // overflow!
       off[nbins()] = uint32_t(off[nbins() - 1]);
       return;
     }
-    off[m+i] = n;
+    auto i = m + threadId;
+    if(i < totbins()){
+      off[i] = n;
+    }
   }
 
   KOKKOS_INLINE_FUNCTION void count(T t) {
