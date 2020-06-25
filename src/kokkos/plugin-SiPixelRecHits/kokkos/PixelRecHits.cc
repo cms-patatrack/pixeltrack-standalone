@@ -13,25 +13,6 @@
 #include "PixelRecHits.h"
 #include "gpuPixelRecHits.h"
 
-#ifdef TODO
-namespace {
-  __global__ void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
-                                    pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                    uint32_t* hitsLayerStart) {
-    auto i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    assert(0 == hitsModuleStart[0]);
-
-    if (i < 11) {
-      hitsLayerStart[i] = hitsModuleStart[cpeParams->layerGeometry().layerStart[i]];
-#ifdef GPU_DEBUG
-      printf("LayerStart %d %d: %d\n", i, cpeParams->layerGeometry().layerStart[i], hitsLayerStart[i]);
-#endif
-    }
-  }
-}  // namespace
-#endif
-
 namespace KOKKOS_NAMESPACE {
 
   namespace pixelgpudetails {
@@ -72,24 +53,32 @@ namespace KOKKOS_NAMESPACE {
       execSpace.fence();
 #endif
 
-#ifdef TODO
       // assuming full warp of threads is better than a smaller number...
       if (nHits) {
-        setHitsLayerStart<<<1, 32, 0, stream>>>(clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
-        cudaCheck(cudaGetLastError());
+        auto clusModuleStart = clusters_d.clusModuleStart();
+        auto hitsLayerStart = hits_d.hitsLayerStart();
+        Kokkos::parallel_for(
+            Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, 11), KOKKOS_LAMBDA(const size_t i) {
+              assert(0 == clusModuleStart[0]);
+
+              hitsLayerStart[i] = clusModuleStart[cpeParams().layerGeometry().layerStart[i]];
+#ifdef GPU_DEBUG
+              printf("LayerStart %d %d: %d\n", i, cpeParams().layerGeometry().layerStart[i], hitsLayerStart[i]);
+#endif
+            });
       }
 
+#ifdef TODO
       if (nHits) {
         auto hws = cms::cuda::make_device_unique<uint8_t[]>(TrackingRecHit2DSOAView::Hist::wsSize(), stream);
         cms::cuda::fillManyFromVector(
             hits_d.phiBinner(), hws.get(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
         cudaCheck(cudaGetLastError());
       }
+#endif
 
 #ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
+      execSpace.fence();
 #endif
       return hits_d;
     }
