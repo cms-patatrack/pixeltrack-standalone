@@ -80,7 +80,7 @@ void count(Kokkos::View<uint16_t**,KokkosExecSpace> const tk,
       if (k >= n)
         return;
       if (tk(k,j) < MaxElem){
-        printf("11 tk[%03d][%03d] = %06d\n",k,j,tk(k,j));
+        //printf("11 tk[%03d][%03d] = %06d\n",k,j,tk(k,j));
         assoc(0).countDirect(tk(k,j));
       }
     });
@@ -108,10 +108,12 @@ void fillBulk(Kokkos::View<AtomicPairCounter*,KokkosExecSpace> apc,
               Kokkos::View<uint16_t**,KokkosExecSpace> const tk, 
               Kokkos::View<Assoc*,KokkosExecSpace> assoc, 
               const uint32_t& n) {
-  Kokkos::parallel_for("fillBulk",Kokkos::RangePolicy<KokkosExecSpace>(0,4*n),
+  Kokkos::parallel_for("fillBulk",Kokkos::RangePolicy<KokkosExecSpace>(0,n),
     KOKKOS_LAMBDA(const int& i){
       auto m = tk(i,3) < MaxElem ? 4 : 3;
-      assoc(0).bulkFill(apc, &tk(i,0), m);
+      // printf("01 i = %06d m = %06d tk(i,3) = %06d tk(i,0) = %06d\n",i,m,tk(i,3),tk(i,0));
+      auto x = assoc(0).bulkFill(apc, &tk(i,0), m,i);
+      // printf("01  x = %06d\n",x);
     });
 }
 
@@ -119,6 +121,8 @@ template<typename HistoType>
 void verifyBulk(Kokkos::View<HistoType*,Kokkos::HostSpace> assoc, Kokkos::View<AtomicPairCounter*,Kokkos::HostSpace> apc) {
   if (apc(0).get().m >= HistoType::nbins())
     printf("Overflow %d %d\n", apc(0).get().m, HistoType::nbins());
+  if(assoc(0).size() >= HistoType::capacity())
+    printf("assert will fail: size = %06d capacity = %06d\n",assoc(0).size(),HistoType::capacity());
   assert(assoc(0).size() < HistoType::capacity());
 }
 
@@ -131,8 +135,16 @@ int main() {
             << SmallAssoc::wsSize() << std::endl;
 
   std::mt19937 eng;
-
+  std::default_random_engine generator (1234);
   std::geometric_distribution<int> rdm(0.8);
+  constexpr uint32_t rdm_N = 16000;
+  Kokkos::View<int*,KokkosExecSpace> rdm_d("rdm_d",rdm_N);
+  auto rdm_h = Kokkos::create_mirror_view(rdm_d);
+  for(uint32_t i=0;i<rdm_N;++i){
+    rdm_h(i) = rdm(eng);
+    //printf("00 rdm(eng) = %04d\n",rdm_h(i));
+  }
+  Kokkos::deep_copy(rdm_d,rdm_h);
 
   constexpr uint32_t N = 4000;
 
@@ -146,95 +158,121 @@ int main() {
   auto dc_h = Kokkos::create_mirror_view(dc_d);
 
 
+  Kokkos::View<long long*,KokkosExecSpace> ave_d("ave_d",1);
+  auto ave_h = Kokkos::create_mirror_view(ave_d);
+  Kokkos::View<int*,KokkosExecSpace> imax_d("imax_d",1);
+  auto imax_h = Kokkos::create_mirror_view(imax_d);
+  Kokkos::View<uint32_t*,KokkosExecSpace> n_d("n_d",1);
+  auto n_h = Kokkos::create_mirror_view(n_d);
+  Kokkos::View<uint32_t*,KokkosExecSpace> z_d("z_d",1);
+  auto z_h = Kokkos::create_mirror_view(z_d);
+  Kokkos::View<uint32_t*,KokkosExecSpace> nz_d("nz_d",1);
+  auto nz_h = Kokkos::create_mirror_view(nz_d);
   // fill with "index" to element
-  long long ave = 0;
-  int imax = 0;
-  auto n = 0U;
-  auto z = 0U;
-  auto nz = 0U;
-  for (auto i = 0U; i < 4U; ++i) {
-    auto j = 0U;
-    while (j < N && n < MaxElem) {
-      if (z == 11) {
-        ++n;
-        z = 0;
-        ++nz;
-        continue;
-      }  // a bit of not assoc
-      auto x = rdm(eng);
-      auto k = std::min(j + x + 1, N);
-      if (i == 3 && z == 3) {  // some triplets time to time
-        for (; j < k; ++j)
-          v_h(j,i) = MaxElem + 1;
-      } else {
-        ave += x + 1;
-        imax = std::max(imax, x);
-        for (; j < k; ++j)
-          v_h(j,i) = n;
-        ++n;
+  Kokkos::parallel_for("init",Kokkos::RangePolicy<KokkosExecSpace>(0,1),
+    KOKKOS_LAMBDA(const int& i){
+      ave_d(0) = 0;
+      imax_d(0) = 0;
+      n_d(0) = 0;
+      z_d(0) = 0;
+      nz_d(0) = 0;
+
+      uint32_t rdm_counter = 0;
+
+      for (auto i = 0U; i < 4U; ++i) {
+        auto j = 0U;
+        while (j < N && n_d(0) < MaxElem) {
+          if (z_d(0) == 11) {
+            n_d(0) += 1;
+            z_d(0) = 0;
+            nz_d(0) += 1;
+            continue;
+          }  // a bit of not assoc
+          auto x = rdm_d(rdm_counter);
+          //printf("00 i = %04d j = %04d rdm(eng) = %04d\n",i,j,x);
+          rdm_counter++;
+          if(rdm_counter>=rdm_N)
+            printf("ERROR ran out of random numbers\n");
+          auto k = N;
+          if(j + x + 1 < N)
+            k = j + x + 1;
+          if (i == 3 && z_d(0) == 3) {  // some triplets time to time
+            for (; j < k; ++j)
+              v_d(j,i) = MaxElem + 1;
+          } else {
+            ave_d(0) += x + 1;
+            if(x > imax_d(0))
+              imax_d(0) = x;
+            for (; j < k; ++j)
+              v_d(j,i) = n_d(0);
+            n_d(0) += 1;
+          }
+          z_d(0) += 1;
+        }
+        assert(n_d(0) <= MaxElem);
+        assert(j <= N);
       }
-      ++z;
-    }
-    assert(n <= MaxElem);
-    assert(j <= N);
-  }
-  std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
-  Kokkos::deep_copy(v_d,v_h);
+    });
+
+  Kokkos::deep_copy(n_h,n_d);
+  Kokkos::deep_copy(nz_h,nz_d);
+  Kokkos::deep_copy(ave_h,ave_d);
+  Kokkos::deep_copy(imax_h,imax_d);
+
+  std::cout << "filled with " << n_h(0) << " elements " << double(ave_h(0)) / n_h(0) << ' ' << imax_h(0) << ' ' << nz_h(0) << std::endl;
+  // Kokkos::deep_copy(v_d,v_h);
+
   
   cms::kokkos::launchZero(a_d);
-  Kokkos::deep_copy(a_h,a_d);
-  for( uint32_t i = 0; i < a_h(0).totbins();++i)
-    printf("0 a[%06d] = %06d\n",i,a_h(0).off[i]);
 
   // auto nThreads = 256;
   // auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
   count(v_d,a_d,N);
-  Kokkos::deep_copy(a_h,a_d);
-  for( uint32_t i = 0; i < a_h(0).totbins();++i)
-    printf("1 a[%06d] = %06d\n",i,a_h(0).off[i]);
   
   cms::kokkos::launchFinalize(a_d);
 
   Kokkos::deep_copy(a_h,a_d);
-  for( uint32_t i = 0; i < a_h(0).totbins();++i)
-    printf("2 a[%06d] = %06d\n",i,a_h(0).off[i]);
 
   verify(a_h);
 
   fill(v_d, a_d, N);
 
   Kokkos::deep_copy(a_h,a_d);
-
   std::cout << a_h(0).size() << std::endl;
-  imax = 0;
-  ave = 0;
-  z = 0;
-  for (auto i = 0U; i < n; ++i) {
+  Kokkos::deep_copy(n_h,n_d);
+  imax_h(0) = 0;
+  ave_h(0) = 0;
+  z_h(0) = 0;
+  for (auto i = 0U; i < n_h(0); ++i) {
     auto x = a_h(0).size(i);
     if (x == 0) {
-      z++;
+      z_h(0)++;
       continue;
     }
-    ave += x;
-    imax = std::max(imax, int(x));
+    ave_h(0) += x;
+    imax_h(0) = std::max(imax_h(0), int(x));
   }
-  assert(0 == a_h(0).size(n));
-  std::cout << "found with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << z << std::endl;
+  assert(0 == a_h(0).size(n_h(0)));
+  std::cout << "found with " << n_h(0) << " elements " << double(ave_h(0)) / n_h(0) << ' ' << imax_h(0) << ' ' << z_h(0) << std::endl;
 
   // now the inverse map (actually this is the direct....)
   
   fillBulk(dc_d, v_d, a_d, N);
   
-  cms::kokkos::finalizeBulk(dc_d, a_d,Assoc::totbins());
+  cms::kokkos::finalizeBulk(dc_d, a_d);
   
   Kokkos::deep_copy(a_h,a_d);
   Kokkos::deep_copy(dc_h,dc_d);
   verifyBulk<Assoc>(a_h, dc_h);
 
+  // zero out counter
+  dc_h(0).zero();
+  Kokkos::deep_copy(dc_d,dc_h);
+
   fillBulk(dc_d, v_d, sa_d, N);
-  
-  cms::kokkos::finalizeBulk(dc_d, sa_d,Assoc::totbins());
+
+  cms::kokkos::finalizeBulk(dc_d, sa_d);
   
   Kokkos::deep_copy(sa_h,sa_d);
   Kokkos::deep_copy(dc_h,dc_d);
@@ -244,18 +282,18 @@ int main() {
 
   std::cout << a_h(0).size() << std::endl;
 
-  imax = 0;
-  ave = 0;
+  imax_h(0) = 0;
+  ave_h(0) = 0;
   for (auto i = 0U; i < N; ++i) {
     auto x = a_h(0).size(i);
     if (!(x == 4 || x == 3))
       std::cout << i << ' ' << x << std::endl;
     assert(x == 4 || x == 3);
-    ave += x;
-    imax = std::max(imax, int(x));
+    ave_h(0) += x;
+    imax_h(0) = std::max(imax_h(0), int(x));
   }
   assert(0 == a_h(0).size(N));
-  std::cout << "found with ave occupancy " << double(ave) / N << ' ' << imax << std::endl;
+  std::cout << "found with ave occupancy " << double(ave_h(0)) / N << ' ' << imax_h(0) << std::endl;
 
   // here verify use of block local counters
   Kokkos::View<Multiplicity*,KokkosExecSpace> m1_d("m1_d",1);
