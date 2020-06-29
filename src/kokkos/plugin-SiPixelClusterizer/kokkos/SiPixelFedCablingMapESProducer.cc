@@ -31,7 +31,7 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::View<SiPixelFedCablingMapGPU, KokkosExecSpace> cablingMap_d("cablingMap_d");
     auto cablingMap_h = Kokkos::create_mirror_view(cablingMap_d);
-    (*cablingMap_h.data()) = obj;
+    cablingMap_h() = obj;
     Kokkos::deep_copy(KokkosExecSpace(), cablingMap_d, cablingMap_h);
     eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper<KokkosExecSpace>>(std::move(cablingMap_d), true));
 

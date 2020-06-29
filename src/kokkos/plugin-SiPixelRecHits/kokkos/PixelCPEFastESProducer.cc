@@ -47,10 +47,10 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosExecSpace> params_d("params_d");
     auto params_h = Kokkos::create_mirror_view(params_d);
-    params_h.data()->m_commonParams = commonParams_d.data();
-    params_h.data()->m_detParams = detParams_d.data();
-    params_h.data()->m_layerGeometry = layerGeometry_d.data();
-    params_h.data()->m_averageGeometry = averageGeometry_d.data();
+    params_h().m_commonParams = commonParams_d.data();
+    params_h().m_detParams = detParams_d.data();
+    params_h().m_layerGeometry = layerGeometry_d.data();
+    params_h().m_averageGeometry = averageGeometry_d.data();
     Kokkos::deep_copy(KokkosExecSpace(), params_d, params_h);
 
     KokkosExecSpace().fence();
