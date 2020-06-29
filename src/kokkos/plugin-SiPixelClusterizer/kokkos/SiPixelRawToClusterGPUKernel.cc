@@ -400,7 +400,7 @@ namespace KOKKOS_NAMESPACE {
       using namespace ::pixelgpudetails;
       uint32_t index = fedId * MAX_LINK * MAX_ROC + (link - 1) * MAX_ROC + roc;
       if (useQualityInfo) {
-        skipROC = cablingMap.data()->badRocs[index];
+        skipROC = cablingMap().badRocs[index];
         if (skipROC)
           return;
       }
