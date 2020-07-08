@@ -44,7 +44,7 @@ public:
     // determine what averaged data block we are in (there should be 1 or 2 of these depending on if plaquette is 1 by X or 2 by X
     unsigned int lengthOfColumnData = (range.second - range.first) / nCols;
     unsigned int lengthOfAveragedDataInEachColumn = 2;  // we always only have two values per column averaged block
-    unsigned int numberOfDataBlocksToSkip = row / fields.data()->numberOfRowsAveragedOver_;
+    unsigned int numberOfDataBlocksToSkip = row / fields().numberOfRowsAveragedOver_;
 
     auto offset = range.first + col * lengthOfColumnData + lengthOfAveragedDataInEachColumn * numberOfDataBlocksToSkip;
 
@@ -54,17 +54,17 @@ public:
 
     auto s = v_pedestals[offset / 2];
 
-    isDeadColumn = (s.ped & 0xFF) == fields.data()->deadFlag_;
-    isNoisyColumn = (s.ped & 0xFF) == fields.data()->noisyFlag_;
+    isDeadColumn = (s.ped & 0xFF) == fields().deadFlag_;
+    isNoisyColumn = (s.ped & 0xFF) == fields().noisyFlag_;
 
     return std::make_pair(decodePed(s.ped & 0xFF), decodeGain(s.gain & 0xFF));
   }
 
   KOKKOS_INLINE_FUNCTION float decodeGain(unsigned int gain) const {
-    return gain * fields.data()->gainPrecision + fields.data()->minGain_;
+    return gain * fields().gainPrecision + fields().minGain_;
   }
   KOKKOS_INLINE_FUNCTION float decodePed(unsigned int ped) const {
-    return ped * fields.data()->pedPrecision + fields.data()->minPed_;
+    return ped * fields().pedPrecision + fields().minPed_;
   }
 
 private:

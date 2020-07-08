@@ -63,17 +63,15 @@ public:
 
   class DeviceConstView {
   public:
-#ifdef TODO
-    __device__ __forceinline__ uint16_t xx(int i) const { return __ldg(xx_ + i); }
-    __device__ __forceinline__ uint16_t yy(int i) const { return __ldg(yy_ + i); }
-    __device__ __forceinline__ uint16_t adc(int i) const { return __ldg(adc_ + i); }
-    __device__ __forceinline__ uint16_t moduleInd(int i) const { return __ldg(moduleInd_ + i); }
-    __device__ __forceinline__ int32_t clus(int i) const { return __ldg(clus_ + i); }
+    KOKKOS_INLINE_FUNCTION uint16_t xx(int i) const { return xx_[i]; }
+    KOKKOS_INLINE_FUNCTION uint16_t yy(int i) const { return yy_[i]; }
+    KOKKOS_INLINE_FUNCTION uint16_t adc(int i) const { return adc_[i]; }
+    KOKKOS_INLINE_FUNCTION uint16_t moduleInd(int i) const { return moduleInd_[i]; }
+    KOKKOS_INLINE_FUNCTION int32_t clus(int i) const { return clus_[i]; }
 
     friend class SiPixelDigisKokkos;
 
     // private:
-#endif
     Kokkos::View<uint16_t const*, MemorySpace> xx_;
     Kokkos::View<uint16_t const*, MemorySpace> yy_;
     Kokkos::View<uint16_t const*, MemorySpace> adc_;

@@ -64,7 +64,7 @@ namespace KOKKOS_NAMESPACE {
 
     typename SiPixelGainForHLTonGPU<KokkosExecSpace>::FieldsWritableView fields_d("fields_d");
     auto fields_h = Kokkos::create_mirror_view(fields_d);
-#define COPY(name) fields_h.data()->name = gain.name
+#define COPY(name) fields_h().name = gain.name
     COPY(minPed_);
     COPY(maxPed_);
     COPY(minGain_);
