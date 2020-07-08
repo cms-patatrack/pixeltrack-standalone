@@ -26,7 +26,7 @@ void go() {
 
   constexpr uint32_t N = 12000;
   Kokkos::View<T*,KokkosExecSpace> v_d("v_d",N);
-  typename Kokkos::View<T*,KokkosExecSpace>::HostMirror v_h("v_h",N);
+  auto v_h = Kokkos::create_mirror_view(v_d);
 
   using Hist = HistoContainer<T, NBINS, N, S>;
   std::cout << "HistoContainer " << Hist::nbits() << ' ' << Hist::nbins() << ' ' << Hist::capacity() << ' '
@@ -40,66 +40,68 @@ void go() {
       for (long long j = N / 2; j < N / 2 + N / 4; j++)
         v_h(j) = 4;
 
-    Kokkos::deep_copy(v_d,v_h);
+    Kokkos::deep_copy(KokkosExecSpace(),v_d,v_h);
+
+    printf("start kernel for %d data\n", N);
     
     using TeamHist = HistoContainer<T, NBINS, N, S, uint16_t>;
 
-    Kokkos::View<TeamHist*,KokkosExecSpace> histo_d("histo_d",1);
+    Kokkos::View<TeamHist,KokkosExecSpace> histo_d("histo_d");
     auto histo_h = Kokkos::create_mirror_view(histo_d);
 
-    Kokkos::parallel_for("set_zero",Kokkos::RangePolicy<KokkosExecSpace>(0,TeamHist::totbins()),
+    Kokkos::parallel_for("set_zero",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,TeamHist::totbins()),
       KOKKOS_LAMBDA(const int& i){
-        histo_d(0).off[i] = 0;
+        histo_d().off[i] = 0;
       });
 
-    Kokkos::parallel_for("set_zero_bin",Kokkos::RangePolicy<KokkosExecSpace>(0,TeamHist::capacity()),
+    Kokkos::parallel_for("set_zero_bin",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,TeamHist::capacity()),
       KOKKOS_LAMBDA(const int& i){
-        histo_d(0).bins[i] = 0;
+        histo_d().bins[i] = 0;
       });
 
-    Kokkos::parallel_for("count",Kokkos::RangePolicy<KokkosExecSpace>(0,N),
+    Kokkos::parallel_for("count",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,N),
       KOKKOS_LAMBDA(const int& i){
-        histo_d(0).count(v_d(i));
+        histo_d().count(v_d(i));
       });
 
-    Kokkos::deep_copy(histo_h,histo_d);
-    assert(histo_h(0).off[-1] == 0);
-    assert(0 == histo_h(0).size());
+    Kokkos::deep_copy(KokkosExecSpace(),histo_h,histo_d);
+    assert(histo_h().off[-1] == 0);
+    assert(0 == histo_h().size());
 
     TeamHist::finalize(histo_d);
 
-    Kokkos::deep_copy(histo_h,histo_d);
+    Kokkos::deep_copy(KokkosExecSpace(),histo_h,histo_d);
 
-    assert(histo_h(0).off[-1] == histo_h(0).off[-2]);
-    assert(N == histo_h(0).size());
+    assert(histo_h().off[-1] == histo_h().off[-2]);
+    assert(N == histo_h().size());
 
-    Kokkos::parallel_for("assert_check",Kokkos::RangePolicy<KokkosExecSpace>(0,TeamHist::totbins()-1),
+    Kokkos::parallel_for("assert_check",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,TeamHist::totbins()-1),
       KOKKOS_LAMBDA(const int& i){
-        assert(histo_d(0).off[i] <= histo_d(0).off[i+1]);
+        assert(histo_d().off[i] <= histo_d().off[i+1]);
       });
 
-    Kokkos::parallel_for("fill",Kokkos::RangePolicy<KokkosExecSpace>(0,N),
+    Kokkos::parallel_for("fill",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,N),
       KOKKOS_LAMBDA(const int& i){
-        histo_d(0).fill(v_d(i),i);
+        histo_d().fill(v_d(i),i);
       });
 
-    Kokkos::deep_copy(histo_h,histo_d);
+    Kokkos::deep_copy(KokkosExecSpace(),histo_h,histo_d);
 
-    assert(0 == histo_h(0).off[0]);
-    assert(N == histo_h(0).size());
+    assert(0 == histo_h().off[0]);
+    assert(N == histo_h().size());
 
-    Kokkos::parallel_for("bin",Kokkos::RangePolicy<KokkosExecSpace>(0,N-1),
+    Kokkos::parallel_for("bin",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,N-1),
       KOKKOS_LAMBDA(const int& i){
-        auto p = histo_d(0).begin() + i;
+        auto p = histo_d().begin() + i;
         assert( (*p) < N);
         auto k1 = TeamHist::bin(v_d(*p));
         auto k2 = TeamHist::bin(v_d(*(p+1)));
         assert(k2 >= k1);
       });
 
-    Kokkos::parallel_for("forEachInWindow",Kokkos::RangePolicy<KokkosExecSpace>(0,N),
+    Kokkos::parallel_for("forEachInWindow",Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(),0,N),
       KOKKOS_LAMBDA(const int& i){
-        auto p = histo_d(0).begin() + i;
+        auto p = histo_d().begin() + i;
         auto j = *p;
         auto b0 = TeamHist::bin(v_d(j));
         int tot = 0;
@@ -108,7 +110,7 @@ void go() {
           ++tot;
         };
         forEachInWindow(histo_d,v_d(j), v_d(j), ftest);
-        int rtot = histo_d(0).size(b0);
+        int rtot = histo_d().size(b0);
 
         assert(tot == rtot);
         tot = 0;
@@ -123,7 +125,7 @@ void go() {
         forEachInWindow(histo_d, vm, vp, ftest);
         int bp = TeamHist::bin(vp);
         int bm = TeamHist::bin(vm);
-        rtot = histo_d(0).end(bp) - histo_d(0).begin(bm);
+        rtot = histo_d().end(bp) - histo_d().begin(bm);
         assert(tot == rtot);
 
 
