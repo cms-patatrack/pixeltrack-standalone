@@ -71,18 +71,19 @@ namespace cms {
 
     template <typename Histo, typename ExecSpace>
     inline void launchZero(Kokkos::View<Histo,ExecSpace> h, ExecSpace const& execSpace) {
-      Kokkos::parallel_for(Kokkos::RangePolicy<KokkosExecSpace>(execSpace,0,Histo::totbins()),KOKKOS_LAMBDA(const size_t i) {
+      Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(execSpace,0,Histo::totbins()),KOKKOS_LAMBDA(const size_t i) {
         h().off[i] = 0;
       });
     }
 
     template <typename Histo, typename ExecSpace>
-    inline void launchFinalize(Kokkos::View<Histo,ExecSpace> h) {
-      Kokkos::parallel_scan(Histo::totbins(), KOKKOS_LAMBDA(const int& i, float& upd, const bool& final){
-        upd += h().off[i];
-        if(final)
-          h().off[i] = upd;
-      });
+    inline void launchFinalize(Kokkos::View<Histo,ExecSpace> h, ExecSpace const& execSpace) {
+      Kokkos::parallel_scan(Kokkos::RangePolicy<ExecSpace>(execSpace,0,Histo::totbins()),
+        KOKKOS_LAMBDA(const int& i, float& upd, const bool& final){
+          upd += h().off[i];
+          if(final)
+            h().off[i] = upd;
+        });
     }
 
 
@@ -99,12 +100,12 @@ namespace cms {
       launchZero(h,execSpace);
       auto nblocks = (totSize + nthreads - 1) / nthreads;
       using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
-      Kokkos::parallel_for("countFromVector",TeamPolicy(nblocks,nthreads),
+      Kokkos::parallel_for("countFromVector",TeamPolicy(execSpace,nblocks,nthreads),
                            KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember){
         countFromVector(h,nh,v,offsets,teamMember);
       });
-      launchFinalize(h);
-      Kokkos::parallel_for("countFromVector",TeamPolicy(nblocks,nthreads),
+      launchFinalize(h,execSpace);
+      Kokkos::parallel_for("countFromVector",TeamPolicy(execSpace,nblocks,nthreads),
                            KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember){
         fillFromVector(h,nh,v,offsets,teamMember);
       });
@@ -112,8 +113,9 @@ namespace cms {
 
     template <typename Assoc, typename ExecSpace>
     void finalizeBulk(Kokkos::View<AtomicPairCounter,ExecSpace> const apc,
-                      Kokkos::View<Assoc,ExecSpace> assoc) {
-      Kokkos::parallel_for("finalizeBulk",Kokkos::RangePolicy<ExecSpace>(0,Assoc::totbins()),
+                      Kokkos::View<Assoc,ExecSpace> assoc,
+                      ExecSpace const& execSpace) {
+      Kokkos::parallel_for("finalizeBulk",Kokkos::RangePolicy<ExecSpace>(execSpace,0,Assoc::totbins()),
         KOKKOS_LAMBDA(const int& i){
           assoc().bulkFinalizeFill(apc,i);
         });
@@ -269,7 +271,7 @@ public:
   }
 
   template<typename ExecSpace>
-  KOKKOS_INLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter,ExecSpace> const apc,const int& threadId) {
+  KOKKOS_INLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter,ExecSpace> const apc,const int threadId) {
     auto m = apc().get().m;
     auto n = apc().get().n;
     if (m >= nbins()) {  // overflow!
@@ -321,7 +323,7 @@ public:
     // for(uint32_t i=0;i<totbins();++i)
     //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
     Kokkos::parallel_scan("finalize",Histo::totbins(),
-      KOKKOS_LAMBDA(const int& i, uint32_t& update, const bool& final){
+      KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final){
         update += histo().off[i];
         if(final)
           histo().off[i] = update;

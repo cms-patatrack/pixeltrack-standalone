@@ -28,11 +28,12 @@ using TeamView = Kokkos::View<Multiplicity::CountersOnly,KokkosExecSpace::scratc
 template <typename ExecSpace>
 void countMultiLocal(Kokkos::View<uint16_t**,ExecSpace> const tk,
                      Kokkos::View<Multiplicity,ExecSpace> assoc,
-                     const int32_t& n) {
+                     const int32_t& n,
+                     ExecSpace const& execSpace) {
   auto nThreads = 256;
   auto nBlocks = (4 * n + nThreads - 1) / nThreads;
   
-  TeamPolicy policy(nBlocks,nThreads);
+  TeamPolicy policy(execSpace,nBlocks,nThreads);
   auto team_view_size = TeamView::shmem_size();
   auto level = 0;
   Kokkos::parallel_for("countMultiLocal",policy.set_scratch_size(level,Kokkos::PerTeam(team_view_size)),
@@ -150,7 +151,7 @@ int main() {
     rdm_h(i) = rdm(eng);
     //printf("00 rdm(eng) = %04d\n",rdm_h(i));
   }
-  Kokkos::deep_copy(rdm_d,rdm_h);
+  Kokkos::deep_copy(KokkosExecSpace(),rdm_d,rdm_h);
 
   constexpr uint32_t N = 4000;
 
@@ -235,7 +236,7 @@ int main() {
 
   count(v_d,a_d,N,KokkosExecSpace());
   
-  cms::kokkos::launchFinalize(a_d);
+  cms::kokkos::launchFinalize(a_d,KokkosExecSpace());
 
   Kokkos::deep_copy(KokkosExecSpace(),a_h,a_d);
 
@@ -265,7 +266,7 @@ int main() {
   
   fillBulk(dc_d, v_d, a_d, N,KokkosExecSpace());
   
-  cms::kokkos::finalizeBulk(dc_d, a_d);
+  cms::kokkos::finalizeBulk(dc_d, a_d,KokkosExecSpace());
   
   Kokkos::deep_copy(KokkosExecSpace(),a_h,a_d);
   Kokkos::deep_copy(KokkosExecSpace(),dc_h,dc_d);
@@ -277,7 +278,7 @@ int main() {
 
   fillBulk(dc_d, v_d, sa_d, N,KokkosExecSpace());
 
-  cms::kokkos::finalizeBulk(dc_d, sa_d);
+  cms::kokkos::finalizeBulk(dc_d, sa_d,KokkosExecSpace());
   
   Kokkos::deep_copy(KokkosExecSpace(),sa_h,sa_d);
   Kokkos::deep_copy(KokkosExecSpace(),dc_h,dc_d);
@@ -310,13 +311,13 @@ int main() {
   // nBlocks = (4 * N + nThreads - 1) / nThreads;
   countMulti(m1_d, N,KokkosExecSpace());
 
-  countMultiLocal(v_d, m2_d, N);
+  countMultiLocal(v_d, m2_d, N, KokkosExecSpace());
   
 
   verifyMulti(m1_d, m2_d,KokkosExecSpace());
 
-  cms::kokkos::launchFinalize(m1_d);
-  cms::kokkos::launchFinalize(m2_d);
+  cms::kokkos::launchFinalize(m1_d,KokkosExecSpace());
+  cms::kokkos::launchFinalize(m2_d,KokkosExecSpace());
   verifyMulti(m1_d, m2_d,KokkosExecSpace());
 
 
