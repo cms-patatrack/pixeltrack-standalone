@@ -1,0 +1,18 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/SharedStreamPtr.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/SharedStreamPtr.h'
+    Offset:          117
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/SharedStreamPtr.h'
+    Offset:          159
+    Length:          26
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/SharedStreamPtr.h'
+    Offset:          475
+    Length:          12
+    ReplacementText: 'sycl::queue *'
+...

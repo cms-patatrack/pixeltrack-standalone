@@ -1,0 +1,445 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/CachingHostAllocator.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          2275
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          2323
+    Length:          30
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          2353
+    Length:          30
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          4428
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          5490
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          5503
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          5561
+    Length:          11
+    ReplacementText: 'sycl::event'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12400
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12631
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12644
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12733
+    Length:          0
+    ReplacementText: ' try '
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12808
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12828
+    Length:          11
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          12869
+    Length:          22
+    ReplacementText: 'device = dpct::dev_mgr::instance().current_device_id()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14196
+    Length:          38
+    ReplacementText: '(int)block_itr->ready_event.get_info<sycl::info::event::command_execution_status>()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14235
+    Length:          2
+    ReplacementText: '=='
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14238
+    Length:          17
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14593
+    Length:          0
+    ReplacementText: '              /*
+              DPCT1003:43: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+              */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14628
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14660
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14693
+    Length:          0
+    ReplacementText: '              /*
+              DPCT1027:44: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+              */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14728
+    Length:          40
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14801
+    Length:          0
+    ReplacementText: '              /*
+              DPCT1003:45: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+              */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14836
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14857
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14890
+    Length:          0
+    ReplacementText: '              /*
+              DPCT1027:46: The call to cudaEventCreateWithFlags was replaced with 0, because this call is redundant in DPC++.
+              */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          14925
+    Length:          73
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16187
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:47: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16216
+    Length:          13
+    ReplacementText: '(search_key.d_ptr = (void *)sycl::malloc_host'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16230
+    Length:          19
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16265
+    Length:          22
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16287
+    Length:          0
+    ReplacementText: ', dpct::get_default_queue()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16288
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16305
+    Length:          25
+    ReplacementText: '2'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16780
+    Length:          11
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16828
+    Length:          0
+    ReplacementText: '          /*
+          DPCT1010:48: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
+          */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          16838
+    Length:          18
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          17333
+    Length:          0
+    ReplacementText: '            /*
+            DPCT1003:51: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+            */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          17366
+    Length:          30
+    ReplacementText: '(sycl::free(block_itr->d_ptr, dpct::get_default_queue())'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          17396
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          17420
+    Length:          0
+    ReplacementText: '            /*
+            DPCT1027:52: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+            */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          17453
+    Length:          40
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18231
+    Length:          0
+    ReplacementText: '          /*
+          DPCT1000:50: Error handling if-stmt was detected but could not be rewritten.
+          */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18252
+    Length:          0
+    ReplacementText: '            /*
+            DPCT1001:49: The statement could not be removed.
+            */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18314
+    Length:          0
+    ReplacementText: '          /*
+          DPCT1003:53: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+          */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18345
+    Length:          13
+    ReplacementText: '(search_key.d_ptr = (void *)sycl::malloc_host'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18359
+    Length:          19
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18394
+    Length:          22
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18416
+    Length:          0
+    ReplacementText: ', dpct::get_default_queue()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18417
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18487
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1027:54: The call to cudaEventCreateWithFlags was replaced with 0, because this call is redundant in DPC++.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          18516
+    Length:          73
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          19623
+    Length:          0
+    ReplacementText: '
+    catch (sycl::exception const &exc) {
+        std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+        std::exit(1);
+    }'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          19819
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          19853
+    Length:          0
+    ReplacementText: ' try '
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          19915
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          19935
+    Length:          11
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21445
+    Length:          33
+    ReplacementText: 'entrypoint_device = dpct::dev_mgr::instance().current_device_id()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21555
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:55: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21584
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21616
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21773
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1012:56: Detected kernel execution time measurement pattern and generated an initial code for time measurements in SYCL. You can change the way time is measured depending on your goals.
+        */
+        /*
+        DPCT1024:57: The original code returned the error code that was further consumed by the program logic. This original code was replaced with 0. You may need to rewrite the program logic consuming the error code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21785
+    Length:          0
+    ReplacementText: 'auto search_key_ready_event_ct1 = clock(); 
+        '
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          21802
+    Length:          69
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22040
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:58: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22069
+    Length:          19
+    ReplacementText: '(sycl::free(d_ptr, dpct::get_default_queue())'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22088
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22115
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1027:59: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22144
+    Length:          40
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22965
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:60: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          22994
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23026
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23087
+    Length:          0
+    ReplacementText: '
+    catch (sycl::exception const &exc) {
+        std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+        std::exit(1);
+    }'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23164
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23192
+    Length:          0
+    ReplacementText: ' try '
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23200
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23220
+    Length:          11
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23634
+    Length:          33
+    ReplacementText: 'entrypoint_device = dpct::dev_mgr::instance().current_device_id()'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23798
+    Length:          0
+    ReplacementText: '          /*
+          DPCT1003:61: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+          */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23829
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23857
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23960
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:62: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          23989
+    Length:          26
+    ReplacementText: '(sycl::free(begin->d_ptr, dpct::get_default_queue())'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24015
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24035
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1027:63: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24064
+    Length:          36
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24812
+    Length:          0
+    ReplacementText: '        /*
+        DPCT1003:64: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24841
+    Length:          13
+    ReplacementText: '(dpct::dev_mgr::instance().select_device'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24873
+    Length:          0
+    ReplacementText: ', 0)'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/CachingHostAllocator.h'
+    Offset:          24934
+    Length:          0
+    ReplacementText: '
+    catch (sycl::exception const &exc) {
+        std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+        std::exit(1);
+    }'
+...

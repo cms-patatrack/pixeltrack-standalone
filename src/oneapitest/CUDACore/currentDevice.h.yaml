@@ -1,0 +1,18 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/currentDevice.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/currentDevice.h'
+    Offset:          111
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/currentDevice.h'
+    Offset:          144
+    Length:          26
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/currentDevice.h'
+    Offset:          270
+    Length:          19
+    ReplacementText: 'dev = dpct::dev_mgr::instance().current_device_id()'
+...

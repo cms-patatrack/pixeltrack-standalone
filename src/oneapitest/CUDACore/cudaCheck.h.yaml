@@ -1,0 +1,90 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/cudaCheck.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          129
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          206
+    Length:          18
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          224
+    Length:          26
+    ReplacementText: ''
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1064
+    Length:          8
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1138
+    Length:          12
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1226
+    Length:          0
+    ReplacementText: '      /*
+      DPCT1007:0: Migration of this CUDA API is not supported by the Intel(R) DPC++ Compatibility Tool.
+      */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1264
+    Length:          0
+    ReplacementText: '      /*
+      DPCT1007:1: Migration of this CUDA API is not supported by the Intel(R) DPC++ Compatibility Tool.
+      */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1484
+    Length:          11
+    ReplacementText: int
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1539
+    Length:          0
+    ReplacementText: ' try '
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1561
+    Length:          11
+    ReplacementText: '0'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1596
+    Length:          0
+    ReplacementText: '      /*
+      DPCT1009:2: SYCL uses exceptions to report errors and does not use the error codes. The original code was commented out and a warning string was inserted. You need to rewrite this code.
+      */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1622
+    Length:          0
+    ReplacementText: '"cudaGetErrorName not supported"/*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1646
+    Length:          0
+    ReplacementText: '*/'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1648
+    Length:          0
+    ReplacementText: '      /*
+      DPCT1009:3: SYCL uses exceptions to report errors and does not use the error codes. The original code was commented out and a warning string was inserted. You need to rewrite this code.
+      */
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1676
+    Length:          0
+    ReplacementText: '"cudaGetErrorString not supported"/*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1702
+    Length:          0
+    ReplacementText: '*/'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/cudaCheck.h'
+    Offset:          1799
+    Length:          0
+    ReplacementText: '
+    catch (sycl::exception const &exc) {
+        std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+        std::exit(1);
+    }'
+...

@@ -1,0 +1,34 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/ScopedContext.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          103
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          1015
+    Length:          12
+    ReplacementText: 'sycl::queue *'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          2515
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          2528
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          2556
+    Length:          11
+    ReplacementText: 'sycl::event'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          3092
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/ScopedContext.h'
+    Offset:          3105
+    Length:          0
+    ReplacementText: '*'
+...

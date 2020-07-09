@@ -1,0 +1,42 @@
+---
+MainSourceFile:  '/data/user/fwyzard/pixeltrack-standalone/src/oneapitest/CUDACore/host_unique_ptr.h'
+Replacements:
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          137
+    Length:          0
+    ReplacementText: '#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          1269
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          1282
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          1748
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          1761
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          2562
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          2575
+    Length:          0
+    ReplacementText: '*'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          2894
+    Length:          12
+    ReplacementText: 'sycl::queue'
+  - FilePath:        '/data/user/fwyzard/pixeltrack-standalone/src/cudatest/CUDACore/host_unique_ptr.h'
+    Offset:          2907
+    Length:          0
+    ReplacementText: '*'
+...
