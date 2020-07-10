@@ -33,7 +33,11 @@ void countMultiLocal(Kokkos::View<uint16_t**,ExecSpace> const tk,
   auto nThreads = 256;
   auto nBlocks = (4 * n + nThreads - 1) / nThreads;
   
+#ifndef KOKKOS_BACKEND_SERIAL
   TeamPolicy policy(execSpace,nBlocks,nThreads);
+#else
+  TeamPolicy policy(execSpace,nBlocks*nThreads,1);
+#endif
   auto team_view_size = TeamView::shmem_size();
   auto level = 0;
   Kokkos::parallel_for("countMultiLocal",policy.set_scratch_size(level,Kokkos::PerTeam(team_view_size)),

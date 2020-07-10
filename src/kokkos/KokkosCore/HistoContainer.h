@@ -101,12 +101,17 @@ namespace cms {
       launchZero(h,execSpace);
       auto nblocks = (totSize + nthreads - 1) / nthreads;
       using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
-      Kokkos::parallel_for("countFromVector",TeamPolicy(execSpace,nblocks,nthreads),
+#ifndef KOKKOS_BACKEND_SERIAL
+      TeamPolicy tp(execSpace,nblocks,nthreads);
+#else
+      TeamPolicy tp(execSpace,nblocks*nthreads,1);
+#endif
+      Kokkos::parallel_for("countFromVector",tp,
                            KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember){
         countFromVector(h,nh,v,offsets,teamMember);
       });
       launchFinalize(h,execSpace);
-      Kokkos::parallel_for("countFromVector",TeamPolicy(execSpace,nblocks,nthreads),
+      Kokkos::parallel_for("countFromVector",tp,
                            KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember){
         fillFromVector(h,nh,v,offsets,teamMember);
       });
