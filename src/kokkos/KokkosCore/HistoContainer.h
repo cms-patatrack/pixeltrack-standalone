@@ -71,9 +71,10 @@ namespace cms {
 
     template <typename Histo, typename ExecSpace>
     inline void launchZero(Kokkos::View<Histo,ExecSpace> h, ExecSpace const& execSpace) {
-      Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(execSpace,0,Histo::totbins()),KOKKOS_LAMBDA(const size_t i) {
-        h().off[i] = 0;
-      });
+      Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(execSpace,0,Histo::totbins()),
+        KOKKOS_LAMBDA(const size_t i) {
+          h().off[i] = 0;
+        });
     }
 
     template <typename Histo, typename ExecSpace>
@@ -226,14 +227,6 @@ public:
     }
   }
 
-  // template <typename HistoType>
-  // KOKKOS_INLINE_FUNCTION static void add(Kokkos::View<HistoType*,KokkosExecSpace> const histo,Kokkos::View<CountersOnly*,KokkosExecSpace> const co){
-  //   Kokkos::parallel_for("histo_add",Kokkos::RangePolicy<KokkosExecSpace>(0,totbins()),
-  //     KOKKOS_LAMBDA(const int& i){
-  //       Kokkos::atomic_fetch_add(histo().off + i,co().off[i]);
-  //     });
-  // }
-
   static KOKKOS_INLINE_FUNCTION uint32_t atomicIncrement(Counter &x) {
     return Kokkos::atomic_fetch_add(&x, 1);
   }
@@ -318,11 +311,11 @@ public:
 
   #pragma hd_warning_disable
   template<typename Histo, typename ExecSpace>
-  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo,ExecSpace> histo) {
+  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo,ExecSpace> histo,ExecSpace const& execSpace) {
     // assert(off[totbins() - 1] == 0);
     // for(uint32_t i=0;i<totbins();++i)
     //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
-    Kokkos::parallel_scan("finalize",Histo::totbins(),
+    Kokkos::parallel_scan("finalize",Kokkos::RangePolicy<ExecSpace>(execSpace,0,Histo::totbins()),
       KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final){
         update += histo().off[i];
         if(final)

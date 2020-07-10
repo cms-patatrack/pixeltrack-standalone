@@ -68,7 +68,7 @@ void go() {
     assert(histo_h().off[-1] == 0);
     assert(0 == histo_h().size());
 
-    TeamHist::finalize(histo_d);
+    TeamHist::finalize(histo_d,KokkosExecSpace());
 
     Kokkos::deep_copy(KokkosExecSpace(),histo_h,histo_d);
 
