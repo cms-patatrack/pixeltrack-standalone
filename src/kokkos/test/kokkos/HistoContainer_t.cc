@@ -14,28 +14,28 @@ void go() {
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
   constexpr int N = 12000;
-  Kokkos::View<T*,KokkosExecSpace> v_d("v_d",N);
+  Kokkos::View<T*, KokkosExecSpace> v_d("v_d", N);
   auto v_h = Kokkos::create_mirror_view(v_d);
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
-//  uint32_t offsets[nParts + 1];
+  //  uint32_t offsets[nParts + 1];
 
   using Hist = HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << Hist::wsSize() << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  Kokkos::View<Hist,KokkosExecSpace> h_d("h_d");
+  Kokkos::View<Hist, KokkosExecSpace> h_d("h_d");
   auto h_h = Kokkos::create_mirror_view(h_d);
 
-  Kokkos::View<uint32_t*,KokkosExecSpace> off_d("off_d",nParts + 1);
+  Kokkos::View<uint32_t*, KokkosExecSpace> off_d("off_d", nParts + 1);
   auto off_h = Kokkos::create_mirror_view(off_d);
 
   for (int it = 0; it < 5; ++it) {
     off_h(0) = 0;
     for (uint32_t j = 1; j < nParts + 1; ++j) {
-      off_h(j) = off_h(j-1) + partSize - 3 * j;
+      off_h(j) = off_h(j - 1) + partSize - 3 * j;
       assert(off_h(j) <= N);
     }
 
@@ -52,7 +52,7 @@ void go() {
       off_h(9) = 44 + off_h(8);
       off_h(10) = 3297 + off_h(9);
     }
-    Kokkos::deep_copy(KokkosExecSpace(),off_d,off_h);
+    Kokkos::deep_copy(KokkosExecSpace(), off_d, off_h);
 
     for (long long j = 0; j < N; j++)
       v_h[j] = rgen(eng);
@@ -61,13 +61,17 @@ void go() {
       for (long long j = 1000; j < 2000; j++)
         v_h[j] = sizeof(T) == 1 ? 22 : 3456;
     }
-    Kokkos::deep_copy(KokkosExecSpace(),v_d,v_h);
+    Kokkos::deep_copy(KokkosExecSpace(), v_d, v_h);
 
-    cms::kokkos::fillManyFromVector(h_d, nParts, Kokkos::View<T const*,KokkosExecSpace>(v_d),
-                                    Kokkos::View<uint32_t const*,KokkosExecSpace>(off_d), 
-                                    off_h(10), 256,KokkosExecSpace());
+    cms::kokkos::fillManyFromVector(h_d,
+                                    nParts,
+                                    Kokkos::View<T const*, KokkosExecSpace>(v_d),
+                                    Kokkos::View<uint32_t const*, KokkosExecSpace>(off_d),
+                                    off_h(10),
+                                    256,
+                                    KokkosExecSpace());
 
-    Kokkos::deep_copy(KokkosExecSpace(),h_h,h_d);
+    Kokkos::deep_copy(KokkosExecSpace(), h_h, h_d);
     auto h = h_h();
 
     assert(0 == h.off[0]);

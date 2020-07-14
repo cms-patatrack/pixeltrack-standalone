@@ -29,7 +29,10 @@ public:
 
   KOKKOS_INLINE_FUNCTION Counters get() const { return counter.counters; }
 
-  KOKKOS_INLINE_FUNCTION void zero() {counter.counters.m = 0; counter.counters.n = 0;}
+  KOKKOS_INLINE_FUNCTION void zero() {
+    counter.counters.m = 0;
+    counter.counters.n = 0;
+  }
 
   // increment n by 1 and m by i.  return previous value
   KOKKOS_INLINE_FUNCTION Counters add(uint32_t i) {
