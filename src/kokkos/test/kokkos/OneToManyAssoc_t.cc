@@ -267,7 +267,8 @@ int main() {
   std::cout << "found with " << n_h() << " elements " << double(ave_h()) / n_h() << ' ' << imax_h() << ' ' << z_h() << std::endl;
 
   // now the inverse map (actually this is the direct....)
-  
+  dc_h().zero();
+  Kokkos::deep_copy(KokkosExecSpace(),dc_d,dc_h);
   fillBulk(dc_d, v_d, a_d, N,KokkosExecSpace());
   
   cms::kokkos::finalizeBulk(dc_d, a_d,KokkosExecSpace());
