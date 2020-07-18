@@ -127,19 +127,17 @@ namespace cms {
   }  // namespace kokkos
 }  // namespace cms
 
-#ifdef TODO
 // iteratate over N bins left and right of the one containing "v"
 template <typename Hist, typename V, typename Func>
-__host__ __device__ __forceinline__ void forEachInBins(Hist const& hist, V value, int n, Func func) {
+KOKKOS_INLINE_FUNCTION void forEachInBins(Hist const* hist, V value, int n, Func func) {
   int bs = Hist::bin(value);
-  int be = std::min(int(Hist::nbins() - 1), bs + n);
-  bs = std::max(0, bs - n);
+  int be = (int(Hist::nbins() - 1) < (bs + n)) ? int(Hist::nbins() - 1) : bs + n;
+  bs = 0 > (bs - n) ? 0 : (bs - n);
   assert(be >= bs);
-  for (auto pj = hist.begin(bs); pj < hist.end(be); ++pj) {
+  for (auto pj = hist->begin(bs); pj < hist->end(be); ++pj) {
     func(*pj);
   }
 }
-#endif  // TODO
 
 // iteratate over bins containing all values in window wmin, wmax
 template <typename Histo, typename V, typename Func, typename ExecSpace>
@@ -324,6 +322,23 @@ public:
     // for(uint32_t i=0;i<totbins();++i)
     //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
     // assert(off[totbins() - 1] == off[totbins() - 2]);
+  }
+
+#pragma hd_warning_disable
+  template <typename Histo, typename ExecSpace>
+  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo*, ExecSpace> histo,
+                                              const int32_t N,
+                                              ExecSpace const& execSpace) {
+    for (int k = 0; k < N; k++) {
+      Kokkos::parallel_scan(
+          "nFinalize",
+          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final) {
+            update += histo(k).off[i];
+            if (final)
+              histo(k).off[i] = update;
+          });
+    }
   }
 
   constexpr auto size() const { return uint32_t(off[totbins() - 1]); }
