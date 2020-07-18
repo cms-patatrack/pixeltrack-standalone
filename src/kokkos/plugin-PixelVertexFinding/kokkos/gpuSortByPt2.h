@@ -1,16 +1,13 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 
-#ifdef __CUDA_ARCH__
-#ifdef TODO
-#include "CUDACore/radixSort.h"
-#endif  // TODO
-#endif
-
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
+
+    using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
+    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
     KOKKOS_INLINE_FUNCTION void sortByPt2(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
                                           Kokkos::View<WorkSpace, KokkosExecSpace> vws,
@@ -55,23 +52,31 @@ namespace KOKKOS_NAMESPACE {
           sortInd[0] = 0;
         return;
       }
-#ifdef __CUDA_ARCH__
-#ifdef TODO
-      __shared__ uint16_t sws[1024];
-      // sort using only 16 bits
-      radixSort<float, 2>(ptv2, sortInd, sws, nvFinal);
-#endif  // TODO
-#else
-      for (uint16_t i = 0; i < nvFinal; ++i)
-        sortInd[i] = i;
-      std::sort(sortInd, sortInd + nvFinal, [&](auto i, auto j) { return ptv2[i] < ptv2[j]; });
-#endif
     }
 
     KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
                                                 Kokkos::View<WorkSpace, KokkosExecSpace> vws,
                                                 const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
-      sortByPt2(vdata, vws, team_member);
+      Kokkos::abort("sortByPt2Kernel: device sort kernel not supported in Kokkos (see sortByPt2Host)");
+    }
+
+    // equivalent to sortByPt2Kernel + deep copy to host
+    void sortByPt2Host(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+                       Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+                       typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror hdata,
+                       const team_policy& policy) {
+      Kokkos::parallel_for(
+          policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2(vdata, vws, team_member); });
+      Kokkos::deep_copy(KokkosExecSpace(), hdata, vdata);
+
+      auto& __restrict__ data = *hdata.data();
+      uint32_t const& nvFinal = data.nvFinal;
+      float* __restrict__ ptv2 = data.ptv2;
+      uint16_t* __restrict__ sortInd = data.sortInd;
+
+      for (uint16_t i = 0; i < nvFinal; ++i)
+        sortInd[i] = i;
+      std::sort(sortInd, sortInd + nvFinal, [&](auto i, auto j) { return ptv2[i] < ptv2[j]; });
     }
 
   }  // namespace gpuVertexFinder
