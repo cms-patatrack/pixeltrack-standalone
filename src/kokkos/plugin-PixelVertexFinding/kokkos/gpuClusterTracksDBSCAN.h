@@ -1,10 +1,8 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
 
-#ifdef TODO
-#include "CUDACore/HistoContainer.h"
-#include "CUDACore/cuda_assert.h"
-#endif  // TODO
+#include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/HistoContainer.h"
 
 #include "gpuVertexFinder.h"
 
@@ -43,7 +41,6 @@ namespace KOKKOS_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-#ifdef TODO
       assert(vdata.data());
       assert(zt);
 
@@ -104,7 +101,6 @@ namespace KOKKOS_NAMESPACE {
 
         forEachInBins(hist, izt[i], 1, loop);
       }
-#endif
 
       team_member.team_barrier();
 
@@ -125,9 +121,7 @@ namespace KOKKOS_NAMESPACE {
           mz = zt[j];
           iv[i] = j;  // assign to cluster (better be unique??)
         };
-#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
-#endif
       }
 
       team_member.team_barrier();
@@ -135,10 +129,8 @@ namespace KOKKOS_NAMESPACE {
 #ifdef GPU_DEBUG
       //  mini verification
       for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
-#ifdef TODO
         if (iv[i] != int(i))
           assert(iv[iv[i]] != int(i));
-#endif
       }
       team_member.team_barrier();
 #endif
@@ -156,10 +148,8 @@ namespace KOKKOS_NAMESPACE {
 #ifdef GPU_DEBUG
       //  mini verification
       for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
-#ifdef TODO
         if (iv[i] != int(i))
           assert(iv[iv[i]] != int(i));
-#endif
       }
       team_member.team_barrier();
 #endif
@@ -169,9 +159,7 @@ namespace KOKKOS_NAMESPACE {
       for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
         if (nn[i] < minT)
           continue;  // DBSCAN core rule
-#ifdef TODO
         assert(zt[iv[i]] <= zt[i]);
-#endif
         auto loop = [&](uint32_t j) {
           if (nn[j] < minT)
             return;  // DBSCAN core rule
@@ -185,13 +173,9 @@ namespace KOKKOS_NAMESPACE {
             printf("      %d %d %f %f %d\n", j, iv[j], zt[j], zt[iv[j]], iv[iv[j]]);
             ;
           }
-#ifdef TODO
           assert(iv[i] == iv[j]);
-#endif
         };
-#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
-#endif
       }
       team_member.team_barrier();
 #endif
@@ -213,9 +197,7 @@ namespace KOKKOS_NAMESPACE {
           mdist = dist;
           iv[i] = iv[j];  // assign to cluster (better be unique??)
         };
-#ifdef TODO
         forEachInBins(hist, izt[i], 1, loop);
-#endif
       }
 
       unsigned int* foundClusters =
@@ -237,9 +219,7 @@ namespace KOKKOS_NAMESPACE {
       }
       team_member.team_barrier();
 
-#ifdef TODO
       assert(foundClusters[0] < ZVertices::MAXVTX);
-#endif
 
       // propagate the negative id to all the tracks in the cluster.
       for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
