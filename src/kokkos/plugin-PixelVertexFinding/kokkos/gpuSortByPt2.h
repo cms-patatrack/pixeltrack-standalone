@@ -22,6 +22,9 @@ namespace KOKKOS_NAMESPACE {
       float* __restrict__ ptv2 = data.ptv2;
       uint16_t* __restrict__ sortInd = data.sortInd;
 
+      const auto teamRank = team_member.team_rank();
+      const auto teamSize = team_member.team_size();
+
       // if (threadIdx.x == 0)
       //    printf("sorting %d vertices\n",nvFinal);
 
@@ -29,17 +32,17 @@ namespace KOKKOS_NAMESPACE {
         return;
 
       // fill indexing
-      for (unsigned int i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned int i = teamRank; i < nt; i += teamSize) {
         data.idv[ws.itrk[i]] = iv[i];
       }
 
       // can be done asynchronoisly at the end of previous event
-      for (unsigned int i = team_member.team_rank(); i < nvFinal; i += team_member.team_size()) {
+      for (unsigned int i = teamRank; i < nvFinal; i += teamSize) {
         ptv2[i] = 0;
       }
       team_member.team_barrier();
 
-      for (unsigned int i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned int i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990)
           continue;
         Kokkos::atomic_add(&ptv2[iv[i]], ptt2[i]);
@@ -48,7 +51,7 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       if (1 == nvFinal) {
-        if (team_member.team_rank() == 0)
+        if (teamRank == 0)
           sortInd[0] = 0;
         return;
       }

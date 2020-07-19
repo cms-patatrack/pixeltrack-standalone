@@ -1,9 +1,7 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 
-#ifdef TODO
-#include "CUDACore/cuda_assert.h"
-#endif  // TODO
+#include "KokkosCore/kokkos_assert.h"
 
 #include "gpuVertexFinder.h"
 
@@ -30,19 +28,19 @@ namespace KOKKOS_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-      auto id = team_member.league_rank() * team_member.team_size() + team_member.team_rank();
+      const auto teamRank = team_member.team_rank();
+      const auto teamSize = team_member.team_size();
+      const auto id = team_member.league_rank() * teamSize + team_member.teamRank;
 
-#ifdef TODO
-      assert(pdata);
+      assert(vdata.data());
       assert(zt);
 
       assert(nvFinal <= nvIntermediate);
-#endif
       nvFinal = nvIntermediate;
       auto foundClusters = nvFinal;
 
       // zero
-      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
+      for (unsigned i = teamRank; i < foundClusters; i += teamSize) {
         zv[i] = 0;
         wv[i] = 0;
         chi2[i] = 0;
@@ -56,16 +54,14 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       // compute cluster location
-      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990) {
           if (verbose)
             Kokkos::atomic_add(noise, 1);
           continue;
         }
-#ifdef TODO
         assert(iv[i] >= 0);
         assert(iv[i] < int(foundClusters));
-#endif
         auto w = 1.f / ezt2[i];
         Kokkos::atomic_add(&zv[iv[i]], zt[i] * w);
         Kokkos::atomic_add(&wv[iv[i]], w);
@@ -73,17 +69,15 @@ namespace KOKKOS_NAMESPACE {
 
       team_member.team_barrier();
       // reuse nn
-      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size()) {
-#ifdef TODO
+      for (unsigned i = teamRank; i < foundClusters; i += teamSize) {
         assert(wv[i] > 0.f);
-#endif
         zv[i] /= wv[i];
         nn[i] = -1;  // ndof
       }
       team_member.team_barrier();
 
       // compute chi2
-      for (unsigned i = team_member.team_rank(); i < nt; i += team_member.team_size()) {
+      for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990)
           continue;
 
@@ -97,7 +91,7 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::atomic_add(&nn[iv[i]], 1);
       }
       team_member.team_barrier();
-      for (unsigned i = team_member.team_rank(); i < foundClusters; i += team_member.team_size())
+      for (unsigned i = teamRank; i < foundClusters; i += teamSize)
         if (nn[i] > 0)
           wv[i] *= float(nn[i]) / chi2[i];
 
