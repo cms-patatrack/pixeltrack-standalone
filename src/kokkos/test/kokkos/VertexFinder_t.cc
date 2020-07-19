@@ -11,7 +11,7 @@
 #define CLUSTERIZE clusterTracksIterative
 #else
 #include "plugin-PixelVertexFinding/kokkos/gpuClusterTracksByDensity.h"
-#define CLUSTERIZE clusterTracksByDensityKernel
+#define CLUSTERIZE clusterTracksByDensityHost
 #endif
 #include "plugin-PixelVertexFinding/kokkos/gpuFitVertices.h"
 #include "plugin-PixelVertexFinding/kokkos/gpuSortByPt2.h"
@@ -162,18 +162,15 @@ void test() {
 
       KokkosExecSpace().fence();
 
-#ifdef ONE_KERNEL
       team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+
+#ifdef ONE_KERNEL
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) {
             vertexFinderOneKernel(onGPU_d, ws_d, kk, par[0], par[1], par[2], team_member);
           });
 #else
-      team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
-      Kokkos::parallel_for(
-          policy, KOKKOS_LAMBDA(const member_type& team_member) {
-            CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], team_member);
-          });
+      CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], policy);
 #endif
       Kokkos::parallel_for(
           "print", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
@@ -220,16 +217,17 @@ void test() {
         std::cout << "before splitting nv, min max chi2 " << nv << " " << *mx.first << ' ' << *mx.second << std::endl;
       }
 
+      // 6744 bytes of scratch memory required for splitVerticesKernel with team_size = 64
 #ifdef KOKKOS_BACKEND_CUDA
-      policy = team_policy(KokkosExecSpace(), 1024, 64).set_scratch_size(0, Kokkos::PerTeam(1024));
+      policy = team_policy(KokkosExecSpace(), 1024, 64).set_scratch_size(0, Kokkos::PerTeam(8192));
 #else
-      policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192));
 #endif
       Kokkos::parallel_for(
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { splitVerticesKernel(onGPU_d, ws_d, 9.f, team_member); });
       Kokkos::deep_copy(KokkosExecSpace(), ws_h, ws_d);
-      nv = ws_d.data()->nvIntermediate;
+      nv = ws_h.data()->nvIntermediate;
 
       std::cout << "after split " << nv << std::endl;
 
@@ -238,9 +236,8 @@ void test() {
           policy,
           KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 5000.f, team_member); });
 
-      Kokkos::parallel_for(
-          policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2Kernel(onGPU_d, ws_d, team_member); });
-      Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
+      // equivalent to sortByPt2Kernel + deep copy to host
+      sortByPt2Host(onGPU_d, ws_d, onGPU_h, policy);
       nv = onGPU_h.data()->nvFinal;
 
       if (nv == 0) {
