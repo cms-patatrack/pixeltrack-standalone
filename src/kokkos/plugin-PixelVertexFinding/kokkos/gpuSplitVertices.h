@@ -115,10 +115,8 @@ namespace KOKKOS_NAMESPACE {
           more = 0;
           team_member.team_barrier();
 
-          Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, teamSize),
-          [=] (int& i, uint16_t& lsum) {
-            lsum += lmore[i];
-          }, more);
+          Kokkos::parallel_reduce(
+              Kokkos::TeamThreadRange(team_member, teamSize), [=](int& i, uint16_t& lsum) { lsum += lmore[i]; }, more);
           team_member.team_barrier();
         }
 

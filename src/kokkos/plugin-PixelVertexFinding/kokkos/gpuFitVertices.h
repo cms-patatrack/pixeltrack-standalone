@@ -30,7 +30,7 @@ namespace KOKKOS_NAMESPACE {
 
       const auto teamRank = team_member.team_rank();
       const auto teamSize = team_member.team_size();
-      const auto id = team_member.league_rank() * teamSize + team_member.teamRank;
+      const auto id = team_member.league_rank() * teamSize + teamRank;
 
       assert(vdata.data());
       assert(zt);
