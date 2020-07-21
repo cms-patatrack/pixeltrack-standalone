@@ -49,12 +49,12 @@ namespace KOKKOS_NAMESPACE {
 
       assert(localHist->size() == nt);
 
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
-        localHist->fill(izt[i], uint16_t(i));
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt),
+                           [=](int i) { localHist->fill(izt[i], uint16_t(i)); });
       team_member.team_barrier();
 
       // count neighbours
+      // TODO: can't use parallel_for+TeamThreadRange because of "continue"
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (ezt2[i] > er2mx)
           continue;
@@ -83,14 +83,15 @@ namespace KOKKOS_NAMESPACE {
       uint16_t* lmore = (uint16_t*)team_member.team_shmem().get_shmem(sizeof(uint16_t) * teamSize);
       while (more) {
         if (1 == nloops[0] % 2) {
-          for (unsigned i = teamRank; i < nt; i += teamSize) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
             auto m = iv[i];
             while (m != iv[m])
               m = iv[m];
             iv[i] = m;
-          }
+          });
         } else {
           lmore[teamRank] = 0;
+          // TODO: can't use parallel_for+TeamThreadRange because of "continue"
           for (unsigned k = teamRank; k < localHist->size(); k += teamSize) {
             auto p = localHist->begin() + k;
             auto i = (*p);
@@ -130,6 +131,7 @@ namespace KOKKOS_NAMESPACE {
       }  // while
 
       // collect edges (assign to closest cluster of closest point??? here to closest point)
+      // TODO: can't use parallel_for+TeamThreadRange because of "continue"
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         //    if (nn[i]==0 || nn[i]>=minT) continue;    // DBSCAN edge rule
         if (nn[i] >= minT)
@@ -156,7 +158,7 @@ namespace KOKKOS_NAMESPACE {
 
       // find the number of different clusters, identified by a tracks with clus[i] == i;
       // mark these tracks with a negative id.
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] == int(i)) {
           if (nn[i] >= minT) {
             auto old = Kokkos::atomic_fetch_add(foundClusters, 1);
@@ -165,24 +167,22 @@ namespace KOKKOS_NAMESPACE {
             iv[i] = -9998;
           }
         }
-      }
+      });
       team_member.team_barrier();
 
       assert(foundClusters[0] < ZVertices::MAXVTX);
 
       // propagate the negative id to all the tracks in the cluster.
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] >= 0) {
           // mark each track in a cluster with the same id as the first one
           iv[i] = iv[iv[i]];
         }
-      }
+      });
       team_member.team_barrier();
 
       // adjust the cluster id to be a positive value starting from 0
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
-        iv[i] = -iv[i] - 1;
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) { iv[i] = -iv[i] - 1; });
 
       nvIntermediate = nvFinal = foundClusters[0];
 

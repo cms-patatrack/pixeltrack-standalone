@@ -22,9 +22,7 @@ namespace KOKKOS_NAMESPACE {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       const auto leagueRank = team_member.league_rank();
-      const auto teamRank = team_member.team_rank();
-      const auto teamSize = team_member.team_size();
-      auto id = leagueRank * teamSize + teamRank;
+      auto id = leagueRank * team_member.team_size() + team_member.team_rank();
 
       if (verbose && 0 == id)
         printf("params %d %f %f %f\n", minT, eps, errmax, chi2max);
@@ -44,9 +42,8 @@ namespace KOKKOS_NAMESPACE {
 
       auto* localHist = &vhist(leagueRank);
 
-      for (unsigned j = teamRank; j < Histo::totbins(); j += teamSize) {
-        localHist->off[j] = 0;
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, Histo::totbins()),
+                           [=](int j) { localHist->off[j] = 0; });
       team_member.team_barrier();
 
       if (verbose && 0 == id)
@@ -55,7 +52,7 @@ namespace KOKKOS_NAMESPACE {
       assert(nt <= localHist->capacity());
 
       // fill hist  (bin shall be wider than "eps")
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         assert(i < ZVertices::MAXTRACKS);
         int iz = int(zt[i] * 10.);  // valid if eps<=0.1
         // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
@@ -66,7 +63,7 @@ namespace KOKKOS_NAMESPACE {
         localHist->count(izt[i]);
         iv[i] = i;
         nn[i] = 0;
-      }
+      });
       team_member.team_barrier();
     }
   }  // namespace gpuVertexFinder

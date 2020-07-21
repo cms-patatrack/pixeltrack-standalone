@@ -57,7 +57,7 @@ namespace KOKKOS_NAMESPACE {
         team_member.team_barrier();
 
         // copy to local
-        for (unsigned k = teamRank; k < nt; k += teamSize) {
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int k) {
           if (iv[k] == int(kv)) {
             // FIXME: different from old = atomicInc(&nq, MAXTK)
             // where nq will be zero when nq >= MAXTK, is it OK?
@@ -67,7 +67,7 @@ namespace KOKKOS_NAMESPACE {
             ww[old] = 1.f / ezt2[k];
             it[old] = k;
           }
-        }
+        });
 
         // the new vertices
         float* znew = (float*)team_member.team_shmem().get_shmem(sizeof(float) * 2);
@@ -91,24 +91,24 @@ namespace KOKKOS_NAMESPACE {
             wnew[1] = 0;
           }
           team_member.team_barrier();
-          for (unsigned k = teamRank; k < nq[0]; k += teamSize) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
             auto i = newV[k];
             Kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
             Kokkos::atomic_add(&wnew[i], ww[k]);
-          }
+          });
           team_member.team_barrier();
           if (0 == teamRank) {
             znew[0] /= wnew[0];
             znew[1] /= wnew[1];
           }
           team_member.team_barrier();
-          for (unsigned k = teamRank; k < nq[0]; k += teamSize) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
             auto d0 = fabs(zz[k] - znew[0]);
             auto d1 = fabs(zz[k] - znew[1]);
             auto newer = d0 < d1 ? 0 : 1;
             lmore[teamRank] |= newer != newV[k];
             newV[k] = newer;
-          }
+          });
           --maxiter;
           if (maxiter <= 0)
             lmore[teamRank] = 0;
@@ -141,10 +141,10 @@ namespace KOKKOS_NAMESPACE {
         if (0 == teamRank)
           igv[0] = Kokkos::atomic_fetch_add(&ws.nvIntermediate, 1);
         team_member.team_barrier();
-        for (unsigned k = teamRank; k < nq[0]; k += teamSize) {
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
           if (1 == newV[k])
             iv[it[k]] = igv[0];
-        }
+        });
 
       }  // loop on vertices
     }

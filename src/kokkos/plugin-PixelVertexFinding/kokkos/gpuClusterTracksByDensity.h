@@ -52,12 +52,12 @@ namespace KOKKOS_NAMESPACE {
 
       assert(localHist->size() == nt);
 
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
-        localHist->fill(izt[i], uint16_t(i));
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt),
+                           [=](int i) { localHist->fill(izt[i], uint16_t(i)); });
       team_member.team_barrier();
 
       // count neighbours
+      // TODO: can't use parallel_for+TeamThreadRange because of "continue"
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (ezt2[i] > er2mx)
           continue;
@@ -72,12 +72,12 @@ namespace KOKKOS_NAMESPACE {
           nn[i]++;
         };
         forEachInBins(localHist, izt[i], 1, loop);
-      }
+      };
 
       team_member.team_barrier();
 
       // find closest above me .... (we ignore the possibility of two j at same distance from i)
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         float mdist = eps;
         auto loop = [&](uint32_t j) {
           if (nn[j] < nn[i])
@@ -93,41 +93,41 @@ namespace KOKKOS_NAMESPACE {
           iv[i] = j;  // assign to cluster (better be unique??)
         };
         forEachInBins(localHist, izt[i], 1, loop);
-      }
+      });
 
       team_member.team_barrier();
 
 #ifdef GPU_DEBUG
       //  mini verification
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] != int(i)) {
           assert(iv[iv[i]] != int(i));
         }
-      }
+      });
       team_member.team_barrier();
 #endif
 
       // consolidate graph (percolate index of seed)
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         auto m = iv[i];
         while (m != iv[m])
           m = iv[m];
         iv[i] = m;
-      }
+      });
 
 #ifdef GPU_DEBUG
       team_member.team_barrier();
       //  mini verification
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] != int(i)) {
           assert(iv[iv[i]] != int(i));
         }
-      }
+      });
 #endif
 
 #ifdef GPU_DEBUG
       // and verify that we did not spit any cluster...
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         auto minJ = i;
         auto mdist = eps;
         auto loop = [&](uint32_t j) {
@@ -147,7 +147,7 @@ namespace KOKKOS_NAMESPACE {
         // should belong to the same cluster...
         assert(iv[i] == iv[minJ]);
         assert(nn[i] <= nn[iv[i]]);
-      }
+      });
       team_member.team_barrier();
 #endif
 
@@ -158,7 +158,7 @@ namespace KOKKOS_NAMESPACE {
 
       // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
       // mark these tracks with a negative id.
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] == int(i)) {
           if (nn[i] >= minT) {
             auto old = Kokkos::atomic_fetch_add(foundClusters, 1);
@@ -167,24 +167,22 @@ namespace KOKKOS_NAMESPACE {
             iv[i] = -9998;
           }
         }
-      }
+      });
       team_member.team_barrier();
 
       assert(foundClusters[0] < ZVertices::MAXVTX);
 
       // propagate the negative id to all the tracks in the cluster.
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] >= 0) {
           // mark each track in a cluster with the same id as the first one
           iv[i] = iv[iv[i]];
         }
-      }
+      });
       team_member.team_barrier();
 
       // adjust the cluster id to be a positive value starting from 0
-      for (unsigned i = teamRank; i < nt; i += teamSize) {
-        iv[i] = -iv[i] - 1;
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) { iv[i] = -iv[i] - 1; });
 
       nvIntermediate = nvFinal = foundClusters[0];
 

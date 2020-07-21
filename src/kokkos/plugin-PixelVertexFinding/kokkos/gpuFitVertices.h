@@ -40,11 +40,11 @@ namespace KOKKOS_NAMESPACE {
       auto foundClusters = nvFinal;
 
       // zero
-      for (unsigned i = teamRank; i < foundClusters; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, foundClusters), [=](int i) {
         zv[i] = 0;
         wv[i] = 0;
         chi2[i] = 0;
-      }
+      });
 
       // only for test
       int* noise = (int*)team_member.team_shmem().get_shmem(sizeof(int));
@@ -54,6 +54,7 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       // compute cluster location
+      // TODO: no parallel_for + TeamThreadRange because of "continue"
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990) {
           if (verbose)
@@ -69,14 +70,15 @@ namespace KOKKOS_NAMESPACE {
 
       team_member.team_barrier();
       // reuse nn
-      for (unsigned i = teamRank; i < foundClusters; i += teamSize) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, foundClusters), [=](int i) {
         assert(wv[i] > 0.f);
         zv[i] /= wv[i];
         nn[i] = -1;  // ndof
-      }
+      });
       team_member.team_barrier();
 
       // compute chi2
+      // TODO: no parallel_for + TeamThreadRange because of "continue"
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990)
           continue;
@@ -91,9 +93,10 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::atomic_add(&nn[iv[i]], 1);
       }
       team_member.team_barrier();
-      for (unsigned i = teamRank; i < foundClusters; i += teamSize)
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, foundClusters), [=](int i) {
         if (nn[i] > 0)
           wv[i] *= float(nn[i]) / chi2[i];
+      });
 
       if (verbose && 0 == id)
         printf("found %d proto clusters ", foundClusters);

@@ -29,16 +29,13 @@ namespace KOKKOS_NAMESPACE {
         return;
 
       // fill indexing
-      for (unsigned int i = teamRank; i < nt; i += teamSize) {
-        data.idv[ws.itrk[i]] = iv[i];
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [&](int i) { data.idv[ws.itrk[i]] = iv[i]; });
 
       // can be done asynchronoisly at the end of previous event
-      for (unsigned int i = teamRank; i < nvFinal; i += teamSize) {
-        ptv2[i] = 0;
-      }
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nvFinal), [=](int i) { ptv2[i] = 0; });
       team_member.team_barrier();
 
+      // TODO: no parallel_for + TeamThreadRange because of "continue"
       for (unsigned int i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990)
           continue;
