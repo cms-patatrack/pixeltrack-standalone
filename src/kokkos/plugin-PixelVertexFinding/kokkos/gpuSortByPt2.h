@@ -6,9 +6,6 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
     KOKKOS_INLINE_FUNCTION void sortByPt2(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
                                           Kokkos::View<WorkSpace, KokkosExecSpace> vws,
                                           const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
@@ -63,20 +60,28 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::abort("sortByPt2Kernel: device sort kernel not supported in Kokkos (see sortByPt2Host)");
     }
 
-    // equivalent to sortByPt2Kernel + deep copy to host
-    void sortByPt2Host(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                       Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                       typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror hdata,
-                       const team_policy& policy) {
+    // equivalent to CUDA sortByPt2Kernel + deep copy to host
+    template <typename ExecSpace>
+    void sortByPt2Host(Kokkos::View<ZVertices, ExecSpace> vdata,
+                       Kokkos::View<WorkSpace, ExecSpace> vws,
+                       typename Kokkos::View<ZVertices, ExecSpace>::HostMirror hdata,
+                       const ExecSpace& execSpace,
+                       const Kokkos::TeamPolicy<ExecSpace>& policy) {
+      using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
+
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2(vdata, vws, team_member); });
-      Kokkos::deep_copy(KokkosExecSpace(), hdata, vdata);
+      Kokkos::deep_copy(execSpace, hdata, vdata);
+      execSpace.fence();
 
       auto& __restrict__ data = *hdata.data();
       uint32_t const& nvFinal = data.nvFinal;
       float* __restrict__ ptv2 = data.ptv2;
       uint16_t* __restrict__ sortInd = data.sortInd;
 
+      // TODO: Kokkos::sort doesn't supported user-defined comparisons for now. A better
+      // solution is to replace BinOp1D (in kokkos/algorithms/src/Kokkos_Sort.hpp) with
+      // a custom comparison and create a sort function upon it.
       for (uint16_t i = 0; i < nvFinal; ++i)
         sortInd[i] = i;
       std::sort(sortInd, sortInd + nvFinal, [&](auto i, auto j) { return ptv2[i] < ptv2[j]; });

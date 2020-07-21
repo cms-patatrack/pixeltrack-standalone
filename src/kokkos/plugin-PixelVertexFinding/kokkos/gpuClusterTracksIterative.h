@@ -190,24 +190,28 @@ namespace KOKKOS_NAMESPACE {
         printf("found %d proto vertices\n", foundClusters[0]);
     }
 
-    void clusterTracksIterativeHost(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                    Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+    template <typename ExecSpace>
+    void clusterTracksIterativeHost(Kokkos::View<ZVertices, ExecSpace> vdata,
+                                    Kokkos::View<WorkSpace, ExecSpace> vws,
                                     int minT,       // min number of neighbours to be "seed"
                                     float eps,      // max absolute distance to cluster
                                     float errmax,   // max error to be "seed"
                                     float chi2max,  // max normalized distance to cluster
-                                    const team_policy& policy) {
+                                    const ExecSpace& execSpace,
+                                    const Kokkos::TeamPolicy<ExecSpace>& policy) {
+      using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
+
       auto leagueSize = policy.league_size();
 
       using Hist = HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-      Kokkos::View<Hist*, KokkosExecSpace> vhist("vhist", leagueSize);
+      Kokkos::View<Hist*, ExecSpace> vhist("vhist", leagueSize);
 
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) {
             clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
 
-      Hist::finalize(vhist, leagueSize, KokkosExecSpace());
+      Hist::finalize(vhist, leagueSize, execSpace);
 
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const member_type& team_member) {

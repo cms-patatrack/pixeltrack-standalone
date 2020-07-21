@@ -23,30 +23,30 @@ using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 using namespace KOKKOS_NAMESPACE::gpuVertexFinder;
 
 #ifdef ONE_KERNEL
-void vertexFinderOneKernel(Kokkos::View<ZVertices*, KokkosExecSpace> vdata,
-                           Kokkos::View<WorkSpace*, KokkosExecSpace> vws,
+void vertexFinderOneKernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
+                           Kokkos::View<WorkSpace, KokkosExecSpace> vws,
                            typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror hdata,
                            int minT,       // min number of neighbours to be "seed"
                            float eps,      // max absolute distance to cluster
                            float errmax,   // max error to be "seed"
                            float chi2max,  // max normalized distance to cluster,
                            const team_policy& policy) {
-  clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, policy);
+  clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, KokkosExecSpace(), policy);
 
   Kokkos::parallel_for(
-          policy,
-          KOKKOS_LAMBDA(const member_type& team_member) {
-    fitVertices(vdata, vws, 50., team_member);
-    team_member.team_barrier();
+      policy, KOKKOS_LAMBDA(const member_type& team_member) {
+        // 4 bytes of shared memory required
+        fitVertices(vdata, vws, 50., team_member);
+        team_member.team_barrier();
 
-    splitVertices(vdata, vws, 9.f, team_member);
-    team_member.team_barrier();
+        splitVertices(vdata, vws, 9.f, team_member);
+        team_member.team_barrier();
 
-    fitVertices(vdata, vws, 5000., team_member);
-    team_member.team_barrier();
-  }
+        fitVertices(vdata, vws, 5000., team_member);
+        team_member.team_barrier();
+      });
 
-  sortByPt2Host(vdata, vws, hdata, policy);
+  sortByPt2Host(vdata, vws, hdata, KokkosExecSpace(), policy);
 }
 #endif
 
@@ -166,13 +166,15 @@ void test() {
 
       KokkosExecSpace().fence();
 
-      team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
-
 #ifdef ONE_KERNEL
+      //FIXME: small scratch pad size will result in runtime error "an illegal memory access was encountered". Current
+      // oneKernel test will NOT pass probably due to the high demand of scratch memory from splitVertices kernel
+      team_policy policy = team_policy(KokkosExecSpace(), 1, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
       vertexFinderOneKernel(onGPU_d, ws_d, onGPU_h, kk, par[0], par[1], par[2], policy);
       Kokkos::deep_copy(KokkosExecSpace(), onGPU_d, onGPU_h);
 #else
-      CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], policy);
+      team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+      CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], KokkosExecSpace(), policy);
 #endif
       Kokkos::parallel_for(
           "print", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {
@@ -239,7 +241,7 @@ void test() {
           KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 5000.f, team_member); });
 
       // equivalent to sortByPt2Kernel + deep copy to host
-      sortByPt2Host(onGPU_d, ws_d, onGPU_h, policy);
+      sortByPt2Host(onGPU_d, ws_d, onGPU_h, KokkosExecSpace(), policy);
       nv = onGPU_h.data()->nvFinal;
 
       if (nv == 0) {

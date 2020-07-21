@@ -131,8 +131,8 @@ namespace cms {
 template <typename Hist, typename V, typename Func>
 KOKKOS_INLINE_FUNCTION void forEachInBins(Hist const* hist, V value, int n, Func func) {
   int bs = Hist::bin(value);
-  int be = (int(Hist::nbins() - 1) < (bs + n)) ? int(Hist::nbins() - 1) : bs + n;
-  bs = 0 > (bs - n) ? 0 : (bs - n);
+  int be = std::min(int(Hist::nbins() - 1), bs + n);
+  bs = std::max(0, bs - n);
   assert(be >= bs);
   for (auto pj = hist->begin(bs); pj < hist->end(be); ++pj) {
     func(*pj);
@@ -324,11 +324,13 @@ public:
     // assert(off[totbins() - 1] == off[totbins() - 2]);
   }
 
+// This host function performs prefix scan over a grid-wide histogram container on device (no data transfer
+// involved). N represents the number of blocks in one grid. It's a temporary solution since Kokkos doesn't
+// support team-level parallel_scan for now. As a result, the original clusterize kernels in CUDA have to be
+// splitted into three host function calls: clusterFillHist + finalize + clusterTracks*
 #pragma hd_warning_disable
   template <typename Histo, typename ExecSpace>
-  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo*, ExecSpace> histo,
-                                              const int32_t N,
-                                              ExecSpace const& execSpace) {
+  static void finalize(Kokkos::View<Histo*, ExecSpace> histo, const int32_t N, ExecSpace const& execSpace) {
     for (int k = 0; k < N; k++) {
       Kokkos::parallel_scan(
           "nFinalize",

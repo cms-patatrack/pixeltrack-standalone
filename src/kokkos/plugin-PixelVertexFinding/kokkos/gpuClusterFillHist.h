@@ -8,10 +8,6 @@
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
-
-    using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
     // this algo does not really scale as it works in a single block...
     // enough for <10K tracks we have
     template <typename Histo>
