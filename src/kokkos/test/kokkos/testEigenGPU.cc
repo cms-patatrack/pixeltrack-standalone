@@ -354,10 +354,6 @@ void testFit() {
   circle_fit_results.par(2) = B / std::abs(circle_fit_results.par(2));
   circle_fit_results.cov = Jacob * circle_fit_results.cov * Jacob.transpose();
 
-  kernelBrokenLineFit<N>
-      <<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU, line_fit_resultsGPU);
-  cudaDeviceSynchronize();
-
   // fit on device
   Kokkos::parallel_for(
       "kernelBrokenLineFit", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
