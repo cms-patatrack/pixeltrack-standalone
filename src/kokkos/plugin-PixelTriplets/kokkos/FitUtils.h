@@ -219,7 +219,7 @@ namespace KOKKOS_NAMESPACE {
     // from   //!<(phi,Tip,q/pt,cotan(theta)),Zip)
     // to q/p,dx/dz,dy/dz,x,z
     template <typename VI5, typename MI5, typename VO5, typename MO5>
-    KOKKOS_INLINE_FUNCTION inline void transformToPerigeePlane(VI5 const& ip, MI5 const& icov, VO5& op, MO5& ocov) {
+    KOKKOS_INLINE_FUNCTION void transformToPerigeePlane(VI5 const& ip, MI5 const& icov, VO5& op, MO5& ocov) {
       auto sinTheta2 = 1. / (1. + ip(3) * ip(3));
       auto sinTheta = std::sqrt(sinTheta2);
       auto cosTheta = ip(3) * sinTheta;
