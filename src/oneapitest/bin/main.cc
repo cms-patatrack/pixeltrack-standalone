@@ -91,7 +91,7 @@ int main(int argc, char** argv) try {
     /*
     DPCT1001:67: The statement could not be removed.
     */
-    std::cout << "Failed to initialize the CUDA runtime";
+    std::cout << "Failed to initialize the SYCL runtime";
     return EXIT_FAILURE;
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
@@ -157,7 +157,7 @@ int main(int argc, char** argv) try {
             << std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
   return EXIT_SUCCESS;
 }
-catch (sycl::exception const& exc) {
+catch (::sycl::exception const& exc) {
   std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
   std::exit(1);
 }

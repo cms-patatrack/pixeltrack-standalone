@@ -6,12 +6,12 @@ EXTERNAL_DEPENDS := $(oneapitest_EXTERNAL_DEPENDS)
 
 $(TARGET):
 test_cpu:
-test_cuda: $(TARGET)
+test_sycl: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2
 	@echo "Succeeded"
-.PHONY: test_cpu test_cuda
+.PHONY: test_cpu test_sycl
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))

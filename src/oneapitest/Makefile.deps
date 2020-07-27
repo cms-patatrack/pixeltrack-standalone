@@ -1,4 +1,4 @@
 oneapitest_EXTERNAL_DEPENDS := TBB ONEAPI
-CUDACore_DEPENDS := Framework
-Test1_DEPENDS := Framework CUDACore DataFormats
-Test2_DEPENDS := Framework CUDACore
+SYCLCore_DEPENDS := Framework
+Test1_DEPENDS := Framework SYCLCore DataFormats
+Test2_DEPENDS := Framework SYCLCore

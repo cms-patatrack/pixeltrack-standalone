@@ -1,15 +1,15 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "CUDACore/ProductBase.h"
-#include "CUDACore/eventWorkHasCompleted.h"
+#include "SYCLCore/ProductBase.h"
+#include "SYCLCore/eventWorkHasCompleted.h"
 
-namespace cms::cuda {
+namespace cms::sycl {
   bool ProductBase::isAvailable() const {
     // if default-constructed, the product is not available
     if (not event_) {
       return false;
     }
-    return eventWorkHasCompleted(event_.get());
+    return eventWorkHasCompleted(*event_);
   }
 
   ProductBase::~ProductBase() {
@@ -25,7 +25,7 @@ namespace cms::cuda {
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
     if (event_) {
-      event_.get().wait_and_throw();
+      event_->wait_and_throw();
     }
   }
-}  // namespace cms::cuda
+}  // namespace cms::sycl

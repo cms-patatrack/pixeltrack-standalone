@@ -1,20 +1,16 @@
-#ifndef HeterogeneousCore_CUDAUtilities_ScopedSetDevice_h
-#define HeterogeneousCore_CUDAUtilities_ScopedSetDevice_h
+#ifndef HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
+#define HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "CUDACore/cudaCheck.h"
 
 namespace cms {
-  namespace cuda {
+  namespace sycl {
     class ScopedSetDevice {
     public:
       explicit ScopedSetDevice(int newDevice) {
-        cudaCheck(prevDevice_ = dpct::dev_mgr::instance().current_device_id());
-        /*
-        DPCT1003:5: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-        */
-        cudaCheck((dpct::dev_mgr::instance().select_device(newDevice), 0));
+        prevDevice_ = dpct::dev_mgr::instance().current_device_id();
+        dpct::dev_mgr::instance().select_device(newDevice);
       }
 
       ~ScopedSetDevice() {
@@ -27,7 +23,7 @@ namespace cms {
     private:
       int prevDevice_;
     };
-  }  // namespace cuda
+  }  // namespace sycl
 }  // namespace cms
 
 #endif

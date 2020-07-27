@@ -1,17 +1,17 @@
-#include "CUDACore/ContextState.h"
+#include "SYCLCore/ContextState.h"
 
 #include <stdexcept>
 
-namespace cms::cuda {
+namespace cms::sycl {
   void ContextState::throwIfStream() const {
-    if (stream_) {
+    if (has_stream_) {
       throw std::runtime_error("Trying to set ContextState, but it already had a valid state");
     }
   }
 
   void ContextState::throwIfNoStream() const {
-    if (not stream_) {
+    if (not has_stream_) {
       throw std::runtime_error("Trying to get ContextState, but it did not have a valid state");
     }
   }
-}  // namespace cms::cuda
+}  // namespace cms::sycl

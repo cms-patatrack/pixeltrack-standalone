@@ -1,32 +1,31 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
-#define HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
+#ifndef HeterogeneousCore_SYCLUtilities_interface_device_unique_ptr_h
+#define HeterogeneousCore_SYCLUtilities_interface_device_unique_ptr_h
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include <memory>
 #include <functional>
 
-#include "CUDACore/allocate_device.h"
-#include "CUDACore/currentDevice.h"
+#include "SYCLCore/allocate_device.h"
 
 namespace cms {
-  namespace cuda {
+  namespace sycl {
     namespace device {
       namespace impl {
         // Additional layer of types to distinguish from host::unique_ptr
         class DeviceDeleter {
         public:
           DeviceDeleter() = default;  // for edm::Wrapper
-          DeviceDeleter(int device) : device_{device} {}
+          DeviceDeleter(::sycl::queue stream) : stream_{stream} {}
 
           void operator()(void *ptr) {
-            if (device_ >= 0) {
-              free_device(device_, ptr);
+            if (stream_) {
+              free_device(*stream_, ptr);
             }
           }
 
         private:
-          int device_ = -1;
+          std::optional<::sycl::queue> stream_;
         };
       }  // namespace impl
 
@@ -36,11 +35,11 @@ namespace cms {
       namespace impl {
         template <typename T>
         struct make_device_unique_selector {
-          using non_array = cms::cuda::device::unique_ptr<T>;
+          using non_array = cms::sycl::device::unique_ptr<T>;
         };
         template <typename T>
         struct make_device_unique_selector<T[]> {
-          using unbounded_array = cms::cuda::device::unique_ptr<T[]>;
+          using unbounded_array = cms::sycl::device::unique_ptr<T[]>;
         };
         template <typename T, size_t N>
         struct make_device_unique_selector<T[N]> {
@@ -50,25 +49,23 @@ namespace cms {
     }    // namespace device
 
     template <typename T>
-    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique(sycl::queue *stream) {
+    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique(::sycl::queue stream) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, sizeof(T), stream);
+      void *mem = allocate_device(stream, sizeof(T));
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique(size_t n,
-                                                                                              sycl::queue *stream) {
+                                                                                              ::sycl::queue stream) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = allocate_device(stream, n * sizeof(element_type));
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
@@ -77,27 +74,25 @@ namespace cms {
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::non_array make_device_unique_uninitialized(
-        sycl::queue *stream) {
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, sizeof(T), stream);
+        ::sycl::queue stream) {
+      void *mem = allocate_device(stream, sizeof(T));
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique_uninitialized(
-        size_t n, sycl::queue *stream) {
+        size_t n, ::sycl::queue stream) {
       using element_type = typename std::remove_extent<T>::type;
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = allocate_device(stream, n * sizeof(element_type));
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
     typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique_uninitialized(Args &&...) =
         delete;
-  }  // namespace cuda
+  }  // namespace sycl
 }  // namespace cms
 
 #endif
