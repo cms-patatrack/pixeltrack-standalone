@@ -16,9 +16,6 @@
 
 using namespace Eigen;
 
-using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
 namespace KOKKOS_NAMESPACE {
   namespace Rfit {
     constexpr uint32_t maxNumberOfTracks() { return 5 * 1024; }
@@ -41,9 +38,7 @@ namespace KOKKOS_NAMESPACE {
   template <int N>
   KOKKOS_INLINE_FUNCTION void kernelPrintSizes(Kokkos::View<double*, KokkosExecSpace> vhits,
                                                Kokkos::View<float*, KokkosExecSpace> vhits_ge,
-                                               const member_type& teamMember) {
-    auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                               const int& i) {
     double* __restrict__ phits = vhits.data();
     float* __restrict__ phits_ge = vhits_ge.data();
 
@@ -65,9 +60,7 @@ using namespace KOKKOS_NAMESPACE;
 template <int N>
 KOKKOS_INLINE_FUNCTION void kernelFastFit(Kokkos::View<double*, KokkosExecSpace> vhits,
                                           Kokkos::View<double*, KokkosExecSpace> vresults,
-                                          const member_type& teamMember) {
-  auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                          const int& i) {
   double* __restrict__ phits = vhits.data();
   double* __restrict__ presults = vresults.data();
 
@@ -89,9 +82,7 @@ KOKKOS_INLINE_FUNCTION void kernelBrokenLineFit(Kokkos::View<double*, KokkosExec
                                                 double B,
                                                 Kokkos::View<Rfit::circle_fit*, KokkosExecSpace> vcircle_fit,
                                                 Kokkos::View<Rfit::line_fit*, KokkosExecSpace> vline_fit,
-                                                const member_type& teamMember) {
-  auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                                const int& i) {
   double* __restrict__ phits = vhits.data();
   float* __restrict__ phits_ge = vhits_ge.data();
   double* __restrict__ pfast_fit_input = vfast_fit_input.data();
@@ -131,9 +122,7 @@ KOKKOS_INLINE_FUNCTION void kernelCircleFit(Kokkos::View<double*, KokkosExecSpac
                                             Kokkos::View<double*, KokkosExecSpace> vfast_fit_input,
                                             double B,
                                             Kokkos::View<Rfit::circle_fit*, KokkosExecSpace> vcircle_fit,
-                                            const member_type& teamMember) {
-  auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                            const int& i) {
   double* __restrict__ phits = vhits.data();
   float* __restrict__ phits_ge = vhits_ge.data();
   double* __restrict__ pfast_fit_input = vfast_fit_input.data();
@@ -182,9 +171,7 @@ KOKKOS_INLINE_FUNCTION void kernelLineFit(Kokkos::View<double*, KokkosExecSpace>
                                           Kokkos::View<Rfit::circle_fit*, KokkosExecSpace> vcircle_fit,
                                           Kokkos::View<double*, KokkosExecSpace> vfast_fit_input,
                                           Kokkos::View<Rfit::line_fit*, KokkosExecSpace> vline_fit,
-                                          const member_type& teamMember) {
-  auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                          const int& i) {
   double* __restrict__ phits = vhits.data();
   float* __restrict__ phits_ge = vhits_ge.data();
   Rfit::circle_fit* __restrict__ circle_fit = vcircle_fit.data();
@@ -243,9 +230,7 @@ KOKKOS_INLINE_FUNCTION void fillHitsAndHitsCov(M3xN& hits, M6xN& hits_ge) {
 template <int N>
 KOKKOS_INLINE_FUNCTION void kernelFillHitsAndHitsCov(Kokkos::View<double*, KokkosExecSpace> vhits,
                                                      Kokkos::View<float*, KokkosExecSpace> vhits_ge,
-                                                     const member_type& teamMember) {
-  auto i = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
-
+                                                     const int& i) {
   double* __restrict__ phits = vhits.data();
   float* __restrict__ phits_ge = vhits_ge.data();
 
@@ -293,15 +278,12 @@ void testFit() {
   std::cout << "Fitted values (FastFit, [X0, Y0, R, tan(theta)]):\n" << fast_fit_results << std::endl;
 
   // cudaMemset d_fast_fit_results & d_line_fit_results to 0
-  int tmpN = Rfit::maxNumberOfTracks() * sizeof(Vector4d);
-  Kokkos::parallel_for(
-      "init_fast_hit_res",
-      Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, tmpN),
-      KOKKOS_LAMBDA(const int& i) {
-        unsigned char* ptr = reinterpret_cast<unsigned char*>(d_fast_fit_results.data());
-        ptr[i] = 0;
-      });
-  tmpN = Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit);
+  Kokkos::deep_copy(KokkosExecSpace(), d_fast_fit_results, 0);
+  // Kokkos::deep_copy(KokkosExecSpace(), d_line_fit_results, 0) will result in compilation error:
+  // no instance of overloaded function "Kokkos::deep_copy" matches the argument list. argument
+  // types are: (KokkosExecSpace, Kokkos::View<kokkos_cuda::Rfit::line_fit *, KokkosExecSpace>, int).
+  // Use for loop instead
+  auto tmpN = Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit);
   Kokkos::parallel_for(
       "init_line_fit_res",
       Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, tmpN),
@@ -313,22 +295,18 @@ void testFit() {
   // for timing purposes we fit 4096 tracks
   constexpr uint32_t Ntracks = 4096;
 
-  team_policy policy = team_policy(KokkosExecSpace(), Ntracks / 64, 64);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, Ntracks);
 
   Kokkos::parallel_for(
-      "kernelPrintSizes", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelPrintSizes<N>(d_hits, d_hits_ge, teamMember);
-      });
+      "kernelPrintSizes", policy, KOKKOS_LAMBDA(const int& i) { kernelPrintSizes<N>(d_hits, d_hits_ge, i); });
   Kokkos::parallel_for(
-      "kernelFillHitsAndHitsCov", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelFillHitsAndHitsCov<N>(d_hits, d_hits_ge, teamMember);
+      "kernelFillHitsAndHitsCov", policy, KOKKOS_LAMBDA(const int& i) {
+        kernelFillHitsAndHitsCov<N>(d_hits, d_hits_ge, i);
       });
 
   // FAST_FIT GPU
   Kokkos::parallel_for(
-      "kernelFastFit", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelFastFit<N>(d_hits, d_fast_fit_results, teamMember);
-      });
+      "kernelFastFit", policy, KOKKOS_LAMBDA(const int& i) { kernelFastFit<N>(d_hits, d_fast_fit_results, i); });
   KokkosExecSpace().fence();
 
   auto h_fast_fit_results = Kokkos::create_mirror_view(d_fast_fit_results);
@@ -356,9 +334,8 @@ void testFit() {
 
   // fit on device
   Kokkos::parallel_for(
-      "kernelBrokenLineFit", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelBrokenLineFit<N>(
-            d_hits, d_hits_ge, d_fast_fit_results, B, d_circle_fit_results, d_line_fit_results, teamMember);
+      "kernelBrokenLineFit", policy, KOKKOS_LAMBDA(const int& i) {
+        kernelBrokenLineFit<N>(d_hits, d_hits_ge, d_fast_fit_results, B, d_circle_fit_results, d_line_fit_results, i);
       });
   KokkosExecSpace().fence();
 
@@ -373,8 +350,8 @@ void testFit() {
 
   // CIRCLE_FIT GPU
   Kokkos::parallel_for(
-      "kernelCircleFit", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelCircleFit<N>(d_hits, d_hits_ge, d_fast_fit_results, B, d_circle_fit_results, teamMember);
+      "kernelCircleFit", policy, KOKKOS_LAMBDA(const int& i) {
+        kernelCircleFit<N>(d_hits, d_hits_ge, d_fast_fit_results, B, d_circle_fit_results, i);
       });
   KokkosExecSpace().fence();
 
@@ -382,9 +359,8 @@ void testFit() {
   Rfit::line_fit line_fit_results = Rfit::Line_fit(hits, hits_ge, circle_fit_results, fast_fit_results, B, true);
 
   Kokkos::parallel_for(
-      "kernelLineFit", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelLineFit<N>(
-            d_hits, d_hits_ge, B, d_circle_fit_results, d_fast_fit_results, d_line_fit_results, teamMember);
+      "kernelLineFit", policy, KOKKOS_LAMBDA(const int& i) {
+        kernelLineFit<N>(d_hits, d_hits_ge, B, d_circle_fit_results, d_fast_fit_results, d_line_fit_results, i);
       });
   KokkosExecSpace().fence();
 
