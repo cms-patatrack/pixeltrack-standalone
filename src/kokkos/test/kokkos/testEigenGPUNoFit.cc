@@ -12,9 +12,6 @@ using namespace Eigen;
 
 using Matrix5d = Matrix<double, 5, 5>;
 
-using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
 template <class C>
 KOKKOS_INLINE_FUNCTION void printIt(C* m) {
 #ifdef TEST_DEBUG
@@ -112,11 +109,9 @@ void testMultiply() {
   Kokkos::deep_copy(KokkosExecSpace(), d_c, h_c);
   Kokkos::deep_copy(KokkosExecSpace(), d_multiply_result, h_multiply_result);
 
-  team_policy policy = team_policy(KokkosExecSpace(), 1, 1);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1);
   Kokkos::parallel_for(
-      "kernelMultiply", policy, KOKKOS_LAMBDA(const member_type& teamMember) {
-        kernelMultiply(d_j, d_c, d_multiply_result);
-      });
+      "kernelMultiply", policy, KOKKOS_LAMBDA(const int& i) { kernelMultiply(d_j, d_c, d_multiply_result); });
   KokkosExecSpace().fence();
 
   Kokkos::deep_copy(KokkosExecSpace(), h_multiply_result, d_multiply_result);
@@ -144,9 +139,9 @@ void testInverse3x3() {
 #endif
   Kokkos::deep_copy(KokkosExecSpace(), d_m, h_m);
 
-  team_policy policy = team_policy(KokkosExecSpace(), 1, 1);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1);
   Kokkos::parallel_for(
-      "kernelInverse3x3", policy, KOKKOS_LAMBDA(const member_type& teamMember) { kernelInverse3x3(d_m, d_mret); });
+      "kernelInverse3x3", policy, KOKKOS_LAMBDA(const int& i) { kernelInverse3x3(d_m, d_mret); });
   Kokkos::deep_copy(KokkosExecSpace(), h_mret, d_mret);
   KokkosExecSpace().fence();
 
@@ -176,9 +171,9 @@ void testInverse4x4() {
 #endif
   Kokkos::deep_copy(KokkosExecSpace(), d_m, h_m);
 
-  team_policy policy = team_policy(KokkosExecSpace(), 1, 1);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1);
   Kokkos::parallel_for(
-      "kernelInverse4x4", policy, KOKKOS_LAMBDA(const member_type& teamMember) { kernelInverse4x4(d_m, d_mret); });
+      "kernelInverse4x4", policy, KOKKOS_LAMBDA(const int& i) { kernelInverse4x4(d_m, d_mret); });
   Kokkos::deep_copy(KokkosExecSpace(), h_mret, d_mret);
   KokkosExecSpace().fence();
 #if TEST_DEBUG
@@ -207,9 +202,9 @@ void testInverse5x5() {
 #endif
   Kokkos::deep_copy(KokkosExecSpace(), d_m, h_m);
 
-  team_policy policy = team_policy(KokkosExecSpace(), 1, 1);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1);
   Kokkos::parallel_for(
-      "kernelInverse5x5", policy, KOKKOS_LAMBDA(const member_type& teamMember) { kernelInverse5x5(d_m, d_mret); });
+      "kernelInverse5x5", policy, KOKKOS_LAMBDA(const int& i) { kernelInverse5x5(d_m, d_mret); });
   Kokkos::deep_copy(KokkosExecSpace(), h_mret, d_mret);
   KokkosExecSpace().fence();
 #if TEST_DEBUG
@@ -240,9 +235,9 @@ void testEigenvalues() {
 #endif
   Kokkos::deep_copy(KokkosExecSpace(), d_m, h_m);
 
-  team_policy policy = team_policy(KokkosExecSpace(), 1, 1);
+  auto policy = Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1);
   Kokkos::parallel_for(
-      "kernel", policy, KOKKOS_LAMBDA(const member_type& teamMember) { kernel(d_m, d_ret); });
+      "kernel", policy, KOKKOS_LAMBDA(const int& i) { kernel(d_m, d_ret); });
   Kokkos::deep_copy(KokkosExecSpace(), h_m, d_m);
   Kokkos::deep_copy(KokkosExecSpace(), h_ret, d_ret);
   KokkosExecSpace().fence();
