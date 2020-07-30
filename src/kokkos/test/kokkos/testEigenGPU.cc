@@ -283,10 +283,9 @@ void testFit() {
   // no instance of overloaded function "Kokkos::deep_copy" matches the argument list. argument
   // types are: (KokkosExecSpace, Kokkos::View<kokkos_cuda::Rfit::line_fit *, KokkosExecSpace>, int).
   // Use for loop instead
-  auto tmpN = Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit);
   Kokkos::parallel_for(
       "init_line_fit_res",
-      Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, tmpN),
+      Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, Rfit::maxNumberOfTracks()),
       KOKKOS_LAMBDA(const int& i) {
         d_line_fit_results(i).par = Vector2d::Zero();
         d_line_fit_results(i).cov = Matrix2d::Zero();
