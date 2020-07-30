@@ -288,8 +288,9 @@ void testFit() {
       "init_line_fit_res",
       Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, tmpN),
       KOKKOS_LAMBDA(const int& i) {
-        unsigned char* ptr = reinterpret_cast<unsigned char*>(d_line_fit_results.data());
-        ptr[i] = 0;
+        d_line_fit_results(i).par = Vector2d::Zero();
+        d_line_fit_results(i).cov = Matrix2d::Zero();
+        d_line_fit_results(i).chi2 = 0.;
       });
 
   // for timing purposes we fit 4096 tracks
