@@ -4,6 +4,8 @@
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
+#include "KokkosCore/kokkosConfig.h"
+
 namespace KOKKOS_NAMESPACE {
   namespace Rfit {
 

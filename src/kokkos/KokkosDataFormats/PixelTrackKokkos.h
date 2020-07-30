@@ -2,15 +2,12 @@
 #define CUDADataFormatsTrackTrackHeterogeneous_H
 
 #include "KokkosDataFormats/TrajectoryStateSoA.h"
-#ifdef TODO
 #include "KokkosCore/HistoContainer.h"
-#endif
 
 namespace trackQuality {
   enum Quality : uint8_t { bad = 0, dup, loose, strict, tight, highPurity };
 }
 
-#ifdef TODO
 template <int32_t S>
 class TrackSoAT {
 public:
@@ -70,7 +67,7 @@ namespace pixelTrack {
 
 }  // namespace pixelTrack
 
-using PixelTrackHeterogeneous = HeterogeneousSoA<pixelTrack::TrackSoA>;
-#endif
+// Replace with Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>
+//using PixelTrackHeterogeneous = HeterogeneousSoA<pixelTrack::TrackSoA>;
 
 #endif  // CUDADataFormatsTrackTrackSoA_H
