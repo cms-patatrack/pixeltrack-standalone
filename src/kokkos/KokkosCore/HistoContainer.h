@@ -107,7 +107,7 @@ namespace cms {
           });
       launchFinalize(h, execSpace);
       Kokkos::parallel_for(
-          "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
+          "fillFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
             fillFromVector(h, nh, v, offsets, teamMember);
           });
     }
