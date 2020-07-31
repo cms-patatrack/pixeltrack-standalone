@@ -6,14 +6,12 @@
 #include <cstdint>
 #include <type_traits>
 
+#include <Kokkos_Core.hpp>
+
 #include "KokkosCore/AtomicPairCounter.h"
 
 namespace cms {
   namespace kokkos {
-
-    using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
     template <typename T, typename ExecSpace>
     KOKKOS_INLINE_FUNCTION uint32_t upper_bound(Kokkos::View<uint32_t const*, ExecSpace> offsets,
                                                 const uint32_t& upper_index,
@@ -31,7 +29,7 @@ namespace cms {
                                                 const uint32_t nh,
                                                 Kokkos::View<T const*, ExecSpace> v,
                                                 Kokkos::View<uint32_t const*, ExecSpace> offsets,
-                                                const member_type& teamMember) {
+                                                const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       uint32_t first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       uint32_t total_threads = teamMember.league_size() * teamMember.team_size();
       for (uint32_t i = first, nt = offsets(nh); i < nt; i += total_threads) {
@@ -49,7 +47,7 @@ namespace cms {
                                                const uint32_t nh,
                                                Kokkos::View<T const*, ExecSpace> v,
                                                Kokkos::View<uint32_t const*, ExecSpace> offsets,
-                                               const member_type& teamMember) {
+                                               const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       int first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       int total_threads = teamMember.league_size() * teamMember.team_size();
 
@@ -109,7 +107,7 @@ namespace cms {
           });
       launchFinalize(h, execSpace);
       Kokkos::parallel_for(
-          "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
+          "fillFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
             fillFromVector(h, nh, v, offsets, teamMember);
           });
     }
