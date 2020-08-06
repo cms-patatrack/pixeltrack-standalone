@@ -1,15 +1,15 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 
+#include "KokkosCore/kokkosConfig.h"
 #include "KokkosDataFormats/ZVertexHeterogeneous.h"
+#include "KokkosDataFormats/PixelTrackKokkos.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
     using ZVertices = ZVertexSoA;
-#ifdef TODO
     using TkSoA = pixelTrack::TrackSoA;
-#endif
 
     // workspace used in the vertex reco algos
     struct WorkSpace {
@@ -31,9 +31,7 @@ namespace KOKKOS_NAMESPACE {
     public:
       using ZVertices = ZVertexSoA;
       using WorkSpace = gpuVertexFinder::WorkSpace;
-#ifdef TODO
       using TkSoA = pixelTrack::TrackSoA;
-#endif
       Producer(bool oneKernel,
                bool useDensity,
                bool useDBSCAN,
@@ -54,10 +52,9 @@ namespace KOKKOS_NAMESPACE {
 
       ~Producer() = default;
 
-#ifdef TODO
-      ZVertexHeterogeneous makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const;
-      ZVertexHeterogeneous make(TkSoA const* tksoa, float ptMin) const;
-#endif
+      Kokkos::View<ZVertexSoA, KokkosExecSpace> make(Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> const& tksoa,
+                                                     float ptMin,
+                                                     KokkosExecSpace const& execSpace) const;
 
     private:
       const bool oneKernel_;
