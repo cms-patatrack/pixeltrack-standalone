@@ -97,6 +97,10 @@ int main(int argc, char** argv) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "BeamSpotToKokkos");
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
+        if (validation) {
+          edmodules.emplace_back(prefix + "CountValidator");
+        }
+
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
         esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
         esmodules.emplace_back(prefix + "PixelCPEFastESProducer");

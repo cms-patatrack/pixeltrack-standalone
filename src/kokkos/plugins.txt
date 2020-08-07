@@ -10,3 +10,5 @@ kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_cuda::PixelCPEFastESProducer pluginSiPixelRecHits.so
 kokkos_serial::PixelCPEFastESProducer pluginSiPixelRecHits.so
+kokkos_cuda::CountValidator pluginValidation.so
+kokkos_serial::CountValidator pluginValidation.so
