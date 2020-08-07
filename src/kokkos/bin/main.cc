@@ -97,6 +97,17 @@ int main(int argc, char** argv) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "BeamSpotToKokkos");
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
+#ifdef TODO
+        edmodules.emplace_back(prefix + "SiPixelRecHitKokkos");
+        edmodules.emplace_back(prefix + "CAHitNtupletKokkos");
+        edmodules.emplace_back(prefix + "PixelVertexProducerKokkos");
+#endif
+        if (transfer) {
+#ifdef TODO
+          edmodules.emplace_back(prefix + "PixelTrackSoAFromKokkos");
+          edmodules.emplace_back(prefix + "PixelVertexSoAFromKokkos");
+#endif
+        }
         if (validation) {
           edmodules.emplace_back(prefix + "CountValidator");
         }
@@ -108,9 +119,6 @@ int main(int argc, char** argv) {
     };
     addModules("kokkos_serial::", Backend::SERIAL);
     addModules("kokkos_cuda::", Backend::CUDA);
-    if (transfer) {
-      // add modules for transfer
-    }
   }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
