@@ -1,6 +1,14 @@
 BeamSpotESProducer pluginBeamSpotProducer.so
 kokkos_cuda::BeamSpotToKokkos pluginBeamSpotProducer.so
 kokkos_serial::BeamSpotToKokkos pluginBeamSpotProducer.so
+kokkos_cuda::CAHitNtupletKokkos pluginPixelTriplets.so
+kokkos_serial::CAHitNtupletKokkos pluginPixelTriplets.so
+kokkos_cuda::PixelTrackSoAFromKokkos pluginPixelTriplets.so
+kokkos_serial::PixelTrackSoAFromKokkos pluginPixelTriplets.so
+kokkos_cuda::PixelVertexProducerKokkos pluginPixelVertexFinding.so
+kokkos_serial::PixelVertexProducerKokkos pluginPixelVertexFinding.so
+kokkos_cuda::PixelVertexSoAFromKokkos pluginPixelVertexFinding.so
+kokkos_serial::PixelVertexSoAFromKokkos pluginPixelVertexFinding.so
 kokkos_cuda::SiPixelRawToCluster pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelRawToCluster pluginSiPixelClusterizer.so
 SiPixelFedIdsESProducer pluginSiPixelClusterizer.so
@@ -10,3 +18,7 @@ kokkos_cuda::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_serial::SiPixelGainCalibrationForHLTESProducer pluginSiPixelClusterizer.so
 kokkos_cuda::PixelCPEFastESProducer pluginSiPixelRecHits.so
 kokkos_serial::PixelCPEFastESProducer pluginSiPixelRecHits.so
+kokkos_cuda::SiPixelRecHitKokkos pluginSiPixelRecHits.so
+kokkos_serial::SiPixelRecHitKokkos pluginSiPixelRecHits.so
+kokkos_cuda::CountValidator pluginValidation.so
+kokkos_serial::CountValidator pluginValidation.so

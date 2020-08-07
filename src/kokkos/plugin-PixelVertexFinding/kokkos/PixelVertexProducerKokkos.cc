@@ -40,8 +40,7 @@ namespace KOKKOS_NAMESPACE {
                   9       // chi2max
                   ),
         m_ptMin(0.5)  // 0.5 GeV
-  {
-  }
+  {}
 
   void PixelVertexProducerKokkos::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& tracks = iEvent.get(tokenTrack_);
