@@ -8,155 +8,171 @@
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
-#ifdef TODO
-    __global__ void loadTracks(TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) {
-      assert(ptracks);
-      assert(soa);
-      auto const& tracks = *ptracks;
-      auto const& fit = tracks.stateAtBS;
-      auto const* quality = tracks.qualityData();
+    KOKKOS_INLINE_FUNCTION void loadTracks(Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks,
+                                           Kokkos::View<ZVertexSoA, KokkosExecSpace> soa,
+                                           Kokkos::View<WorkSpace, KokkosExecSpace> ws,
+                                           const float ptMin,
+                                           const size_t idx) {
+      auto nHits = tracks().nHits(idx);
+      if (nHits == 0)
+        return;  // this is a guard: maybe we need to move to nTracks...
 
-      auto first = blockIdx.x * blockDim.x + threadIdx.x;
-      for (int idx = first, nt = TkSoA::stride(); idx < nt; idx += gridDim.x * blockDim.x) {
-        auto nHits = tracks.nHits(idx);
-        if (nHits == 0)
-          break;  // this is a guard: maybe we need to move to nTracks...
+      auto const& fit = tracks().stateAtBS;
+      auto const* quality = tracks().qualityData();
 
-        // initialize soa...
-        soa->idv[idx] = -1;
+      // initialize soa...
+      soa().idv[idx] = -1;
 
-        if (nHits < 4)
-          continue;  // no triplets
-        if (quality[idx] != trackQuality::loose)
-          continue;
+      if (nHits < 4)
+        return;  // no triplets
+      if (quality[idx] != trackQuality::loose)
+        return;
 
-        auto pt = tracks.pt(idx);
+      auto pt = tracks().pt(idx);
 
-        if (pt < ptMin)
-          continue;
+      if (pt < ptMin)
+        return;
 
-        auto& data = *pws;
-        auto it = atomicAdd(&data.ntrks, 1);
-        data.itrk[it] = idx;
-        data.zt[it] = tracks.zip(idx);
-        data.ezt2[it] = fit.covariance(idx)(14);
-        data.ptt2[it] = pt * pt;
-      }
+      auto& data = ws();
+      auto it = Kokkos::atomic_fetch_add(&data.ntrks, 1);
+      data.itrk[it] = idx;
+      data.zt[it] = tracks().zip(idx);
+      data.ezt2[it] = fit.covariance(idx)(14);
+      data.ptt2[it] = pt * pt;
     }
 
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
-    __global__ void vertexFinderOneKernel(gpuVertexFinder::ZVertices* pdata,
-                                          gpuVertexFinder::WorkSpace* pws,
-                                          int minT,      // min number of neighbours to be "seed"
-                                          float eps,     // max absolute distance to cluster
-                                          float errmax,  // max error to be "seed"
-                                          float chi2max  // max normalized distance to cluster,
-    ) {
-      clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-      __syncthreads();
-      fitVertices(pdata, pws, 50.);
-      __syncthreads();
-      splitVertices(pdata, pws, 9.f);
-      __syncthreads();
-      fitVertices(pdata, pws, 5000.);
-      __syncthreads();
-      sortByPt2(pdata, pws);
+    void vertexFinderOneKernel(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
+                               Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
+                               typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror hdata,
+                               int minT,       // min number of neighbours to be "seed"
+                               float eps,      // max absolute distance to cluster
+                               float errmax,   // max error to be "seed"
+                               float chi2max,  // max normalized distance to cluster,
+                               KokkosExecSpace const& execSpace,
+                               Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
+      clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, execSpace, teamPolicy);
+
+      Kokkos::parallel_for(
+          teamPolicy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
+            // 4 bytes of shared memory required
+            fitVertices(vdata, vws, 50., teamMember);
+            teamMember.team_barrier();
+
+            splitVertices(vdata, vws, 9.f, teamMember);
+            teamMember.team_barrier();
+
+            fitVertices(vdata, vws, 5000., teamMember);
+            teamMember.team_barrier();
+          });
+
+      sortByPt2Host(vdata, vws, hdata, execSpace, teamPolicy);
     }
 #else
-    __global__ void vertexFinderKernel1(gpuVertexFinder::ZVertices* pdata,
-                                        gpuVertexFinder::WorkSpace* pws,
-                                        int minT,      // min number of neighbours to be "seed"
-                                        float eps,     // max absolute distance to cluster
-                                        float errmax,  // max error to be "seed"
-                                        float chi2max  // max normalized distance to cluster,
-    ) {
-      clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-      __syncthreads();
-      fitVertices(pdata, pws, 50.);
+    void vertexFinderKernel1(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
+                             Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
+                             int minT,       // min number of neighbours to be "seed"
+                             float eps,      // max absolute distance to cluster
+                             float errmax,   // max error to be "seed"
+                             float chi2max,  // max normalized distance to cluster,
+                             KokkosExecSpace const& execSpace,
+                             Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
+      clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, execSpace, teamPolicy);
+      Kokkos::parallel_for(
+          teamPolicy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
+            // 4 bytes of shared memory required
+            fitVertices(vdata, vws, 50., teamMember);
+          });
     }
 
-    __global__ void vertexFinderKernel2(gpuVertexFinder::ZVertices* pdata, gpuVertexFinder::WorkSpace* pws) {
-      fitVertices(pdata, pws, 5000.);
-      __syncthreads();
-      sortByPt2(pdata, pws);
+    void vertexFinderKernel2(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
+                             Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
+                             typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror hdata,
+                             KokkosExecSpace const& execSpace,
+                             Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
+      Kokkos::parallel_for(
+          teamPolicy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
+            // 4 bytes of shared memory required
+            fitVertices(vdata, vws, 5000., teamMember);
+          });
+
+      sortByPt2Host(vdata, vws, hdata, execSpace, teamPolicy);
     }
 #endif
-#endif  // TODO
 
     Kokkos::View<ZVertexSoA, KokkosExecSpace> Producer::make(
         Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> const& tksoa,
         float ptMin,
         KokkosExecSpace const& execSpace) const {
       // std::cout << "producing Vertices on GPU" << std::endl;
-      Kokkos::View<ZVertexSoA, KokkosExecSpace> vertices("vertices");
-      Kokkos::View<WorkSpace, KokkosExecSpace> ws_d("ws_d");
+      Kokkos::View<ZVertexSoA, KokkosExecSpace> vertices_d("vertices");
+      auto vertices_h = Kokkos::create_mirror_view(vertices_d);
+      Kokkos::View<WorkSpace, KokkosExecSpace> workspace_d("workspace");
 
-#ifdef TODO
-#ifdef __CUDACC__
-      init<<<1, 1, 0, stream>>>(soa, ws_d.get());
-      auto blockSize = 128;
-      auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-      loadTracks<<<numberOfBlocks, blockSize, 0, stream>>>(tksoa, soa, ws_d.get(), ptMin);
-      cudaCheck(cudaGetLastError());
-#else
-      cudaCompat::resetGrid();
-      init(soa, ws_d.get());
-      loadTracks(tksoa, soa, ws_d.get(), ptMin);
-#endif
+      using TeamPolicy = Kokkos::TeamPolicy<KokkosExecSpace>;
+      using MemberType = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
-#ifdef __CUDACC__
+      Kokkos::parallel_for(
+          "init", TeamPolicy(execSpace, 1, 1), KOKKOS_LAMBDA(MemberType const& teamMember) {
+            vertices_d().nvFinal = 0;
+            workspace_d().ntrks = 0;
+            workspace_d().nvIntermediate = 0;
+          });
+      Kokkos::parallel_for(
+          "loadTracks",
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, TkSoA::stride()),
+          KOKKOS_LAMBDA(const size_t i) { loadTracks(tksoa, vertices_d, workspace_d, ptMin, i); });
+
       if (oneKernel_) {
         // implemented only for density clustesrs
 #ifndef THREE_KERNELS
-        vertexFinderOneKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        // TODO: scratch sizes may need to be adjusted?
+        // scratch size is from the unit test (not sure yet if it works here), following comment is also from there
+        //FIXME: small scratch pad size will result in runtime error "an illegal memory access was encountered". Current
+        // oneKernel test will NOT pass probably due to the high demand of scratch memory from splitVertices kernel
+        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+        vertexFinderOneKernel(vertices_d, workspace_d, vertices_h, minT, eps, errmax, chi2max, execSpace, policy);
+        Kokkos::deep_copy(execSpace, vertices_d, vertices_h);
 #else
-        vertexFinderKernel1<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
-        cudaCheck(cudaGetLastError());
+        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+        vertexFinderKernel1(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         // one block per vertex...
-        splitVerticesKernel<<<1024, 128, 0, stream>>>(soa, ws_d.get(), 9.f);
-        cudaCheck(cudaGetLastError());
-        vertexFinderKernel2<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
+        Kokkos::parallel_for(
+            TeamPolicy(execSpace, 1024, 128).set_sctratch_size(8192 * 4), KOKKOS_LAMBDA(MemberType const& teamMember) {
+              splitVertices(vertices_d, workspace_d, 9.f, teamMember);
+            });
+        vertexFinderKernel2(vertices_d, workspace_d, vertices_h, execSpace, policy);
 #endif
       } else {  // five kernels
+        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
         if (useDensity_) {
-          clusterTracksByDensityKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+          clusterTracksByDensityHost(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         } else if (useDBSCAN_) {
-          clusterTracksDBSCAN<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+          clusterTracksDBSCANHost(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         } else if (useIterative_) {
-          clusterTracksIterative<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+          clusterTracksIterativeHost(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         }
-        cudaCheck(cudaGetLastError());
-        fitVerticesKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), 50.);
-        cudaCheck(cudaGetLastError());
+        Kokkos::parallel_for(
+            policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
+              // 4 bytes of shared memory required
+              fitVertices(vertices_d, workspace_d, 50., teamMember);
+            });
         // one block per vertex...
-        splitVerticesKernel<<<1024, 128, 0, stream>>>(soa, ws_d.get(), 9.f);
-        cudaCheck(cudaGetLastError());
-        fitVerticesKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), 5000.);
-        cudaCheck(cudaGetLastError());
-        sortByPt2Kernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
+        Kokkos::parallel_for(
+            TeamPolicy(execSpace, 1024, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
+            KOKKOS_LAMBDA(MemberType const& teamMember) {
+              splitVertices(vertices_d, workspace_d, 9.f, teamMember);
+            });
+        Kokkos::parallel_for(
+            policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
+              // 4 bytes of shared memory required
+              fitVertices(vertices_d, workspace_d, 5000., teamMember);
+            });
+        sortByPt2Host(vertices_d, workspace_d, vertices_h, execSpace, policy);
       }
-      cudaCheck(cudaGetLastError());
-#else  // __CUDACC__
-      if (useDensity_) {
-        clusterTracksByDensity(soa, ws_d.get(), minT, eps, errmax, chi2max);
-      } else if (useDBSCAN_) {
-        clusterTracksDBSCAN(soa, ws_d.get(), minT, eps, errmax, chi2max);
-      } else if (useIterative_) {
-        clusterTracksIterative(soa, ws_d.get(), minT, eps, errmax, chi2max);
-      }
-      // std::cout << "found " << (*ws_d).nvIntermediate << " vertices " << std::endl;
-      fitVertices(soa, ws_d.get(), 50.);
-      // one block per vertex!
-      blockIdx.x = 0;
-      gridDim.x = 1;
-      splitVertices(soa, ws_d.get(), 9.f);
-      resetGrid();
-      fitVertices(soa, ws_d.get(), 5000.);
-      sortByPt2(soa, ws_d.get());
-#endif
-#endif  // TODO
-      return vertices;
+
+      return vertices_d;
     }
   }  // namespace gpuVertexFinder
 }  // namespace KOKKOS_NAMESPACE
