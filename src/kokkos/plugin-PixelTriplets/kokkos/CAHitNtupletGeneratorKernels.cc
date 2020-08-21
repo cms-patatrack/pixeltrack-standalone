@@ -248,57 +248,79 @@ namespace KOKKOS_NAMESPACE {
     auto const *tuples_d = &tracks_d().hitIndices;
     auto *quality_d = (Quality *)(&tracks_d().m_quality);
 
-#ifdef TODO
-    auto blockSize = 64;
-
-    // classify tracks based on kinematics
-    auto numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-    kernel_classifyTracks<<<numberOfBlocks, blockSize, 0, cudaStream>>>(tuples_d, tracks_d, m_params.cuts_, quality_d);
-    cudaCheck(cudaGetLastError());
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+        KOKKOS_LAMBDA(const size_t i) {
+          kernel_classifyTracks(tuples_d, tracks_d.data(), m_params.cuts_, quality_d, i);
+        });
 
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
-      numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-      kernel_fishboneCleaner<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-          device_theCells_.get(), device_nCells_, quality_d);
-      cudaCheck(cudaGetLastError());
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < device_nCells_()) {
+              kernel_fishboneCleaner(device_theCells_.data(), quality_d, i);
+            }
+          });
     }
 
     // remove duplicates (tracks that share a doublet)
-    numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-    kernel_fastDuplicateRemover<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-        device_theCells_.get(), device_nCells_, tuples_d, tracks_d);
-    cudaCheck(cudaGetLastError());
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+        KOKKOS_LAMBDA(const size_t i) {
+          if (i < device_nCells_()) {
+            kernel_fastDuplicateRemover(device_theCells_.data(), tuples_d, tracks_d.data(), i);
+          }
+        });
 
     if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
       // fill hit->track "map"
-      numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-      kernel_countHitInTracks<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-          tuples_d, quality_d, device_hitToTuple_.get());
-      cudaCheck(cudaGetLastError());
-      cms::cuda::launchFinalize(device_hitToTuple_.get(), device_tmws_, cudaStream);
-      cudaCheck(cudaGetLastError());
-      kernel_fillHitInTracks<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-          tuples_d, quality_d, device_hitToTuple_.get());
-      cudaCheck(cudaGetLastError());
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < tuples_d->nbins()) {
+              kernel_countHitInTracks(tuples_d, quality_d, device_hitToTuple_.data(), i);
+            }
+          });
+      cms::kokkos::launchFinalize(device_hitToTuple_, execSpace);
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < tuples_d->nbins()) {
+              kernel_fillHitInTracks(tuples_d, quality_d, device_hitToTuple_.data(), i);
+            }
+          });
     }
+
     if (m_params.minHitsPerNtuplet_ < 4) {
       // remove duplicates (tracks that share a hit)
-      numberOfBlocks = (HitToTuple::capacity() + blockSize - 1) / blockSize;
-      kernel_tripletCleaner<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-          hh.view(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get());
-      cudaCheck(cudaGetLastError());
+      auto hh_view = hh.view();
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
+            if (i < device_hitToTuple_().nbins()) {
+              kernel_tripletCleaner(hh_view, tuples_d, tracks_d.data(), quality_d, device_hitToTuple_.data(), i);
+            }
+          });
     }
 
     if (m_params.doStats_) {
       // counters (add flag???)
-      numberOfBlocks = (HitToTuple::capacity() + blockSize - 1) / blockSize;
-      kernel_doStatsForHitInTracks<<<numberOfBlocks, blockSize, 0, cudaStream>>>(device_hitToTuple_.get(), counters_);
-      cudaCheck(cudaGetLastError());
-      numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-      kernel_doStatsForTracks<<<numberOfBlocks, blockSize, 0, cudaStream>>>(tuples_d, quality_d, counters_);
-      cudaCheck(cudaGetLastError());
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
+            if (i < device_hitToTuple_().nbins()) {
+              kernel_doStatsForHitInTracks(device_hitToTuple_.data(), counters_, i);
+            }
+          });
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < tuples_d->nbins()) {
+              kernel_doStatsForTracks(tuples_d, quality_d, counters_, i);
+            }
+          });
     }
+
 #ifdef GPU_DEBUG
     execSpace.fence();
 #endif
@@ -306,9 +328,15 @@ namespace KOKKOS_NAMESPACE {
 #ifdef DUMP_GPU_TK_TUPLES
     static std::atomic<int> iev(0);
     ++iev;
-    kernel_print_found_ntuplets<<<1, 32, 0, cudaStream>>>(
-        hh.view(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
-#endif
+    auto hh_view = hh.view();
+    auto const maxPrint = 100;
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+        KOKKOS_LAMBDA(const size_t i) {
+          if (i < std::min(maxPrint, tuples_d->nbins() =)) {
+            kernel_print_found_ntuplets(hh_view, tuples_d, tracks_d, quality_d, device_hitToTuple_data(), 100, iev, i);
+          }
+        });
 #endif
   }
 
