@@ -33,7 +33,7 @@ public:
   Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
   Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
 #ifdef TODO
-  auto phiBinner() { return m_hist; }
+  Kokkos::View<Hist*, MemorySpace> phiBinner() { return m_hist; }
 #endif
   Kokkos::View<uint16_t, MemorySpace> iphi() { return m_iphi; }
 
@@ -67,7 +67,7 @@ private:
 #ifdef TODO
   unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;  //!
 #endif
-  Kokkos::View<TrackingRecHit2DSOAView::AverageGeometry> m_AverageGeometryStore;  //!
+  Kokkos::View<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace> m_AverageGeometryStore;  //!
 
   Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
 
@@ -76,7 +76,7 @@ private:
 
 #ifdef TODO
   // needed as kernel params...
-  Hist* m_hist;
+  Kokkos::View<Hist*, MemorySpace> m_hist;
 #endif
   Kokkos::View<uint32_t*, MemorySpace> m_hitsLayerStart;
 };

@@ -3,8 +3,10 @@
 
 #include "gpuPixelDoubletsAlgos.h"
 
-#ifdef TODO
+#ifdef KOKKOS_BACKEND_CUDA
 #define CONSTANT_VAR __constant__
+#else
+#define CONSTANT_VAR
 #endif
 
 namespace KOKKOS_NAMESPACE {
@@ -18,7 +20,6 @@ namespace KOKKOS_NAMESPACE {
     // start constants
     // clang-format off
 
-#ifdef TODO
   // try out constants via functor member variables
   CONSTANT_VAR const uint8_t layerPairs[2 * nPairs] = {
       0, 1, 0, 4, 0, 7,              // BPIX1 (3)
@@ -29,13 +30,11 @@ namespace KOKKOS_NAMESPACE {
       0, 5, 0, 8,                    // Jumping Forward (BPIX1,FPIX2)
       4, 6, 7, 9                     // Jumping Forward (19)
   };
-#endif
 
   constexpr int16_t phi0p05 = 522;  // round(521.52189...) = phi2short(0.05);
   constexpr int16_t phi0p06 = 626;  // round(625.82270...) = phi2short(0.06);
   constexpr int16_t phi0p07 = 730;  // round(730.12648...) = phi2short(0.07);
 
-#ifdef TODO
   CONSTANT_VAR const int16_t phicuts[nPairs]{phi0p05,
                                              phi0p07,
                                              phi0p07,
@@ -63,7 +62,6 @@ namespace KOKKOS_NAMESPACE {
       20., 30., 0., 22., 30., -10., 70., 70., 22., 30., -15., 70., 70., 20., 22., 30., 0., 70., 70.};
   CONSTANT_VAR float const maxr[nPairs] = {
       20., 9., 9., 20., 7., 7., 5., 5., 20., 6., 6., 5., 5., 20., 20., 9., 9., 9., 9.};
-#endif
 
   // end constants
     // clang-format on
@@ -73,38 +71,38 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-#ifdef TODO
-    __global__ void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
-                                 int nHits,
-                                 CellNeighborsVector* cellNeighbors,
-                                 CellNeighbors* cellNeighborsContainer,
-                                 CellTracksVector* cellTracks,
-                                 CellTracks* cellTracksContainer) {
-      assert(isOuterHitOfCell);
-      int first = blockIdx.x * blockDim.x + threadIdx.x;
-      for (int i = first; i < nHits; i += gridDim.x * blockDim.x)
-        isOuterHitOfCell[i].reset();
+    KOKKOS_INLINE_FUNCTION void initDoublets(
+        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+        int nHits,
+        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
+        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
+      assert(isOuterHitOfCell.data());
+      const int leagueSize = teamMember.league_size();
+      const int teamSize = teamMember.team_size();
+      int first = teamMember.league_rank() * teamSize + teamMember.team_rank();
+      for (int i = first; i < nHits; i += leagueSize * teamSize)
+        isOuterHitOfCell(i).reset();
     }
 
     constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y
     constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
 
-    __global__
-#ifdef __CUDACC__
-    __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
-#endif
-        void getDoubletsFromHisto(GPUCACell* cells,
-                                  uint32_t* nCells,
-                                  CellNeighborsVector* cellNeighbors,
-                                  CellTracksVector* cellTracks,
-                                  TrackingRecHit2DSOAView const* __restrict__ hhp,
-                                  GPUCACell::OuterHitOfCell* isOuterHitOfCell,
-                                  int nActualPairs,
-                                  bool ideal_cond,
-                                  bool doClusterCut,
-                                  bool doZ0Cut,
-                                  bool doPtCut,
-                                  uint32_t maxNumOfDoublets) {
+    KOKKOS_INLINE_FUNCTION void getDoubletsFromHisto(
+        Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
+        Kokkos::View<uint32_t, KokkosExecSpace> nCells,
+        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
+        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
+        TrackingRecHit2DSOAView const* __restrict__ hhp,
+        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+        int nActualPairs,
+        bool ideal_cond,
+        bool doClusterCut,
+        bool doZ0Cut,
+        bool doPtCut,
+        uint32_t maxNumOfDoublets,
+        const int stride,
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
       auto const& __restrict__ hh = *hhp;
       doubletsFromHisto(layerPairs,
                         nActualPairs,
@@ -122,9 +120,10 @@ namespace KOKKOS_NAMESPACE {
                         doClusterCut,
                         doZ0Cut,
                         doPtCut,
-                        maxNumOfDoublets);
+                        maxNumOfDoublets,
+                        stride,
+                        teamMember);
     }
-#endif
   }  // namespace gpuPixelDoublets
 }  // namespace KOKKOS_NAMESPACE
 

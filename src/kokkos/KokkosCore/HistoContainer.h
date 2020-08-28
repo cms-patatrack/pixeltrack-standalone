@@ -8,7 +8,8 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "KokkosCore/AtomicPairCounter.h"
+#include "AtomicPairCounter.h"
+#include "kokkos_assert.h"
 
 namespace cms {
   namespace kokkos {

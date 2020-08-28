@@ -167,20 +167,20 @@ namespace KOKKOS_NAMESPACE {
     // in principle we can use "nhits" to heuristically dimension the workspace...
     device_isOuterHitOfCell_ =
         Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>("device_isOuterHitOfCell_", std::max(1U, nhits));
-#ifdef TODO
-    {
-      int threadsPerBlock = 128;
-      // at least one block!
-      int blocks = (std::max(1U, nhits) + threadsPerBlock - 1) / threadsPerBlock;
-      gpuPixelDoublets::initDoublets<<<blocks, threadsPerBlock, 0, stream>>>(device_isOuterHitOfCell_.get(),
-                                                                             nhits,
-                                                                             device_theCellNeighbors_,
-                                                                             device_theCellNeighborsContainer_.get(),
-                                                                             device_theCellTracks_,
-                                                                             device_theCellTracksContainer_.get());
-      cudaCheck(cudaGetLastError());
-    }
+
+#ifdef KOKKOS_BACKEND_CUDA
+    int teamSize = 128;
+    // at least one league
+    int leagueSize = (std::max(1U, nhits) + teamSize - 1) / teamSize;
+    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
+#else
+    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
+    Kokkos::parallel_for(
+        "initDoublets", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+          gpuPixelDoublets::initDoublets(
+              device_isOuterHitOfCell_, nhits, device_theCellNeighbors_, device_theCellTracks_, teamMember);
+        });
 
     device_theCells_ = Kokkos::View<GPUCACell *, KokkosExecSpace>("device_theCells_", m_params.maxNumberOfDoublets_);
 
@@ -191,37 +191,51 @@ namespace KOKKOS_NAMESPACE {
     if (0 == nhits)
       return;  // protect against empty events
 
-      // FIXME avoid magic numbers
-#ifdef TODO
+    // FIXME avoid magic numbers
     auto nActualPairs = gpuPixelDoublets::nPairs;
     if (!m_params.includeJumpingForwardDoublets_)
       nActualPairs = 15;
     if (m_params.minHitsPerNtuplet_ > 3) {
       nActualPairs = 13;
     }
-#endif
 
-#ifdef TODO
     assert(nActualPairs <= gpuPixelDoublets::nPairs);
+#ifdef KOKKOS_BACKEND_CUDA
     int stride = 4;
-    int threadsPerBlock = gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize / stride;
-    int blocks = (4 * nhits + threadsPerBlock - 1) / threadsPerBlock;
-    dim3 blks(1, blocks, 1);
-    dim3 thrs(stride, threadsPerBlock, 1);
-    gpuPixelDoublets::getDoubletsFromHisto<<<blks, thrs, 0, stream>>>(device_theCells_.get(),
-                                                                      device_nCells_,
-                                                                      device_theCellNeighbors_,
-                                                                      device_theCellTracks_,
-                                                                      hh.view(),
-                                                                      device_isOuterHitOfCell_.get(),
-                                                                      nActualPairs,
-                                                                      m_params.idealConditions_,
-                                                                      m_params.doClusterCut_,
-                                                                      m_params.doZ0Cut_,
-                                                                      m_params.doPtCut_,
-                                                                      m_params.maxNumberOfDoublets_);
-    cudaCheck(cudaGetLastError());
+    teamSize = gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize / stride;
+    leagueSize = (4 * nhits + teamSize - 1) / teamSize;
+    Kokkos::TeamPolicy<KokkosExecSpace,
+                       Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
+                                            gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
+        tempPolicy{execSpace, leagueSize, teamSize * stride};
+#else
+    int stride = 1;
+    Kokkos::TeamPolicy<KokkosExecSpace,
+                       Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
+                                            gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
+        tempPolicy{execSpace, 1, Kokkos::AUTO()};
 #endif
+    tempPolicy.set_scratch_size(0, Kokkos::PerTeam(84));  // 21 x 4 = 84 bytes is required
+    const auto *hhp = hh.view();
+    Kokkos::parallel_for(
+        "getDoubletsFromHisto",
+        tempPolicy,
+        KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+          gpuPixelDoublets::getDoubletsFromHisto(device_theCells_,
+                                                 device_nCells_,
+                                                 device_theCellNeighbors_,
+                                                 device_theCellTracks_,
+                                                 hhp,
+                                                 device_isOuterHitOfCell_,
+                                                 nActualPairs,
+                                                 m_params.idealConditions_,
+                                                 m_params.doClusterCut_,
+                                                 m_params.doZ0Cut_,
+                                                 m_params.doPtCut_,
+                                                 m_params.maxNumberOfDoublets_,
+                                                 stride,
+                                                 teamMember);
+        });
 
 #ifdef GPU_DEBUG
     execSpace.fence();

@@ -182,6 +182,9 @@ namespace KOKKOS_NAMESPACE {
     Counters* counters_ = nullptr;
 
   private:
+    Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> device_theCellNeighbors_;  // not used at the moment
+    Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> device_theCellTracks_;        // not used at the moment
+
     Kokkos::View<GPUCACell*, KokkosExecSpace> device_theCells_;
     Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> device_isOuterHitOfCell_;
     Kokkos::View<uint32_t, KokkosExecSpace> device_nCells_;

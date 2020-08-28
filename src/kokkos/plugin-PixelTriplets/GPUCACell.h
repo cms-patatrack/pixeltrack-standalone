@@ -37,8 +37,8 @@ public:
 
   GPUCACell() = default;
 
-  KOKKOS_INLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,
-                                   CellTracksVector& cellTracks,
+  KOKKOS_INLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,  // not used at the moment
+                                   CellTracksVector& cellTracks,        // not used at the moment
                                    Hits const& hh,
                                    int layerPairId,
                                    int doubletId,
