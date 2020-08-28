@@ -307,7 +307,7 @@ public:
     bins[w - 1] = j;
   }
 
-#pragma hd_warning_disable
+  #pragma hd_warning_disable
   template <typename Histo, typename ExecSpace>
   static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo, ExecSpace> histo, ExecSpace const& execSpace) {
     // assert(off[totbins() - 1] == 0);
@@ -324,6 +324,23 @@ public:
     // for(uint32_t i=0;i<totbins();++i)
     //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
     // assert(off[totbins() - 1] == off[totbins() - 2]);
+  }
+
+  #pragma hd_warning_disable
+  template <typename Histo, typename ExecSpace>
+  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo*, ExecSpace> histo,
+                                              const int32_t N,
+                                              ExecSpace const& execSpace) {
+    for (int k = 0; k < N; k++) {
+      Kokkos::parallel_scan(
+          "nFinalize",
+          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final) {
+            update += histo(k).off[i];
+            if (final)
+              histo(k).off[i] = update;
+          });
+    }
   }
 
   constexpr auto size() const { return uint32_t(off[totbins() - 1]); }
