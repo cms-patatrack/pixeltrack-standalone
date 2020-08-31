@@ -13,7 +13,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "../CAConstants.h"
+#include "../PixelDoubletsConstants.h"
 #include "../GPUCACell.h"
 
 namespace KOKKOS_NAMESPACE {
@@ -23,8 +23,10 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
+    using namespace PixelDoubletsConstants;
+
     KOKKOS_INLINE_FUNCTION void doubletsFromHisto(
-        uint8_t const* __restrict__ layerPairs,
+        const LayerPairs& layerPairs,
         uint32_t nPairs,
         Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
         Kokkos::View<uint32_t, KokkosExecSpace> nCells,
@@ -32,10 +34,10 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
         TrackingRecHit2DSOAView const& __restrict__ hh,
         Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
-        int16_t const* __restrict__ phicuts,
-        float const* __restrict__ minz,
-        float const* __restrict__ maxz,
-        float const* __restrict__ maxr,
+        const PhiCuts& phicuts,
+        const MinZ& minz,
+        const MaxZ& maxz,
+        const MaxR& maxr,
         bool ideal_cond,
         bool doClusterCut,
         bool doZ0Cut,

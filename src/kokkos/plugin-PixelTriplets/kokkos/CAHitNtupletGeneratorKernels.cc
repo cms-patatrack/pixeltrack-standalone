@@ -168,12 +168,15 @@ namespace KOKKOS_NAMESPACE {
     device_isOuterHitOfCell_ =
         Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>("device_isOuterHitOfCell_", std::max(1U, nhits));
 
+    // Current multi-team algorithms are usually based on CUDA implementations which
+    // may not be flexible enough to become a generic parallel solution for all backends.
+    // Thus team policy should be manually handled for each specific backend.
 #ifdef KOKKOS_BACKEND_CUDA
     int teamSize = 128;
     // at least one league
     int leagueSize = (std::max(1U, nhits) + teamSize - 1) / teamSize;
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
-#else
+#else  // serial
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
     Kokkos::parallel_for(
