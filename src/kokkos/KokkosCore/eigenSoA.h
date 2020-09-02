@@ -17,9 +17,9 @@ namespace eigenSoA {
     using Scalar = T;
 
     constexpr Scalar& operator()(int32_t i) { return data_[i]; }
-    constexpr const Scalar operator()(int32_t i) const { return data_ + i; }
+    constexpr const Scalar operator()(int32_t i) const { return data_[i]; }
     constexpr Scalar& operator[](int32_t i) { return data_[i]; }
-    constexpr const Scalar operator[](int32_t i) const { return data_ + i; }
+    constexpr const Scalar operator[](int32_t i) const { return data_[i]; }
 
     constexpr Scalar* data() { return data_; }
     constexpr Scalar const* data() const { return data_; }
