@@ -220,25 +220,21 @@ namespace KOKKOS_NAMESPACE {
 #endif
     tempPolicy.set_scratch_size(0, Kokkos::PerTeam(84));  // 21 x 4 = 84 bytes is required
     const auto *hhp = hh.view();
-    Kokkos::parallel_for(
-        "getDoubletsFromHisto",
-        tempPolicy,
-        KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
-          gpuPixelDoublets::getDoubletsFromHisto(device_theCells_,
-                                                 device_nCells_,
-                                                 device_theCellNeighbors_,
-                                                 device_theCellTracks_,
-                                                 hhp,
-                                                 device_isOuterHitOfCell_,
-                                                 nActualPairs,
-                                                 m_params.idealConditions_,
-                                                 m_params.doClusterCut_,
-                                                 m_params.doZ0Cut_,
-                                                 m_params.doPtCut_,
-                                                 m_params.maxNumberOfDoublets_,
-                                                 stride,
-                                                 teamMember);
-        });
+
+    gpuPixelDoublets::getDoubletsFromHisto getdoublets(device_theCells_,
+                                                       device_nCells_,
+                                                       device_theCellNeighbors_,
+                                                       device_theCellTracks_,
+                                                       hhp,
+                                                       device_isOuterHitOfCell_,
+                                                       nActualPairs,
+                                                       m_params.idealConditions_,
+                                                       m_params.doClusterCut_,
+                                                       m_params.doZ0Cut_,
+                                                       m_params.doPtCut_,
+                                                       m_params.maxNumberOfDoublets_,
+                                                       stride);
+    Kokkos::parallel_for("getDoubletsFromHisto", tempPolicy, getdoublets);
 
 #ifdef GPU_DEBUG
     execSpace.fence();
