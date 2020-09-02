@@ -11,6 +11,8 @@
 #include "DataFormats/approx_atan2.h"
 #include "KokkosCore/GPUVecArray.h"
 
+#include <Kokkos_Core.hpp>
+
 #include "../CAConstants.h"
 #include "../GPUCACell.h"
 
@@ -21,24 +23,26 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-#ifdef TODO
-    __device__ __forceinline__ void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
-                                                      uint32_t nPairs,
-                                                      GPUCACell* cells,
-                                                      uint32_t* nCells,
-                                                      CellNeighborsVector* cellNeighbors,
-                                                      CellTracksVector* cellTracks,
-                                                      TrackingRecHit2DSOAView const& __restrict__ hh,
-                                                      GPUCACell::OuterHitOfCell* isOuterHitOfCell,
-                                                      int16_t const* __restrict__ phicuts,
-                                                      float const* __restrict__ minz,
-                                                      float const* __restrict__ maxz,
-                                                      float const* __restrict__ maxr,
-                                                      bool ideal_cond,
-                                                      bool doClusterCut,
-                                                      bool doZ0Cut,
-                                                      bool doPtCut,
-                                                      uint32_t maxNumOfDoublets) {
+    KOKKOS_INLINE_FUNCTION void doubletsFromHisto(
+        uint8_t const* __restrict__ layerPairs,
+        uint32_t nPairs,
+        Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
+        Kokkos::View<uint32_t, KokkosExecSpace> nCells,
+        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
+        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
+        TrackingRecHit2DSOAView const& __restrict__ hh,
+        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+        int16_t const* __restrict__ phicuts,
+        float const* __restrict__ minz,
+        float const* __restrict__ maxz,
+        float const* __restrict__ maxr,
+        bool ideal_cond,
+        bool doClusterCut,
+        bool doZ0Cut,
+        bool doPtCut,
+        uint32_t maxNumOfDoublets,
+        const int stride,
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
       // ysize cuts (z in the barrel)  times 8
       // these are used if doClusterCut is true
       constexpr int minYsizeB1 = 36;
@@ -58,29 +62,35 @@ namespace KOKKOS_NAMESPACE {
 
       auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
 
+      const int teamRank = teamMember.team_rank();
+      const int teamSize = teamMember.team_size();
+      const int leagueRank = teamMember.league_rank();
+      const int leagueSize = teamMember.league_size();
+
       // nPairsMax to be optimized later (originally was 64).
       // If it should be much bigger, consider using a block-wide parallel prefix scan,
       // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
       const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
       assert(nPairs <= nPairsMax);
-      __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
-      __shared__ uint32_t ntot;
-      if (threadIdx.y == 0 && threadIdx.x == 0) {
+      uint32_t* innerLayerCumulativeSize = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t) * nPairsMax);
+      uint32_t* ntot = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t));
+
+      if (teamRank == 0) {
         innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
         for (uint32_t i = 1; i < nPairs; ++i) {
           innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
         }
-        ntot = innerLayerCumulativeSize[nPairs - 1];
+        ntot[0] = innerLayerCumulativeSize[nPairs - 1];
       }
-      __syncthreads();
+      teamMember.team_barrier();
 
       // x runs faster
-      auto idy = blockIdx.y * blockDim.y + threadIdx.y;
-      auto first = threadIdx.x;
-      auto stride = blockDim.x;
+      const uint32_t blockDim = teamSize / stride;
+      uint32_t first = teamRank % stride;
+      uint32_t idy = leagueRank * blockDim + teamRank / stride;
 
       uint32_t pairLayerId = 0;  // cannot go backward
-      for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
+      for (auto j = idy; j < ntot[0]; j += blockDim * leagueSize) {
         while (j >= innerLayerCumulativeSize[pairLayerId++])
           ;
         --pairLayerId;  // move to lower_bound ??
@@ -197,7 +207,7 @@ namespace KOKKOS_NAMESPACE {
           auto const* __restrict__ e = hist.end(kk + hoff);
           p += first;
           for (; p < e; p += stride) {
-            auto oi = __ldg(p);
+            auto oi = *p;  // auto oi = __ldg(p); is not allowed since __ldg is device-only
             assert(oi >= offsets[outer]);
             assert(oi < offsets[outer + 1]);
             auto mo = hh.detectorIndex(oi);
@@ -217,16 +227,16 @@ namespace KOKKOS_NAMESPACE {
             if (doPtCut && ptcut(oi, idphi))
               continue;
 
-            auto ind = atomicAdd(nCells, 1);
+            auto ind = Kokkos::atomic_fetch_add(nCells.data(), 1);
             if (ind >= maxNumOfDoublets) {
-              atomicSub(nCells, 1);
+              Kokkos::atomic_decrement(nCells.data());
               break;
             }  // move to SimpleVector??
             // int layerPairId, int doubletId, int innerHitId, int outerHitId)
-            cells[ind].init(*cellNeighbors, *cellTracks, hh, pairLayerId, ind, i, oi);
-            isOuterHitOfCell[oi].push_back(ind);
+            cells(ind).init(cellNeighbors(), cellTracks(), hh, pairLayerId, ind, i, oi);
+            isOuterHitOfCell(oi).push_back(ind);
 #ifdef GPU_DEBUG
-            if (isOuterHitOfCell[oi].full())
+            if (isOuterHitOfCell(oi).full())
               ++tooMany;
             ++tot;
 #endif
@@ -238,7 +248,6 @@ namespace KOKKOS_NAMESPACE {
 #endif
       }  // loop in block...
     }
-#endif
   }  // namespace gpuPixelDoubletsAlgos
 }  // namespace KOKKOS_NAMESPACE
 
