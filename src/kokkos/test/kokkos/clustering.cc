@@ -244,7 +244,11 @@ void test() {
       }
     }
   };  // end lambda
-  for (auto kkk = 0; kkk < 1; ++kkk) {
+  Kokkos::deep_copy(KokkosExecSpace(),d_clusInModule,h_clusInModule);
+  Kokkos::deep_copy(KokkosExecSpace(),d_moduleId,h_moduleId);
+  Kokkos::deep_copy(KokkosExecSpace(),d_clus,h_clus);
+
+  for (auto kkk = 0; kkk < 5; ++kkk) {
     n = 0;
     ncl = 0;
     generateClusters(kkk);
@@ -252,16 +256,14 @@ void test() {
     std::cout << "created " << n << " digis in " << ncl << " clusters" << std::endl;
     assert(n <= numElements);
 
-
+    h_moduleStart(0) = 0;
     Kokkos::deep_copy(KokkosExecSpace(),d_moduleStart,h_moduleStart);
-    Kokkos::deep_copy(KokkosExecSpace(),d_clusInModule,h_clusInModule);
-    Kokkos::deep_copy(KokkosExecSpace(),d_moduleId,h_moduleId);
+    
 
     Kokkos::deep_copy(KokkosExecSpace(),d_id,h_id);
     Kokkos::deep_copy(KokkosExecSpace(),d_x,h_x);
     Kokkos::deep_copy(KokkosExecSpace(),d_y,h_y);
     Kokkos::deep_copy(KokkosExecSpace(),d_adc,h_adc);
-    Kokkos::deep_copy(KokkosExecSpace(),d_clus,h_clus);
 
     // Launch Kokkos Kernels
     std::cout << "Kokkos countModules kernel launch for " << n << " iterations\n";
@@ -270,7 +272,6 @@ void test() {
           KOKKOS_NAMESPACE::gpuClustering::countModules(d_id, d_moduleStart, d_clus, n, i);
         });
     KokkosExecSpace().fence();
-
 
 #ifdef KOKKOS_BACKEND_SERIAL
     uint32_t threadsPerModule = 1;
@@ -308,81 +309,25 @@ void test() {
     if (ncl != clustInModule_acc)
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    clusterChargeCut(d_id,d_adc,d_moduleStart,d_clusInModule,d_moduleId,d_clus,n,
-                     blocksPerGrid,threadsPerModule,KokkosExecSpace());
+    KOKKOS_NAMESPACE::gpuClustering::clusterChargeCut(d_id,d_adc,d_moduleStart,
+                                                      d_clusInModule,d_moduleId,d_clus,n,
+                                                      blocksPerGrid,threadsPerModule,KokkosExecSpace());
+    KokkosExecSpace().fence();
 
-#ifdef TODO
-#ifdef __CUDACC__
+    std::cout << "found " << h_moduleStart(0) << " Modules active" << std::endl;
 
-
-    cms::cuda::launch(clusterChargeCut,
-                      {blocksPerGrid, threadsPerBlock},
-                      d_id.get(),
-                      d_adc.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      d_clus.get(),
-                      n);
-
-    cudaDeviceSynchronize();
-#else
-    h_moduleStart[0] = nModules;
-    countModules(h_id.get(), h_moduleStart.get(), h_clus.get(), n);
-    memset(h_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
-    gridDim.x = MaxNumModules;  //not needed in the kernel for this specific case;
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      findClus(h_id.get(),
-               h_x.get(),
-               h_y.get(),
-               h_moduleStart.get(),
-               h_clusInModule.get(),
-               h_moduleId.get(),
-               h_clus.get(),
-               n);
-    resetGrid();
-
-    nModules = h_moduleStart[0];
-    auto nclus = h_clusInModule.get();
-
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
-              << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
-      if (nclus[i - 1] > 0) {
-        std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
-        break;
-      }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
-      std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
-
-    gridDim.x = MaxNumModules;  // no needed in the kernel for in this specific case
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      clusterChargeCut(
-          h_id.get(), h_adc.get(), h_moduleStart.get(), h_clusInModule.get(), h_moduleId.get(), h_clus.get(), n);
-    resetGrid();
-
-#endif
-
-    std::cout << "found " << nModules << " Modules active" << std::endl;
-
-#ifdef __CUDACC__
-    cudaCheck(cudaMemcpy(h_id.get(), d_id.get(), size16, cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(h_clus.get(), d_clus.get(), size32, cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(&moduleId, d_moduleId.get(), nModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-#endif
+    Kokkos::deep_copy(KokkosExecSpace(),h_id,d_id);
+    Kokkos::deep_copy(KokkosExecSpace(),h_clus,d_clus);
+    Kokkos::deep_copy(KokkosExecSpace(),h_clusInModule,d_clusInModule);
+    Kokkos::deep_copy(KokkosExecSpace(),h_moduleId,d_moduleId);
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {
-      assert(h_id[i] != 666);  // only noise
-      if (h_id[i] == InvId)
+      assert(h_id(i) != 666);  // only noise
+      if (h_id(i) == InvId)
         continue;
-      assert(h_clus[i] >= 0);
-      assert(h_clus[i] < int(nclus[h_id[i]]));
-      clids.insert(h_id[i] * 1000 + h_clus[i]);
-      // clids.insert(h_clus[i]);
+      assert(h_clus(i) >= 0);
+      clids.insert(h_id(i) * 1000 + h_clus(i));
     }
 
     // verify no hole in numbering
@@ -391,8 +336,8 @@ void test() {
     assert(0 == (*p) % 1000);
     auto c = p;
     ++c;
-    std::cout << "first clusters " << *p << ' ' << *c << ' ' << nclus[cmid] << ' ' << nclus[(*c) / 1000] << std::endl;
-    std::cout << "last cluster " << *clids.rbegin() << ' ' << nclus[(*clids.rbegin()) / 1000] << std::endl;
+    std::cout << "first clusters " << *p << ' ' << *c << ' ' << h_clusInModule(cmid) << ' ' << h_clusInModule((*c) / 1000) << std::endl;
+    std::cout << "last cluster " << *clids.rbegin() << ' ' << h_clusInModule((*clids.rbegin()) / 1000) << std::endl;
     for (; c != clids.end(); ++c) {
       auto cc = *c;
       auto pp = *p;
@@ -401,8 +346,8 @@ void test() {
       auto nc = cc % 1000;
       if (mid != cmid) {
         assert(0 == cc % 1000);
-        assert(nclus[cmid] - 1 == pp % 1000);
-        // if (nclus[cmid]-1 != pp%1000) std::cout << "error size " << mid << ": "  << nclus[mid] << ' ' << pp << std::endl;
+        assert(h_clusInModule(cmid) - 1 == pp % 1000);
+        // if (h_clusInModule[cmid]-1 != pp%1000) std::cout << "error size " << mid << ": "  << h_clusInModule[mid] << ' ' << pp << std::endl;
         cmid = mid;
         p = c;
         continue;
@@ -413,15 +358,15 @@ void test() {
         std::cout << "error " << mid << ": " << nc << ' ' << pnc << std::endl;
     }
 
-    std::cout << "found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
+    std::cout << "found " << std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
               << std::endl;
     for (auto i = MaxNumModules; i > 0; i--)
-      if (nclus[i - 1] > 0) {
-        std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
+      if (h_clusInModule(i - 1) > 0) {
+        std::cout << "last module is " << i - 1 << ' ' << h_clusInModule(i - 1) << std::endl;
         break;
       }
       // << " and " << seeds.size() << " seeds" << std::endl;
-#endif  // TODO
+
   }     /// end loop kkk
 }
 

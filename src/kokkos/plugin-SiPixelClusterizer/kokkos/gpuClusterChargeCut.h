@@ -26,11 +26,11 @@ namespace KOKKOS_NAMESPACE {
 
       using team_policy = Kokkos::TeamPolicy<ExecSpace>;
       using member_type = typename team_policy::member_type;
-      using charge_view_type = Kokkos::View<int32_t,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
+      using charge_view_type = Kokkos::View<int32_t*,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
       size_t charge_view_bytes = charge_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
-      using ok_view_type = Kokkos::View<uint8_t,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
+      using ok_view_type = Kokkos::View<uint8_t*,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
       size_t ok_view_bytes = ok_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
-      using newclusid_view_type = Kokkos::View<uint16_t,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
+      using newclusid_view_type = Kokkos::View<uint16_t*,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
       size_t newclusid_view_bytes = newclusid_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
       
       auto total_shared_bytes = charge_view_bytes + ok_view_bytes + newclusid_view_bytes;
@@ -39,7 +39,6 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::parallel_for("clusterChargeCut",
         team_policy(execSpace,league_size,team_size).set_scratch_size(shared_view_level,Kokkos::PerTeam(total_shared_bytes)),
         KOKKOS_LAMBDA(const member_type& teamMember){
-
 
           if(uint32_t(teamMember.league_rank()) >= moduleStart(0))
             return;
@@ -64,7 +63,7 @@ namespace KOKKOS_NAMESPACE {
 
           if (nclus > ::gpuClustering::MaxNumClustersPerModules) {
             // remove excess  FIXME find a way to cut charge first....
-            for (auto i = first; i < numElements; i += teamMember.team_size()) {
+            for (int i = first; i < numElements; i += teamMember.team_size()) {
               if (id(i) == ::gpuClustering::InvId)
                 continue;  // not valid
               if (id(i) != thisModuleId)
@@ -88,33 +87,38 @@ namespace KOKKOS_NAMESPACE {
           newclusid_view_type newclusId(teamMember.team_scratch(shared_view_level),::gpuClustering::MaxNumClustersPerModules);
 
           assert(nclus <= ::gpuClustering::MaxNumClustersPerModules);
-          for (auto i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
+          for (uint32_t i = teamMember.team_rank(); i < ::gpuClustering::MaxNumClustersPerModules; i += teamMember.team_size()) {
             charge(i) = 0;
+            ok(i) = 0;
+            newclusId(i) = 0;
           }
           teamMember.team_barrier();
 
-          for (auto i = first; i < numElements; i += teamMember.team_size()) {
+          for (int i = first; i < numElements; i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)
               continue;  // not valid
             if (id(i) != thisModuleId)
               break;  // end of module
-            atomicAdd(&charge[clusterId(i)], adc(i));
+            Kokkos::atomic_fetch_add(&charge(clusterId(i)), adc(i));
           }
           teamMember.team_barrier();
 
           auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
-          for (auto i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
+          for (uint32_t i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
             newclusId(i) = ok(i) = charge(i) > chargeCut ? 1 : 0;
           }
-
           teamMember.team_barrier();
 
           // renumber
-          for (uint32_t i = 1; i < nclus; ++i)
-            newclusId(i) += newclusId(i - 1);
-
+          Kokkos::single(Kokkos::PerTeam(teamMember),
+            [&](){
+              for (uint32_t i = 1; i < nclus; ++i){
+                newclusId(i) += newclusId(i - 1);
+              }
+            });
+          teamMember.team_barrier();
           assert(nclus >= newclusId(nclus - 1));
-
+          
           if (nclus == newclusId(nclus - 1))
             return;
 
@@ -122,14 +126,14 @@ namespace KOKKOS_NAMESPACE {
           teamMember.team_barrier();
 
           // mark bad cluster again
-          for (auto i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
+          for (uint32_t i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
             if (0 == ok(i))
               newclusId(i) = ::gpuClustering::InvId + 1;
           }
           teamMember.team_barrier();
 
           // reassign id
-          for (auto i = first; i < numElements; i += teamMember.team_size()) {
+          for (int i = first; i < numElements; i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)
               continue;  // not valid
             if (id(i) != thisModuleId)

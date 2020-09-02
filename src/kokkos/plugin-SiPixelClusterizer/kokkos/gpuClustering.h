@@ -30,11 +30,9 @@ namespace KOKKOS_NAMESPACE {
         --j;
       if (j < 0 or id[j] != id[index]) {
         // boundary... replacing atomicInc with explicit logic
-        // auto loc = Kokkos::atomic_compare_exchange(&moduleStart(0),::gpuClustering::MaxNumModules,0);
         auto loc = Kokkos::atomic_fetch_add(&moduleStart(0),1);
         assert(moduleStart(0) < ::gpuClustering::MaxNumModules);
         moduleStart(loc + 1) = index;
-        // printf("i %08d cl %08d j %08d id %08d %08d moduleStart[%08d] %08d \n",uint32_t(index),clusterId[index],j,id[index],id[j],loc+1,moduleStart(loc+1));
       }
     }
 
@@ -51,19 +49,12 @@ namespace KOKKOS_NAMESPACE {
                    const uint32_t league_size,
                    const uint32_t team_size,
                    ExecSpace const& execSpace) {
-      // if (blockIdx.x >= moduleStart(0))
-      //   return;
-
-      // Kokkos::parallel_for(numElements,KOKKOS_LAMBDA(int index){
-      //   printf(">>>> clusterId[%08d] = %08d\n",index,clusterId(index));
-      // });
-
       using team_policy = Kokkos::TeamPolicy<ExecSpace>;
       using member_type = typename team_policy::member_type;
       using shared_team_view = Kokkos::View<uint32_t,typename ExecSpace::scratch_memory_space,Kokkos::MemoryUnmanaged>;
       size_t shared_view_bytes = shared_team_view::shmem_size();
 
-      constexpr uint32_t maxPixInModule = 4000;
+      constexpr int maxPixInModule = 4000;
       constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
       using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
@@ -82,7 +73,7 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::parallel_for("findClus_msize",team_policy(execSpace,league_size,team_size),
         KOKKOS_LAMBDA(const member_type& teamMember){
 
-          auto firstPixel = moduleStart(1 + teamMember.league_rank());
+          int firstPixel = moduleStart(1 + teamMember.league_rank());
           auto thisModuleId = id(firstPixel);
           assert(thisModuleId < ::gpuClustering::MaxNumModules);
 
@@ -108,7 +99,7 @@ namespace KOKKOS_NAMESPACE {
           // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
           if (0 == teamMember.team_rank()) {
             if (d_msize(teamMember.league_rank()) - firstPixel > maxPixInModule) {
-              printf("too many pixels in module %d: %d > %d\n", thisModuleId, d_msize(teamMember.league_rank()) - firstPixel, maxPixInModule);
+              printf("too many pixels in module %d: %d > %d\n", thisModuleId, d_msize(teamMember.league_rank())-firstPixel, maxPixInModule);
               d_msize(teamMember.league_rank()) = maxPixInModule + firstPixel;
             }
           }
@@ -203,7 +194,6 @@ namespace KOKKOS_NAMESPACE {
             }
           }
 
-
           // for each pixel, look at all the pixels until the end of the module;
           // when two valid pixels within +/- 1 in x or y are found, set their id to the minimum;
           // after the loop, all the pixel in each cluster should have the id equeal to the lowest
@@ -216,16 +206,10 @@ namespace KOKKOS_NAMESPACE {
                 auto p = d_hist(teamMember.league_rank()).begin() + j;
                 auto i = *p + firstPixel;
                 auto m = clusterId(i);
-                // printf("%04d--%04d--%02d-1 j %08d clusterId[m=%08d]=%08d clusterId[i=%08d]=%08d \n",teamMember.league_rank(),teamMember.team_rank(),nloops,j,m,clusterId(m),i,clusterId(i));
                 while (m != clusterId(m)){
                   m = clusterId(m);
-                  // printf("%04d--%04d--%02d-2 j %08d clusterId[m=%08d]=%08d clusterId[i=%08d]=%08d \n",teamMember.league_rank(),teamMember.team_rank(),nloops,j,m,clusterId(m),i,clusterId(i));
-                
                 }
                 clusterId(i) = m;
-                // if(teamMember.league_rank() >= 897 and teamMember.league_rank() <= 950)
-                  // printf("%04d--%04d--%02d-3 j %08d m %08d \n",teamMember.league_rank(),teamMember.team_rank(),nloops,j,m);
-                
               }
             } else {
               more = 0;
@@ -236,9 +220,6 @@ namespace KOKKOS_NAMESPACE {
                   auto l = nn[k][kk];
                   auto m = l + firstPixel;
                   assert(m != i);
-                  // printf("%04d--%04d--%02d-1 j %08d kk %08d l %08d clusterId[m=%08d]=%08d clusterId[i=%08d]=%08d \n",
-                  //     teamMember.league_rank(),teamMember.team_rank(),nloops,
-                  //     j,kk,l,m,clusterId(m),i,clusterId(i));
                   auto old = Kokkos::atomic_fetch_min(&clusterId(m), clusterId(i));
                   if (old != clusterId(i)) {
                     // end the loop only if no changes were applied
@@ -252,19 +233,13 @@ namespace KOKKOS_NAMESPACE {
             teamMember.team_reduce(Kokkos::Sum<typeof(more)>(more));
           }  // end while
 
-          // printf("02 league %08d team %08d \n",teamMember.league_rank(),teamMember.team_rank());
-
-
           shared_team_view foundClusters(teamMember.team_scratch(shared_view_level));
           foundClusters() = 0;
           teamMember.team_barrier();
 
-          // printf("03 league %08d team %08d \n",teamMember.league_rank(),teamMember.team_rank());
-
           // find the number of different clusters, identified by a pixels with clus[i] == i;
           // mark these pixels with a negative id.
           for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
-            //printf("01 league %08d team %08d  i %08d msize %08d foundClusters %08d \n",teamMember.league_rank(),teamMember.team_rank(),i,d_msize(teamMember.league_rank()),foundClusters());
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (clusterId(i) == i) {
@@ -274,7 +249,6 @@ namespace KOKKOS_NAMESPACE {
             }
           }
           teamMember.team_barrier();
-          // printf("04 league %08d team %08d \n",teamMember.league_rank(),teamMember.team_rank());
           
           // propagate the negative id to all the pixels in the cluster.
           for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
