@@ -311,7 +311,7 @@ public:
     bins[w - 1] = j;
   }
 
-  #pragma hd_warning_disable
+#pragma hd_warning_disable
   template <typename Histo, typename ExecSpace>
   static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo, ExecSpace> histo, ExecSpace const& execSpace) {
     // assert(off[totbins() - 1] == 0);
