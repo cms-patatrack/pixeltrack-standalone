@@ -139,9 +139,8 @@ namespace KOKKOS_NAMESPACE {
         vertexFinderKernel1(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         // one block per vertex...
         Kokkos::parallel_for(
-            TeamPolicy(execSpace, 1024, 128).set_sctratch_size(8192 * 4), KOKKOS_LAMBDA(MemberType const& teamMember) {
-              splitVertices(vertices_d, workspace_d, 9.f, teamMember);
-            });
+            TeamPolicy(execSpace, 1024, 128).set_sctratch_size(8192 * 4),
+            KOKKOS_LAMBDA(MemberType const& teamMember) { splitVertices(vertices_d, workspace_d, 9.f, teamMember); });
         vertexFinderKernel2(vertices_d, workspace_d, vertices_h, execSpace, policy);
 #endif
       } else {  // five kernels
@@ -161,9 +160,7 @@ namespace KOKKOS_NAMESPACE {
         // one block per vertex...
         Kokkos::parallel_for(
             TeamPolicy(execSpace, 1024, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
-            KOKKOS_LAMBDA(MemberType const& teamMember) {
-              splitVertices(vertices_d, workspace_d, 9.f, teamMember);
-            });
+            KOKKOS_LAMBDA(MemberType const& teamMember) { splitVertices(vertices_d, workspace_d, 9.f, teamMember); });
         Kokkos::parallel_for(
             policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
               // 4 bytes of shared memory required
