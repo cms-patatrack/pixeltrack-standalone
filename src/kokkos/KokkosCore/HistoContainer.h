@@ -6,14 +6,13 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "KokkosCore/AtomicPairCounter.h"
+#include <Kokkos_Core.hpp>
+
+#include "AtomicPairCounter.h"
+#include "kokkos_assert.h"
 
 namespace cms {
   namespace kokkos {
-
-    using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
-    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-
     template <typename T, typename ExecSpace>
     KOKKOS_INLINE_FUNCTION uint32_t upper_bound(Kokkos::View<uint32_t const*, ExecSpace> offsets,
                                                 const uint32_t& upper_index,
@@ -31,7 +30,7 @@ namespace cms {
                                                 const uint32_t nh,
                                                 Kokkos::View<T const*, ExecSpace> v,
                                                 Kokkos::View<uint32_t const*, ExecSpace> offsets,
-                                                const member_type& teamMember) {
+                                                const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       uint32_t first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       uint32_t total_threads = teamMember.league_size() * teamMember.team_size();
       for (uint32_t i = first, nt = offsets(nh); i < nt; i += total_threads) {
@@ -49,7 +48,7 @@ namespace cms {
                                                const uint32_t nh,
                                                Kokkos::View<T const*, ExecSpace> v,
                                                Kokkos::View<uint32_t const*, ExecSpace> offsets,
-                                               const member_type& teamMember) {
+                                               const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       int first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       int total_threads = teamMember.league_size() * teamMember.team_size();
 
@@ -74,6 +73,13 @@ namespace cms {
       Kokkos::parallel_for(
           Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
           KOKKOS_LAMBDA(const size_t i) { h().off[i] = 0; });
+    }
+
+    template <typename Histo, typename ExecSpace>
+    inline void launchZero(Histo* h, ExecSpace const& execSpace) {
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          KOKKOS_LAMBDA(const size_t i) { h->off[i] = 0; });
     }
 
     template <typename Histo, typename ExecSpace>
@@ -109,7 +115,7 @@ namespace cms {
           });
       launchFinalize(h, execSpace);
       Kokkos::parallel_for(
-          "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
+          "fillFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
             fillFromVector(h, nh, v, offsets, teamMember);
           });
     }
@@ -127,19 +133,17 @@ namespace cms {
   }  // namespace kokkos
 }  // namespace cms
 
-#ifdef TODO
 // iteratate over N bins left and right of the one containing "v"
 template <typename Hist, typename V, typename Func>
-__host__ __device__ __forceinline__ void forEachInBins(Hist const& hist, V value, int n, Func func) {
+KOKKOS_INLINE_FUNCTION void forEachInBins(Hist const* hist, V value, int n, Func func) {
   int bs = Hist::bin(value);
   int be = std::min(int(Hist::nbins() - 1), bs + n);
   bs = std::max(0, bs - n);
   assert(be >= bs);
-  for (auto pj = hist.begin(bs); pj < hist.end(be); ++pj) {
+  for (auto pj = hist->begin(bs); pj < hist->end(be); ++pj) {
     func(*pj);
   }
 }
-#endif  // TODO
 
 // iteratate over bins containing all values in window wmin, wmax
 template <typename Histo, typename V, typename Func, typename ExecSpace>
@@ -326,11 +330,13 @@ public:
     // assert(off[totbins() - 1] == off[totbins() - 2]);
   }
 
-  #pragma hd_warning_disable
+// This host function performs prefix scan over a grid-wide histogram container on device (no data transfer
+// involved). N represents the number of blocks in one grid. It's a temporary solution since Kokkos doesn't
+// support team-level parallel_scan for now. As a result, the original clusterize kernels in CUDA have to be
+// splitted into three host function calls: clusterFillHist + finalize + clusterTracks*
+#pragma hd_warning_disable
   template <typename Histo, typename ExecSpace>
-  static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo*, ExecSpace> histo,
-                                              const int32_t N,
-                                              ExecSpace const& execSpace) {
+  static void finalize(Kokkos::View<Histo*, ExecSpace> histo, const int32_t N, ExecSpace const& execSpace) {
     for (int k = 0; k < N; k++) {
       Kokkos::parallel_scan(
           "nFinalize",

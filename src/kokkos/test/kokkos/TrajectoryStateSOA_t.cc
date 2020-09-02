@@ -1,0 +1,65 @@
+#include "KokkosCore/kokkosConfigCommon.h"
+#include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/kokkos_assert.h"
+#include "KokkosDataFormats/TrajectoryStateSoA.h"
+
+using Vector5d = Eigen::Matrix<double, 5, 1>;
+using Matrix5d = Eigen::Matrix<double, 5, 5>;
+
+KOKKOS_INLINE_FUNCTION Matrix5d loadCov(Vector5d const& e) {
+  Matrix5d cov;
+  for (int i = 0; i < 5; ++i)
+    cov(i, i) = e(i) * e(i);
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < i; ++j) {
+      double v = 0.3 * std::sqrt(cov(i, i) * cov(j, j));  // this makes the matrix pos defined
+      cov(i, j) = (i + j) % 2 ? -0.4 * v : 0.1 * v;
+      cov(j, i) = cov(i, j);
+    }
+  }
+  return cov;
+}
+
+using TS = TrajectoryStateSoA<128>;
+
+KOKKOS_INLINE_FUNCTION void testTSSoA(Kokkos::View<TS, KokkosExecSpace> vts, const size_t i) {
+  Vector5d par0;
+  par0 << 0.2, 0.1, 3.5, 0.8, 0.1;
+  Vector5d e0;
+  e0 << 0.01, 0.01, 0.035, -0.03, -0.01;
+  auto cov0 = loadCov(e0);
+
+  TS& ts = vts();
+
+  ts.copyFromDense(par0, cov0, i);
+  Vector5d par1;
+  Matrix5d cov1;
+  ts.copyToDense(par1, cov1, i);
+  Vector5d delV = par1 - par0;
+  Matrix5d delM = cov1 - cov0;
+  for (int j = 0; j < 5; ++j) {
+    assert(std::abs(delV(j)) < 1.e-5);
+    for (auto k = j; k < 5; ++k) {
+      assert(cov0(k, j) == cov0(j, k));
+      assert(cov1(k, j) == cov1(j, k));
+      assert(std::abs(delM(k, j)) < 1.e-5);
+    }
+  }
+}
+
+void test() {
+  Kokkos::View<TS, KokkosExecSpace> ts_d("ts_d");
+  auto ts_h = Kokkos::create_mirror_view(ts_d);
+
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 128),
+      KOKKOS_LAMBDA(const size_t i) { testTSSoA(ts_d, i); });
+  Kokkos::deep_copy(KokkosExecSpace(), ts_h, ts_d);
+  KokkosExecSpace().fence();
+}
+
+int main() {
+  kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
+  test();
+  return 0;
+}

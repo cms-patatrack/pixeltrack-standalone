@@ -4,9 +4,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "KokkosDataFormats/gpuClusteringConstants.h"
-#ifdef TODO
-#include "CUDACore/HistoContainer.h"
-#endif
+#include "KokkosCore/HistoContainer.h"
 #include "Geometry/phase1PixelTopology.h"
 
 namespace pixelCPEforGPU {
@@ -18,9 +16,7 @@ public:
   static constexpr uint32_t maxHits() { return gpuClustering::MaxNumClusters; }
   using hindex_type = uint16_t;  // if above is <=2^16
 
-#ifdef TODO
   using Hist = HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
-#endif
 
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
 
@@ -67,10 +63,8 @@ public:
   KOKKOS_INLINE_FUNCTION uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
   KOKKOS_INLINE_FUNCTION uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
 
-#ifdef TODO
   KOKKOS_INLINE_FUNCTION Hist& phiBinner() { return *m_hist; }
   KOKKOS_INLINE_FUNCTION Hist const& phiBinner() const { return *m_hist; }
-#endif
 
   KOKKOS_INLINE_FUNCTION AverageGeometry& averageGeometry() { return *m_averageGeometry; }
   KOKKOS_INLINE_FUNCTION AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
@@ -97,9 +91,7 @@ private:
 
   uint32_t* m_hitsLayerStart;
 
-#ifdef TODO
   Hist* m_hist;
-#endif
 
   uint32_t m_nHits;
 };

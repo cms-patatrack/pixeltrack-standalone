@@ -182,7 +182,7 @@ $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.
 # CUDA backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(CUDA_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)

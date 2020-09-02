@@ -1,5 +1,3 @@
-#include <cuda_runtime.h>
-
 #include "KokkosDataFormats/BeamSpotKokkos.h"
 #include "KokkosDataFormats/SiPixelClustersKokkos.h"
 #include "KokkosDataFormats/SiPixelDigisKokkos.h"
