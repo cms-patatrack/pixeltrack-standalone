@@ -32,6 +32,8 @@ public:
 
   Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
   Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
+
+  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> mView() { return m_view; }
 #ifdef TODO
   Kokkos::View<Hist*, MemorySpace> phiBinner() { return m_hist; }
 #endif
