@@ -288,7 +288,7 @@ void test() {
         d_clusInModule(i) = 0;
       });
 
-    KOKKOS_NAMESPACE::gpuClustering::findClus(d_id,d_x,d_y,d_moduleStart,d_clusInModule,
+    gpuClustering::findClus(d_id,d_x,d_y,d_moduleStart,d_clusInModule,
                         d_moduleId,d_clus,n,MaxNumModules,threadsPerModule,KokkosExecSpace());
 
 
@@ -309,7 +309,7 @@ void test() {
     if (ncl != clustInModule_acc)
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    KOKKOS_NAMESPACE::gpuClustering::clusterChargeCut(d_id,d_adc,d_moduleStart,
+    gpuClustering::clusterChargeCut(d_id,d_adc,d_moduleStart,
                                                       d_clusInModule,d_moduleId,d_clus,n,
                                                       blocksPerGrid,threadsPerModule,KokkosExecSpace());
     KokkosExecSpace().fence();
