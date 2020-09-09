@@ -106,7 +106,9 @@ and in offline data processing the input data is
 compressed.
 
 For more information on the application see
+* [arXiv:2008.13461 A Bocci et al.: Heterogeneous reconstruction of tracks and primary vertices with the CMS pixel tracker](https://arxiv.org/abs/2008.13461)
 * https://patatrack.web.cern.ch/patatrack/wiki/
+* [CERN EP Software Seminar 2020-07-01: D. Vom Bruch and F. Pantaleo: Real-time heterogeneous event reconstruction with GPUs at CMS and LHCb during LHC Run-3](https://indico.cern.ch/event/927838/)
 * [CHEP 2019: A. Bocci: Heterogeneous online reconstruction at CMS](https://indico.cern.ch/event/773049/contributions/3474336/attachments/1940557/3217478/Heterogeneous_online_reconstruction_at_CMS.pdf)
 * [ACAT 2019: A. Bocci: Towards a heterogeneous High Level Trigger farm for CMS](https://indico.cern.ch/event/708041/contributions/3276337/attachments/1810853/2957376/Towards_a_heterogeneous_computing_farm_for_the_CMS_High_Level_Trigger.pdf)
 * [Connecting The Dots 2019: F. Pantaleo: Patatrack: accelerated Pixel Track reconstruction in CMS](https://indico.cern.ch/event/742793/contributions/3274390/attachments/1821674/2979847/20190402_Felice_CTD.pdf)
