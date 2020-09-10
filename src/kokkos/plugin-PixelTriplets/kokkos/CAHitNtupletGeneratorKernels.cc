@@ -2,17 +2,13 @@
 #include "CAHitNtupletGeneratorKernelsImpl.h"
 
 namespace KOKKOS_NAMESPACE {
-  void CAHitNtupletGeneratorKernels::fillHitDetIndices(HitsOnCPU const &hv,
+  void CAHitNtupletGeneratorKernels::fillHitDetIndices(HitsView const *hv,
                                                        Kokkos::View<TkSoA, KokkosExecSpace> tracks_d,
                                                        KokkosExecSpace const &execSpace) {
-#ifdef TODO
-    auto blockSize = 128;
-    auto numberOfBlocks = (HitContainer::capacity() + blockSize - 1) / blockSize;
-
-    kernel_fillHitDetIndices<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-        &tracks_d->hitIndices, hv, &tracks_d->detIndices);
-    cudaCheck(cudaGetLastError());
-#endif
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitContainer::capacity()), KOKKOS_LAMBDA(size_t i) {
+          kernel_fillHitDetIndices(&(tracks_d().hitIndices), hv, &(tracks_d().detIndices), i);
+        });
 #ifdef GPU_DEBUG
     execSpace.fence();
 #endif

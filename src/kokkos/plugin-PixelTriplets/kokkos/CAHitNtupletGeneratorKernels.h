@@ -169,7 +169,7 @@ namespace KOKKOS_NAMESPACE {
                         Kokkos::View<TkSoA, KokkosExecSpace> tuples_d,
                         KokkosExecSpace const& execSpace);
 
-    void fillHitDetIndices(HitsOnCPU const& hh,
+    void fillHitDetIndices(HitsView const* hv,
                            Kokkos::View<TkSoA, KokkosExecSpace> tuples_d,
                            KokkosExecSpace const& execSpace);
 
