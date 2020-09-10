@@ -434,24 +434,22 @@ namespace KOKKOS_NAMESPACE {
     for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h)
       hitToTuple->fillDirect(*h, idx);
   }
-#ifdef TODO
-  __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples,
-                                           TrackingRecHit2DSOAView const *__restrict__ hhp,
-                                           HitContainer *__restrict__ hitDetIndices) {
-    int first = blockDim.x * blockIdx.x + threadIdx.x;
-    // copy offsets
-    for (int idx = first, ntot = tuples->totbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
+
+  KOKKOS_INLINE_FUNCTION void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples,
+                                                       TrackingRecHit2DSOAView const *__restrict__ hhp,
+                                                       HitContainer *__restrict__ hitDetIndices,
+                                                       const size_t idx) {
+    // this could be more efficienctly implemented with thread teams, wrt. CUDA implementation
+    if (idx < tuples->totbins()) {
       hitDetIndices->off[idx] = tuples->off[idx];
     }
-    // fill hit indices
-    auto const &hh = *hhp;
-    auto nhits = hh.nHits();
-    for (int idx = first, ntot = tuples->size(); idx < ntot; idx += gridDim.x * blockDim.x) {
-      assert(tuples->bins[idx] < nhits);
+    if (idx < tuples->size()) {
+      auto const &hh = *hhp;
+      assert(tuples->bins[idx] < hh.nHits());
       hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
     }
   }
-#endif  // TODO
+
   KOKKOS_INLINE_FUNCTION void kernel_doStatsForHitInTracks(
       CAHitNtupletGeneratorKernels::HitToTuple const *__restrict__ hitToTuple,
       CAHitNtupletGeneratorKernels::Counters *counters,
