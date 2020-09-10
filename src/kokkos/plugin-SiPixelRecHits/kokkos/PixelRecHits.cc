@@ -68,14 +68,12 @@ namespace KOKKOS_NAMESPACE {
             });
       }
 
-#ifdef TODO
       if (nHits) {
-        auto hws = cms::cuda::make_device_unique<uint8_t[]>(TrackingRecHit2DSOAView::Hist::wsSize(), stream);
-        cms::cuda::fillManyFromVector(
+#ifdef TODO
+        cms::kokkos::fillManyFromVector(
             hits_d.phiBinner(), hws.get(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
-        cudaCheck(cudaGetLastError());
-      }
 #endif
+      }
 
 #ifdef GPU_DEBUG
       execSpace.fence();

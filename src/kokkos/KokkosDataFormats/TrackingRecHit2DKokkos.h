@@ -6,9 +6,7 @@
 template <typename MemorySpace>
 class TrackingRecHit2DKokkos {
 public:
-#ifdef TODO
   using Hist = TrackingRecHit2DSOAView::Hist;
-#endif
 
   TrackingRecHit2DKokkos() = default;
 
@@ -32,9 +30,7 @@ public:
 
   Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
   Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
-#ifdef TODO
   Kokkos::View<Hist*, MemorySpace> phiBinner() { return m_hist; }
-#endif
   Kokkos::View<uint16_t, MemorySpace> iphi() { return m_iphi; }
 
 #ifdef TODO
@@ -64,9 +60,6 @@ private:
   Kokkos::View<int16_t*, MemorySpace> m_ysize;
   Kokkos::View<uint16_t*, MemorySpace> m_detInd;
 
-#ifdef TODO
-  unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;  //!
-#endif
   Kokkos::View<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace> m_AverageGeometryStore;  //!
 
   Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
@@ -74,10 +67,8 @@ private:
   uint32_t m_nHits;
   Kokkos::View<uint32_t const*, MemorySpace> m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
-#ifdef TODO
   // needed as kernel params...
-  Kokkos::View<Hist*, MemorySpace> m_hist;
-#endif
+  Kokkos::View<Hist, MemorySpace> m_hist;
   Kokkos::View<uint32_t*, MemorySpace> m_hitsLayerStart;
 };
 
@@ -105,6 +96,7 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
       m_AverageGeometryStore("m_AverageGeometryStore"),
       m_view("m_view"),
       m_hitsModuleStart(std::move(hitsModuleStart)),
+      m_hist("m_hist"),
       m_hitsLayerStart("m_hitsLayerStart", nHits) {
   // should I deal with no hits case?
 
@@ -128,6 +120,7 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   SET(m_xsize);
   SET(m_ysize);
   SET(m_detInd);
+  SET(m_hist);
 #undef SET
   view_h().m_nHits = nHits;
   view_h().m_averageGeometry = m_AverageGeometryStore.data();
