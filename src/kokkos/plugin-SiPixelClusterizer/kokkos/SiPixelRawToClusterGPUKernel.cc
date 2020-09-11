@@ -727,7 +727,6 @@ namespace KOKKOS_NAMESPACE {
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        // MUST be ONE block
         ::pixelgpudetails::fillHitsModuleStart(clusters_d.c_clusInModule(),
                                                clusters_d.clusModuleStart(),
                                                KokkosExecSpace());
