@@ -158,7 +158,7 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::View<unsigned char*, KokkosExecSpace>::HostMirror fedId_;
       };
 
-      SiPixelRawToClusterGPUKernel() = default;
+      SiPixelRawToClusterGPUKernel(): nModules_Clusters_h("nModules_Clusters_h",2) {};
       ~SiPixelRawToClusterGPUKernel() = default;
 
       SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
@@ -198,9 +198,8 @@ namespace KOKKOS_NAMESPACE {
       uint32_t nDigis = 0;
 
       // Data to be put in the event
-#ifdef TODO
-      cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
-#endif
+      Kokkos::View<uint32_t*,KokkosExecSpace> nModules_Clusters_h;
+
       SiPixelDigisKokkos<KokkosExecSpace> digis_d;
       SiPixelClustersKokkos<KokkosExecSpace> clusters_d;
       SiPixelDigiErrorsKokkos<KokkosExecSpace> digiErrors_d;
