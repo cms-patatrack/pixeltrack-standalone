@@ -397,7 +397,8 @@ namespace KOKKOS_NAMESPACE {
       uint32_t rocIdInDetUnit = detId.rocInDet;
       bool barrel = isBarrel(rawId);
 
-      uint32_t index = fedId * ::pixelgpudetails::MAX_LINK * ::pixelgpudetails::MAX_ROC + (link - 1) * ::pixelgpudetails::MAX_ROC + roc;
+      uint32_t index = fedId * ::pixelgpudetails::MAX_LINK * ::pixelgpudetails::MAX_ROC +
+                       (link - 1) * ::pixelgpudetails::MAX_ROC + roc;
       if (useQualityInfo) {
         skipROC = cablingMap().badRocs[index];
         if (skipROC)
@@ -464,23 +465,22 @@ namespace KOKKOS_NAMESPACE {
       moduleId[gIndex] = detId.moduleId;
       rawIdArr[gIndex] = rawId;
     }  // end of Raw to Digi kernel
-  } // pixelgpudetails
-} // KOKKOS_NAMESPACE
+  }    // namespace pixelgpudetails
+}  // namespace KOKKOS_NAMESPACE
 
 namespace pixelgpudetails {
   template <typename ExecSpace>
-  void fillHitsModuleStart(Kokkos::View<uint32_t const *,ExecSpace> cluStart,
-                           Kokkos::View<uint32_t*,ExecSpace> moduleStart,
-                           ExecSpace const& execSpace) {
-
-    
+  void fillHitsModuleStart(Kokkos::View<uint32_t const *, ExecSpace> cluStart,
+                           Kokkos::View<uint32_t *, ExecSpace> moduleStart,
+                           ExecSpace const &execSpace) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
 
-    Kokkos::parallel_for("fillHitsModuleStart_set_moduleStart",
-      Kokkos::RangePolicy<ExecSpace>(execSpace,0,gpuClustering::MaxNumModules),
-      KOKKOS_LAMBDA(const int& index){
-        moduleStart(index + 1) = std::min(gpuClustering::maxHitsInModule(),cluStart(index));
-      });
+    Kokkos::parallel_for(
+        "fillHitsModuleStart_set_moduleStart",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules),
+        KOKKOS_LAMBDA(const int &index) {
+          moduleStart(index + 1) = std::min(gpuClustering::maxHitsInModule(), cluStart(index));
+        });
 
     // limit to MaxHitsInModule;
     // for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
@@ -489,63 +489,67 @@ namespace pixelgpudetails {
 
     // __shared__ uint32_t ws[32];
     // blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    Kokkos::parallel_scan("fillHitsModuleStart_scanA",Kokkos::RangePolicy<ExecSpace>(execSpace,1,1024),
-      KOKKOS_LAMBDA(const int& i, float& upd, const bool& final){
-        upd += moduleStart[i+1];
-        if(final)
-          moduleStart[i+1] = upd;
-      });
+    Kokkos::parallel_scan(
+        "fillHitsModuleStart_scanA",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1024),
+        KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
+          upd += moduleStart[i + 1];
+          if (final)
+            moduleStart[i + 1] = upd;
+        });
     // blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
-    Kokkos::parallel_scan("fillHitsModuleStart_scanB",Kokkos::RangePolicy<ExecSpace>(execSpace,1025,gpuClustering::MaxNumModules - 1024),
-      KOKKOS_LAMBDA(const int& i, float& upd, const bool& final){
-        upd += moduleStart[i];
-        if(final)
-          moduleStart[i] = upd;
-      });
-    
-    Kokkos::parallel_for("fillHitsModuleStart_update_moduleStart",
-      Kokkos::RangePolicy<ExecSpace>(execSpace,1025,gpuClustering::MaxNumModules+1),
-      KOKKOS_LAMBDA(const int& index){
-        moduleStart(index) += moduleStart(1024);
-      });
+    Kokkos::parallel_scan(
+        "fillHitsModuleStart_scanB",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules - 1024),
+        KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
+          upd += moduleStart[i];
+          if (final)
+            moduleStart[i] = upd;
+        });
+
+    Kokkos::parallel_for(
+        "fillHitsModuleStart_update_moduleStart",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules + 1),
+        KOKKOS_LAMBDA(const int &index) { moduleStart(index) += moduleStart(1024); });
 
     execSpace.fence();
 
 #ifdef GPU_DEBUG
-    Kokkos::parallel_for("fillHitsModuleStart_debugA",
-      Kokkos::RangePolicy<ExecSpace>(execSpace,0,1),
-      KOKKOS_LAMBDA(const int& index){
-        assert(0 == moduleStart(0));
-        auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart(0));
-        assert(c0 == moduleStart(1));
-        assert(moduleStart(1024) >= moduleStart(1023));
-        assert(moduleStart(1025) >= moduleStart(1024));
-        assert(moduleStart(gpuClustering::MaxNumModules) >= moduleStart(1025));
-      });
+    Kokkos::parallel_for(
+        "fillHitsModuleStart_debugA", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, 1), KOKKOS_LAMBDA(const int &index) {
+          assert(0 == moduleStart(0));
+          auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart(0));
+          assert(c0 == moduleStart(1));
+          assert(moduleStart(1024) >= moduleStart(1023));
+          assert(moduleStart(1025) >= moduleStart(1024));
+          assert(moduleStart(gpuClustering::MaxNumModules) >= moduleStart(1025));
+        });
 
-    Kokkos::parallel_for("fillHitsModuleStart_debugB",
-      Kokkos::RangePolicy<ExecSpace>(execSpace,0,gpuClustering::MaxNumModules + 1),
-      KOKKOS_LAMBDA(const int& index){
-        if (0 != index)
-          assert(moduleStart(i) >= moduleStart(i - i));
-        // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
-        // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
-        if (index == 96 || index == 1184 || index == 1744 || index == (gpuClustering::MaxNumModules))
-          printf("moduleStart %d %d\n", index, moduleStart(index));
-      });
+    Kokkos::parallel_for(
+        "fillHitsModuleStart_debugB",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1),
+        KOKKOS_LAMBDA(const int &index) {
+          if (0 != index)
+            assert(moduleStart(i) >= moduleStart(i - i));
+          // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
+          // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
+          if (index == 96 || index == 1184 || index == 1744 || index == (gpuClustering::MaxNumModules))
+            printf("moduleStart %d %d\n", index, moduleStart(index));
+        });
 
 #endif
 
     // avoid overflow
-    Kokkos::parallel_for("fillHitsModuleStart_debugB",
-      Kokkos::RangePolicy<ExecSpace>(execSpace,0,gpuClustering::MaxNumModules + 1),
-      KOKKOS_LAMBDA(const int& index){
-        constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-        if (moduleStart(index) > MAX_HITS)
-          moduleStart(index) = MAX_HITS;
-      });
+    Kokkos::parallel_for(
+        "fillHitsModuleStart_debugB",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1),
+        KOKKOS_LAMBDA(const int &index) {
+          constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
+          if (moduleStart(index) > MAX_HITS)
+            moduleStart(index) = MAX_HITS;
+        });
   }
-} // pixelgpudetails
+}  // namespace pixelgpudetails
 
 namespace KOKKOS_NAMESPACE {
   namespace pixelgpudetails {
@@ -574,13 +578,12 @@ namespace KOKKOS_NAMESPACE {
       }
       clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
 
-// #ifdef TODO
-//       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
-// #endif
+      // #ifdef TODO
+      //       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
+      // #endif
 
       if (wordCounter)  // protect in case of empty event....
       {
-
         assert(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
 
@@ -679,9 +682,8 @@ namespace KOKKOS_NAMESPACE {
         KokkosExecSpace().fence();
 
         // read the number of modules into a data member, used by getProduct())
-        Kokkos::deep_copy(KokkosExecSpace(),
-          Kokkos::subview(nModules_Clusters_h,0),
-          Kokkos::subview(clusters_d.moduleStart(),0));
+        Kokkos::deep_copy(
+            KokkosExecSpace(), Kokkos::subview(nModules_Clusters_h, 0), Kokkos::subview(clusters_d.moduleStart(), 0));
 
 #ifdef KOKKOS_BACKEND_SERIAL
         const uint32_t threadsPerBlock = 1;
@@ -692,18 +694,18 @@ namespace KOKKOS_NAMESPACE {
 #ifdef GPU_DEBUG
         std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
 #endif
-        
+
         ::gpuClustering::findClus<KokkosExecSpace>(digis_d.c_moduleInd(),
-                                  digis_d.c_xx(),
-                                  digis_d.c_yy(),
-                                  clusters_d.c_moduleStart(),
-                                  clusters_d.clusInModule(),
-                                  clusters_d.moduleId(),
-                                  digis_d.clus(),
-                                  int(wordCounter),
-                                  blocks,
-                                  threadsPerBlock,
-                                  KokkosExecSpace());
+                                                   digis_d.c_xx(),
+                                                   digis_d.c_yy(),
+                                                   clusters_d.c_moduleStart(),
+                                                   clusters_d.clusInModule(),
+                                                   clusters_d.moduleId(),
+                                                   digis_d.clus(),
+                                                   int(wordCounter),
+                                                   blocks,
+                                                   threadsPerBlock,
+                                                   KokkosExecSpace());
 
 #ifdef GPU_DEBUG
         KokkosExecSpace().fence();
@@ -719,22 +721,20 @@ namespace KOKKOS_NAMESPACE {
                                                            int(wordCounter),
                                                            blocks,
                                                            threadsPerBlock,
-                                                           KokkosExecSpace()
-                                                           );
+                                                           KokkosExecSpace());
 
         // count the module start indices already here (instead of
         // rechits) so that the number of clusters/hits can be made
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        ::pixelgpudetails::fillHitsModuleStart(clusters_d.c_clusInModule(),
-                                               clusters_d.clusModuleStart(),
-                                               KokkosExecSpace());
+        ::pixelgpudetails::fillHitsModuleStart(
+            clusters_d.c_clusInModule(), clusters_d.clusModuleStart(), KokkosExecSpace());
 
         // last element holds the number of all clusters
         Kokkos::deep_copy(KokkosExecSpace(),
-          Kokkos::subview(nModules_Clusters_h,1),
-          Kokkos::subview(clusters_d.moduleStart(),::gpuClustering::MaxNumModules));
+                          Kokkos::subview(nModules_Clusters_h, 1),
+                          Kokkos::subview(clusters_d.moduleStart(), ::gpuClustering::MaxNumModules));
 
 #ifdef GPU_DEBUG
         KokkosExecSpace().fence();

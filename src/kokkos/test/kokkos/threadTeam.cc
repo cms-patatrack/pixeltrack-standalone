@@ -48,16 +48,17 @@ void test() {
     }
   }
 
-  Kokkos::parallel_for(policy,KOKKOS_LAMBDA(MemberType const& teamMember) {
-    int flag = 0;
-    while(flag > 50){
-      if(teamMember.team_rank() == 1) flag = 1;
-      else flag = 0;
-      teamMember.team_reduce(Kokkos::Sum<typeof(flag)>(flag));
-    }
-  });
-
-
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(MemberType const& teamMember) {
+        int flag = 0;
+        while (flag > 50) {
+          if (teamMember.team_rank() == 1)
+            flag = 1;
+          else
+            flag = 0;
+          teamMember.team_reduce(Kokkos::Sum<typeof(flag)>(flag));
+        }
+      });
 }
 
 int main() {
