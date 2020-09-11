@@ -11,6 +11,8 @@
 #include "CUDACore/SharedEventPtr.h"
 #include "CUDACore/SharedStreamPtr.h"
 #include "CUDACore/StreamCache.h"
+#include "Framework/WaitingTaskHolder.h"
+#include "Framework/WaitingTaskWithArenaHolder.h"
 
 namespace cms {
   namespace kokkos {
@@ -34,6 +36,11 @@ namespace cms {
         std::unique_ptr<ExecSpaceSpecific> cloneShareAll() const { return std::make_unique<ExecSpaceSpecific>(*this); }
 
         void recordEvent() {}
+        void enqueueCallback(edm::WaitingTaskWithArenaHolder withArenaHolder) {
+          auto holder = withArenaHolder.makeWaitingTaskHolderAndRelease();
+          holder.doneWaiting(nullptr);
+        }
+        void synchronizeWith(ExecSpaceSpecific const&) const {}
 
         ExecSpace const& execSpace() const { return space_; }
 
@@ -67,10 +74,16 @@ namespace cms {
           cudaEventRecord(event_.get(), stream_.get());
         }
 
+        void enqueueCallback(edm::WaitingTaskWithArenaHolder holder);
+
+        void synchronizeWith(ExecSpaceSpecific const& other);
+
         int device() const { return space_.cuda_device(); }
         Kokkos::Cuda const& execSpace() const { return space_; }
 
       private:
+        bool isAvailable() const;
+
         Kokkos::Cuda space_;
         cms::cuda::SharedStreamPtr stream_;
         cms::cuda::SharedEventPtr event_;
