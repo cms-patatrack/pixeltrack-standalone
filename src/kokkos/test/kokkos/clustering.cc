@@ -34,19 +34,20 @@ void test() {
   Kokkos::View<int*, KokkosExecSpace> d_clus("d_clus", numElements);
   auto h_clus = Kokkos::create_mirror_view(d_clus);
 
-  Kokkos::parallel_for("var_init1",Kokkos::RangePolicy<KokkosExecSpace>(0,numElements),KOKKOS_LAMBDA(const size_t i){
-      d_clus(i) = 0;
-      d_id(i) = 0;
-      d_x(i) = 0;
-      d_y(i) = 0;
-      d_adc(i) = 0;
-    });
+  Kokkos::parallel_for(
+      "var_init1", Kokkos::RangePolicy<KokkosExecSpace>(0, numElements), KOKKOS_LAMBDA(const size_t i) {
+        d_clus(i) = 0;
+        d_id(i) = 0;
+        d_x(i) = 0;
+        d_y(i) = 0;
+        d_adc(i) = 0;
+      });
 
-  Kokkos::deep_copy(KokkosExecSpace(),h_clus,d_clus);
-  Kokkos::deep_copy(KokkosExecSpace(),h_id,d_id);
-  Kokkos::deep_copy(KokkosExecSpace(),h_x,d_x);
-  Kokkos::deep_copy(KokkosExecSpace(),h_y,d_y);
-  Kokkos::deep_copy(KokkosExecSpace(),h_adc,d_adc);
+  Kokkos::deep_copy(KokkosExecSpace(), h_clus, d_clus);
+  Kokkos::deep_copy(KokkosExecSpace(), h_id, d_id);
+  Kokkos::deep_copy(KokkosExecSpace(), h_x, d_x);
+  Kokkos::deep_copy(KokkosExecSpace(), h_y, d_y);
+  Kokkos::deep_copy(KokkosExecSpace(), h_adc, d_adc);
 
   Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleStart("d_moduleStart", MaxNumModules + 1);
   auto h_moduleStart = Kokkos::create_mirror_view(d_moduleStart);
@@ -55,18 +56,18 @@ void test() {
   Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleId("d_moduleId", MaxNumModules);
   auto h_moduleId = Kokkos::create_mirror_view(d_moduleId);
 
-  Kokkos::parallel_for("var_init2",Kokkos::RangePolicy<KokkosExecSpace>(0,MaxNumModules+1),KOKKOS_LAMBDA(const size_t i){
-      d_moduleStart(i) = 0;
-      if(i<MaxNumModules){
-        d_moduleId(i) = 0;
-        d_clusInModule(i) = 0;
-      }
-    });
+  Kokkos::parallel_for(
+      "var_init2", Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules + 1), KOKKOS_LAMBDA(const size_t i) {
+        d_moduleStart(i) = 0;
+        if (i < MaxNumModules) {
+          d_moduleId(i) = 0;
+          d_clusInModule(i) = 0;
+        }
+      });
 
-  Kokkos::deep_copy(KokkosExecSpace(),h_moduleStart,d_moduleStart);
-  Kokkos::deep_copy(KokkosExecSpace(),h_moduleId,d_moduleId);
-  Kokkos::deep_copy(KokkosExecSpace(),h_clusInModule,d_clusInModule);
-
+  Kokkos::deep_copy(KokkosExecSpace(), h_moduleStart, d_moduleStart);
+  Kokkos::deep_copy(KokkosExecSpace(), h_moduleId, d_moduleId);
+  Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
 
   // later random number
   int n = 0;
@@ -244,9 +245,9 @@ void test() {
       }
     }
   };  // end lambda
-  Kokkos::deep_copy(KokkosExecSpace(),d_clusInModule,h_clusInModule);
-  Kokkos::deep_copy(KokkosExecSpace(),d_moduleId,h_moduleId);
-  Kokkos::deep_copy(KokkosExecSpace(),d_clus,h_clus);
+  Kokkos::deep_copy(KokkosExecSpace(), d_clusInModule, h_clusInModule);
+  Kokkos::deep_copy(KokkosExecSpace(), d_moduleId, h_moduleId);
+  Kokkos::deep_copy(KokkosExecSpace(), d_clus, h_clus);
 
   for (auto kkk = 0; kkk < 5; ++kkk) {
     n = 0;
@@ -257,13 +258,12 @@ void test() {
     assert(n <= numElements);
 
     h_moduleStart(0) = 0;
-    Kokkos::deep_copy(KokkosExecSpace(),d_moduleStart,h_moduleStart);
-    
+    Kokkos::deep_copy(KokkosExecSpace(), d_moduleStart, h_moduleStart);
 
-    Kokkos::deep_copy(KokkosExecSpace(),d_id,h_id);
-    Kokkos::deep_copy(KokkosExecSpace(),d_x,h_x);
-    Kokkos::deep_copy(KokkosExecSpace(),d_y,h_y);
-    Kokkos::deep_copy(KokkosExecSpace(),d_adc,h_adc);
+    Kokkos::deep_copy(KokkosExecSpace(), d_id, h_id);
+    Kokkos::deep_copy(KokkosExecSpace(), d_x, h_x);
+    Kokkos::deep_copy(KokkosExecSpace(), d_y, h_y);
+    Kokkos::deep_copy(KokkosExecSpace(), d_adc, h_adc);
 
     // Launch Kokkos Kernels
     std::cout << "Kokkos countModules kernel launch for " << n << " iterations\n";
@@ -282,11 +282,10 @@ void test() {
 
     std::cout << "Kokkos findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerModule
               << " threads\n";
-    
-    Kokkos::parallel_for(Kokkos::RangePolicy<KokkosExecSpace>(0,MaxNumModules),
-      KOKKOS_LAMBDA(const size_t i){
-        d_clusInModule(i) = 0;
-      });
+
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules),
+        KOKKOS_LAMBDA(const size_t i) { d_clusInModule(i) = 0; });
 
     gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
                             Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
@@ -300,15 +299,14 @@ void test() {
                             threadsPerModule,
                             KokkosExecSpace());
 
-
     KokkosExecSpace().fence();
-    Kokkos::deep_copy(KokkosExecSpace(),h_moduleStart,d_moduleStart);
-    Kokkos::deep_copy(KokkosExecSpace(),h_clusInModule,d_clusInModule);
+    Kokkos::deep_copy(KokkosExecSpace(), h_moduleStart, d_moduleStart);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
 
     auto clustInModule_acc = std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0);
     std::cout << "before charge cut found " << clustInModule_acc << " clusters" << std::endl;
 
-    for (auto i = MaxNumModules; i > 0; i--){
+    for (auto i = MaxNumModules; i > 0; i--) {
       if (h_clusInModule[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << h_clusInModule[i - 1] << std::endl;
         break;
@@ -332,10 +330,10 @@ void test() {
 
     std::cout << "found " << h_moduleStart(0) << " Modules active" << std::endl;
 
-    Kokkos::deep_copy(KokkosExecSpace(),h_id,d_id);
-    Kokkos::deep_copy(KokkosExecSpace(),h_clus,d_clus);
-    Kokkos::deep_copy(KokkosExecSpace(),h_clusInModule,d_clusInModule);
-    Kokkos::deep_copy(KokkosExecSpace(),h_moduleId,d_moduleId);
+    Kokkos::deep_copy(KokkosExecSpace(), h_id, d_id);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clus, d_clus);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
+    Kokkos::deep_copy(KokkosExecSpace(), h_moduleId, d_moduleId);
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {
@@ -352,7 +350,8 @@ void test() {
     assert(0 == (*p) % 1000);
     auto c = p;
     ++c;
-    std::cout << "first clusters " << *p << ' ' << *c << ' ' << h_clusInModule(cmid) << ' ' << h_clusInModule((*c) / 1000) << std::endl;
+    std::cout << "first clusters " << *p << ' ' << *c << ' ' << h_clusInModule(cmid) << ' '
+              << h_clusInModule((*c) / 1000) << std::endl;
     std::cout << "last cluster " << *clids.rbegin() << ' ' << h_clusInModule((*clids.rbegin()) / 1000) << std::endl;
     for (; c != clids.end(); ++c) {
       auto cc = *c;
@@ -374,21 +373,21 @@ void test() {
         std::cout << "error " << mid << ": " << nc << ' ' << pnc << std::endl;
     }
 
-    std::cout << "found " << std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
-              << std::endl;
+    std::cout << "found " << std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0) << ' '
+              << clids.size() << " clusters" << std::endl;
     for (auto i = MaxNumModules; i > 0; i--)
       if (h_clusInModule(i - 1) > 0) {
         std::cout << "last module is " << i - 1 << ' ' << h_clusInModule(i - 1) << std::endl;
         break;
       }
-      // << " and " << seeds.size() << " seeds" << std::endl;
+    // << " and " << seeds.size() << " seeds" << std::endl;
 
-  }     /// end loop kkk
+  }  /// end loop kkk
 }
 
 int main(void) {
   kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
-  cudaDeviceSetLimit(cudaLimitPrintfFifoSize,1024*1024*1024);
+  cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024 * 1024 * 1024);
   test();
   return 0;
 }
