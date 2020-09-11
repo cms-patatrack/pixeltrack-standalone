@@ -18,11 +18,14 @@ namespace {
 }
 
 namespace KOKKOS_NAMESPACE {
-  class TestProducer2 : public edm::EDProducer {
+  class TestProducer2 : public edm::EDProducerExternalWork {
   public:
     explicit TestProducer2(edm::ProductRegistry& reg);
 
   private:
+    void acquire(edm::Event const& event,
+                 edm::EventSetup const& eventSetup,
+                 edm::WaitingTaskWithArenaHolder holder) override;
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
@@ -34,11 +37,22 @@ namespace KOKKOS_NAMESPACE {
     nevents = 0;
   }
 
+  void TestProducer2::acquire(edm::Event const& event,
+                              edm::EventSetup const& eventSetup,
+                              edm::WaitingTaskWithArenaHolder holder) {
+    auto const& tmp = event.get(getToken_);
+
+    cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx(tmp, std::move(holder));
+
+    auto const& array = ctx.get(tmp);
+    kokkosAlgo2(ctx.execSpace());
+
+    std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID() << " array "
+              << array.data() << std::endl;
+  }
+
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
-    cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{event.get(getToken_)};
-
-    kokkosAlgo2(ctx.execSpace());
     ++nevents;
   }
 
