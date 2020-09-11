@@ -41,10 +41,10 @@ namespace KOKKOS_NAMESPACE {
 namespace gpuClustering {
   //  __launch_bounds__(256,4)
   template <typename ExecSpace>
-  void findClus(Kokkos::View<uint16_t*, ExecSpace> id,           // module id of each pixel
-                 Kokkos::View<uint16_t*, ExecSpace> x,            // local coordinates of each pixel
-                 Kokkos::View<uint16_t*, ExecSpace> y,            //
-                 Kokkos::View<uint32_t*, ExecSpace> moduleStart,  // index of the first pixel of each module
+  void findClus(Kokkos::View<const uint16_t*, ExecSpace> id,           // module id of each pixel
+                 Kokkos::View<const uint16_t*, ExecSpace> x,            // local coordinates of each pixel
+                 Kokkos::View<const uint16_t*, ExecSpace> y,            //
+                 Kokkos::View<const uint32_t*, ExecSpace> moduleStart,  // index of the first pixel of each module
                  Kokkos::View<uint32_t*, ExecSpace> nClustersInModule,  // output: number of clusters found in each module
                  Kokkos::View<uint32_t*, ExecSpace> moduleId,           // output: module id of each module
                  Kokkos::View<int*, ExecSpace> clusterId,           // output: cluster id of each pixel
@@ -97,7 +97,7 @@ namespace gpuClustering {
         }
 
         assert((d_msize(teamMember.league_rank()) == numElements) or 
-               ((d_msize(teamMember.league_rank()) < numElements) and (id[d_msize(teamMember.league_rank())] != thisModuleId)));
+               ((d_msize(teamMember.league_rank()) < numElements) and (id(d_msize(teamMember.league_rank())) != thisModuleId)));
 
         // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
         if (0 == teamMember.team_rank()) {

@@ -288,8 +288,17 @@ void test() {
         d_clusInModule(i) = 0;
       });
 
-    gpuClustering::findClus(d_id,d_x,d_y,d_moduleStart,d_clusInModule,
-                        d_moduleId,d_clus,n,MaxNumModules,threadsPerModule,KokkosExecSpace());
+    gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
+                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
+                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_y),
+                            Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+                            d_clusInModule,
+                            d_moduleId,
+                            d_clus,
+                            n,
+                            MaxNumModules,
+                            threadsPerModule,
+                            KokkosExecSpace());
 
 
     KokkosExecSpace().fence();
@@ -309,9 +318,16 @@ void test() {
     if (ncl != clustInModule_acc)
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    gpuClustering::clusterChargeCut(d_id,d_adc,d_moduleStart,
-                                                      d_clusInModule,d_moduleId,d_clus,n,
-                                                      blocksPerGrid,threadsPerModule,KokkosExecSpace());
+    gpuClustering::clusterChargeCut(d_id,
+                                    Kokkos::View<const uint16_t*, KokkosExecSpace>(d_adc),
+                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+                                    d_clusInModule,
+                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleId),
+                                    d_clus,
+                                    n,
+                                    blocksPerGrid,
+                                    threadsPerModule,
+                                    KokkosExecSpace());
     KokkosExecSpace().fence();
 
     std::cout << "found " << h_moduleStart(0) << " Modules active" << std::endl;
