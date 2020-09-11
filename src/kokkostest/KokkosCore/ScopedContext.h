@@ -22,7 +22,7 @@ namespace cms {
       template <typename T>
       std::unique_ptr<Product<T>> wrap(T data) {
         // make_unique doesn't work because of private constructor
-        return std::unique_ptr<Product<T>>(new Product<T>(execSpaceSpecific_, std::move(data)));
+        return std::unique_ptr<Product<T>>(new Product<T>(execSpaceSpecific_->cloneShareAll(), std::move(data)));
       }
 
       template <typename T, typename... Args>
