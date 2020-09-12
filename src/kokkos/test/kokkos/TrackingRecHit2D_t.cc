@@ -12,7 +12,7 @@ namespace testTrackingRecHit2DKokkos {
     assert(hits.data());
     auto &hits_ = *hits.data();
 
-    Kokkos::parallel_for("fill", Kokkos::RangePolicy<KokkosExecSpace>(0, 1024), KOKKOS_LAMBDA(const size_t i) {
+    Kokkos::parallel_for("fill", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1024), KOKKOS_LAMBDA(const size_t i) {
               assert(hits_.nHits() == 200);
               if (i > 200) return;
             });
