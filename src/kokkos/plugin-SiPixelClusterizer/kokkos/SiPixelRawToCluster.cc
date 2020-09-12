@@ -1,8 +1,6 @@
-#ifdef TODO
-#include "DataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
-#endif
+#include "KokkosDataFormats/SiPixelClustersKokkos.h"
+#include "KokkosDataFormats/SiPixelDigisKokkos.h"
+#include "KokkosDataFormats/SiPixelDigiErrorsKokkos.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
 #include "CondFormats/SiPixelFedIds.h"
@@ -34,11 +32,9 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-#ifdef TODO
-    edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
-    edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrorsCUDA>> digiErrorPutToken_;
-    edm::EDPutTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterPutToken_;
-#endif
+    edm::EDPutTokenT<SiPixelDigisKokkos<KokkosExecSpace>> digiPutToken_;
+    edm::EDPutTokenT<SiPixelDigiErrorsKokkos<KokkosExecSpace>> digiErrorPutToken_;
+    edm::EDPutTokenT<SiPixelClustersKokkos<KokkosExecSpace>> clusterPutToken_;
 
     pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -50,16 +46,12 @@ namespace KOKKOS_NAMESPACE {
 
   SiPixelRawToCluster::SiPixelRawToCluster(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-#ifdef TODO
-        digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigisCUDA>>()),
-        clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClustersCUDA>>()),
-#endif
+        digiPutToken_(reg.produces<SiPixelDigisKokkos<KokkosExecSpace>>()),
+        clusterPutToken_(reg.produces<SiPixelClustersKokkos<KokkosExecSpace>>()),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
-#ifdef TODO
-      digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
-#endif
+      digiErrorPutToken_ = reg.produces<SiPixelDigiErrorsKokkos<KokkosExecSpace>>();
     }
 
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
@@ -152,15 +144,13 @@ namespace KOKKOS_NAMESPACE {
                                includeErrors_,
                                false  // debug
     );
-#ifdef TODO
 
     auto tmp = gpuAlgo_.getResults();
-    ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
-    ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
+    iEvent.emplace(digiPutToken_, std::move(tmp.first));
+    iEvent.emplace(clusterPutToken_, std::move(tmp.second));
     if (includeErrors_) {
-      ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
+      iEvent.emplace(digiErrorPutToken_, gpuAlgo_.getErrors());
     }
-#endif
   }
 }  // namespace KOKKOS_NAMESPACE
 

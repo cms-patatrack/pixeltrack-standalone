@@ -43,10 +43,10 @@ namespace KOKKOS_NAMESPACE {
   CountValidator::CountValidator(edm::ProductRegistry& reg)
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
-        vertexCountToken_(reg.consumes<VertexCount>())
+        vertexCountToken_(reg.consumes<VertexCount>()),
+	digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
+        clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>())
 #ifdef TODO
-            digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
-        clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>()),
         trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
         vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>())
 #endif
@@ -59,7 +59,6 @@ namespace KOKKOS_NAMESPACE {
 
     ss << "Event " << iEvent.eventID() << " ";
 
-#ifdef TODO
     {
       auto const& count = iEvent.get(digiClusterCountToken_);
       auto const& digis = iEvent.get(digiToken_);
@@ -79,6 +78,7 @@ namespace KOKKOS_NAMESPACE {
       }
     }
 
+#ifdef TODO
     {
       auto const& count = iEvent.get(trackCountToken_);
       auto const& tracks = iEvent.get(trackToken_);
