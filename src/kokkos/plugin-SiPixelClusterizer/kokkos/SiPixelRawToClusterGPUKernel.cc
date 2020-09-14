@@ -578,10 +578,6 @@ namespace KOKKOS_NAMESPACE {
       }
       clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
 
-      // #ifdef TODO
-      //       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
-      // #endif
-
       if (wordCounter)  // protect in case of empty event....
       {
         assert(0 == wordCounter % 2);

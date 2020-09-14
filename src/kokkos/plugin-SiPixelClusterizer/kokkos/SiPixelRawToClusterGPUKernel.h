@@ -189,7 +189,7 @@ namespace KOKKOS_NAMESPACE {
       uint32_t nDigis = 0;
 
       // Data to be put in the event
-      Kokkos::View<uint32_t*, KokkosExecSpace> nModules_Clusters_h;
+      Kokkos::View<uint32_t*, KokkosExecSpace>::HostMirror nModules_Clusters_h;
 
       SiPixelDigisKokkos<KokkosExecSpace> digis_d;
       SiPixelClustersKokkos<KokkosExecSpace> clusters_d;

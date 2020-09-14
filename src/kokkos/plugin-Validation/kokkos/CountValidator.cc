@@ -44,10 +44,10 @@ namespace KOKKOS_NAMESPACE {
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
         vertexCountToken_(reg.consumes<VertexCount>()),
-	digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
+        digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
         clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>())
 #ifdef TODO
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
+            trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
         vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>())
 #endif
   {
