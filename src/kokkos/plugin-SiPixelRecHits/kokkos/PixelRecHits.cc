@@ -39,8 +39,12 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
       if (digis_d.nModules() > 0) {  // protect from empty events
-        // one team for each active module (with digis)
+                                     // one team for each active module (with digis)
+#ifdef KOKKOS_BACKEND_SERIAL
+        TeamPolicy policy(execSpace, digis_d.nModules(), 1);  // TODO: see if can use Kokkos::AUTO()
+#else
         TeamPolicy policy(execSpace, digis_d.nModules(), 128);  // TODO: see if can use Kokkos::AUTO()
+#endif
         Kokkos::parallel_for(
             policy.set_scratch_size(0, Kokkos::PerTeam(sizeof(pixelCPEforGPU::ClusParams))),
             KOKKOS_LAMBDA(MemberType const& teamMember) {
