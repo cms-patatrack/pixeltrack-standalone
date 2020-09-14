@@ -491,16 +491,16 @@ namespace pixelgpudetails {
     // blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanA",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1024),
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1025),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
-          upd += moduleStart[i + 1];
+          upd += moduleStart[i];
           if (final)
-            moduleStart[i + 1] = upd;
+            moduleStart[i] = upd;
         });
     // blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanB",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules - 1024),
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, 1025 + gpuClustering::MaxNumModules - 1024),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
           upd += moduleStart[i];
           if (final)
