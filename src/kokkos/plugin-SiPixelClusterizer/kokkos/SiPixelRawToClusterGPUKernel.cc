@@ -491,16 +491,16 @@ namespace pixelgpudetails {
     // blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanA",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1024),
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1025),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
-          upd += moduleStart[i + 1];
+          upd += moduleStart[i];
           if (final)
-            moduleStart[i + 1] = upd;
+            moduleStart[i] = upd;
         });
     // blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanB",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules - 1024),
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, 1025 + gpuClustering::MaxNumModules - 1024),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
           upd += moduleStart[i];
           if (final)
@@ -511,8 +511,6 @@ namespace pixelgpudetails {
         "fillHitsModuleStart_update_moduleStart",
         Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules + 1),
         KOKKOS_LAMBDA(const int &index) { moduleStart(index) += moduleStart(1024); });
-
-    execSpace.fence();
 
 #ifdef GPU_DEBUG
     Kokkos::parallel_for(
@@ -577,10 +575,6 @@ namespace KOKKOS_NAMESPACE {
             pixelgpudetails::MAX_FED_WORDS, std::move(errors), KokkosExecSpace());
       }
       clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
-
-      // #ifdef TODO
-      //       nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
-      // #endif
 
       if (wordCounter)  // protect in case of empty event....
       {
@@ -679,7 +673,6 @@ namespace KOKKOS_NAMESPACE {
                 gpuClustering::countModules(moduleInd_d, moduleStart_d, clusStart_d, wordCounter, i);
               });
         }
-        KokkosExecSpace().fence();
 
         // read the number of modules into a data member, used by getProduct())
         Kokkos::deep_copy(
@@ -734,7 +727,7 @@ namespace KOKKOS_NAMESPACE {
         // last element holds the number of all clusters
         Kokkos::deep_copy(KokkosExecSpace(),
                           Kokkos::subview(nModules_Clusters_h, 1),
-                          Kokkos::subview(clusters_d.moduleStart(), ::gpuClustering::MaxNumModules));
+                          Kokkos::subview(clusters_d.clusModuleStart(), ::gpuClustering::MaxNumModules));
 
 #ifdef GPU_DEBUG
         KokkosExecSpace().fence();

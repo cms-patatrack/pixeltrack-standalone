@@ -177,28 +177,19 @@ namespace KOKKOS_NAMESPACE {
                              bool includeErrors,
                              bool debug /*,
                                           cudaStream_t stream*/);
-#ifdef TODO
 
-      std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
-        digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);
-        clusters_d.setNClusters(nModules_Clusters_h[1]);
-        // need to explicitly deallocate while the associated CUDA
-        // stream is still alive
-        //
-        // technically the statement above is not true anymore now that
-        // the CUDA streams are cached within the cms::cuda::StreamCache, but it is
-        // still better to release as early as possible
-        nModules_Clusters_h.reset();
+      std::pair<SiPixelDigisKokkos<KokkosExecSpace>, SiPixelClustersKokkos<KokkosExecSpace>> getResults() {
+        digis_d.setNModulesDigis(nModules_Clusters_h(0), nDigis);
+        clusters_d.setNClusters(nModules_Clusters_h(1));
         return std::make_pair(std::move(digis_d), std::move(clusters_d));
       }
-#endif
-      SiPixelDigiErrorsKokkos<KokkosExecSpace>&& getErrors() { return std::move(digiErrors_d); }
+      SiPixelDigiErrorsKokkos<KokkosExecSpace> getErrors() { return std::move(digiErrors_d); }
 
     private:
       uint32_t nDigis = 0;
 
       // Data to be put in the event
-      Kokkos::View<uint32_t*, KokkosExecSpace> nModules_Clusters_h;
+      Kokkos::View<uint32_t*, KokkosExecSpace>::HostMirror nModules_Clusters_h;
 
       SiPixelDigisKokkos<KokkosExecSpace> digis_d;
       SiPixelClustersKokkos<KokkosExecSpace> clusters_d;
