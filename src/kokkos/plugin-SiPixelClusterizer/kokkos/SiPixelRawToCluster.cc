@@ -145,6 +145,9 @@ namespace KOKKOS_NAMESPACE {
                                false  // debug
     );
 
+    // TODO: synchronize explicitly for now
+    KokkosExecSpace().fence();
+
     auto tmp = gpuAlgo_.getResults();
     iEvent.emplace(digiPutToken_, std::move(tmp.first));
     iEvent.emplace(clusterPutToken_, std::move(tmp.second));
