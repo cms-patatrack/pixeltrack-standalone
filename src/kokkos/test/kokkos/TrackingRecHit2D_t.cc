@@ -10,10 +10,10 @@ namespace testTrackingRecHit2DKokkos {
   void fill(Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> hits) {
 
     assert(hits.data());
-    auto &hits_ = *hits.data();
+    auto hits_ = &hits();
 
     Kokkos::parallel_for("fill", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 1024), KOKKOS_LAMBDA(const size_t i) {
-              assert(hits_.nHits() == 200);
+              assert(hits_->nHits() == 200);
               if (i > 200) return;
             });
 
@@ -25,10 +25,10 @@ namespace testTrackingRecHit2DKokkos {
 
     assert(hits.data());
 
-    auto const &hits_ = *hits.data();
+    auto const hits_ = &hits();
 
     Kokkos::parallel_for("fill", Kokkos::RangePolicy<KokkosExecSpace>(0, 1024), KOKKOS_LAMBDA(const size_t i) {
-              assert(hits_.nHits() == 200);
+              assert(hits_->nHits() == 200);
               if (i > 200) return;
             });
 
@@ -58,7 +58,7 @@ int main() {
     auto nHits = 200;
 
     Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosExecSpace> _cpeParams("cpeparams");
-    Kokkos::View<uint32_t*, KokkosExecSpace> _hitsModuleStart("hitsmodulestart");
+    Kokkos::View<uint32_t*, KokkosExecSpace> _hitsModuleStart("hitsmodulestart",1);
 
     TrackingRecHit2DKokkos<KokkosExecSpace> tkhit(nHits, _cpeParams, _hitsModuleStart, KokkosExecSpace());
 
