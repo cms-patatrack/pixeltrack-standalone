@@ -512,8 +512,6 @@ namespace pixelgpudetails {
         Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules + 1),
         KOKKOS_LAMBDA(const int &index) { moduleStart(index) += moduleStart(1024); });
 
-    execSpace.fence();
-
 #ifdef GPU_DEBUG
     Kokkos::parallel_for(
         "fillHitsModuleStart_debugA", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, 1), KOKKOS_LAMBDA(const int &index) {
@@ -675,7 +673,6 @@ namespace KOKKOS_NAMESPACE {
                 gpuClustering::countModules(moduleInd_d, moduleStart_d, clusStart_d, wordCounter, i);
               });
         }
-        KokkosExecSpace().fence();
 
         // read the number of modules into a data member, used by getProduct())
         Kokkos::deep_copy(
