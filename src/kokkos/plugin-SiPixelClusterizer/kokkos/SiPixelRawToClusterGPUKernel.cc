@@ -730,7 +730,7 @@ namespace KOKKOS_NAMESPACE {
         // last element holds the number of all clusters
         Kokkos::deep_copy(KokkosExecSpace(),
                           Kokkos::subview(nModules_Clusters_h, 1),
-                          Kokkos::subview(clusters_d.moduleStart(), ::gpuClustering::MaxNumModules));
+                          Kokkos::subview(clusters_d.clusModuleStart(), ::gpuClustering::MaxNumModules));
 
 #ifdef GPU_DEBUG
         KokkosExecSpace().fence();
