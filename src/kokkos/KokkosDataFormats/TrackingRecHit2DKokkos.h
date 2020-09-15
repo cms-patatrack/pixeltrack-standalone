@@ -25,6 +25,7 @@ public:
 
   TrackingRecHit2DSOAView* view() { return m_view.data(); }
   TrackingRecHit2DSOAView const* view() const { return m_view.data(); }
+  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> mView() { return m_view; }
 
   auto nHits() const { return m_nHits; }
 
