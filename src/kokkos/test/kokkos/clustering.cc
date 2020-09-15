@@ -21,25 +21,53 @@ void test() {
 
   int numElements = 256 * 2000;
   // these in reality are already on GPU
-  Kokkos::View<uint16_t*, KokkosExecSpace>::HostMirror h_id("h_id", numElements);
-  Kokkos::View<uint16_t*, KokkosExecSpace>::HostMirror h_x("h_x", numElements);
-  Kokkos::View<uint16_t*, KokkosExecSpace>::HostMirror h_y("h_y", numElements);
-  Kokkos::View<uint16_t*, KokkosExecSpace>::HostMirror h_adc("h_adc", numElements);
-
-  Kokkos::View<int*, KokkosExecSpace>::HostMirror h_clus("h_clus", numElements);
 
   Kokkos::View<uint16_t*, KokkosExecSpace> d_id("d_id", numElements);
+  auto h_id = Kokkos::create_mirror_view(d_id);
   Kokkos::View<uint16_t*, KokkosExecSpace> d_x("d_x", numElements);
+  auto h_x = Kokkos::create_mirror_view(d_x);
   Kokkos::View<uint16_t*, KokkosExecSpace> d_y("d_y", numElements);
+  auto h_y = Kokkos::create_mirror_view(d_y);
   Kokkos::View<uint16_t*, KokkosExecSpace> d_adc("d_adc", numElements);
-  Kokkos::View<int*, KokkosExecSpace> d_clus("d_clus", numElements);
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleStart("d_moduleStart", MaxNumModules + 1);
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_clusInModule("d_clusInModule", MaxNumModules);
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleId("d_moduleId", MaxNumModules);
+  auto h_adc = Kokkos::create_mirror_view(d_adc);
 
-  Kokkos::View<uint32_t*, KokkosExecSpace>::HostMirror h_moduleStart("h_moduleStart", MaxNumModules + 1);
-  Kokkos::View<uint32_t*, KokkosExecSpace>::HostMirror h_clusInModule("h_clusInModule", MaxNumModules);
-  Kokkos::View<uint32_t*, KokkosExecSpace>::HostMirror h_moduleId("h_moduleId", MaxNumModules);
+  Kokkos::View<int*, KokkosExecSpace> d_clus("d_clus", numElements);
+  auto h_clus = Kokkos::create_mirror_view(d_clus);
+
+  Kokkos::parallel_for(
+      "var_init1", Kokkos::RangePolicy<KokkosExecSpace>(0, numElements), KOKKOS_LAMBDA(const size_t i) {
+        d_clus(i) = 0;
+        d_id(i) = 0;
+        d_x(i) = 0;
+        d_y(i) = 0;
+        d_adc(i) = 0;
+      });
+
+  Kokkos::deep_copy(KokkosExecSpace(), h_clus, d_clus);
+  Kokkos::deep_copy(KokkosExecSpace(), h_id, d_id);
+  Kokkos::deep_copy(KokkosExecSpace(), h_x, d_x);
+  Kokkos::deep_copy(KokkosExecSpace(), h_y, d_y);
+  Kokkos::deep_copy(KokkosExecSpace(), h_adc, d_adc);
+
+  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleStart("d_moduleStart", MaxNumModules + 1);
+  auto h_moduleStart = Kokkos::create_mirror_view(d_moduleStart);
+  Kokkos::View<uint32_t*, KokkosExecSpace> d_clusInModule("d_clusInModule", MaxNumModules);
+  auto h_clusInModule = Kokkos::create_mirror_view(d_clusInModule);
+  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleId("d_moduleId", MaxNumModules);
+  auto h_moduleId = Kokkos::create_mirror_view(d_moduleId);
+
+  Kokkos::parallel_for(
+      "var_init2", Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules + 1), KOKKOS_LAMBDA(const size_t i) {
+        d_moduleStart(i) = 0;
+        if (i < MaxNumModules) {
+          d_moduleId(i) = 0;
+          d_clusInModule(i) = 0;
+        }
+      });
+
+  Kokkos::deep_copy(KokkosExecSpace(), h_moduleStart, d_moduleStart);
+  Kokkos::deep_copy(KokkosExecSpace(), h_moduleId, d_moduleId);
+  Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
 
   // later random number
   int n = 0;
@@ -217,6 +245,10 @@ void test() {
       }
     }
   };  // end lambda
+  Kokkos::deep_copy(KokkosExecSpace(), d_clusInModule, h_clusInModule);
+  Kokkos::deep_copy(KokkosExecSpace(), d_moduleId, h_moduleId);
+  Kokkos::deep_copy(KokkosExecSpace(), d_clus, h_clus);
+
   for (auto kkk = 0; kkk < 5; ++kkk) {
     n = 0;
     ncl = 0;
@@ -225,129 +257,91 @@ void test() {
     std::cout << "created " << n << " digis in " << ncl << " clusters" << std::endl;
     assert(n <= numElements);
 
-    uint32_t nModules = 0;
-    size_t size32 = n * sizeof(unsigned int);
-    size_t size16 = n * sizeof(unsigned short);
-    // size_t size8 = n * sizeof(uint8_t);
+    h_moduleStart(0) = 0;
+    Kokkos::deep_copy(KokkosExecSpace(), d_moduleStart, h_moduleStart);
 
-    Kokkos::deep_copy(KokkosExecSpace(), d_moduleStart, 0);
     Kokkos::deep_copy(KokkosExecSpace(), d_id, h_id);
     Kokkos::deep_copy(KokkosExecSpace(), d_x, h_x);
     Kokkos::deep_copy(KokkosExecSpace(), d_y, h_y);
     Kokkos::deep_copy(KokkosExecSpace(), d_adc, h_adc);
 
     // Launch Kokkos Kernels
-    std::cout << "Kokkos countModules kernel launch\n";
+    std::cout << "Kokkos countModules kernel launch for " << n << " iterations\n";
     Kokkos::parallel_for(
         Kokkos::RangePolicy<KokkosExecSpace>(0, n), KOKKOS_LAMBDA(const size_t i) {
           KOKKOS_NAMESPACE::gpuClustering::countModules(d_id, d_moduleStart, d_clus, n, i);
         });
     KokkosExecSpace().fence();
-#ifdef TODO
-#ifdef __CUDACC__
-    int threadsPerBlock = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
-    int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
 
-    blocksPerGrid = MaxNumModules;  //nModules;
-
-    std::cout << "CUDA findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
-              << " threads\n";
-    cudaCheck(cudaMemset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)));
-
-    cms::cuda::launch(findClus,
-                      {blocksPerGrid, threadsPerBlock},
-                      d_id.get(),
-                      d_x.get(),
-                      d_y.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      d_clus.get(),
-                      n);
-    cudaDeviceSynchronize();
-    cudaCheck(cudaMemcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t), cudaMemcpyDeviceToHost));
-
-    uint32_t nclus[MaxNumModules], moduleId[nModules];
-    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
-              << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
-      if (nclus[i - 1] > 0) {
-        std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
-        break;
-      }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
-      std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
-
-    cms::cuda::launch(clusterChargeCut,
-                      {blocksPerGrid, threadsPerBlock},
-                      d_id.get(),
-                      d_adc.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      d_clus.get(),
-                      n);
-
-    cudaDeviceSynchronize();
+#ifdef KOKKOS_BACKEND_SERIAL
+    uint32_t threadsPerModule = 1;
 #else
-    h_moduleStart[0] = nModules;
-    countModules(h_id.get(), h_moduleStart.get(), h_clus.get(), n);
-    memset(h_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
-    gridDim.x = MaxNumModules;  //not needed in the kernel for this specific case;
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      findClus(h_id.get(),
-               h_x.get(),
-               h_y.get(),
-               h_moduleStart.get(),
-               h_clusInModule.get(),
-               h_moduleId.get(),
-               h_clus.get(),
-               n);
-    resetGrid();
+    uint32_t threadsPerModule = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
+#endif
+    uint32_t blocksPerGrid = MaxNumModules;  //nModules;
 
-    nModules = h_moduleStart[0];
-    auto nclus = h_clusInModule.get();
+    std::cout << "Kokkos findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerModule
+              << " threads\n";
 
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
-              << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
-      if (nclus[i - 1] > 0) {
-        std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules),
+        KOKKOS_LAMBDA(const size_t i) { d_clusInModule(i) = 0; });
+
+    gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
+                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
+                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_y),
+                            Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+                            d_clusInModule,
+                            d_moduleId,
+                            d_clus,
+                            n,
+                            MaxNumModules,
+                            threadsPerModule,
+                            KokkosExecSpace());
+
+    KokkosExecSpace().fence();
+    Kokkos::deep_copy(KokkosExecSpace(), h_moduleStart, d_moduleStart);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
+
+    auto clustInModule_acc = std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0);
+    std::cout << "before charge cut found " << clustInModule_acc << " clusters" << std::endl;
+
+    for (auto i = MaxNumModules; i > 0; i--) {
+      if (h_clusInModule[i - 1] > 0) {
+        std::cout << "last module is " << i - 1 << ' ' << h_clusInModule[i - 1] << std::endl;
         break;
       }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
+    }
+
+    if (ncl != clustInModule_acc)
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    gridDim.x = MaxNumModules;  // no needed in the kernel for in this specific case
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      clusterChargeCut(
-          h_id.get(), h_adc.get(), h_moduleStart.get(), h_clusInModule.get(), h_moduleId.get(), h_clus.get(), n);
-    resetGrid();
+    gpuClustering::clusterChargeCut(d_id,
+                                    Kokkos::View<const uint16_t*, KokkosExecSpace>(d_adc),
+                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+                                    d_clusInModule,
+                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleId),
+                                    d_clus,
+                                    n,
+                                    blocksPerGrid,
+                                    threadsPerModule,
+                                    KokkosExecSpace());
+    KokkosExecSpace().fence();
 
-#endif
+    std::cout << "found " << h_moduleStart(0) << " Modules active" << std::endl;
 
-    std::cout << "found " << nModules << " Modules active" << std::endl;
-
-#ifdef __CUDACC__
-    cudaCheck(cudaMemcpy(h_id.get(), d_id.get(), size16, cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(h_clus.get(), d_clus.get(), size32, cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(&moduleId, d_moduleId.get(), nModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-#endif
+    Kokkos::deep_copy(KokkosExecSpace(), h_id, d_id);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clus, d_clus);
+    Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
+    Kokkos::deep_copy(KokkosExecSpace(), h_moduleId, d_moduleId);
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {
-      assert(h_id[i] != 666);  // only noise
-      if (h_id[i] == InvId)
+      assert(h_id(i) != 666);  // only noise
+      if (h_id(i) == InvId)
         continue;
-      assert(h_clus[i] >= 0);
-      assert(h_clus[i] < int(nclus[h_id[i]]));
-      clids.insert(h_id[i] * 1000 + h_clus[i]);
-      // clids.insert(h_clus[i]);
+      assert(h_clus(i) >= 0);
+      clids.insert(h_id(i) * 1000 + h_clus(i));
     }
 
     // verify no hole in numbering
@@ -356,8 +350,9 @@ void test() {
     assert(0 == (*p) % 1000);
     auto c = p;
     ++c;
-    std::cout << "first clusters " << *p << ' ' << *c << ' ' << nclus[cmid] << ' ' << nclus[(*c) / 1000] << std::endl;
-    std::cout << "last cluster " << *clids.rbegin() << ' ' << nclus[(*clids.rbegin()) / 1000] << std::endl;
+    std::cout << "first clusters " << *p << ' ' << *c << ' ' << h_clusInModule(cmid) << ' '
+              << h_clusInModule((*c) / 1000) << std::endl;
+    std::cout << "last cluster " << *clids.rbegin() << ' ' << h_clusInModule((*clids.rbegin()) / 1000) << std::endl;
     for (; c != clids.end(); ++c) {
       auto cc = *c;
       auto pp = *p;
@@ -366,8 +361,8 @@ void test() {
       auto nc = cc % 1000;
       if (mid != cmid) {
         assert(0 == cc % 1000);
-        assert(nclus[cmid] - 1 == pp % 1000);
-        // if (nclus[cmid]-1 != pp%1000) std::cout << "error size " << mid << ": "  << nclus[mid] << ' ' << pp << std::endl;
+        assert(h_clusInModule(cmid) - 1 == pp % 1000);
+        // if (h_clusInModule[cmid]-1 != pp%1000) std::cout << "error size " << mid << ": "  << h_clusInModule[mid] << ' ' << pp << std::endl;
         cmid = mid;
         p = c;
         continue;
@@ -378,20 +373,21 @@ void test() {
         std::cout << "error " << mid << ": " << nc << ' ' << pnc << std::endl;
     }
 
-    std::cout << "found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
-              << std::endl;
+    std::cout << "found " << std::accumulate(&h_clusInModule(0), &h_clusInModule(0) + MaxNumModules, 0) << ' '
+              << clids.size() << " clusters" << std::endl;
     for (auto i = MaxNumModules; i > 0; i--)
-      if (nclus[i - 1] > 0) {
-        std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
+      if (h_clusInModule(i - 1) > 0) {
+        std::cout << "last module is " << i - 1 << ' ' << h_clusInModule(i - 1) << std::endl;
         break;
       }
-      // << " and " << seeds.size() << " seeds" << std::endl;
-#endif  // TODO
-  }     /// end loop kkk
+    // << " and " << seeds.size() << " seeds" << std::endl;
+
+  }  /// end loop kkk
 }
 
 int main(void) {
   kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
+  cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024 * 1024 * 1024);
   test();
   return 0;
 }

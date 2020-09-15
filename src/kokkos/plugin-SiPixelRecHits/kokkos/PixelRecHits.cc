@@ -9,6 +9,7 @@
 #endif
 
 #include "CondFormats/pixelCPEforGPU.h"
+//#include "KokkosCore/kokkos_assert.h"
 
 #include "PixelRecHits.h"
 #include "gpuPixelRecHits.h"
@@ -39,8 +40,12 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
       if (digis_d.nModules() > 0) {  // protect from empty events
-        // one team for each active module (with digis)
+                                     // one team for each active module (with digis)
+#ifdef KOKKOS_BACKEND_SERIAL
+        TeamPolicy policy(execSpace, digis_d.nModules(), 1);  // TODO: see if can use Kokkos::AUTO()
+#else
         TeamPolicy policy(execSpace, digis_d.nModules(), 128);  // TODO: see if can use Kokkos::AUTO()
+#endif
         Kokkos::parallel_for(
             policy.set_scratch_size(0, Kokkos::PerTeam(sizeof(pixelCPEforGPU::ClusParams))),
             KOKKOS_LAMBDA(MemberType const& teamMember) {
@@ -59,7 +64,9 @@ namespace KOKKOS_NAMESPACE {
         auto hitsLayerStart = hits_d.hitsLayerStart();
         Kokkos::parallel_for(
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, 11), KOKKOS_LAMBDA(const size_t i) {
-              assert(0 == clusModuleStart[0]);
+              // TODO: for some reason uncommenting the assert leads to
+              // cudaFuncGetAttributes( &attr, cuda_parallel_launch_local_memory<DriverType>) error( cudaErrorInvalidDeviceFunction): invalid device function .../pixeltrack-standalone/external/kokkos/install/include/Cuda/Kokkos_Cuda_KernelLaunch.hpp:448
+              //assert(0 == clusModuleStart[0]);
 
               hitsLayerStart[i] = clusModuleStart[cpeParams().layerGeometry().layerStart[i]];
 #ifdef GPU_DEBUG
@@ -68,14 +75,10 @@ namespace KOKKOS_NAMESPACE {
             });
       }
 
-#ifdef TODO
       if (nHits) {
-        auto hws = cms::cuda::make_device_unique<uint8_t[]>(TrackingRecHit2DSOAView::Hist::wsSize(), stream);
-        cms::cuda::fillManyFromVector(
-            hits_d.phiBinner(), hws.get(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
-        cudaCheck(cudaGetLastError());
+        cms::kokkos::fillManyFromVector(
+            hits_d.phiBinner(), 10, hits_d.c_iphi(), hits_d.c_hitsLayerStart(), nHits, 256, execSpace);
       }
-#endif
 
 #ifdef GPU_DEBUG
       execSpace.fence();

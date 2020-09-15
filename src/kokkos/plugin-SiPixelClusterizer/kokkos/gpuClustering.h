@@ -5,12 +5,10 @@
 #include <cstdio>
 
 #include "Geometry/phase1PixelTopology.h"
-#ifdef TODO
-#include "CUDACore/HistoContainer.h"
-#include "CUDACore/cuda_assert.h"
-#endif
-
+#include "KokkosCore/HistoContainer.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
+
+#include "cuda.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuClustering {
@@ -32,277 +30,259 @@ namespace KOKKOS_NAMESPACE {
         --j;
       if (j < 0 or id[j] != id[index]) {
         // boundary... replacing atomicInc with explicit logic
-        auto loc = Kokkos::atomic_fetch_add(&moduleStart[0], 1);
-        assert(moduleStart[0] < ::gpuClustering::MaxNumModules);
-        moduleStart[loc + 1] = index;
+        auto loc = Kokkos::atomic_fetch_add(&moduleStart(0), 1);
+        assert(moduleStart(0) < ::gpuClustering::MaxNumModules);
+        moduleStart(loc + 1) = index;
       }
     }
-#ifdef TODO
-    __global__
-        //  __launch_bounds__(256,4)
-        void
-        findClus(uint16_t const* __restrict__ id,           // module id of each pixel
-                 uint16_t const* __restrict__ x,            // local coordinates of each pixel
-                 uint16_t const* __restrict__ y,            //
-                 uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
-                 uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
-                 uint32_t* __restrict__ moduleId,           // output: module id of each module
-                 int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
-                 int numElements) {
-      if (blockIdx.x >= moduleStart[0])
-        return;
-
-      auto firstPixel = moduleStart[1 + blockIdx.x];
-      auto thisModuleId = id[firstPixel];
-      assert(thisModuleId < MaxNumModules);
-
-#ifdef GPU_DEBUG
-      if (thisModuleId % 100 == 1)
-        if (threadIdx.x == 0)
-          printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx.x);
-#endif
-
-      auto first = firstPixel + threadIdx.x;
-
-      // find the index of the first pixel not belonging to this module (or invalid)
-      __shared__ int msize;
-      msize = numElements;
-      __syncthreads();
-
-      // skip threads not associated to an existing pixel
-      for (int i = first; i < numElements; i += blockDim.x) {
-        if (id[i] == InvId)  // skip invalid pixels
-          continue;
-        if (id[i] != thisModuleId) {  // find the first pixel in a different module
-          atomicMin(&msize, i);
-          break;
-        }
-      }
-
-      //init hist  (ymax=416 < 512 : 9bits)
-      constexpr uint32_t maxPixInModule = 4000;
-      constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
-      using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
-      __shared__ Hist hist;
-      __shared__ typename Hist::Counter ws[32];
-      for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
-        hist.off[j] = 0;
-      }
-      __syncthreads();
-
-      assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
-
-      // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
-      if (0 == threadIdx.x) {
-        if (msize - firstPixel > maxPixInModule) {
-          printf("too many pixels in module %d: %d > %d\n", thisModuleId, msize - firstPixel, maxPixInModule);
-          msize = maxPixInModule + firstPixel;
-        }
-      }
-
-      __syncthreads();
-      assert(msize - firstPixel <= maxPixInModule);
-
-#ifdef GPU_DEBUG
-      __shared__ uint32_t totGood;
-      totGood = 0;
-      __syncthreads();
-#endif
-
-      // fill histo
-      for (int i = first; i < msize; i += blockDim.x) {
-        if (id[i] == InvId)  // skip invalid pixels
-          continue;
-        hist.count(y[i]);
-#ifdef GPU_DEBUG
-        atomicAdd(&totGood, 1);
-#endif
-      }
-      __syncthreads();
-      if (threadIdx.x < 32)
-        ws[threadIdx.x] = 0;  // used by prefix scan...
-      __syncthreads();
-      hist.finalize(ws);
-      __syncthreads();
-#ifdef GPU_DEBUG
-      assert(hist.size() == totGood);
-      if (thisModuleId % 100 == 1)
-        if (threadIdx.x == 0)
-          printf("histo size %d\n", hist.size());
-#endif
-      for (int i = first; i < msize; i += blockDim.x) {
-        if (id[i] == InvId)  // skip invalid pixels
-          continue;
-        hist.fill(y[i], i - firstPixel);
-      }
-
-#ifdef __CUDA_ARCH__
-      // assume that we can cover the whole module with up to 16 blockDim.x-wide iterations
-      constexpr int maxiter = 16;
-#else
-      auto maxiter = hist.size();
-#endif
-      // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
-      constexpr int maxNeighbours = 10;
-      assert((hist.size() / blockDim.x) <= maxiter);
-      // nearest neighbour
-      uint16_t nn[maxiter][maxNeighbours];
-      uint8_t nnn[maxiter];  // number of nn
-      for (uint32_t k = 0; k < maxiter; ++k)
-        nnn[k] = 0;
-
-      __syncthreads();  // for hit filling!
-
-#ifdef GPU_DEBUG
-      // look for anomalous high occupancy
-      __shared__ uint32_t n40, n60;
-      n40 = n60 = 0;
-      __syncthreads();
-      for (auto j = threadIdx.x; j < Hist::nbins(); j += blockDim.x) {
-        if (hist.size(j) > 60)
-          atomicAdd(&n60, 1);
-        if (hist.size(j) > 40)
-          atomicAdd(&n40, 1);
-      }
-      __syncthreads();
-      if (0 == threadIdx.x) {
-        if (n60 > 0)
-          printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
-        else if (n40 > 0)
-          printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
-      }
-      __syncthreads();
-#endif
-
-      // fill NN
-      for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
-        assert(k < maxiter);
-        auto p = hist.begin() + j;
-        auto i = *p + firstPixel;
-        assert(id[i] != InvId);
-        assert(id[i] == thisModuleId);  // same module
-        int be = Hist::bin(y[i] + 1);
-        auto e = hist.end(be);
-        ++p;
-        assert(0 == nnn[k]);
-        for (; p < e; ++p) {
-          auto m = (*p) + firstPixel;
-          assert(m != i);
-          assert(int(y[m]) - int(y[i]) >= 0);
-          assert(int(y[m]) - int(y[i]) <= 1);
-          if (std::abs(int(x[m]) - int(x[i])) > 1)
-            continue;
-          auto l = nnn[k]++;
-          assert(l < maxNeighbours);
-          nn[k][l] = *p;
-        }
-      }
-
-      // for each pixel, look at all the pixels until the end of the module;
-      // when two valid pixels within +/- 1 in x or y are found, set their id to the minimum;
-      // after the loop, all the pixel in each cluster should have the id equeal to the lowest
-      // pixel in the cluster ( clus[i] == i ).
-      bool more = true;
-      int nloops = 0;
-      while (__syncthreads_or(more)) {
-        if (1 == nloops % 2) {
-          for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            auto m = clusterId[i];
-            while (m != clusterId[m])
-              m = clusterId[m];
-            clusterId[i] = m;
-          }
-        } else {
-          more = false;
-          for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            for (int kk = 0; kk < nnn[k]; ++kk) {
-              auto l = nn[k][kk];
-              auto m = l + firstPixel;
-              assert(m != i);
-              auto old = atomicMin(&clusterId[m], clusterId[i]);
-              if (old != clusterId[i]) {
-                // end the loop only if no changes were applied
-                more = true;
-              }
-              atomicMin(&clusterId[i], old);
-            }  // nnloop
-          }    // pixel loop
-        }
-        ++nloops;
-      }  // end while
-
-#ifdef GPU_DEBUG
-      {
-        __shared__ int n0;
-        if (threadIdx.x == 0)
-          n0 = nloops;
-        __syncthreads();
-        auto ok = n0 == nloops;
-        assert(__syncthreads_and(ok));
-        if (thisModuleId % 100 == 1)
-          if (threadIdx.x == 0)
-            printf("# loops %d\n", nloops);
-      }
-#endif
-
-      __shared__ unsigned int foundClusters;
-      foundClusters = 0;
-      __syncthreads();
-
-      // find the number of different clusters, identified by a pixels with clus[i] == i;
-      // mark these pixels with a negative id.
-      for (int i = first; i < msize; i += blockDim.x) {
-        if (id[i] == InvId)  // skip invalid pixels
-          continue;
-        if (clusterId[i] == i) {
-          auto old = atomicInc(&foundClusters, 0xffffffff);
-          clusterId[i] = -(old + 1);
-        }
-      }
-      __syncthreads();
-
-      // propagate the negative id to all the pixels in the cluster.
-      for (int i = first; i < msize; i += blockDim.x) {
-        if (id[i] == InvId)  // skip invalid pixels
-          continue;
-        if (clusterId[i] >= 0) {
-          // mark each pixel in a cluster with the same id as the first one
-          clusterId[i] = clusterId[clusterId[i]];
-        }
-      }
-      __syncthreads();
-
-      // adjust the cluster id to be a positive value starting from 0
-      for (int i = first; i < msize; i += blockDim.x) {
-        if (id[i] == InvId) {  // skip invalid pixels
-          clusterId[i] = -9999;
-          continue;
-        }
-        clusterId[i] = -clusterId[i] - 1;
-      }
-      __syncthreads();
-
-      if (threadIdx.x == 0) {
-        nClustersInModule[thisModuleId] = foundClusters;
-        moduleId[blockIdx.x] = thisModuleId;
-#ifdef GPU_DEBUG
-        if (foundClusters > gMaxHit) {
-          gMaxHit = foundClusters;
-          if (foundClusters > 8)
-            printf("max hit %d in %d\n", foundClusters, thisModuleId);
-        }
-#endif
-#ifdef GPU_DEBUG
-        if (thisModuleId % 100 == 1)
-          printf("%d clusters in module %d\n", foundClusters, thisModuleId);
-#endif
-      }
-    }
-#endif  // TODO
-  }     // namespace gpuClustering
+  }  // namespace gpuClustering
 }  // namespace KOKKOS_NAMESPACE
+
+namespace gpuClustering {
+  //  __launch_bounds__(256,4)
+  template <typename ExecSpace>
+  void findClus(Kokkos::View<const uint16_t*, ExecSpace> id,           // module id of each pixel
+                Kokkos::View<const uint16_t*, ExecSpace> x,            // local coordinates of each pixel
+                Kokkos::View<const uint16_t*, ExecSpace> y,            //
+                Kokkos::View<const uint32_t*, ExecSpace> moduleStart,  // index of the first pixel of each module
+                Kokkos::View<uint32_t*, ExecSpace> nClustersInModule,  // output: number of clusters found in each module
+                Kokkos::View<uint32_t*, ExecSpace> moduleId,           // output: module id of each module
+                Kokkos::View<int*, ExecSpace> clusterId,               // output: cluster id of each pixel
+                int numElements,
+                const uint32_t league_size,
+                const uint32_t team_size,
+                ExecSpace const& execSpace) {
+    using team_policy = Kokkos::TeamPolicy<ExecSpace>;
+    using member_type = typename team_policy::member_type;
+    using shared_team_view = Kokkos::View<uint32_t, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    size_t shared_view_bytes = shared_team_view::shmem_size();
+
+    constexpr int maxPixInModule = 4000;
+    constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
+    using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
+
+    Kokkos::View<Hist*, ExecSpace> d_hist("d_hist", league_size);
+    Kokkos::View<int*, ExecSpace> d_msize("d_msize", league_size);
+
+    int loop_count = Hist::totbins();
+    Kokkos::parallel_for(
+        "init_hist_off", team_policy(execSpace, league_size, team_size), KOKKOS_LAMBDA(const member_type& teamMember) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, loop_count),
+                               [&](const int index) { d_hist(teamMember.league_rank()).off[index] = 0; });
+        });
+
+    Kokkos::parallel_for(
+        "findClus_msize", team_policy(execSpace, league_size, team_size), KOKKOS_LAMBDA(const member_type& teamMember) {
+          int firstPixel = moduleStart(1 + teamMember.league_rank());
+          auto thisModuleId = id(firstPixel);
+          assert(thisModuleId < ::gpuClustering::MaxNumModules);
+
+          auto first = firstPixel + teamMember.team_rank();
+
+          // find the index of the first pixel not belonging to this module (or invalid)
+          d_msize(teamMember.league_rank()) = numElements;
+          teamMember.team_barrier();
+
+          // skip threads not associated to an existing pixel
+          for (int i = first; i < numElements; i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
+              continue;
+            if (id(i) != thisModuleId) {  // find the first pixel in a different module
+              Kokkos::atomic_fetch_min(&d_msize(teamMember.league_rank()), i);
+              break;
+            }
+          }
+
+          assert((d_msize(teamMember.league_rank()) == numElements) or
+                 ((d_msize(teamMember.league_rank()) < numElements) and
+                  (id(d_msize(teamMember.league_rank())) != thisModuleId)));
+
+          // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
+          if (0 == teamMember.team_rank()) {
+            if (d_msize(teamMember.league_rank()) - firstPixel > maxPixInModule) {
+              printf("too many pixels in module %d: %d > %d\n",
+                     thisModuleId,
+                     d_msize(teamMember.league_rank()) - firstPixel,
+                     maxPixInModule);
+              d_msize(teamMember.league_rank()) = maxPixInModule + firstPixel;
+            }
+          }
+
+          teamMember.team_barrier();
+          assert(d_msize(teamMember.league_rank()) - firstPixel <= maxPixInModule);
+
+          // fill histo
+          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
+              continue;
+            d_hist(teamMember.league_rank()).count(y(i));
+          }
+        });
+
+    Hist::finalize(d_hist, league_size, execSpace);
+    int shared_view_level = 0;
+    Kokkos::parallel_for(
+        "findClus_msize",
+        team_policy(execSpace, league_size, team_size)
+            .set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes)),
+        KOKKOS_LAMBDA(const member_type& teamMember) {
+          if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
+            return;
+
+          auto firstPixel = moduleStart(1 + teamMember.league_rank());
+          auto first = firstPixel + teamMember.team_rank();
+
+          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
+              continue;
+            d_hist(teamMember.league_rank()).fill(y(i), i - firstPixel);
+          }
+
+          const uint32_t hist_size = d_hist(teamMember.league_rank()).size();
+
+#ifndef KOKKOS_BACKEND_SERIAL
+          const uint32_t maxiter = 16;
+#else
+          const uint32_t maxiter = hist_size;
+#endif
+
+          constexpr int maxNeighbours = 10;
+          assert((hist_size / teamMember.team_size()) <= maxiter);
+      // nearest neighbour
+
+#ifdef KOKKOS_BACKEND_CUDA
+          uint16_t nn[maxiter][maxNeighbours];
+          uint8_t nnn[maxiter];
+
+          for (uint32_t k = 0; k < maxiter; ++k) {
+            nnn[k] = 0;
+            for (uint32_t l = 0; l < maxNeighbours; ++l)
+              nn[k][l] = 0;
+          }
+#else
+
+          uint16_t** nn = new uint16_t*[maxiter];
+          uint8_t* nnn = new uint8_t[maxiter];
+          for (uint32_t k = 0; k < maxiter; ++k) {
+            nnn[k] = 0;
+            nn[k] = new uint16_t[maxNeighbours];
+            // cuda version does not iniitalize nn
+            for (uint32_t l = 0; l < maxNeighbours; ++l)
+              nn[k][l] = 0;
+          }
+#endif
+
+          teamMember.team_barrier();  // for hit filling!
+
+          // fill NN
+          auto thisModuleId = id(firstPixel);
+          for (uint32_t j = teamMember.team_rank(), k = 0U; j < hist_size; j += teamMember.team_size(), ++k) {
+            assert(k < maxiter);
+            auto p = d_hist(teamMember.league_rank()).begin() + j;
+            auto i = *p + firstPixel;
+            assert(id(i) != ::gpuClustering::InvId);
+            assert(id(i) == thisModuleId);  // same module
+            int be = Hist::bin(y(i) + 1);
+            auto e = d_hist(teamMember.league_rank()).end(be);
+            ++p;
+            assert(0 == nnn[k]);
+            for (; p < e; ++p) {
+              auto m = (*p) + firstPixel;
+              assert(m != i);
+              assert(int(y(m)) - int(y(i)) >= 0);
+              assert(int(y(m)) - int(y(i)) <= 1);
+              if (std::abs(int(x(m)) - int(x(i))) > 1)
+                continue;
+              auto l = nnn[k]++;
+              assert(l < maxNeighbours);
+              nn[k][l] = *p;
+            }
+          }
+
+          // for each pixel, look at all the pixels until the end of the module;
+          // when two valid pixels within +/- 1 in x or y are found, set their id to the minimum;
+          // after the loop, all the pixel in each cluster should have the id equeal to the lowest
+          // pixel in the cluster ( clus[i] == i ).
+          int more = 1;
+          int nloops = 0;
+          while (more) {
+            if (1 == nloops % 2) {
+              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist(teamMember.league_rank()).size();
+                   j += teamMember.team_size(), ++k) {
+                auto p = d_hist(teamMember.league_rank()).begin() + j;
+                auto i = *p + firstPixel;
+                auto m = clusterId(i);
+                while (m != clusterId(m)) {
+                  m = clusterId(m);
+                }
+                clusterId(i) = m;
+              }
+            } else {
+              more = 0;
+              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist(teamMember.league_rank()).size();
+                   j += teamMember.team_size(), ++k) {
+                auto p = d_hist(teamMember.league_rank()).begin() + j;
+                auto i = *p + firstPixel;
+                for (uint16_t kk = 0; kk < nnn[k]; ++kk) {
+                  auto l = nn[k][kk];
+                  auto m = l + firstPixel;
+                  assert(m != i);
+                  auto old = Kokkos::atomic_fetch_min(&clusterId(m), clusterId(i));
+                  if (old != clusterId(i)) {
+                    // end the loop only if no changes were applied
+                    more = 1;
+                  }
+                  Kokkos::atomic_fetch_min(&clusterId(i), old);
+                }  // nnloop
+              }    // pixel loop
+            }
+            ++nloops;
+            teamMember.team_reduce(Kokkos::Sum<typeof(more)>(more));
+          }  // end while
+
+          shared_team_view foundClusters(teamMember.team_scratch(shared_view_level));
+          foundClusters() = 0;
+          teamMember.team_barrier();
+
+          // find the number of different clusters, identified by a pixels with clus[i] == i;
+          // mark these pixels with a negative id.
+          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
+              continue;
+            if (clusterId(i) == i) {
+              auto old = Kokkos::atomic_fetch_add(&foundClusters(), 1);
+              assert(foundClusters() < 0xffffffff);
+              clusterId(i) = -(old + 1);
+            }
+          }
+          teamMember.team_barrier();
+
+          // propagate the negative id to all the pixels in the cluster.
+          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
+              continue;
+            if (clusterId(i) >= 0) {
+              // mark each pixel in a cluster with the same id as the first one
+              clusterId(i) = clusterId(clusterId(i));
+            }
+          }
+          teamMember.team_barrier();
+
+          // adjust the cluster id to be a positive value starting from 0
+          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+            if (id(i) == ::gpuClustering::InvId) {  // skip invalid pixels
+              clusterId(i) = -9999;
+              continue;
+            }
+            clusterId(i) = -clusterId(i) - 1;
+          }
+          teamMember.team_barrier();
+
+          if (teamMember.team_rank() == 0) {
+            nClustersInModule(thisModuleId) = foundClusters();
+            moduleId(teamMember.league_rank()) = thisModuleId;
+          }
+        });
+  }  // end findClus()
+}  // namespace gpuClustering
 #endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h

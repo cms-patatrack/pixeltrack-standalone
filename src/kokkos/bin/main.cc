@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "BeamSpotToKokkos");
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-#ifdef TODO
         edmodules.emplace_back(prefix + "SiPixelRecHitKokkos");
+#ifdef TODO
         edmodules.emplace_back(prefix + "CAHitNtupletKokkos");
         edmodules.emplace_back(prefix + "PixelVertexProducerKokkos");
 #endif

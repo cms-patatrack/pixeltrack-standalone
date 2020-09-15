@@ -11,7 +11,7 @@ public:
       : moduleStart_d{"moduleStart_d", maxClusters + 1},
         clusInModule_d{"clusInModule_d", maxClusters},
         moduleId_d{"moduleId_d", maxClusters},
-        clusModuleStart_d{"clusModuleStart_d", maxClusters} {}
+        clusModuleStart_d{"clusModuleStart_d", maxClusters + 1} {}
   ~SiPixelClustersKokkos() = default;
 
   SiPixelClustersKokkos(const SiPixelClustersKokkos &) = delete;

@@ -47,6 +47,18 @@ void test() {
       std::cout << "Team " << iTeam << " element " << i << " " << data_h[iTeam * ELEMENTS_PER_TEAM + i] << std::endl;
     }
   }
+
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(MemberType const& teamMember) {
+        int flag = 0;
+        while (flag > 50) {
+          if (teamMember.team_rank() == 1)
+            flag = 1;
+          else
+            flag = 0;
+          teamMember.team_reduce(Kokkos::Sum<typeof(flag)>(flag));
+        }
+      });
 }
 
 int main() {
