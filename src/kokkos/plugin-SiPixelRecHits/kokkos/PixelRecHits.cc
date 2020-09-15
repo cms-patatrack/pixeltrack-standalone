@@ -9,6 +9,7 @@
 #endif
 
 #include "CondFormats/pixelCPEforGPU.h"
+//#include "KokkosCore/kokkos_assert.h"
 
 #include "PixelRecHits.h"
 #include "gpuPixelRecHits.h"
@@ -63,7 +64,9 @@ namespace KOKKOS_NAMESPACE {
         auto hitsLayerStart = hits_d.hitsLayerStart();
         Kokkos::parallel_for(
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, 11), KOKKOS_LAMBDA(const size_t i) {
-              assert(0 == clusModuleStart[0]);
+              // TODO: for some reason uncommenting the assert leads to
+              // cudaFuncGetAttributes( &attr, cuda_parallel_launch_local_memory<DriverType>) error( cudaErrorInvalidDeviceFunction): invalid device function .../pixeltrack-standalone/external/kokkos/install/include/Cuda/Kokkos_Cuda_KernelLaunch.hpp:448
+              //assert(0 == clusModuleStart[0]);
 
               hitsLayerStart[i] = clusModuleStart[cpeParams().layerGeometry().layerStart[i]];
 #ifdef GPU_DEBUG
