@@ -30,8 +30,11 @@ public:
 
   Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
   Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
-  Kokkos::View<Hist*, MemorySpace> phiBinner() { return m_hist; }
-  Kokkos::View<uint16_t, MemorySpace> iphi() { return m_iphi; }
+  Kokkos::View<Hist, MemorySpace> phiBinner() { return m_hist; }
+  Kokkos::View<int16_t*, MemorySpace> iphi() { return m_iphi; }
+
+  Kokkos::View<uint32_t const*, MemorySpace> c_hitsLayerStart() { return m_hitsLayerStart; }
+  Kokkos::View<int16_t const*, MemorySpace> c_iphi() { return m_iphi; }
 
 #ifdef TODO
   // only the local coord and detector index
