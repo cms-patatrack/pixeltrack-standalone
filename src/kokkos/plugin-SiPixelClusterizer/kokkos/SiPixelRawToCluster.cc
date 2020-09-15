@@ -142,8 +142,8 @@ namespace KOKKOS_NAMESPACE {
                                fedCounter,
                                useQuality_,
                                includeErrors_,
-                               false  // debug
-    );
+                               false,  // debug
+                               KokkosExecSpace());
 
     // TODO: synchronize explicitly for now
     KokkosExecSpace().fence();
