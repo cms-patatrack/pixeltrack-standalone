@@ -17,42 +17,47 @@
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelDoublets {
-#ifdef TODO
-    //  __device__
-    //  __forceinline__
-    __global__ void fishbone(GPUCACell::Hits const* __restrict__ hhp,
-                             GPUCACell* cells,
-                             uint32_t const* __restrict__ nCells,
-                             GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
-                             uint32_t nHits,
-                             bool checkTrack) {
+    KOKKOS_INLINE_FUNCTION void fishbone(TrackingRecHit2DSOAView const* __restrict__ hhp,
+                                         Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
+                                         Kokkos::View<uint32_t, KokkosExecSpace> nCells,  // not used
+                                         Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+                                         uint32_t nHits,
+                                         bool checkTrack,
+                                         const uint32_t stride,
+                                         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
       constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
       auto const& hh = *hhp;
       // auto layer = [&](uint16_t id) { return hh.cpeParams().layer(id); };
 
+      const int teamRank = teamMember.team_rank();
+      const int teamSize = teamMember.team_size();
+      const int leagueRank = teamMember.league_rank();
+      const int leagueSize = teamMember.league_size();
+
       // x run faster...
-      auto firstY = threadIdx.y + blockIdx.y * blockDim.y;
-      auto firstX = threadIdx.x;
+      const uint32_t blockDim = teamSize / stride;
+      uint32_t firstX = teamRank % stride;
+      uint32_t firstY = leagueRank * blockDim + teamRank / stride;
 
       float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
       uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
       uint32_t cc[maxCellsPerHit];
 
-      for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
-        auto const& vc = isOuterHitOfCell[idy];
+      for (int idy = firstY, nt = nHits; idy < nt; idy += leagueSize * blockDim) {
+        auto const& vc = isOuterHitOfCell(idy);
         auto s = vc.size();
         if (s < 2)
           continue;
         // if alligned kill one of the two.
         // in principle one could try to relax the cut (only in r-z?) for jumping-doublets
-        auto const& c0 = cells[vc[0]];
+        auto const& c0 = cells(vc[0]);
         auto xo = c0.get_outer_x(hh);
         auto yo = c0.get_outer_y(hh);
         auto zo = c0.get_outer_z(hh);
         auto sg = 0;
         for (int32_t ic = 0; ic < s; ++ic) {
-          auto& ci = cells[vc[ic]];
+          auto& ci = cells(vc[ic]);
           if (0 == ci.theUsed)
             continue;  // for triplets equivalent to next
           if (checkTrack && ci.tracks().empty())
@@ -69,10 +74,10 @@ namespace KOKKOS_NAMESPACE {
         if (sg < 2)
           continue;
         // here we parallelize
-        for (int32_t ic = firstX; ic < sg - 1; ic += blockDim.x) {
-          auto& ci = cells[cc[ic]];
+        for (int32_t ic = firstX; ic < sg - 1; ic += stride) {
+          auto& ci = cells(cc[ic]);
           for (auto jc = ic + 1; jc < sg; ++jc) {
-            auto& cj = cells[cc[jc]];
+            auto& cj = cells(cc[jc]);
             // must be different detectors (in the same layer)
             //        if (d[ic]==d[jc]) continue;
             // || l[ic]!=l[jc]) continue;
@@ -90,7 +95,6 @@ namespace KOKKOS_NAMESPACE {
         }    // ci
       }      // hits
     }
-#endif
   }  // namespace gpuPixelDoublets
 }  // namespace KOKKOS_NAMESPACE
 

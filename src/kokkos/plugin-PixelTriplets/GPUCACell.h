@@ -275,7 +275,6 @@ public:
             ((!startAt0) && hole0(hh, cells[tmpNtuplet[0]])))
 #endif
         {
-#ifdef TODO
           hindex_type hits[6];
           auto nh = 0U;
           for (auto c : tmpNtuplet) {
@@ -288,7 +287,6 @@ public:
               cells[c].addTrack(it, cellTracks);
             quality[it] = bad;  // initialize to bad
           }
-#endif
         }
       }
     }

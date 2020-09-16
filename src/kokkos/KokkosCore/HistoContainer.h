@@ -130,6 +130,14 @@ namespace cms {
           });
     }
 
+    template <typename Assoc, typename ExecSpace>
+    void finalizeBulk(Kokkos::View<AtomicPairCounter, ExecSpace> const apc, Assoc* assoc, ExecSpace const& execSpace) {
+      Kokkos::parallel_for(
+          "finalizeBulk", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Assoc::totbins()), KOKKOS_LAMBDA(const int& i) {
+            assoc->bulkFinalizeFill(apc, i);
+          });
+    }
+
   }  // namespace kokkos
 }  // namespace cms
 
@@ -251,6 +259,16 @@ public:
                                           index_type const* v,
                                           uint32_t n) {
     auto c = apc().add(n);
+    if (c.m >= nbins())
+      return -int32_t(c.m);
+    off[c.m] = c.n;
+    for (uint32_t j = 0; j < n; ++j)
+      bins[c.n + j] = v[j];
+    return c.m;
+  }
+
+  KOKKOS_INLINE_FUNCTION int32_t bulkFill(AtomicPairCounter& apc, index_type const* v, uint32_t n) {
+    auto c = apc.add(n);
     if (c.m >= nbins())
       return -int32_t(c.m);
     off[c.m] = c.n;

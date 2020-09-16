@@ -114,40 +114,36 @@ namespace KOKKOS_NAMESPACE {
     for (auto it : thisCell.tracks())
       quality[it] = bad;
   }
-#ifdef TODO
-  __global__ void kernel_earlyDuplicateRemover(GPUCACell const *cells,
-                                               uint32_t const *__restrict__ nCells,
-                                               HitContainer *foundNtuplets,
-                                               Quality *quality) {
+
+  KOKKOS_INLINE_FUNCTION void kernel_earlyDuplicateRemover(Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+                                                           HitContainer *foundNtuplets,
+                                                           Quality *quality,
+                                                           const size_t idx) {
     // constexpr auto bad = trackQuality::bad;
     constexpr auto dup = trackQuality::dup;
     // constexpr auto loose = trackQuality::loose;
 
-    assert(nCells);
-    auto first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
-      auto const &thisCell = cells[idx];
+    auto const &thisCell = cells(idx);
 
-      if (thisCell.tracks().size() < 2)
-        continue;
-      //if (0==thisCell.theUsed) continue;
-      // if (thisCell.theDoubletId < 0) continue;
+    if (thisCell.tracks().size() < 2)
+      return;
+    //if (0==thisCell.theUsed) continue;
+    // if (thisCell.theDoubletId < 0) continue;
 
-      uint32_t maxNh = 0;
+    uint32_t maxNh = 0;
 
-      // find maxNh
-      for (auto it : thisCell.tracks()) {
-        auto nh = foundNtuplets->size(it);
-        maxNh = std::max(nh, maxNh);
-      }
+    // find maxNh
+    for (auto it : thisCell.tracks()) {
+      auto nh = foundNtuplets->size(it);
+      maxNh = std::max(nh, maxNh);
+    }
 
-      for (auto it : thisCell.tracks()) {
-        if (foundNtuplets->size(it) != maxNh)
-          quality[it] = dup;  //no race:  simple assignment of the same constant
-      }
+    for (auto it : thisCell.tracks()) {
+      if (foundNtuplets->size(it) != maxNh)
+        quality[it] = dup;  //no race:  simple assignment of the same constant
     }
   }
-#endif  // TODO
+
   KOKKOS_INLINE_FUNCTION void kernel_fastDuplicateRemover(GPUCACell const *__restrict__ cells,
                                                           HitContainer const *__restrict__ foundNtuplets,
                                                           TkSoA *__restrict__ tracks,
@@ -182,39 +178,48 @@ namespace KOKKOS_NAMESPACE {
         tracks->quality(it) = dup;  //no race:  simple assignment of the same constant
     }
   }
-#ifdef TODO
-  __global__ void kernel_connect(AtomicPairCounter *apc1,
-                                 AtomicPairCounter *apc2,  // just to zero them,
-                                 GPUCACell::Hits const *__restrict__ hhp,
-                                 GPUCACell *cells,
-                                 uint32_t const *__restrict__ nCells,
-                                 CellNeighborsVector *cellNeighbors,
-                                 GPUCACell::OuterHitOfCell const *__restrict__ isOuterHitOfCell,
-                                 float hardCurvCut,
-                                 float ptmin,
-                                 float CAThetaCutBarrel,
-                                 float CAThetaCutForward,
-                                 float dcaCutInnerTriplet,
-                                 float dcaCutOuterTriplet) {
+
+  KOKKOS_INLINE_FUNCTION void kernel_connect(
+      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc1,
+      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc2,  // just to zero them,
+      TrackingRecHit2DSOAView const *__restrict__ hhp,
+      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+      Kokkos::View<uint32_t, KokkosExecSpace> nCells,
+      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,
+      Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace> isOuterHitOfCell,
+      float hardCurvCut,
+      float ptmin,
+      float CAThetaCutBarrel,
+      float CAThetaCutForward,
+      float dcaCutInnerTriplet,
+      float dcaCutOuterTriplet,
+      const uint32_t stride,
+      const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+    const int teamRank = teamMember.team_rank();
+    const int teamSize = teamMember.team_size();
+    const int leagueRank = teamMember.league_rank();
+    const int leagueSize = teamMember.league_size();
+
+    const uint32_t blockDim = teamSize / stride;
+    uint32_t first = teamRank % stride;
+    uint32_t firstCellIndex = leagueRank * blockDim + teamRank / stride;
+
     auto const &hh = *hhp;
 
-    auto firstCellIndex = threadIdx.y + blockIdx.y * blockDim.y;
-    auto first = threadIdx.x;
-    auto stride = blockDim.x;
-
     if (0 == (firstCellIndex + first)) {
-      (*apc1) = 0;
-      (*apc2) = 0;
+      (apc1()) = 0;
+      (apc2()) = 0;
     }  // ready for next kernel
 
-    for (int idx = firstCellIndex, nt = (*nCells); idx < nt; idx += gridDim.y * blockDim.y) {
+    for (int idx = firstCellIndex, nt = (nCells()); idx < nt; idx += leagueSize * blockDim) {
       auto cellIndex = idx;
-      auto &thisCell = cells[idx];
+      auto &thisCell = cells(idx);
       //if (thisCell.theDoubletId < 0 || thisCell.theUsed>1)
       //  continue;
       auto innerHitId = thisCell.get_inner_hit_id();
-      int numberOfPossibleNeighbors = isOuterHitOfCell[innerHitId].size();
-      auto vi = isOuterHitOfCell[innerHitId].data();
+      int numberOfPossibleNeighbors = isOuterHitOfCell(innerHitId).size();
+      // const and __restrict__ qualifiers to indicate read-only condition
+      const auto *__restrict__ vi = isOuterHitOfCell(innerHitId).data();
 
       constexpr uint32_t last_bpix1_detIndex = 96;
       constexpr uint32_t last_barrel_detIndex = 1184;
@@ -226,8 +231,10 @@ namespace KOKKOS_NAMESPACE {
       auto isBarrel = thisCell.get_inner_detIndex(hh) < last_barrel_detIndex;
 
       for (int j = first; j < numberOfPossibleNeighbors; j += stride) {
-        auto otherCell = __ldg(vi + j);
-        auto &oc = cells[otherCell];
+        // auto otherCell = __ldg(vi + j); __ldg is a device-only intrinsic. Thus using const and __restrict__
+        // qualifiers for vi to increase the likelihood that the compiler will detect the read-only condition.
+        auto otherCell = vi[j];
+        auto &oc = cells(otherCell);
         // if (cells[otherCell].theDoubletId < 0 ||
         //    cells[otherCell].theUsed>1 )
         //  continue;
@@ -248,7 +255,7 @@ namespace KOKKOS_NAMESPACE {
                             oc,
                             oc.get_inner_detIndex(hh) < last_bpix1_detIndex ? dcaCutInnerTriplet : dcaCutOuterTriplet,
                             hardCurvCut)) {  // FIXME tune cuts
-          oc.addOuterNeighbor(cellIndex, *cellNeighbors);
+          oc.addOuterNeighbor(cellIndex, cellNeighbors());
           thisCell.theUsed |= 1;
           oc.theUsed |= 1;
         }
@@ -256,84 +263,76 @@ namespace KOKKOS_NAMESPACE {
     }    // loop on outer cells
   }
 
-  __global__ void kernel_find_ntuplets(GPUCACell::Hits const *__restrict__ hhp,
-                                       GPUCACell *__restrict__ cells,
-                                       uint32_t const *nCells,
-                                       CellTracksVector *cellTracks,
-                                       HitContainer *foundNtuplets,
-                                       AtomicPairCounter *apc,
-                                       Quality *__restrict__ quality,
-                                       unsigned int minHitsPerNtuplet) {
+  KOKKOS_INLINE_FUNCTION void kernel_find_ntuplets(
+      TrackingRecHit2DSOAView const *__restrict__ hhp,
+      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,
+      HitContainer *foundNtuplets,
+      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc,
+      Quality *__restrict__ quality,
+      unsigned int minHitsPerNtuplet,
+      const size_t idx) {
     // recursive: not obvious to widen
     auto const &hh = *hhp;
 
-    auto first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
-      auto const &thisCell = cells[idx];
-      if (thisCell.theDoubletId < 0)
-        continue;  // cut by earlyFishbone
+    auto const &thisCell = cells(idx);
+    if (thisCell.theDoubletId < 0)
+      return;  // cut by earlyFishbone
 
-      auto pid = thisCell.theLayerPairId;
-      auto doit = minHitsPerNtuplet > 3 ? pid < 3 : pid < 8 || pid > 12;
-      if (doit) {
-        GPUCACell::TmpTuple stack;
-        stack.reset();
-        thisCell.find_ntuplets(
-            hh, cells, *cellTracks, *foundNtuplets, *apc, quality, stack, minHitsPerNtuplet, pid < 3);
-        assert(stack.empty());
-        // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());
-      }
+    auto pid = thisCell.theLayerPairId;
+    auto doit = minHitsPerNtuplet > 3 ? pid < 3 : pid < 8 || pid > 12;
+    if (doit) {
+      GPUCACell::TmpTuple stack;
+      stack.reset();
+      thisCell.find_ntuplets(
+          hh, cells.data(), cellTracks(), *foundNtuplets, apc(), quality, stack, minHitsPerNtuplet, pid < 3);
+      assert(stack.empty());
+      // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());
     }
   }
 
-  __global__ void kernel_mark_used(GPUCACell::Hits const *__restrict__ hhp,
-                                   GPUCACell *__restrict__ cells,
-                                   uint32_t const *nCells) {
-    // auto const &hh = *hhp;
-    auto first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
-      auto &thisCell = cells[idx];
-      if (!thisCell.tracks().empty())
-        thisCell.theUsed |= 2;
-    }
+  KOKKOS_INLINE_FUNCTION void kernel_mark_used(TrackingRecHit2DSOAView const *__restrict__ hhp,  // not used
+                                               Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+                                               const size_t idx) {
+    auto &thisCell = cells(idx);
+    if (!thisCell.tracks().empty())
+      thisCell.theUsed |= 2;
   }
 
-  __global__ void kernel_countMultiplicity(HitContainer const *__restrict__ foundNtuplets,
-                                           Quality const *__restrict__ quality,
-                                           CAConstants::TupleMultiplicity *tupleMultiplicity) {
-    auto first = blockIdx.x * blockDim.x + threadIdx.x;
-    for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
-      auto nhits = foundNtuplets->size(it);
-      if (nhits < 3)
-        continue;
-      if (quality[it] == trackQuality::dup)
-        continue;
-      assert(quality[it] == trackQuality::bad);
-      if (nhits > 5)
-        printf("wrong mult %d %d\n", it, nhits);
-      assert(nhits < 8);
-      tupleMultiplicity->countDirect(nhits);
-    }
+  KOKKOS_INLINE_FUNCTION void kernel_countMultiplicity(HitContainer const *__restrict__ foundNtuplets,
+                                                       Quality const *__restrict__ quality,
+                                                       CAConstants::TupleMultiplicity *tupleMultiplicity,
+                                                       const int it) {
+    //for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
+    auto nhits = foundNtuplets->size(it);
+    if (nhits < 3)
+      return;
+    if (quality[it] == trackQuality::dup)
+      return;
+    assert(quality[it] == trackQuality::bad);
+    if (nhits > 5)
+      printf("wrong mult %d %d\n", it, nhits);
+    assert(nhits < 8);
+    tupleMultiplicity->countDirect(nhits);
   }
 
-  __global__ void kernel_fillMultiplicity(HitContainer const *__restrict__ foundNtuplets,
-                                          Quality const *__restrict__ quality,
-                                          CAConstants::TupleMultiplicity *tupleMultiplicity) {
-    auto first = blockIdx.x * blockDim.x + threadIdx.x;
-    for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
-      auto nhits = foundNtuplets->size(it);
-      if (nhits < 3)
-        continue;
-      if (quality[it] == trackQuality::dup)
-        continue;
-      assert(quality[it] == trackQuality::bad);
-      if (nhits > 5)
-        printf("wrong mult %d %d\n", it, nhits);
-      assert(nhits < 8);
-      tupleMultiplicity->fillDirect(nhits, it);
-    }
+  KOKKOS_INLINE_FUNCTION void kernel_fillMultiplicity(HitContainer const *__restrict__ foundNtuplets,
+                                                      Quality const *__restrict__ quality,
+                                                      CAConstants::TupleMultiplicity *tupleMultiplicity,
+                                                      const int it) {
+    //for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
+    auto nhits = foundNtuplets->size(it);
+    if (nhits < 3)
+      return;
+    if (quality[it] == trackQuality::dup)
+      return;
+    assert(quality[it] == trackQuality::bad);
+    if (nhits > 5)
+      printf("wrong mult %d %d\n", it, nhits);
+    assert(nhits < 8);
+    tupleMultiplicity->fillDirect(nhits, it);
   }
-#endif  // TODO
+
   KOKKOS_INLINE_FUNCTION void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
                                                     TkSoA const *__restrict__ tracks,
                                                     CAHitNtupletGeneratorKernels::QualityCuts cuts,
