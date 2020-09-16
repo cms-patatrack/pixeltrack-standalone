@@ -31,44 +31,51 @@ namespace KOKKOS_NAMESPACE {
   using TkSoA = pixelTrack::TrackSoA;
   using HitContainer = pixelTrack::HitContainer;
 
-#ifdef TODO
-  __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
-                                        CAConstants::TupleMultiplicity *tupleMultiplicity,
-                                        AtomicPairCounter *apc,
-                                        GPUCACell const *__restrict__ cells,
-                                        uint32_t const *__restrict__ nCells,
-                                        CellNeighborsVector const *cellNeighbors,
-                                        CellTracksVector const *cellTracks,
-                                        GPUCACell::OuterHitOfCell const *__restrict__ isOuterHitOfCell,
-                                        uint32_t nHits,
-                                        uint32_t maxNumberOfDoublets,
-                                        CAHitNtupletGeneratorKernelsGPU::Counters *counters) {
-    auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  // TeamPolicy instead of RangePolicy due to loops with different iteration counts
+  KOKKOS_INLINE_FUNCTION void kernel_checkOverflows(
+      HitContainer const *foundNtuplets,
+      Kokkos::View<TupleMultiplicity, KokkosExecSpace> tupleMultiplicity,
+      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc,
+      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+      Kokkos::View<uint32_t, KokkosExecSpace> nCells,
+      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used
+      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used
+      Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace> isOuterHitOfCell,
+      uint32_t nHits,
+      uint32_t maxNumberOfDoublets,
+      cAHitNtupletGenerator::Counters *counters,
+      const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+    const int teamRank = teamMember.team_rank();
+    const int teamSize = teamMember.team_size();
+    const int leagueRank = teamMember.league_rank();
+    const int leagueSize = teamMember.league_size();
+
+    auto first = teamRank + leagueRank * teamSize;
 
     auto &c = *counters;
     // counters once per event
     if (0 == first) {
-      atomicAdd(&c.nEvents, 1);
-      atomicAdd(&c.nHits, nHits);
-      atomicAdd(&c.nCells, *nCells);
-      atomicAdd(&c.nTuples, apc->get().m);
-      atomicAdd(&c.nFitTracks, tupleMultiplicity->size());
+      Kokkos::atomic_add<unsigned long long>(&c.nEvents, 1);
+      Kokkos::atomic_add<unsigned long long>(&c.nHits, nHits);
+      Kokkos::atomic_add<unsigned long long>(&c.nCells, nCells());
+      Kokkos::atomic_add<unsigned long long>(&c.nTuples, apc().get().m);
+      Kokkos::atomic_add<unsigned long long>(&c.nFitTracks, tupleMultiplicity().size());
     }
 
 #ifdef NTUPLE_DEBUG
     if (0 == first) {
       printf("number of found cells %d, found tuples %d with total hits %d out of %d\n",
-             *nCells,
-             apc->get().m,
-             apc->get().n,
+             nCells(),
+             apc().get().m,
+             apc().get().n,
              nHits);
-      if (apc->get().m < CAConstants::maxNumberOfQuadruplets()) {
-        assert(foundNtuplets->size(apc->get().m) == 0);
-        assert(foundNtuplets->size() == apc->get().n);
+      if (apc().get().m < CAConstants::maxNumberOfQuadruplets()) {
+        assert(foundNtuplets->size(apc().get().m) == 0);
+        assert(foundNtuplets->size() == apc().get().n);
       }
     }
 
-    for (int idx = first, nt = foundNtuplets->nbins(); idx < nt; idx += gridDim.x * blockDim.x) {
+    for (int idx = first, nt = foundNtuplets->nbins(); idx < nt; idx += leagueSize * teamSize) {
       if (foundNtuplets->size(idx) > 5)
         printf("ERROR %d, %d\n", idx, foundNtuplets->size(idx));
       assert(foundNtuplets->size(idx) < 6);
@@ -78,32 +85,32 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
     if (0 == first) {
-      if (apc->get().m >= CAConstants::maxNumberOfQuadruplets())
+      if (apc().get().m >= CAConstants::maxNumberOfQuadruplets())
         printf("Tuples overflow\n");
-      if (*nCells >= maxNumberOfDoublets)
+      if (nCells() >= maxNumberOfDoublets)
         printf("Cells overflow\n");
     }
 
-    for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
-      auto const &thisCell = cells[idx];
+    for (int idx = first, nt = nCells(); idx < nt; idx += leagueSize * teamSize) {
+      auto const &thisCell = cells(idx);
       if (thisCell.outerNeighbors().full())  //++tooManyNeighbors[thisCell.theLayerPairId];
         printf("OuterNeighbors overflow %d in %d\n", idx, thisCell.theLayerPairId);
       if (thisCell.tracks().full())  //++tooManyTracks[thisCell.theLayerPairId];
         printf("Tracks overflow %d in %d\n", idx, thisCell.theLayerPairId);
       if (thisCell.theDoubletId < 0)
-        atomicAdd(&c.nKilledCells, 1);
+        Kokkos::atomic_add<unsigned long long>(&c.nKilledCells, 1);
       if (0 == thisCell.theUsed)
-        atomicAdd(&c.nEmptyCells, 1);
+        Kokkos::atomic_add<unsigned long long>(&c.nEmptyCells, 1);
       if (thisCell.tracks().empty())
-        atomicAdd(&c.nZeroTrackCells, 1);
+        Kokkos::atomic_add<unsigned long long>(&c.nZeroTrackCells, 1);
     }
 
-    for (int idx = first, nt = nHits; idx < nt; idx += gridDim.x * blockDim.x) {
-      if (isOuterHitOfCell[idx].full())  // ++tooManyOuterHitOfCell;
+    for (int idx = first, nt = nHits; idx < nt; idx += leagueSize * teamSize) {
+      if (isOuterHitOfCell(idx).full())  // ++tooManyOuterHitOfCell;
         printf("OuterHitOfCell overflow %d\n", idx);
     }
   }
-#endif  // TODO
+
   KOKKOS_INLINE_FUNCTION void kernel_fishboneCleaner(GPUCACell const *cells, Quality *quality, const size_t idx) {
     auto const &thisCell = cells[idx];
     if (thisCell.theDoubletId >= 0)
@@ -303,7 +310,6 @@ namespace KOKKOS_NAMESPACE {
                                                        Quality const *__restrict__ quality,
                                                        CAConstants::TupleMultiplicity *tupleMultiplicity,
                                                        const int it) {
-    //for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
     auto nhits = foundNtuplets->size(it);
     if (nhits < 3)
       return;
@@ -320,7 +326,6 @@ namespace KOKKOS_NAMESPACE {
                                                       Quality const *__restrict__ quality,
                                                       CAConstants::TupleMultiplicity *tupleMultiplicity,
                                                       const int it) {
-    //for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
     auto nhits = foundNtuplets->size(it);
     if (nhits < 3)
       return;

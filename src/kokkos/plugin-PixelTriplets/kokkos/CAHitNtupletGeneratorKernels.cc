@@ -84,7 +84,7 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
       Kokkos::parallel_for(
-          "fishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+          "earlyfishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
             gpuPixelDoublets::fishbone(
                 hhp, device_theCells_, device_nCells_, device_isOuterHitOfCell_, nhits, false, stride, teamMember);
           });
@@ -132,47 +132,68 @@ namespace KOKKOS_NAMESPACE {
           }
         });
 
-#ifdef TODO
-    blockSize = 128;
-    numberOfBlocks = (3 * CAConstants::maxTuples() / 4 + blockSize - 1) / blockSize;
     Kokkos::parallel_for(
         "kernel_countMultiplicity",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples()),
         KOKKOS_LAMBDA(const size_t i) {
-          kernel_countMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.data());
+          if (i < tuples_d->nbins()) {
+            kernel_countMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.data(), i);
+          }
         });
-    cms::cuda::launchFinalize(device_tupleMultiplicity_.get(), device_tmws_, cudaStream);
-    kernel_fillMultiplicity<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-        tuples_d, quality_d, device_tupleMultiplicity_.data());
+
+    cms::kokkos::launchFinalize(device_tupleMultiplicity_, execSpace);
+
+    Kokkos::parallel_for(
+        "kernel_fillMultiplicity",
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples()),
+        KOKKOS_LAMBDA(const size_t i) {
+          if (i < tuples_d->nbins()) {
+            kernel_fillMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.data(), i);
+          }
+        });
 
     if (nhits > 1 && m_params.lateFishbone_) {
-      auto nthTot = 128;
-      auto stride = 16;
-      auto blockSize = nthTot / stride;
-      auto numberOfBlocks = (nhits + blockSize - 1) / blockSize;
-      dim3 blks(1, numberOfBlocks, 1);
-      dim3 thrs(stride, blockSize, 1);
-      fishbone<<<blks, thrs, 0, cudaStream>>>(
-          hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
-      cudaCheck(cudaGetLastError());
-    }
-
-    if (m_params.doStats_) {
-      numberOfBlocks = (std::max(nhits, m_params.maxNumberOfDoublets_) + blockSize - 1) / blockSize;
-      kernel_checkOverflows<<<numberOfBlocks, blockSize, 0, cudaStream>>>(tuples_d,
-                                                                          device_tupleMultiplicity_.get(),
-                                                                          device_hitTuple_apc_,
-                                                                          device_theCells_.get(),
-                                                                          device_nCells_,
-                                                                          device_theCellNeighbors_,
-                                                                          device_theCellTracks_,
-                                                                          device_isOuterHitOfCell_.get(),
-                                                                          nhits,
-                                                                          m_params.maxNumberOfDoublets_,
-                                                                          counters_);
-      cudaCheck(cudaGetLastError());
-    }
+#ifdef KOKKOS_BACKEND_CUDA
+      int teamSize = 128;
+      int stride = 16;
+      int blockSize = nthTot / stride;
+      int leagueSize = (nhits + blockSize - 1) / blockSize;
+      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
+#else  // serial
+      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
+      Kokkos::parallel_for(
+          "latefishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+            gpuPixelDoublets::fishbone(
+                hhp, device_theCells_, device_nCells_, device_isOuterHitOfCell_, nhits, true, stride, teamMember);
+          });
+    }
+    if (m_params.doStats_) {
+#ifdef KOKKOS_BACKEND_CUDA
+      teamSize = 128;
+      leagueSize = (std::max(nhits, m_params.maxNumberOfDoublets_) + teamSize - 1) / teamSize;
+      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize);
+#else
+      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, 1, Kokkos::AUTO());
+#endif
+      Kokkos::parallel_for(
+          "kernel_checkOverflows",
+          policy,
+          KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+            kernel_checkOverflows(tuples_d,
+                                  device_tupleMultiplicity_,
+                                  device_hitTuple_apc_,
+                                  device_theCells_,
+                                  device_nCells_,
+                                  device_theCellNeighbors_,
+                                  device_theCellTracks_,
+                                  device_isOuterHitOfCell_,
+                                  nhits,
+                                  m_params.maxNumberOfDoublets_,
+                                  counters_,
+                                  teamMember);
+          });
+    }
 #ifdef GPU_DEBUG
     execSpace.fence();
 #endif
