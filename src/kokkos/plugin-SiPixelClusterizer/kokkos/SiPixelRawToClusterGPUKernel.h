@@ -175,8 +175,8 @@ namespace KOKKOS_NAMESPACE {
                              const uint32_t fedCounter,
                              bool useQualityInfo,
                              bool includeErrors,
-                             bool debug /*,
-                                          cudaStream_t stream*/);
+                             bool debug,
+                             KokkosExecSpace const& execSpace);
 
       std::pair<SiPixelDigisKokkos<KokkosExecSpace>, SiPixelClustersKokkos<KokkosExecSpace>> getResults() {
         digis_d.setNModulesDigis(nModules_Clusters_h(0), nDigis);

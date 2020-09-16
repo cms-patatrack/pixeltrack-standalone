@@ -552,17 +552,18 @@ namespace pixelgpudetails {
 namespace KOKKOS_NAMESPACE {
   namespace pixelgpudetails {
     // Interface to outside
-    void SiPixelRawToClusterGPUKernel::makeClustersAsync(const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace>& cablingMap,
-                                                         const Kokkos::View<const unsigned char*, KokkosExecSpace>& modToUnp,
-                                                         const SiPixelGainForHLTonGPU<KokkosExecSpace>& gains,
-                                                         const WordFedAppender &wordFed,
-                                                         PixelFormatterErrors &&errors,
-                                                         const uint32_t wordCounter,
-                                                         const uint32_t fedCounter,
-                                                         bool useQualityInfo,
-                                                         bool includeErrors,
-                                                         bool debug/*,
-                                                                     cudaStream_t stream*/) {
+    void SiPixelRawToClusterGPUKernel::makeClustersAsync(
+        const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace> &cablingMap,
+        const Kokkos::View<const unsigned char *, KokkosExecSpace> &modToUnp,
+        const SiPixelGainForHLTonGPU<KokkosExecSpace> &gains,
+        const WordFedAppender &wordFed,
+        PixelFormatterErrors &&errors,
+        const uint32_t wordCounter,
+        const uint32_t fedCounter,
+        bool useQualityInfo,
+        bool includeErrors,
+        bool debug,
+        KokkosExecSpace const &execSpace) {
       nDigis = wordCounter;
 
 #ifdef GPU_DEBUG
@@ -586,8 +587,8 @@ namespace KOKKOS_NAMESPACE {
         //Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", wordCounter);
         Kokkos::View<unsigned int *, KokkosExecSpace> word_d("word_d", MAX_FED_WORDS);
         Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", MAX_FED_WORDS);
-        Kokkos::deep_copy(KokkosExecSpace(), word_d, wordFed.word());
-        Kokkos::deep_copy(KokkosExecSpace(), fedId_d, wordFed.fedId());
+        Kokkos::deep_copy(execSpace, word_d, wordFed.word());
+        Kokkos::deep_copy(execSpace, fedId_d, wordFed.fedId());
 
         {
           // need Kokkos::Views as local variables to pass to the lambda
@@ -600,7 +601,7 @@ namespace KOKKOS_NAMESPACE {
           auto error_d = digiErrors_d.error();  // returns nullptr if default-constructed
 
           Kokkos::parallel_for(
-              Kokkos::RangePolicy<KokkosExecSpace>(0, wordCounter), KOKKOS_LAMBDA(const size_t i) {
+              Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, wordCounter), KOKKOS_LAMBDA(const size_t i) {
                 RawToDigi_kernel(cablingMap,
                                  modToUnp,
                                  wordCounter,
@@ -639,7 +640,8 @@ namespace KOKKOS_NAMESPACE {
           auto clusModuleStart_d = clusters_d.clusModuleStart();
 
           Kokkos::parallel_for(
-              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+              Kokkos::RangePolicy<KokkosExecSpace>(
+                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {
                 gpuCalibPixel::calibDigis(moduleInd_d,
                                           xx_d,
@@ -655,7 +657,7 @@ namespace KOKKOS_NAMESPACE {
         }
 
 #ifdef GPU_DEBUG
-        KokkosExecSpace().fence();
+        execSpace.fence();
 #endif
 
 #ifdef GPU_DEBUG
@@ -668,7 +670,8 @@ namespace KOKKOS_NAMESPACE {
           auto moduleStart_d = clusters_d.moduleStart();
           auto clusStart_d = digis_d.clus();
           Kokkos::parallel_for(
-              Kokkos::RangePolicy<KokkosExecSpace>(0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+              Kokkos::RangePolicy<KokkosExecSpace>(
+                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {
                 gpuClustering::countModules(moduleInd_d, moduleStart_d, clusStart_d, wordCounter, i);
               });
@@ -676,7 +679,7 @@ namespace KOKKOS_NAMESPACE {
 
         // read the number of modules into a data member, used by getProduct())
         Kokkos::deep_copy(
-            KokkosExecSpace(), Kokkos::subview(nModules_Clusters_h, 0), Kokkos::subview(clusters_d.moduleStart(), 0));
+            execSpace, Kokkos::subview(nModules_Clusters_h, 0), Kokkos::subview(clusters_d.moduleStart(), 0));
 
 #ifdef KOKKOS_BACKEND_SERIAL
         const uint32_t threadsPerBlock = 1;
@@ -698,10 +701,10 @@ namespace KOKKOS_NAMESPACE {
                                                    int(wordCounter),
                                                    blocks,
                                                    threadsPerBlock,
-                                                   KokkosExecSpace());
+                                                   execSpace);
 
 #ifdef GPU_DEBUG
-        KokkosExecSpace().fence();
+        execSpace.fence();
 #endif
 
         // apply charge cut
@@ -714,23 +717,22 @@ namespace KOKKOS_NAMESPACE {
                                                            int(wordCounter),
                                                            blocks,
                                                            threadsPerBlock,
-                                                           KokkosExecSpace());
+                                                           execSpace);
 
         // count the module start indices already here (instead of
         // rechits) so that the number of clusters/hits can be made
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        ::pixelgpudetails::fillHitsModuleStart(
-            clusters_d.c_clusInModule(), clusters_d.clusModuleStart(), KokkosExecSpace());
+        ::pixelgpudetails::fillHitsModuleStart(clusters_d.c_clusInModule(), clusters_d.clusModuleStart(), execSpace);
 
         // last element holds the number of all clusters
-        Kokkos::deep_copy(KokkosExecSpace(),
+        Kokkos::deep_copy(execSpace,
                           Kokkos::subview(nModules_Clusters_h, 1),
                           Kokkos::subview(clusters_d.clusModuleStart(), ::gpuClustering::MaxNumModules));
 
 #ifdef GPU_DEBUG
-        KokkosExecSpace().fence();
+        execSpace.fence();
 #endif
       }  // end clusterizer scope
     }
