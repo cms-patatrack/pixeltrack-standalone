@@ -98,7 +98,7 @@ namespace KOKKOS_NAMESPACE {
 
   Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
       TrackingRecHit2DKokkos<KokkosExecSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) const {
-    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks;
+    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks("tracks");
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.data();
