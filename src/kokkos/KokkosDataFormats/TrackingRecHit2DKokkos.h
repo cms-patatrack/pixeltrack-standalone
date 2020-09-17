@@ -130,6 +130,7 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   view_h().m_averageGeometry = m_AverageGeometryStore.data();
   view_h().m_cpeParams = cpeParams.data();
   view_h().m_hitsModuleStart = m_hitsModuleStart.data();
+  view_h().m_hitsLayerStart = m_hitsLayerStart.data();
 
   Kokkos::deep_copy(execSpace, m_view, view_h);
 }
