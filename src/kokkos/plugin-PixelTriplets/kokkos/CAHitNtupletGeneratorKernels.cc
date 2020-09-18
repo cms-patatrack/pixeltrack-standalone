@@ -66,25 +66,33 @@ namespace KOKKOS_NAMESPACE {
     auto d_isOuterHitOfCell_ = device_isOuterHitOfCell_;
     auto d_tupleMultiplicity_ = device_tupleMultiplicity_;
 
-
-    Kokkos::parallel_for(
-        "kernel_connect", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
-          kernel_connect(d_hitTuple_apc_,
-                         d_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
-                         hhp,
-                         d_theCells_,
-                         d_nCells_,
-                         d_theCellNeighbors_,  // not used at the moment
-                         d_isOuterHitOfCell_,
-                         m_params.hardCurvCut_,
-                         m_params.ptmin_,
-                         m_params.CAThetaCutBarrel_,
-                         m_params.CAThetaCutForward_,
-                         m_params.dcaCutInnerTriplet_,
-                         m_params.dcaCutOuterTriplet_,
-                         stride,
-                         teamMember);
-        });
+    {
+      // capturing m_params by the lambda leads to illegal memory access with CUDA
+      auto const hardCurvCut = m_params.hardCurvCut_;
+      auto const ptmin = m_params.ptmin_;
+      auto const CAThetaCutBarrel = m_params.CAThetaCutBarrel_;
+      auto const CAThetaCutForward = m_params.CAThetaCutForward_;
+      auto const dcaCutInnerTriplet = m_params.dcaCutInnerTriplet_;
+      auto const dcaCutOuterTriplet = m_params.dcaCutOuterTriplet_;
+      Kokkos::parallel_for(
+          "kernel_connect", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
+            kernel_connect(d_hitTuple_apc_,
+                           d_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
+                           hhp,
+                           d_theCells_,
+                           d_nCells_,
+                           d_theCellNeighbors_,  // not used at the moment
+                           d_isOuterHitOfCell_,
+                           hardCurvCut,
+                           ptmin,
+                           CAThetaCutBarrel,
+                           CAThetaCutForward,
+                           dcaCutInnerTriplet,
+                           dcaCutOuterTriplet,
+                           stride,
+                           teamMember);
+          });
+    }
 
     if (nhits > 1 && m_params.earlyFishbone_) {
 #ifdef KOKKOS_BACKEND_CUDA
@@ -270,7 +278,10 @@ namespace KOKKOS_NAMESPACE {
                                             gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
         tempPolicy{execSpace, 1, Kokkos::AUTO()};
 #endif
-    tempPolicy.set_scratch_size(0, Kokkos::PerTeam(84));  // 21 x 4 = 84 bytes is required
+    // TODO: I do not understand why +2 is needed, the code allocates
+    // one uint32_t in addition of the
+    // CAConstants::maxNumberOfLayerPairs()
+    tempPolicy.set_scratch_size(0, Kokkos::PerTeam((CAConstants::maxNumberOfLayerPairs() + 2) * sizeof(uint32_t)));
     const auto *hhp = hh.view();
 
     gpuPixelDoublets::getDoubletsFromHisto getdoublets(device_theCells_,

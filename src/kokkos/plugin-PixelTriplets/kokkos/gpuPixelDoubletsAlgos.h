@@ -80,7 +80,7 @@ namespace KOKKOS_NAMESPACE {
         for (uint32_t i = 1; i < nPairs; ++i) {
           innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
         }
-        ntot[0] = innerLayerCumulativeSize[nPairs - 1]; // this line causes the failure
+        ntot[0] = innerLayerCumulativeSize[nPairs - 1];
       }
       teamMember.team_barrier();
 
