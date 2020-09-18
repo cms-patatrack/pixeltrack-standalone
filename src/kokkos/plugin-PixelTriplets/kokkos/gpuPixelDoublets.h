@@ -15,16 +15,11 @@ namespace KOKKOS_NAMESPACE {
 
     KOKKOS_INLINE_FUNCTION void initDoublets(
         Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
-        int nHits,
         Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
         Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
-        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
+        const size_t i) {
       assert(isOuterHitOfCell.data());
-      const int leagueSize = teamMember.league_size();
-      const int teamSize = teamMember.team_size();
-      int first = teamMember.league_rank() * teamSize + teamMember.team_rank();
-      for (int i = first; i < nHits; i += leagueSize * teamSize)
-        isOuterHitOfCell(i).reset();
+      isOuterHitOfCell(i).reset();
     }
 
     constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y
