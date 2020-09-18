@@ -13,15 +13,6 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    KOKKOS_INLINE_FUNCTION void initDoublets(
-        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
-        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
-        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
-        const size_t i) {
-      assert(isOuterHitOfCell.data());
-      isOuterHitOfCell(i).reset();
-    }
-
     constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y
     constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
 

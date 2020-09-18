@@ -228,10 +228,14 @@ namespace KOKKOS_NAMESPACE {
     device_isOuterHitOfCell_ =
         Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>("device_isOuterHitOfCell_", std::max(1U, nhits));
 
-    Kokkos::parallel_for(
-        "initDoublets", Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits), KOKKOS_LAMBDA(const size_t i) {
-          gpuPixelDoublets::initDoublets(device_isOuterHitOfCell_, device_theCellNeighbors_, device_theCellTracks_, i);
-        });
+    {
+      auto isOuterHitOfCell = device_isOuterHitOfCell_;
+      Kokkos::parallel_for(
+          "initDoublets", Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits), KOKKOS_LAMBDA(const size_t i) {
+            assert(isOuterHitOfCell.data());
+            isOuterHitOfCell(i).reset();
+          });
+    }
 
     device_theCells_ = Kokkos::View<GPUCACell *, KokkosExecSpace>("device_theCells_", m_params.maxNumberOfDoublets_);
 

@@ -98,7 +98,7 @@ namespace KOKKOS_NAMESPACE {
 
   Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
       TrackingRecHit2DKokkos<KokkosExecSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) const {
-    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks;
+    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks("tracks");
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.data();
@@ -108,6 +108,7 @@ namespace KOKKOS_NAMESPACE {
     fitter.allocateOnGPU(&(tracks().hitIndices), kernels.tupleMultiplicity().data(), tracks.data());
 
     kernels.buildDoublets(hits_d, execSpace);
+#ifdef TODO // for running this time
     kernels.launchKernels(hits_d, tracks, execSpace);
     kernels.fillHitDetIndices(hits_d.view(), tracks, execSpace);  // in principle needed only if Hits not "available"
     if (m_params.useRiemannFit_) {
@@ -116,6 +117,7 @@ namespace KOKKOS_NAMESPACE {
       fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), execSpace);
     }
     kernels.classifyTuples(hits_d, tracks, execSpace);
+#endif
     return tracks;
   }
 }  // namespace KOKKOS_NAMESPACE
