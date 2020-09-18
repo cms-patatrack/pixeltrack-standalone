@@ -270,7 +270,10 @@ namespace KOKKOS_NAMESPACE {
                                             gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
         tempPolicy{execSpace, 1, Kokkos::AUTO()};
 #endif
-    tempPolicy.set_scratch_size(0, Kokkos::PerTeam(84));  // 21 x 4 = 84 bytes is required
+    // TODO: I do not understand why +2 is needed, the code allocates
+    // one uint32_t in addition of the
+    // CAConstants::maxNumberOfLayerPairs()
+    tempPolicy.set_scratch_size(0, Kokkos::PerTeam((CAConstants::maxNumberOfLayerPairs() + 2) * sizeof(uint32_t)));
     const auto *hhp = hh.view();
 
     gpuPixelDoublets::getDoubletsFromHisto getdoublets(device_theCells_,
