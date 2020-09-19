@@ -67,7 +67,7 @@ namespace KOKKOS_NAMESPACE {
     auto d_tupleMultiplicity_ = device_tupleMultiplicity_;
 
     {
-      // capturing m_params by the lambda leads to illegal memory access with CUDA
+      // capturing this by the lambda leads to illegal memory access with CUDA
       auto const hardCurvCut = m_params.hardCurvCut_;
       auto const ptmin = m_params.ptmin_;
       auto const CAThetaCutBarrel = m_params.CAThetaCutBarrel_;
@@ -311,39 +311,45 @@ namespace KOKKOS_NAMESPACE {
     auto const *tuples_d = &tracks_d().hitIndices;
     auto *quality_d = (Quality *)(&tracks_d().m_quality);
 
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
-        KOKKOS_LAMBDA(const size_t i) {
-          kernel_classifyTracks(tuples_d, tracks_d.data(), m_params.cuts_, quality_d, i);
-        });
+    {
+      auto const cuts = m_params.cuts_;
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) { kernel_classifyTracks(tuples_d, tracks_d.data(), cuts, quality_d, i); });
+    }
 
+    auto theCells = device_theCells_;
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
       Kokkos::parallel_for(
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < device_nCells_()) {
-              kernel_fishboneCleaner(device_theCells_.data(), quality_d, i);
+              kernel_fishboneCleaner(theCells.data(), quality_d, i);
             }
           });
     }
 
     // remove duplicates (tracks that share a doublet)
-    Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
-        KOKKOS_LAMBDA(const size_t i) {
-          if (i < device_nCells_()) {
-            kernel_fastDuplicateRemover(device_theCells_.data(), tuples_d, tracks_d.data(), i);
-          }
-        });
+    {
+      auto nCells = device_nCells_;
+      Kokkos::parallel_for(
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < nCells()) {
+              kernel_fastDuplicateRemover(theCells.data(), tuples_d, tracks_d.data(), i);
+            }
+          });
+    }
 
+    auto hitToTuple = device_hitToTuple_;
     if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
       // fill hit->track "map"
       Kokkos::parallel_for(
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
-              kernel_countHitInTracks(tuples_d, quality_d, device_hitToTuple_.data(), i);
+              kernel_countHitInTracks(tuples_d, quality_d, hitToTuple.data(), i);
             }
           });
       cms::kokkos::launchFinalize(device_hitToTuple_, execSpace);
@@ -351,7 +357,7 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
-              kernel_fillHitInTracks(tuples_d, quality_d, device_hitToTuple_.data(), i);
+              kernel_fillHitInTracks(tuples_d, quality_d, hitToTuple.data(), i);
             }
           });
     }
@@ -361,8 +367,8 @@ namespace KOKKOS_NAMESPACE {
       auto hh_view = hh.view();
       Kokkos::parallel_for(
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
-            if (i < device_hitToTuple_().nbins()) {
-              kernel_tripletCleaner(hh_view, tuples_d, tracks_d.data(), quality_d, device_hitToTuple_.data(), i);
+            if (i < hitToTuple().nbins()) {
+              kernel_tripletCleaner(hh_view, tuples_d, tracks_d.data(), quality_d, hitToTuple.data(), i);
             }
           });
     }
@@ -371,8 +377,8 @@ namespace KOKKOS_NAMESPACE {
       // counters (add flag???)
       Kokkos::parallel_for(
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
-            if (i < device_hitToTuple_().nbins()) {
-              kernel_doStatsForHitInTracks(device_hitToTuple_.data(), counters_, i);
+            if (i < hitToTuple().nbins()) {
+              kernel_doStatsForHitInTracks(hitToTuple.data(), counters_, i);
             }
           });
       Kokkos::parallel_for(
@@ -397,7 +403,7 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < std::min(maxPrint, tuples_d->nbins() =)) {
-            kernel_print_found_ntuplets(hh_view, tuples_d, tracks_d, quality_d, device_hitToTuple_data(), 100, iev, i);
+            kernel_print_found_ntuplets(hh_view, tuples_d, tracks_d, quality_d, hitToTuple.data(), 100, iev, i);
           }
         });
 #endif

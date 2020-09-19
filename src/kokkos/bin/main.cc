@@ -103,8 +103,8 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "PixelVertexProducerKokkos");
 #endif
         if (transfer) {
-#ifdef TODO
           edmodules.emplace_back(prefix + "PixelTrackSoAFromKokkos");
+#ifdef TODO
           edmodules.emplace_back(prefix + "PixelVertexSoAFromKokkos");
 #endif
         }
