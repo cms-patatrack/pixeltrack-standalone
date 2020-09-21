@@ -45,14 +45,12 @@ namespace KOKKOS_NAMESPACE {
     assert(teamSize > 0 && 0 == teamSize % 16);
     teamSize *= stride;
 
-    // Current multi-team algorithms are usually based on CUDA implementations which
-    // may not be flexible enough to become a generic parallel solution for all backends.
-    // Thus team policy should be manually handled for each specific backend.
-#ifdef KOKKOS_BACKEND_CUDA
+#ifdef KOKKOS_BACKEND_SERIAL
+    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+    // unit stride loop for serial execution
+    stride = 1;
+#else
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
-#else  // serial
-    // TODO: does the serial backend give correct results (with non-unit-stride loops)
-    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
     const auto *hhp = hh.view();
 
@@ -95,15 +93,16 @@ namespace KOKKOS_NAMESPACE {
     }
 
     if (nhits > 1 && m_params.earlyFishbone_) {
-#ifdef KOKKOS_BACKEND_CUDA
       int teamSize = 128;
       int stride = 16;
       int blockSize = teamSize / stride;
       int leagueSize = (nhits + blockSize - 1) / blockSize;
+#ifdef KOKKOS_BACKEND_SERIAL
+      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+      // unit stride loop for serial execution
+      stride = 1;
+#else
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
-#else  // serial
-      // TODO: does the serial backend give correct results (with non-unit-stride loops)
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
       Kokkos::parallel_for(
           "earlyfishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
@@ -175,14 +174,16 @@ namespace KOKKOS_NAMESPACE {
         });
 
     if (nhits > 1 && m_params.lateFishbone_) {
-#ifdef KOKKOS_BACKEND_CUDA
       int teamSize = 128;
       int stride = 16;
       int blockSize = teamSize / stride;
       int leagueSize = (nhits + blockSize - 1) / blockSize;
+#ifdef KOKKOS_BACKEND_SERIAL
+      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+      // unit stride loop for serial execution
+      stride = 1;
+#else
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
-#else  // serial
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
 #endif
       Kokkos::parallel_for(
           "latefishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
@@ -191,12 +192,12 @@ namespace KOKKOS_NAMESPACE {
           });
     }
     if (m_params.doStats_) {
-#ifdef KOKKOS_BACKEND_CUDA
       teamSize = 128;
       leagueSize = (std::max(nhits, m_params.maxNumberOfDoublets_) + teamSize - 1) / teamSize;
-      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize);
+#ifdef KOKKOS_BACKEND_SERIAL
+      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, 1);
 #else
-      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, 1, Kokkos::AUTO());
+      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize);
 #endif
       Kokkos::parallel_for(
           "kernel_checkOverflows",
@@ -263,7 +264,13 @@ namespace KOKKOS_NAMESPACE {
     }
 
     assert(nActualPairs <= gpuPixelDoublets::nPairs);
-#ifdef KOKKOS_BACKEND_CUDA
+#ifdef KOKKOS_BACKEND_SERIAL
+    int stride = 1;
+    Kokkos::TeamPolicy<KokkosExecSpace,
+                       Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
+                                            gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
+        tempPolicy{execSpace, 1, Kokkos::AUTO()};
+#else
     int stride = 4;
     int teamSize = gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize / stride;
     int leagueSize = (4 * nhits + teamSize - 1) / teamSize;
@@ -271,12 +278,6 @@ namespace KOKKOS_NAMESPACE {
                        Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
                                             gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
         tempPolicy{execSpace, leagueSize, teamSize * stride};
-#else
-    int stride = 1;
-    Kokkos::TeamPolicy<KokkosExecSpace,
-                       Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
-                                            gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
-        tempPolicy{execSpace, 1, Kokkos::AUTO()};
 #endif
     // TODO: I do not understand why +2 is needed, the code allocates
     // one uint32_t in addition of the
