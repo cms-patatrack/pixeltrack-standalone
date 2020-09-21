@@ -51,8 +51,9 @@ namespace KOKKOS_NAMESPACE {
 #ifdef KOKKOS_BACKEND_CUDA
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
 #else  // serial
-    // TODO: does the serial backend give correct results (with non-unit-stride loops)
-    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
+    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+    // unit stride loop for serial execution
+    stride = 1;
 #endif
     const auto *hhp = hh.view();
 
@@ -95,15 +96,16 @@ namespace KOKKOS_NAMESPACE {
     }
 
     if (nhits > 1 && m_params.earlyFishbone_) {
-#ifdef KOKKOS_BACKEND_CUDA
       int teamSize = 128;
       int stride = 16;
       int blockSize = teamSize / stride;
       int leagueSize = (nhits + blockSize - 1) / blockSize;
+#ifdef KOKKOS_BACKEND_CUDA
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
 #else  // serial
-      // TODO: does the serial backend give correct results (with non-unit-stride loops)
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, 1, Kokkos::AUTO()};
+      // unit stride loop for serial execution
+      stride = 1;
 #endif
       Kokkos::parallel_for(
           "earlyfishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
