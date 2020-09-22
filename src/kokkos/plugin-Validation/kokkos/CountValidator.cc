@@ -46,12 +46,8 @@ namespace KOKKOS_NAMESPACE {
         vertexCountToken_(reg.consumes<VertexCount>()),
         digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
         clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>()),
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>())
-#ifdef TODO
-            vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>())
-#endif
-  {
-  }
+        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
+        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
 
   void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     std::stringstream ss;
@@ -88,7 +84,6 @@ namespace KOKKOS_NAMESPACE {
       }
     }
 
-#ifdef TODO
     {
       auto const& count = iEvent.get(vertexCountToken_);
       auto const& vertices = iEvent.get(vertexToken_);
@@ -98,7 +93,6 @@ namespace KOKKOS_NAMESPACE {
         ok = false;
       }
     }
-#endif
 
     ++allEvents;
     if (ok) {

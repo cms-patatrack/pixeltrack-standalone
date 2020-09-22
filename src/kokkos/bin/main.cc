@@ -99,14 +99,10 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "SiPixelRawToCluster");
         edmodules.emplace_back(prefix + "SiPixelRecHitKokkos");
         edmodules.emplace_back(prefix + "CAHitNtupletKokkos");
-#ifdef TODO
         edmodules.emplace_back(prefix + "PixelVertexProducerKokkos");
-#endif
         if (transfer) {
           edmodules.emplace_back(prefix + "PixelTrackSoAFromKokkos");
-#ifdef TODO
           edmodules.emplace_back(prefix + "PixelVertexSoAFromKokkos");
-#endif
         }
         if (validation) {
           edmodules.emplace_back(prefix + "CountValidator");
