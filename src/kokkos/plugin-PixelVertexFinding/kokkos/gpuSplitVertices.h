@@ -79,11 +79,9 @@ namespace KOKKOS_NAMESPACE {
         int maxiter = 20;
 
         // kt-min....
-        // uint8_t can deal with 256 threads/block in maximum
-        uint16_t more = 1;
-        uint16_t* lmore = (uint16_t*)team_member.team_shmem().get_shmem(sizeof(uint16_t) * teamSize);
+        int more = 1;
         while (more) {
-          lmore[teamRank] = 0;
+          more = 0;
           if (0 == teamRank) {
             znew[0] = 0;
             znew[1] = 0;
@@ -102,22 +100,18 @@ namespace KOKKOS_NAMESPACE {
             znew[1] /= wnew[1];
           }
           team_member.team_barrier();
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=, &more](int k) {
             auto d0 = fabs(zz[k] - znew[0]);
             auto d1 = fabs(zz[k] - znew[1]);
             auto newer = d0 < d1 ? 0 : 1;
-            lmore[teamRank] |= newer != newV[k];
+            more |= newer != newV[k];
             newV[k] = newer;
           });
           --maxiter;
           if (maxiter <= 0)
-            lmore[teamRank] = 0;
-          more = 0;
-          team_member.team_barrier();
+            more = 0;
 
-          Kokkos::parallel_reduce(
-              Kokkos::TeamThreadRange(team_member, teamSize), [=](int& i, uint16_t& lsum) { lsum += lmore[i]; }, more);
-          team_member.team_barrier();
+          team_member.team_reduce(Kokkos::Sum<int>(more));
         }
 
         // avoid empty vertices
