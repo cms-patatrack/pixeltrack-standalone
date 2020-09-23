@@ -124,6 +124,12 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, TkSoA::stride()),
           KOKKOS_LAMBDA(const size_t i) { loadTracks(tksoa, vertices_d, workspace_d, ptMin, i); });
 
+#ifdef KOKKOS_BACKEND_SERIAL
+      auto policy = TeamPolicy(execSpace, 1, 1).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#else
+      auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#endif
+
       if (oneKernel_) {
         // implemented only for density clustesrs
 #ifndef THREE_KERNELS
@@ -131,11 +137,9 @@ namespace KOKKOS_NAMESPACE {
         // scratch size is from the unit test (not sure yet if it works here), following comment is also from there
         //FIXME: small scratch pad size will result in runtime error "an illegal memory access was encountered". Current
         // oneKernel test will NOT pass probably due to the high demand of scratch memory from splitVertices kernel
-        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
         vertexFinderOneKernel(vertices_d, workspace_d, vertices_h, minT, eps, errmax, chi2max, execSpace, policy);
         Kokkos::deep_copy(execSpace, vertices_d, vertices_h);
 #else
-        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
         vertexFinderKernel1(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         // one block per vertex...
         Kokkos::parallel_for(
@@ -144,7 +148,6 @@ namespace KOKKOS_NAMESPACE {
         vertexFinderKernel2(vertices_d, workspace_d, vertices_h, execSpace, policy);
 #endif
       } else {  // five kernels
-        auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
         if (useDensity_) {
           clusterTracksByDensityHost(vertices_d, workspace_d, minT, eps, errmax, chi2max, execSpace, policy);
         } else if (useDBSCAN_) {
@@ -159,7 +162,11 @@ namespace KOKKOS_NAMESPACE {
             });
         // one block per vertex...
         Kokkos::parallel_for(
+#ifdef KOKKOS_BACKEND_SERIAL
+            TeamPolicy(execSpace, 1024, 1).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
+#else
             TeamPolicy(execSpace, 1024, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
+#endif
             KOKKOS_LAMBDA(MemberType const& teamMember) { splitVertices(vertices_d, workspace_d, 9.f, teamMember); });
         Kokkos::parallel_for(
             policy, KOKKOS_LAMBDA(Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
