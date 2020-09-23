@@ -35,15 +35,15 @@ namespace KOKKOS_NAMESPACE {
     in.read(reinterpret_cast<char *>(detParams_h.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
     Kokkos::deep_copy(KokkosExecSpace(), detParams_d, detParams_h);
 
-    Kokkos::View<pixelCPEforGPU::LayerGeometry, KokkosExecSpace> layerGeometry_d("layerGeometry_d");
-    auto layerGeometry_h = Kokkos::create_mirror_view(layerGeometry_d);
-    in.read(reinterpret_cast<char *>(layerGeometry_h.data()), sizeof(pixelCPEforGPU::LayerGeometry));
-    Kokkos::deep_copy(KokkosExecSpace(), layerGeometry_d, layerGeometry_h);
-
     Kokkos::View<pixelCPEforGPU::AverageGeometry, KokkosExecSpace> averageGeometry_d("averageGeometry_d");
     auto averageGeometry_h = Kokkos::create_mirror_view(averageGeometry_d);
     in.read(reinterpret_cast<char *>(averageGeometry_h.data()), sizeof(pixelCPEforGPU::AverageGeometry));
     Kokkos::deep_copy(KokkosExecSpace(), averageGeometry_d, averageGeometry_h);
+
+    Kokkos::View<pixelCPEforGPU::LayerGeometry, KokkosExecSpace> layerGeometry_d("layerGeometry_d");
+    auto layerGeometry_h = Kokkos::create_mirror_view(layerGeometry_d);
+    in.read(reinterpret_cast<char *>(layerGeometry_h.data()), sizeof(pixelCPEforGPU::LayerGeometry));
+    Kokkos::deep_copy(KokkosExecSpace(), layerGeometry_d, layerGeometry_h);
 
     Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosExecSpace> params_d("params_d");
     auto params_h = Kokkos::create_mirror_view(params_d);
