@@ -111,21 +111,18 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    Kokkos::parallel_for(
-        "kernel_find_ntuplets",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
-        KOKKOS_LAMBDA(const size_t i) {
-          if (i < d_nCells_()) {
-            kernel_find_ntuplets(hhp,
-                                 d_theCells_,
-                                 d_theCellTracks_,
-                                 tuples_d,
-                                 d_hitTuple_apc_,
-                                 quality_d,
-                                 m_params.minHitsPerNtuplet_,
-                                 i);
-          }
-        });
+    {
+      auto const minHitsPerNtuplet = m_params.minHitsPerNtuplet_;
+      Kokkos::parallel_for(
+          "kernel_find_ntuplets",
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          KOKKOS_LAMBDA(const size_t i) {
+            if (i < d_nCells_()) {
+              kernel_find_ntuplets(
+                  hhp, d_theCells_, d_theCellTracks_, tuples_d, d_hitTuple_apc_, quality_d, minHitsPerNtuplet, i);
+            }
+          });
+    }
 
     if (m_params.doStats_)
       Kokkos::parallel_for(
