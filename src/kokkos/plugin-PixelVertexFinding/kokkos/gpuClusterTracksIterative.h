@@ -78,9 +78,7 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       // cluster seeds only
-      // uint8_t can deal with 256 threads/block in maximum
-      uint16_t more = 1;
-      uint16_t* lmore = (uint16_t*)team_member.team_shmem().get_shmem(sizeof(uint16_t) * teamSize);
+      int more = 1;
       while (more) {
         if (1 == nloops[0] % 2) {
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
@@ -90,7 +88,7 @@ namespace KOKKOS_NAMESPACE {
             iv[i] = m;
           });
         } else {
-          lmore[teamRank] = 0;
+          more = 0;
           // TODO: can't use parallel_for+TeamThreadRange because of "continue"
           for (unsigned k = teamRank; k < localHist->size(); k += teamSize) {
             auto p = localHist->begin() + k;
@@ -110,7 +108,7 @@ namespace KOKKOS_NAMESPACE {
               auto old = Kokkos::atomic_fetch_min(&iv[j], iv[i]);
               if (old != iv[i]) {
                 // end the loop only if no changes were applied
-                lmore[teamRank] = 1;
+                more = 1;
               }
               Kokkos::atomic_fetch_min(&iv[i], old);
             };
@@ -121,13 +119,8 @@ namespace KOKKOS_NAMESPACE {
         }
         if (teamRank == 0)
           ++nloops[0];
-        more = 0;
-        team_member.team_barrier();
 
-        Kokkos::parallel_reduce(
-            Kokkos::TeamThreadRange(team_member, teamSize), [=](int& i, uint16_t& lsum) { lsum += lmore[i]; }, more);
-
-        team_member.team_barrier();
+        team_member.team_reduce(Kokkos::Sum<int>(more));
       }  // while
 
       // collect edges (assign to closest cluster of closest point??? here to closest point)
