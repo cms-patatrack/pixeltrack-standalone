@@ -1,13 +1,10 @@
 #ifndef CUDADataFormats_Common_ProductBase_h
 #define CUDADataFormats_Common_ProductBase_h
 
-#include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include <atomic>
 #include <memory>
 
-#include "CUDACore/SharedStreamPtr.h"
-#include "CUDACore/SharedEventPtr.h"
+#include <CL/sycl.hpp>
 
 namespace cms {
   namespace cuda {
@@ -29,43 +26,33 @@ namespace cms {
       ProductBase(ProductBase&& other)
           : stream_{std::move(other.stream_)},
             event_{std::move(other.event_)},
-            mayReuseStream_{other.mayReuseStream_.load()},
-            device_{other.device_} {}
+            mayReuseStream_{other.mayReuseStream_.load()} {}
       ProductBase& operator=(ProductBase&& other) {
         stream_ = std::move(other.stream_);
         event_ = std::move(other.event_);
         mayReuseStream_ = other.mayReuseStream_.load();
-        device_ = other.device_;
         return *this;
       }
 
-      bool isValid() const { return stream_.get() != nullptr; }
+      bool isValid() const { return stream_.has_value(); }
       bool isAvailable() const;
 
-      int device() const { return device_; }
+      sycl::device device() const { return stream_->get_device(); }
 
-      // cudaStream_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
-      // would be const. Therefore it is ok to return a non-const
-      // pointer from a const method here.
-      sycl::queue* stream() const { return stream_.get(); }
+      sycl::queue stream() const { return *stream_; }
 
-      // cudaEvent_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
-      // would be const. Therefore it is ok to return a non-const
-      // pointer from a const method here.
-      sycl::event event() const { return event_.get(); }
+      sycl::event event() const { return event_; }
 
     protected:
-      explicit ProductBase(int device, SharedStreamPtr stream, SharedEventPtr event)
-          : stream_{std::move(stream)}, event_{std::move(event)}, device_{device} {}
+      explicit ProductBase(sycl::queue stream, sycl::event event)
+          : stream_{stream}, event_{event} {}
 
     private:
       friend class impl::ScopedContextBase;
       friend class ScopedContextProduce;
 
       // The following function is intended to be used only from ScopedContext
-      const SharedStreamPtr& streamPtr() const { return stream_; }
+      const sycl::queue& streamPtr() const { return *stream_; }
 
       bool mayReuseStream() const {
         bool expected = true;
@@ -75,19 +62,13 @@ namespace cms {
         return changed;
       }
 
-      // The cudaStream_t is really shared among edm::Event products, so
-      // using shared_ptr also here
-      SharedStreamPtr stream_;  //!
-      // FIXME hold by value ?
-      SharedEventPtr event_;  //!
+      std::optional<sycl::queue> stream_;  //!
+      sycl::event event_;  //!
 
       // This flag tells whether the CUDA stream may be reused by a
       // consumer or not. The goal is to have a "chain" of modules to
       // queue their work to the same stream.
       mutable std::atomic<bool> mayReuseStream_ = true;  //!
-
-      // The CUDA device associated with this product
-      int device_ = -1;  //!
     };
   }  // namespace cuda
 }  // namespace cms

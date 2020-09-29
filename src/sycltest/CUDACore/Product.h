@@ -45,12 +45,12 @@ namespace cms {
       friend class ScopedContextProduce;
       friend class edm::Wrapper<Product<T>>;
 
-      explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, T data)
-          : ProductBase(device, std::move(stream), std::move(event)), data_(std::move(data)) {}
+      explicit Product(sycl::queue stream, sycl::event event, T data)
+          : ProductBase(std::move(stream), std::move(event)), data_(std::move(data)) {}
 
       template <typename... Args>
-      explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, Args&&... args)
-          : ProductBase(device, std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
+      explicit Product(sycl::queue stream, sycl::event event, Args&&... args)
+          : ProductBase(std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
 
       T data_;  //!
     };

@@ -11,8 +11,6 @@
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
 #include "CUDACore/ContextState.h"
-#include "CUDACore/SharedEventPtr.h"
-#include "CUDACore/SharedStreamPtr.h"
 
 namespace cms {
   namespace cudatest {
@@ -27,7 +25,7 @@ namespace cms {
       public:
         sycl::device device() const { return currentDevice_; }
         sycl::queue stream() const { return stream_; }
-        const SharedStreamPtr& streamPtr() const { return stream_; }
+        const sycl::queue& streamPtr() const { return stream_; }
 
       protected:
         // The constructors set the current device, but the device
@@ -40,7 +38,7 @@ namespace cms {
 
         explicit ScopedContextBase(const ProductBase& data);
 
-        explicit ScopedContextBase(int device, SharedStreamPtr stream);
+        explicit ScopedContextBase(int device, sycl::queue stream);
 
       private:
         sycl::device currentDevice_;
@@ -171,11 +169,11 @@ namespace cms {
       friend class cudatest::TestScopedContext;
 
       // This construcor is only meant for testing
-      explicit ScopedContextProduce(int device, SharedStreamPtr stream, SharedEventPtr event)
-          : ScopedContextGetterBase(device, std::move(stream)), event_{std::move(event)} {}
+      explicit ScopedContextProduce(sycl::queue stream, sycl::event event)
+          : ScopedContextGetterBase(stream), event_{event} {}
 
       // FIXME the event is created submitting an asynchronous operation
-      SharedEventPtr event_;
+      sycl::event event_;
     };
 
     /**
