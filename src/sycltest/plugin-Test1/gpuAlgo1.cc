@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 
 #include <CL/sycl.hpp>
@@ -57,7 +58,23 @@ namespace gpu_algo_1 {
 
 using namespace gpu_algo_1;
 
+constexpr unsigned int sqrt2(unsigned int value) {
+  unsigned int result = 1;
+  while (value >= 4) {
+    value /= 4;
+    result *= 2;
+  }
+  return result;
+}
+
 cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
+  // query the device for the maximum "block size" or workgroup size
+  const unsigned int workgroupSize = stream.get_device().get_info<sycl::info::device::max_work_group_size>();
+
+  // build a rectangular "block" or workgroup
+  const unsigned int workgroupRectB = sqrt2(workgroupSize);
+  const unsigned int workgroupRectA = workgroupSize / workgroupRectB;
+
   auto h_a = cms::sycltools::make_host_unique<float[]>(NUM_VALUES, stream);
   auto h_b = cms::sycltools::make_host_unique<float[]>(NUM_VALUES, stream);
 
@@ -72,105 +89,85 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
   stream.memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
   stream.memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
 
-  int threadsPerBlock{32};
-  int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
+  unsigned int threadsPerBlock = std::min<unsigned int>(NUM_VALUES, workgroupSize);
+  unsigned int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
+
+  std::cerr << "block size: " << threadsPerBlock << " / " << stream.get_device().get_info<sycl::info::device::max_work_group_size>() << std::endl; 
+  std::cerr << "grid size:  " << blocksPerGrid   << std::endl;
 
   auto d_c = cms::sycltools::make_device_unique<float[]>(NUM_VALUES, stream);
-  /*
-  DPCT1049:39: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
-  */
   stream.submit([&](sycl::handler &cgh) {
     auto d_a_get_ct0 = d_a.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_c_get_ct2 = d_c.get();
-    auto NUM_VALUES_ct3 = NUM_VALUES;
 
     cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocksPerGrid) * sycl::range<3>(1, 1, threadsPerBlock),
                                        sycl::range<3>(1, 1, threadsPerBlock)),
                      [=](sycl::nd_item<3> item_ct1) {
-                       vectorAdd(d_a_get_ct0, d_b_get_ct1, d_c_get_ct2, NUM_VALUES_ct3, item_ct1);
+                       vectorAdd(d_a_get_ct0, d_b_get_ct1, d_c_get_ct2, NUM_VALUES, item_ct1);
                      });
   });
 
   auto d_ma = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
   auto d_mb = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
   auto d_mc = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
-  sycl::range<3> threadsPerBlock3{NUM_VALUES, NUM_VALUES, 1};
-  sycl::range<3> blocksPerGrid3{1, 1, 1};
-  if (NUM_VALUES * NUM_VALUES > 32) {
-    threadsPerBlock3[0] = 32;
-    threadsPerBlock3[1] = 32;
-    blocksPerGrid3[0] = ceil(double(NUM_VALUES) / double(threadsPerBlock3[0]));
-    blocksPerGrid3[1] = ceil(double(NUM_VALUES) / double(threadsPerBlock3[1]));
-  }
-  /*
-  DPCT1049:34: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
-  */
+
+  sycl::range<3> threadsPerBlock3{workgroupRectA, workgroupRectB, 1};
+  sycl::range<3> blocksPerGrid3{(NUM_VALUES + threadsPerBlock3[0] - 1) / threadsPerBlock3[0], (NUM_VALUES + threadsPerBlock3[1] - 1) / threadsPerBlock3[1], 1};
   stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_ma_get_ct2 = d_ma.get();
-    auto NUM_VALUES_ct3 = NUM_VALUES;
 
     cgh.parallel_for(
         sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
-          vectorProd(d_a_get_ct0, d_b_get_ct1, d_ma_get_ct2, NUM_VALUES_ct3, item_ct1);
+          vectorProd(d_a_get_ct0, d_b_get_ct1, d_ma_get_ct2, NUM_VALUES, item_ct1);
         });
   });
-  /*
-  DPCT1049:35: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
-  */
+  
   stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
     auto d_c_get_ct1 = d_c.get();
     auto d_mb_get_ct2 = d_mb.get();
-    auto NUM_VALUES_ct3 = NUM_VALUES;
 
     cgh.parallel_for(
         sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
-          vectorProd(d_a_get_ct0, d_c_get_ct1, d_mb_get_ct2, NUM_VALUES_ct3, item_ct1);
+          vectorProd(d_a_get_ct0, d_c_get_ct1, d_mb_get_ct2, NUM_VALUES, item_ct1);
         });
   });
-  /*
-  DPCT1049:36: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
-  */
+  
   stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_ma_get_ct0 = d_ma.get();
     auto d_mb_get_ct1 = d_mb.get();
     auto d_mc_get_ct2 = d_mc.get();
-    auto NUM_VALUES_ct3 = NUM_VALUES;
 
     cgh.parallel_for(
         sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
-          matrixMul(d_ma_get_ct0, d_mb_get_ct1, d_mc_get_ct2, NUM_VALUES_ct3, item_ct1);
+          matrixMul(d_ma_get_ct0, d_mb_get_ct1, d_mc_get_ct2, NUM_VALUES, item_ct1);
         });
   });
 
-  /*
-  DPCT1049:40: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
-  */
   stream.submit([&](sycl::handler &cgh) {
     auto d_mc_get_ct0 = d_mc.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_c_get_ct2 = d_c.get();
-    auto NUM_VALUES_ct3 = NUM_VALUES;
 
     cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocksPerGrid) * sycl::range<3>(1, 1, threadsPerBlock),
                                        sycl::range<3>(1, 1, threadsPerBlock)),
                      [=](sycl::nd_item<3> item_ct1) {
-                       matrixMulVector(d_mc_get_ct0, d_b_get_ct1, d_c_get_ct2, NUM_VALUES_ct3, item_ct1);
+                       matrixMulVector(d_mc_get_ct0, d_b_get_ct1, d_c_get_ct2, NUM_VALUES, item_ct1);
                      });
   });
 
