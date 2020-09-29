@@ -1,13 +1,12 @@
 #ifndef HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
 #define HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
 
+#include <functional>
+#include <memory>
+#include <optional>
+
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include <memory>
-#include <functional>
-
-#include "CUDACore/allocate_device.h"
-#include "CUDACore/currentDevice.h"
 
 namespace cms {
   namespace cuda {
@@ -17,16 +16,16 @@ namespace cms {
         class DeviceDeleter {
         public:
           DeviceDeleter() = default;  // for edm::Wrapper
-          DeviceDeleter(int device) : device_{device} {}
+          DeviceDeleter(sycl::queue stream) : stream_{stream} {}
 
           void operator()(void *ptr) {
-            if (device_ >= 0) {
-              free_device(device_, ptr);
+            if (stream_) {
+              sycl::free(ptr, *stream_);
             }
           }
 
         private:
-          int device_ = -1;
+          std::optional<sycl::queue> stream_;
         };
       }  // namespace impl
 
@@ -53,10 +52,9 @@ namespace cms {
     typename device::impl::make_device_unique_selector<T>::non_array make_device_unique(sycl::queue *stream) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, sizeof(T), stream);
+      void *mem = sycl::malloc_device(sizeof(T), stream);
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
@@ -65,10 +63,9 @@ namespace cms {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = sycl::malloc_device(n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
@@ -78,20 +75,18 @@ namespace cms {
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::non_array make_device_unique_uninitialized(
         sycl::queue *stream) {
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, sizeof(T), stream);
+      void *mem = sycl::malloc_device(sizeof(T), stream);
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique_uninitialized(
         size_t n, sycl::queue *stream) {
       using element_type = typename std::remove_extent<T>::type;
-      int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = sycl::malloc_device(n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
