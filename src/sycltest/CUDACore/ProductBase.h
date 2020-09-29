@@ -78,7 +78,7 @@ namespace cms {
       // The cudaStream_t is really shared among edm::Event products, so
       // using shared_ptr also here
       SharedStreamPtr stream_;  //!
-      // shared_ptr because of caching in cms::cuda::EventCache
+      // FIXME hold by value ?
       SharedEventPtr event_;  //!
 
       // This flag tells whether the CUDA stream may be reused by a

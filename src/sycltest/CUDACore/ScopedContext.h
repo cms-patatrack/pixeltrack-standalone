@@ -11,7 +11,6 @@
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
 #include "CUDACore/ContextState.h"
-#include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
 #include "CUDACore/SharedStreamPtr.h"
 
@@ -26,13 +25,8 @@ namespace cms {
       // This class is intended to be derived by other ScopedContext*, not for general use
       class ScopedContextBase {
       public:
-        int device() const { return currentDevice_; }
-
-        // cudaStream_t is a pointer to a thread-safe object, for which a
-        // mutable access is needed even if the ScopedContext itself
-        // would be const. Therefore it is ok to return a non-const
-        // pointer from a const method here.
-        sycl::queue* stream() const { return stream_.get(); }
+        sycl::device device() const { return currentDevice_; }
+        sycl::queue stream() const { return stream_; }
         const SharedStreamPtr& streamPtr() const { return stream_; }
 
       protected:
@@ -49,8 +43,8 @@ namespace cms {
         explicit ScopedContextBase(int device, SharedStreamPtr stream);
 
       private:
-        int currentDevice_;
-        SharedStreamPtr stream_;
+        sycl::device currentDevice_;
+        sycl::queue stream_;
       };
 
       class ScopedContextGetterBase : public ScopedContextBase {
@@ -180,8 +174,8 @@ namespace cms {
       explicit ScopedContextProduce(int device, SharedStreamPtr stream, SharedEventPtr event)
           : ScopedContextGetterBase(device, std::move(stream)), event_{std::move(event)} {}
 
-      // create the CUDA Event upfront to catch possible errors from its creation
-      SharedEventPtr event_ = getEventCache().get();
+      // FIXME the event is created submitting an asynchronous operation
+      SharedEventPtr event_;
     };
 
     /**

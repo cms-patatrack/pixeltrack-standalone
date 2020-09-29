@@ -5,7 +5,6 @@
 #include <dpct/dpct.hpp>
 
 #include "CUDACore/ScopedContext.h"
-#include "CUDACore/StreamCache.h"
 #include "chooseDevice.h"
 
 
@@ -48,7 +47,7 @@ namespace cms::cuda {
   namespace impl {
     ScopedContextBase::ScopedContextBase(edm::StreamID streamID) : currentDevice_(chooseDevice(streamID)) {
       dpct::dev_mgr::instance().select_device(currentDevice_);
-      stream_ = getStreamCache().get();
+      stream_;
     }
 
     ScopedContextBase::ScopedContextBase(const ProductBase& data) : currentDevice_(data.device()) {
@@ -56,11 +55,12 @@ namespace cms::cuda {
       if (data.mayReuseStream()) {
         stream_ = data.streamPtr();
       } else {
-        stream_ = getStreamCache().get();
+        // FIXME obtain the queue from the device
+        stream_;
       }
     }
 
-    ScopedContextBase::ScopedContextBase(int device, SharedStreamPtr stream)
+    ScopedContextBase::ScopedContextBase(sycl::device device, sycl::queue stream)
         : currentDevice_(device), stream_(std::move(stream)) {
       dpct::dev_mgr::instance().select_device(currentDevice_);
     }
@@ -90,7 +90,7 @@ namespace cms::cuda {
       }
     }
 
-    void ScopedContextHolderHelper::enqueueCallback(int device, sycl::queue* stream) {
+    void ScopedContextHolderHelper::enqueueCallback(sycl::device device, sycl::queue stream) {
       std::async([&]() {
                    stream->wait(); cudaScopedContextCallback(stream, 0, new CallbackData{waitingTaskHolder_, device});
                  })
