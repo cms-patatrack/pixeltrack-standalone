@@ -1,7 +1,7 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
+
 #include "CUDACore/StreamCache.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/currentDevice.h"
 #include "CUDACore/deviceCount.h"
 #include "CUDACore/ScopedSetDevice.h"
@@ -10,10 +10,7 @@ namespace cms::cuda {
   void StreamCache::Deleter::operator()(sycl::queue *stream) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
-      /*
-      DPCT1003:41: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((dpct::get_current_device().destroy_queue(stream), 0));
+      dpct::get_current_device().destroy_queue(stream);
     }
   }
 
@@ -26,13 +23,7 @@ namespace cms::cuda {
     return cache_[dev].makeOrGet([dev]() {
       try {
         sycl::queue *stream;
-        /*
-      DPCT1003:42: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-        /*
-      DPCT1025:43: The SYCL queue is created ignoring the flag/priority options.
-      */
-        cudaCheck((stream = dpct::get_current_device().create_queue(), 0));
+        stream = dpct::get_current_device().create_queue();
       return std::unique_ptr<BareStream, Deleter>(stream, Deleter{dev});
       }
       catch (sycl::exception const &exc) {

@@ -2,8 +2,6 @@
 #include <dpct/dpct.hpp>
 #include <iostream>
 
-#include "CUDACore/cudaCheck.h"
-
 /*
 DPCT1015:30: Output needs adjustment.
 */
@@ -19,6 +17,6 @@ int main() {
                        print(item_ct1, stream_ct1);
                      });
   });
-  cudaCheck((dpct::get_current_device().queues_wait_and_throw(), 0));
+  dpct::get_current_device().queues_wait_and_throw();
   return 0;
 }

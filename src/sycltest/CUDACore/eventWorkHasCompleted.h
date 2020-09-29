@@ -3,7 +3,6 @@
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "CUDACore/cudaCheck.h"
 
 namespace cms {
   namespace cuda {
@@ -20,9 +19,9 @@ namespace cms {
       if (ret == 0) {
         return true;
       } else
-      // leave error case handling to cudaCheck
-      cudaCheck(ret);
-      return false;  // to keep compiler happy
+      // TODO: throw an exception on errors
+      abort();
+      return false;
     }
     catch (sycl::exception const &exc) {
       std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;

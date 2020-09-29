@@ -3,7 +3,6 @@
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/deviceCount.h"
 #include "CachingDeviceAllocator.h"
 
@@ -24,22 +23,16 @@ namespace cms::cuda::allocator {
 
   inline size_t minCachedBytes() {
     size_t ret = std::numeric_limits<size_t>::max();
-    int currentDevice;
-    cudaCheck(currentDevice = dpct::dev_mgr::instance().current_device_id());
+    int currentDevice = dpct::dev_mgr::instance().current_device_id();
     const int numberOfDevices = deviceCount();
     for (int i = 0; i < numberOfDevices; ++i) {
-      size_t freeMemory, totalMemory;
-      /*
-      DPCT1003:26: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((dpct::dev_mgr::instance().select_device(i), 0));
-      cudaCheck(cudaMemGetInfo(&freeMemory, &totalMemory));
+      size_t freeMemory = 0, totalMemory = 0;
+      dpct::dev_mgr::instance().select_device(i);
+      // TODO: implement
+      //cudaMemGetInfo(&freeMemory, &totalMemory);
       ret = std::min(ret, static_cast<size_t>(maxCachedFraction * freeMemory));
     }
-    /*
-    DPCT1003:27: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-    */
-    cudaCheck((dpct::dev_mgr::instance().select_device(currentDevice), 0));
+    dpct::dev_mgr::instance().select_device(currentDevice);
     if (maxCachedBytes > 0) {
       ret = std::min(ret, maxCachedBytes);
     }

@@ -67,14 +67,8 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo1(sycl::queue *stream) {
   auto d_a = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
   auto d_b = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
 
-  /*
-  DPCT1003:37: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-  */
-  cudaCheck((stream->memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float)), 0));
-  /*
-  DPCT1003:38: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-  */
-  cudaCheck((stream->memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float)), 0));
+  stream->memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
+  stream->memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
 
   int threadsPerBlock{32};
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;

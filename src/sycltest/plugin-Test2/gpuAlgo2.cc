@@ -67,8 +67,8 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   auto d_a = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
   auto d_b = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
 
-  cudaCheck((stream->memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float)), 0));
-  cudaCheck((stream->memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float)), 0));
+  stream->memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
+  stream->memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
 
   int threadsPerBlock{32};
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;

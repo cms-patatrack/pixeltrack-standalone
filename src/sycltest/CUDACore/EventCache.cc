@@ -1,7 +1,6 @@
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 #include "CUDACore/EventCache.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/currentDevice.h"
 #include "CUDACore/deviceCount.h"
 #include "CUDACore/eventWorkHasCompleted.h"
@@ -11,10 +10,6 @@ namespace cms::cuda {
   void EventCache::Deleter::operator()(sycl::event event) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
-      /*
-      DPCT1027:77: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
-      */
-      cudaCheck(0);
     }
   }
 
@@ -50,12 +45,7 @@ namespace cms::cuda {
     return cache_[dev].makeOrGet([dev]() {
       try {
         sycl::event event;
-      // it should be a bit faster to ignore timings
-        /*
-      DPCT1027:78: The call to cudaEventCreateWithFlags was replaced with 0, because this call is redundant in DPC++.
-      */
-        cudaCheck(0);
-      return std::unique_ptr<BareEvent, Deleter>(event, Deleter{dev});
+        return std::unique_ptr<BareEvent, Deleter>(event, Deleter{dev});
       }
       catch (sycl::exception const& exc) {
         std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;

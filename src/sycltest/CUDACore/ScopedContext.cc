@@ -1,14 +1,13 @@
-#include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "CUDACore/ScopedContext.h"
-
-#include "CUDACore/StreamCache.h"
-#include "CUDACore/cudaCheck.h"
-
-#include "chooseDevice.h"
+#include <chrono>
 #include <future>
 
-#include <chrono>
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
+
+#include "CUDACore/ScopedContext.h"
+#include "CUDACore/StreamCache.h"
+#include "chooseDevice.h"
+
 
 namespace {
   struct CallbackData {
@@ -48,18 +47,12 @@ namespace {
 namespace cms::cuda {
   namespace impl {
     ScopedContextBase::ScopedContextBase(edm::StreamID streamID) : currentDevice_(chooseDevice(streamID)) {
-      /*
-      DPCT1003:71: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((dpct::dev_mgr::instance().select_device(currentDevice_), 0));
+      dpct::dev_mgr::instance().select_device(currentDevice_);
       stream_ = getStreamCache().get();
     }
 
     ScopedContextBase::ScopedContextBase(const ProductBase& data) : currentDevice_(data.device()) {
-      /*
-      DPCT1003:72: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((dpct::dev_mgr::instance().select_device(currentDevice_), 0));
+      dpct::dev_mgr::instance().select_device(currentDevice_);
       if (data.mayReuseStream()) {
         stream_ = data.streamPtr();
       } else {
@@ -69,10 +62,7 @@ namespace cms::cuda {
 
     ScopedContextBase::ScopedContextBase(int device, SharedStreamPtr stream)
         : currentDevice_(device), stream_(std::move(stream)) {
-      /*
-      DPCT1003:73: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((dpct::dev_mgr::instance().select_device(currentDevice_), 0));
+      dpct::dev_mgr::instance().select_device(currentDevice_);
     }
 
     ////////////////////
@@ -95,22 +85,15 @@ namespace cms::cuda {
           // wait for an event, so all subsequent work in the stream
           // will run only after the event has "occurred" (i.e. data
           // product became available).
-          /*
-          DPCT1003:74: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-          */
-          cudaCheck((dataEvent.wait(), 0), "Failed to make a stream to wait for an event");
+          dataEvent.wait();
         }
       }
     }
 
     void ScopedContextHolderHelper::enqueueCallback(int device, sycl::queue* stream) {
-      /*
-      DPCT1003:75: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-      */
-      cudaCheck((std::async([&]() {
+      std::async([&]() {
                    stream->wait(); cudaScopedContextCallback(stream, 0, new CallbackData{waitingTaskHolder_, device});
-                 }),
-                 0));
+                 })
     }
   }  // namespace impl
 
