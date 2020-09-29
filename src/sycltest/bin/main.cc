@@ -10,6 +10,7 @@
 
 #include <tbb/task_scheduler_init.h>
 
+#include "CUDACore/chooseDevice.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -79,22 +80,9 @@ int main(int argc, char** argv) try {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  int numberOfDevices;
-  /*
-  DPCT1003:33: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
-  */
-  auto status = (numberOfDevices = dpct::dev_mgr::instance().device_count(), 0);
-  /*
-  DPCT1000:32: Error handling if-stmt was detected but could not be rewritten.
-  */
-  if (0 != status) {
-    /*
-    DPCT1001:31: The statement could not be removed.
-    */
-    std::cout << "Failed to initialize the CUDA runtime";
-    return EXIT_FAILURE;
-  }
-  std::cout << "Found " << numberOfDevices << " devices" << std::endl;
+
+  // Initialse the CUDA runtime
+  cms::cuda::enumerateDevices(true);
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
