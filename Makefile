@@ -3,9 +3,9 @@ export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Build flags
 export CXX := g++
 USER_CXXFLAGS :=
-HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Xassembler --compress-debug-sections -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
+HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-reorder-ctor -Wreturn-type -Werror=return-type -Wno-sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Wno-unused-local-typedefs -Wno-unused-function -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
-export LDFLAGS := -pthread -Wl,-E -lstdc++fs
+export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
@@ -128,6 +128,29 @@ export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
 export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
+# SYCL / oneAPI and compatibility tool
+ONEAPI_BASE := /opt/intel/oneapi/compiler/latest/linux
+DPCT_BASE   := /opt/intel/oneapi/dpcpp-ct/latest
+
+# check if libraries are under lib or lib64
+ifdef ONEAPI_BASE
+ifneq ($(wildcard $(ONEAPI_BASE)/lib/libsycl.so),)
+ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib
+else ifneq ($(wildcard $(ONEAPI_BASE)/lib64/libsycl.so),)
+ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib64
+else
+ONEAPI_BASE :=
+endif
+endif
+ifdef ONEAPI_BASE
+export ONEAPI_CXX   := $(ONEAPI_BASE)/bin/dpcpp
+export ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+ifdef CUDA_BASE
+export ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_LIBDIR)/libpi_cuda.so)
+export ONEAPI_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
+endif
+endif
+
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -159,9 +182,11 @@ env.sh: Makefile
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
+	@echo -n '$(ONEAPI_LIBDIR):'                                            >> $@
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@echo -n 'export PATH='                                                 >> $@
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
+	@echo -n '$(ONEAPI_BASE)/bin:'                                          >> $@
 	@echo '$$PATH'                                                          >> $@
 
 define TARGET_template

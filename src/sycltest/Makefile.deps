@@ -1,4 +1,4 @@
-cudatest_EXTERNAL_DEPENDS := TBB CUDA ONEAPI
+sycltest_EXTERNAL_DEPENDS := TBB ONEAPI
 CUDACore_DEPENDS := Framework
 Test1_DEPENDS := Framework CUDACore DataFormats
 Test2_DEPENDS := Framework CUDACore
