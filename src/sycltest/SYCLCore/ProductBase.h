@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_Common_ProductBase_h
-#define CUDADataFormats_Common_ProductBase_h
+#ifndef SYCLDataFormats_Common_ProductBase_h
+#define SYCLDataFormats_Common_ProductBase_h
 
 #include <atomic>
 #include <memory>
@@ -7,7 +7,7 @@
 #include <CL/sycl.hpp>
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     namespace impl {
       class ScopedContextBase;
     }
@@ -67,7 +67,7 @@ namespace cms {
       // queue their work to the same stream.
       mutable std::atomic<bool> mayReuseStream_ = true;  //!
     };
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

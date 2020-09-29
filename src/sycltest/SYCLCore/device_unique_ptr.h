@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
-#define HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
+#ifndef HeterogeneousCore_SYCLUtilities_interface_device_unique_ptr_h
+#define HeterogeneousCore_SYCLUtilities_interface_device_unique_ptr_h
 
 #include <functional>
 #include <memory>
@@ -8,7 +8,7 @@
 #include <CL/sycl.hpp>
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     namespace device {
       namespace impl {
         // Additional layer of types to distinguish from host::unique_ptr
@@ -34,11 +34,11 @@ namespace cms {
       namespace impl {
         template <typename T>
         struct make_device_unique_selector {
-          using non_array = cms::cuda::device::unique_ptr<T>;
+          using non_array = cms::sycltools::device::unique_ptr<T>;
         };
         template <typename T>
         struct make_device_unique_selector<T[]> {
-          using unbounded_array = cms::cuda::device::unique_ptr<T[]>;
+          using unbounded_array = cms::sycltools::device::unique_ptr<T[]>;
         };
         template <typename T, size_t N>
         struct make_device_unique_selector<T[N]> {
@@ -90,7 +90,7 @@ namespace cms {
     template <typename T, typename... Args>
     typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique_uninitialized(Args &&...) =
         delete;
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

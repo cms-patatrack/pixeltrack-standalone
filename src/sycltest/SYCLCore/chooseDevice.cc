@@ -4,7 +4,7 @@
 
 #include "chooseDevice.h"
 
-namespace cms::cuda {
+namespace cms::sycltools {
   std::vector<sycl::device> const& enumerateDevices(bool verbose) {
     static const std::vector<sycl::device> devices = sycl::device::get_devices(sycl::info::device_type::all);
     if (verbose) {
@@ -29,4 +29,4 @@ namespace cms::cuda {
     std::cerr << "EDM stream " << id << " offload to " << device.get_info<cl::sycl::info::device::name>() << std::endl;
     return device;
   }
-}  // namespace cms::cuda
+}  // namespace cms::sycltools

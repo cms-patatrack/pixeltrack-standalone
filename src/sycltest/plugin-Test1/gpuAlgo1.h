@@ -3,8 +3,8 @@
 
 #include <CL/sycl.hpp>
 
-#include "CUDACore/device_unique_ptr.h"
+#include "SYCLCore/device_unique_ptr.h"
 
-cms::cuda::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream);
+cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream);
 
 #endif

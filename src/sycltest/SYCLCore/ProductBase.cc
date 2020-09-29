@@ -1,8 +1,8 @@
 #include <CL/sycl.hpp>
 
-#include "CUDACore/ProductBase.h"
+#include "SYCLCore/ProductBase.h"
 
-namespace cms::cuda {
+namespace cms::sycltools {
   bool ProductBase::isAvailable() const {
     // if default-constructed, the product is not available
     if (not event_) {
@@ -23,4 +23,4 @@ namespace cms::cuda {
       event_->wait_and_throw();
     }
   }
-}  // namespace cms::cuda
+}  // namespace cms::sycltools

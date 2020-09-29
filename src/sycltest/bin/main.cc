@@ -10,7 +10,7 @@
 
 #include <tbb/task_scheduler_init.h>
 
-#include "CUDACore/chooseDevice.h"
+#include "SYCLCore/chooseDevice.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -82,7 +82,7 @@ int main(int argc, char** argv) try {
   }
 
   // Initialse the CUDA runtime
-  cms::cuda::enumerateDevices(true);
+  cms::sycltools::enumerateDevices(true);
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;

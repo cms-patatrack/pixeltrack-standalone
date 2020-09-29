@@ -2,8 +2,8 @@
 
 #include <CL/sycl.hpp>
 
-#include "CUDACore/device_unique_ptr.h"
-#include "CUDACore/host_unique_ptr.h"
+#include "SYCLCore/device_unique_ptr.h"
+#include "SYCLCore/host_unique_ptr.h"
 #include "gpuAlgo1.h"
 
 namespace gpu_algo_1 {
@@ -57,17 +57,17 @@ namespace gpu_algo_1 {
 
 using namespace gpu_algo_1;
 
-cms::cuda::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
-  auto h_a = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
-  auto h_b = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
+cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
+  auto h_a = cms::sycltools::make_host_unique<float[]>(NUM_VALUES, stream);
+  auto h_b = cms::sycltools::make_host_unique<float[]>(NUM_VALUES, stream);
 
   for (auto i = 0; i < NUM_VALUES; i++) {
     h_a[i] = i;
     h_b[i] = i * i;
   }
 
-  auto d_a = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
-  auto d_b = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_a = cms::sycltools::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_b = cms::sycltools::make_device_unique<float[]>(NUM_VALUES, stream);
 
   stream.memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
   stream.memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
@@ -75,7 +75,7 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
   int threadsPerBlock{32};
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
 
-  auto d_c = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_c = cms::sycltools::make_device_unique<float[]>(NUM_VALUES, stream);
   /*
   DPCT1049:39: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
@@ -92,9 +92,9 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
                      });
   });
 
-  auto d_ma = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
-  auto d_mb = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
-  auto d_mc = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_ma = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_mb = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_mc = cms::sycltools::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
   sycl::range<3> threadsPerBlock3{NUM_VALUES, NUM_VALUES, 1};
   sycl::range<3> blocksPerGrid3{1, 1, 1};
   if (NUM_VALUES * NUM_VALUES > 32) {

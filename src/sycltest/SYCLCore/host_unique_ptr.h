@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_host_unique_ptr_h
-#define HeterogeneousCore_CUDAUtilities_interface_host_unique_ptr_h
+#ifndef HeterogeneousCore_SYCLUtilities_interface_host_unique_ptr_h
+#define HeterogeneousCore_SYCLUtilities_interface_host_unique_ptr_h
 
 #include <functional>
 #include <memory>
@@ -8,7 +8,7 @@
 #include <CL/sycl.hpp>
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     namespace host {
       namespace impl {
         // Additional layer of types to distinguish from host::unique_ptr
@@ -34,11 +34,11 @@ namespace cms {
       namespace impl {
         template <typename T>
         struct make_host_unique_selector {
-          using non_array = cms::cuda::host::unique_ptr<T>;
+          using non_array = cms::sycltools::host::unique_ptr<T>;
         };
         template <typename T>
         struct make_host_unique_selector<T[]> {
-          using unbounded_array = cms::cuda::host::unique_ptr<T[]>;
+          using unbounded_array = cms::sycltools::host::unique_ptr<T[]>;
         };
         template <typename T, size_t N>
         struct make_host_unique_selector<T[N]> {
@@ -89,7 +89,7 @@ namespace cms {
 
     template <typename T, typename... Args>
     typename host::impl::make_host_unique_selector<T>::bounded_array make_host_unique_uninitialized(Args &&...) = delete;
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

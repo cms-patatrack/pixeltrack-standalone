@@ -1,11 +1,11 @@
-#ifndef HeterogeneousCore_CUDAUtilities_ScopedSetDevice_h
-#define HeterogeneousCore_CUDAUtilities_ScopedSetDevice_h
+#ifndef HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
+#define HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     class ScopedSetDevice {
     public:
       explicit ScopedSetDevice(int newDevice) {
@@ -23,7 +23,7 @@ namespace cms {
     private:
       int prevDevice_;
     };
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

@@ -1,9 +1,9 @@
-#ifndef CUDADataFormats_Common_Product_h
-#define CUDADataFormats_Common_Product_h
+#ifndef SYCLDataFormats_Common_Product_h
+#define SYCLDataFormats_Common_Product_h
 
 #include <memory>
 
-#include "CUDACore/ProductBase.h"
+#include "SYCLCore/ProductBase.h"
 
 namespace edm {
   template <typename T>
@@ -11,7 +11,7 @@ namespace edm {
 }
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     namespace impl {
       class ScopedContextGetterBase;
     }
@@ -20,7 +20,7 @@ namespace cms {
      * The purpose of this class is to wrap CUDA data to edm::Event in a
      * way which forces correct use of various utilities.
      *
-     * The non-default construction has to be done with cms::cuda::ScopedContext
+     * The non-default construction has to be done with cms::sycltools::ScopedContext
      * (in order to properly register the CUDA event).
      *
      * The default constructor is needed only for the ROOT dictionary generation.
@@ -54,7 +54,7 @@ namespace cms {
 
       T data_;  //!
     };
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

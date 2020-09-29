@@ -1,12 +1,12 @@
-#ifndef HeterogeneousCore_CUDACore_ContextState_h
-#define HeterogeneousCore_CUDACore_ContextState_h
+#ifndef HeterogeneousCore_SYCLCore_ContextState_h
+#define HeterogeneousCore_SYCLCore_ContextState_h
 
 #include <memory>
 
 #include <CL/sycl.hpp>
 
 namespace cms {
-  namespace cuda {
+  namespace sycltools {
     /**
      * The purpose of this class is to deliver the device and queue
      * information from ExternalWork's acquire() to producer() via a
@@ -55,7 +55,7 @@ namespace cms {
 
       std::optional<sycl::queue> stream_;
     };
-  }  // namespace cuda
+  }  // namespace sycltools
 }  // namespace cms
 
 #endif

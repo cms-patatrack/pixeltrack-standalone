@@ -3,11 +3,11 @@
 
 #include <CL/sycl.hpp>
 
-#include "CUDACore/ScopedContext.h"
+#include "SYCLCore/ScopedContext.h"
 #include "chooseDevice.h"
 
 
-namespace cms::cuda {
+namespace cms::sycltools {
   namespace impl {
 
     void sycl_exception_handler(cl::sycl::exception_list exceptions) {
@@ -92,4 +92,4 @@ namespace cms::cuda {
   ////////////////////
 
   ScopedContextTask::~ScopedContextTask() { holderHelper_.enqueueCallback(stream()); }
-}  // namespace cms::cuda
+}  // namespace cms::sycltools

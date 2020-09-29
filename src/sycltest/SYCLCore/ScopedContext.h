@@ -1,12 +1,12 @@
-#ifndef HeterogeneousCore_CUDACore_ScopedContext_h
-#define HeterogeneousCore_CUDACore_ScopedContext_h
+#ifndef HeterogeneousCore_SYCLCore_ScopedContext_h
+#define HeterogeneousCore_SYCLCore_ScopedContext_h
 
 #include <optional>
 
 #include <CL/sycl.hpp>
 
-#include "CUDACore/ContextState.h"
-#include "CUDACore/Product.h"
+#include "SYCLCore/ContextState.h"
+#include "SYCLCore/Product.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
 #include "Framework/Event.h"
@@ -17,7 +17,7 @@ namespace cms {
     class TestScopedContext;
   }
 
-  namespace cuda {
+  namespace sycltools {
 
     namespace impl {
       // This class is intended to be derived by other ScopedContext*, not for general use
@@ -227,7 +227,7 @@ namespace cms {
                                                })});
       }
     }  // namespace impl
-  }    // namespace cuda
+  }    // namespace sycltools
 }  // namespace cms
 
 #endif
