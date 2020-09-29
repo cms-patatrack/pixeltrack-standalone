@@ -36,7 +36,7 @@ export CUDA_TEST_CXXFLAGS := -DGPU_DEBUG
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 define CUFLAGS_template
-$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
+$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) -Wno-deprecated-gpu-targets --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
 $(2)NVCC_COMMON := -std=c++14 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
