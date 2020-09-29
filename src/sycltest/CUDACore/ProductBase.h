@@ -41,7 +41,7 @@ namespace cms {
 
       sycl::queue stream() const { return *stream_; }
 
-      sycl::event event() const { return event_; }
+      sycl::event event() const { return *event_; }
 
     protected:
       explicit ProductBase(sycl::queue stream, sycl::event event)
@@ -50,9 +50,6 @@ namespace cms {
     private:
       friend class impl::ScopedContextBase;
       friend class ScopedContextProduce;
-
-      // The following function is intended to be used only from ScopedContext
-      const sycl::queue& streamPtr() const { return *stream_; }
 
       bool mayReuseStream() const {
         bool expected = true;
@@ -63,7 +60,7 @@ namespace cms {
       }
 
       std::optional<sycl::queue> stream_;  //!
-      sycl::event event_;  //!
+      std::optional<sycl::event> event_;  //!
 
       // This flag tells whether the CUDA stream may be reused by a
       // consumer or not. The goal is to have a "chain" of modules to

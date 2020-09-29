@@ -1,12 +1,12 @@
+#include <cmath>
+
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
-#include "gpuAlgo2.h"
 
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
-#include <cmath>
+#include "gpuAlgo2.h"
 
-namespace {
+namespace gpu_algo_2 {
   constexpr int NUM_VALUES = 1000;
 
   template <typename T>
@@ -55,7 +55,9 @@ namespace {
   }
 }  // namespace
 
-cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
+using namespace gpu_algo_2;
+
+cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
   auto h_a = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
   auto h_b = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
 
@@ -67,18 +69,17 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   auto d_a = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
   auto d_b = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
 
-  stream->memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
-  stream->memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
+  stream.memcpy(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float));
+  stream.memcpy(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float));
 
   int threadsPerBlock{32};
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
 
   auto d_c = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
-  auto current_device = cms::cuda::currentDevice();
   /*
   DPCT1049:82: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
-  stream->submit([&](sycl::handler &cgh) {
+  stream.submit([&](sycl::handler &cgh) {
     auto d_a_get_ct0 = d_a.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_c_get_ct2 = d_c.get();
@@ -105,7 +106,7 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   /*
   DPCT1049:79: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
-  stream->submit([&](sycl::handler &cgh) {
+  stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
@@ -123,7 +124,7 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   /*
   DPCT1049:80: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
-  stream->submit([&](sycl::handler &cgh) {
+  stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
@@ -141,7 +142,7 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   /*
   DPCT1049:81: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
-  stream->submit([&](sycl::handler &cgh) {
+  stream.submit([&](sycl::handler &cgh) {
     auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_ma_get_ct0 = d_ma.get();
@@ -160,7 +161,7 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(sycl::queue *stream) {
   /*
   DPCT1049:83: The workgroup size passed to the SYCL kernel may exceed the limit. To get the device limit, query info::device::max_work_group_size. Adjust the workgroup size if needed.
   */
-  stream->submit([&](sycl::handler &cgh) {
+  stream.submit([&](sycl::handler &cgh) {
     auto d_mc_get_ct0 = d_mc.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_c_get_ct2 = d_c.get();

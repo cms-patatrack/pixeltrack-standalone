@@ -6,7 +6,6 @@
 #include <optional>
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 
 namespace cms {
   namespace cuda {
@@ -50,22 +49,22 @@ namespace cms {
 
     // Allocate pinned host memory
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(sycl::queue *stream) {
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(sycl::queue stream) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem = sycl::malloc_host(sizeof(T), stream);
       return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                          host::impl::DeviceDeleter{stream}};
+                                                                          host::impl::HostDeleter{stream}};
     }
 
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(size_t n, sycl::queue *stream) {
+    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(size_t n, sycl::queue stream) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem = sycl::malloc_host(n * sizeof(element_type), stream);
       return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem),
-                                                                                host::impl::DeviceDeleter{stream}};
+                                                                                host::impl::HostDeleter{stream}};
     }
 
     template <typename T, typename... Args>
@@ -73,19 +72,19 @@ namespace cms {
 
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(sycl::queue *stream) {
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(sycl::queue stream) {
       void *mem = sycl::malloc_host(sizeof(T), stream);
       return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                          host::impl::DeviceDeleter{stream}};
+                                                                          host::impl::HostDeleter{stream}};
     }
 
     template <typename T>
     typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique_uninitialized(
-        size_t n, sycl::queue *stream) {
+        size_t n, sycl::queue stream) {
       using element_type = typename std::remove_extent<T>::type;
       void *mem = sycl::malloc_host(n * sizeof(element_type), stream);
       return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem),
-                                                                                host::impl::DeviceDeleter{stream}};
+                                                                                host::impl::HostDeleter{stream}};
     }
 
     template <typename T, typename... Args>

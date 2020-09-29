@@ -34,12 +34,12 @@ namespace cms {
 
       sycl::device device() const { return stream_->get_device(); }
 
-      sycl::queue streamPtr() const {
+      sycl::queue stream() const {
         throwIfNoStream();
         return *stream_;
       }
 
-      sycl::queue releaseStreamPtr() {
+      sycl::queue releaseStream() {
         throwIfNoStream();
         // This function needs to effectively reset stream_ (i.e. stream_
         // must be empty after this function). This behavior ensures that

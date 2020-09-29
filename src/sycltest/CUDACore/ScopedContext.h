@@ -1,16 +1,16 @@
 #ifndef HeterogeneousCore_CUDACore_ScopedContext_h
 #define HeterogeneousCore_CUDACore_ScopedContext_h
 
-#include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include <optional>
 
+#include <CL/sycl.hpp>
+
+#include "CUDACore/ContextState.h"
 #include "CUDACore/Product.h"
-#include "Framework/WaitingTaskWithArenaHolder.h"
-#include "Framework/Event.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
-#include "CUDACore/ContextState.h"
+#include "Framework/Event.h"
+#include "Framework/WaitingTaskWithArenaHolder.h"
 
 namespace cms {
   namespace cudatest {
@@ -23,9 +23,8 @@ namespace cms {
       // This class is intended to be derived by other ScopedContext*, not for general use
       class ScopedContextBase {
       public:
-        sycl::device device() const { return currentDevice_; }
+        sycl::device device() const { return stream_.get_device(); }
         sycl::queue stream() const { return stream_; }
-        const sycl::queue& streamPtr() const { return stream_; }
 
       protected:
         // The constructors set the current device, but the device
@@ -36,12 +35,11 @@ namespace cms {
         // really matter between modules (or across TBB tasks).
         explicit ScopedContextBase(edm::StreamID streamID);
 
-        explicit ScopedContextBase(const ProductBase& data);
+        explicit ScopedContextBase(ProductBase const& data);
 
-        explicit ScopedContextBase(int device, sycl::queue stream);
+        explicit ScopedContextBase(sycl::queue stream);
 
       private:
-        sycl::device currentDevice_;
         sycl::queue stream_;
       };
 
@@ -49,7 +47,7 @@ namespace cms {
       public:
         template <typename T>
         const T& get(const Product<T>& data) {
-          synchronizeStreams(data.device(), data.stream(), data.isAvailable(), data.event());
+          synchronizeStreams(data.stream(), data.isAvailable(), data.event());
           return data.data_;
         }
 
@@ -62,7 +60,7 @@ namespace cms {
         template <typename... Args>
         ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-        void synchronizeStreams(int dataDevice, sycl::queue* dataStream, bool available, sycl::event dataEvent);
+        void synchronizeStreams(sycl::queue dataStream, bool available, sycl::event dataEvent);
       };
 
       class ScopedContextHolderHelper {
@@ -77,7 +75,7 @@ namespace cms {
           waitingTaskHolder_ = std::move(waitingTaskHolder);
         }
 
-        void enqueueCallback(int device, sycl::queue* stream);
+        void enqueueCallback(sycl::queue stream);
 
       private:
         edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
@@ -149,7 +147,7 @@ namespace cms {
 
       /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
       explicit ScopedContextProduce(ContextState& state)
-          : ScopedContextGetterBase(state.device(), state.releaseStreamPtr()) {}
+          : ScopedContextGetterBase(state.releaseStream()) {}
 
       /// Record the CUDA event, all asynchronous work must have been queued before the destructor
       ~ScopedContextProduce();
@@ -157,12 +155,12 @@ namespace cms {
       template <typename T>
       std::unique_ptr<Product<T>> wrap(T data) {
         // make_unique doesn't work because of private constructor
-        return std::unique_ptr<Product<T>>(new Product<T>(device(), streamPtr(), event_, std::move(data)));
+        return std::unique_ptr<Product<T>>(new Product<T>(stream(), event_, std::move(data)));
       }
 
       template <typename T, typename... Args>
       auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
-        return iEvent.emplace(token, device(), streamPtr(), event_, std::forward<Args>(args)...);
+        return iEvent.emplace(token, stream(), event_, std::forward<Args>(args)...);
       }
 
     private:
@@ -172,8 +170,8 @@ namespace cms {
       explicit ScopedContextProduce(sycl::queue stream, sycl::event event)
           : ScopedContextGetterBase(stream), event_{event} {}
 
-      // FIXME the event is created submitting an asynchronous operation
-      sycl::event event_;
+      // the barrier should be a no-op on an ordered queue, but is used to initialise the event on the data stream
+      sycl::event event_ = stream().submit_barrier();
     };
 
     /**
@@ -186,7 +184,7 @@ namespace cms {
     public:
       /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
       explicit ScopedContextTask(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-          : ScopedContextBase(state->device(), state->streamPtr()),  // don't move, state is re-used afterwards
+          : ScopedContextBase(state->stream()),
             holderHelper_{std::move(waitingTaskHolder)},
             contextState_{state} {}
 
