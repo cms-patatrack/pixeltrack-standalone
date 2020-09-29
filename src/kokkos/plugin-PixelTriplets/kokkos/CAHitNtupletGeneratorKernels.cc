@@ -115,7 +115,7 @@ namespace KOKKOS_NAMESPACE {
       auto const minHitsPerNtuplet = m_params.minHitsPerNtuplet_;
       Kokkos::parallel_for(
           "kernel_find_ntuplets",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < d_nCells_()) {
               kernel_find_ntuplets(
@@ -127,7 +127,7 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.doStats_)
       Kokkos::parallel_for(
           "kernel_mark_used",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < d_nCells_()) {
               kernel_mark_used(hhp, d_theCells_, i);
@@ -143,7 +143,7 @@ namespace KOKKOS_NAMESPACE {
     // remove duplicates (tracks that share a doublet)
     Kokkos::parallel_for(
         "kernel_earlyDuplicateRemover",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < d_nCells_()) {
             kernel_earlyDuplicateRemover(d_theCells_, tuples_d, quality_d, i);
