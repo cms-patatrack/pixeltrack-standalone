@@ -2,13 +2,13 @@
 #define HeterogeneousCore_CUDAUtilities_cudaCheck_h
 
 // C++ standard headers
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 
 // CUDA headers
-#include <cuda.h>
-#include <cuda_runtime.h>
 
 namespace cms {
   namespace cuda {
@@ -29,26 +29,36 @@ namespace cms {
       throw std::runtime_error(out.str());
     }
 
-    inline bool cudaCheck_(
-        const char* file, int line, const char* cmd, CUresult result, const char* description = nullptr) {
-      if (result == CUDA_SUCCESS)
+    inline bool cudaCheck_(const char* file, int line, const char* cmd, int result, const char* description = nullptr) {
+      if (result == 0)
         return true;
 
       const char* error;
       const char* message;
+      /*
+      DPCT1007:0: Migration of this CUDA API is not supported by the Intel(R) DPC++ Compatibility Tool.
+      */
       cuGetErrorName(result, &error);
+      /*
+      DPCT1007:1: Migration of this CUDA API is not supported by the Intel(R) DPC++ Compatibility Tool.
+      */
       cuGetErrorString(result, &message);
       abortOnCudaError(file, line, cmd, error, message, description);
       return false;
     }
 
-    inline bool cudaCheck_(
-        const char* file, int line, const char* cmd, cudaError_t result, const char* description = nullptr) {
-      if (result == cudaSuccess)
+    inline bool cudaCheck_(const char* file, int line, const char* cmd, int result, const char* description = nullptr) {
+      if (result == 0)
         return true;
 
-      const char* error = cudaGetErrorName(result);
-      const char* message = cudaGetErrorString(result);
+      /*
+      DPCT1009:2: SYCL uses exceptions to report errors and does not use the error codes. The original code was commented out and a warning string was inserted. You need to rewrite this code.
+      */
+      const char* error = "cudaGetErrorName not supported" /*cudaGetErrorName(result)*/;
+      /*
+      DPCT1009:3: SYCL uses exceptions to report errors and does not use the error codes. The original code was commented out and a warning string was inserted. You need to rewrite this code.
+      */
+      const char* message = "cudaGetErrorString not supported" /*cudaGetErrorString(result)*/;
       abortOnCudaError(file, line, cmd, error, message, description);
       return false;
     }

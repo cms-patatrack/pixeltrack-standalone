@@ -1,9 +1,9 @@
 #ifndef HeterogeneousCore_CUDAUtilities_StreamCache_h
 #define HeterogeneousCore_CUDAUtilities_StreamCache_h
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <vector>
-
-#include <cuda_runtime.h>
 
 #include "Framework/ReusableObjectHolder.h"
 #include "CUDACore/SharedStreamPtr.h"
@@ -32,7 +32,7 @@ namespace cms {
       public:
         Deleter() = default;
         Deleter(int d) : device_{d} {}
-        void operator()(cudaStream_t stream) const;
+        void operator()(sycl::queue* stream) const;
 
       private:
         int device_ = -1;

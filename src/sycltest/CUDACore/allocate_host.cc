@@ -1,3 +1,5 @@
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <limits>
 
 #include "CUDACore/allocate_host.h"
@@ -11,7 +13,7 @@ namespace {
 }
 
 namespace cms::cuda {
-  void *allocate_host(size_t nbytes, cudaStream_t stream) {
+  void *allocate_host(size_t nbytes, sycl::queue *stream) {
     void *ptr = nullptr;
     if constexpr (allocator::useCaching) {
       if (nbytes > maxAllocationSize) {
@@ -20,7 +22,7 @@ namespace cms::cuda {
       }
       cudaCheck(allocator::getCachingHostAllocator().HostAllocate(&ptr, nbytes, stream));
     } else {
-      cudaCheck(cudaMallocHost(&ptr, nbytes));
+      cudaCheck((ptr = (void *)sycl::malloc_host(nbytes, dpct::get_default_queue()), 0));
     }
     return ptr;
   }
@@ -29,7 +31,10 @@ namespace cms::cuda {
     if constexpr (allocator::useCaching) {
       cudaCheck(allocator::getCachingHostAllocator().HostFree(ptr));
     } else {
-      cudaCheck(cudaFreeHost(ptr));
+      /*
+      DPCT1003:68: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+      */
+      cudaCheck((sycl::free(ptr, dpct::get_default_queue()), 0));
     }
   }
 

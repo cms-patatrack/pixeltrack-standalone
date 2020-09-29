@@ -1,3 +1,5 @@
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include "CUDACore/StreamCache.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/currentDevice.h"
@@ -5,10 +7,13 @@
 #include "CUDACore/ScopedSetDevice.h"
 
 namespace cms::cuda {
-  void StreamCache::Deleter::operator()(cudaStream_t stream) const {
+  void StreamCache::Deleter::operator()(sycl::queue *stream) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
-      cudaCheck(cudaStreamDestroy(stream));
+      /*
+      DPCT1003:41: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+      */
+      cudaCheck((dpct::get_current_device().destroy_queue(stream), 0));
     }
   }
 
@@ -19,9 +24,21 @@ namespace cms::cuda {
   SharedStreamPtr StreamCache::get() {
     const auto dev = currentDevice();
     return cache_[dev].makeOrGet([dev]() {
-      cudaStream_t stream;
-      cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+      try {
+        sycl::queue *stream;
+        /*
+      DPCT1003:42: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+      */
+        /*
+      DPCT1025:43: The SYCL queue is created ignoring the flag/priority options.
+      */
+        cudaCheck((stream = dpct::get_current_device().create_queue(), 0));
       return std::unique_ptr<BareStream, Deleter>(stream, Deleter{dev});
+      }
+      catch (sycl::exception const &exc) {
+        std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+        std::exit(1);
+      }
     });
   }
 

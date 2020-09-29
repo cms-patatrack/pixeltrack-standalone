@@ -1,3 +1,5 @@
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <cstdlib>
 #include <chrono>
 #include <iomanip>
@@ -7,8 +9,6 @@
 #include <vector>
 
 #include <tbb/task_scheduler_init.h>
-
-#include <cuda_runtime.h>
 
 #include "EventProcessor.h"
 
@@ -30,7 +30,7 @@ namespace {
   }
 }  // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
@@ -80,8 +80,17 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   int numberOfDevices;
-  auto status = cudaGetDeviceCount(&numberOfDevices);
-  if (cudaSuccess != status) {
+  /*
+  DPCT1003:33: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+  */
+  auto status = (numberOfDevices = dpct::dev_mgr::instance().device_count(), 0);
+  /*
+  DPCT1000:32: Error handling if-stmt was detected but could not be rewritten.
+  */
+  if (0 != status) {
+    /*
+    DPCT1001:31: The statement could not be removed.
+    */
     std::cout << "Failed to initialize the CUDA runtime";
     return EXIT_FAILURE;
   }
@@ -147,4 +156,8 @@ int main(int argc, char** argv) {
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
             << std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
   return EXIT_SUCCESS;
+}
+catch (sycl::exception const& exc) {
+  std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+  std::exit(1);
 }

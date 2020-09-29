@@ -1,9 +1,9 @@
 #ifndef HeterogeneousCore_CUDAUtilities_EventCache_h
 #define HeterogeneousCore_CUDAUtilities_EventCache_h
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <vector>
-
-#include <cuda_runtime.h>
 
 #include "Framework/ReusableObjectHolder.h"
 #include "CUDACore/SharedEventPtr.h"
@@ -39,7 +39,7 @@ namespace cms {
       public:
         Deleter() = default;
         Deleter(int d) : device_{d} {}
-        void operator()(cudaEvent_t event) const;
+        void operator()(sycl::event event) const;
 
       private:
         int device_ = -1;

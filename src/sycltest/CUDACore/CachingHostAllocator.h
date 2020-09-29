@@ -38,12 +38,15 @@
  * thread-safe.
  ******************************************************************************/
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <cmath>
 #include <map>
 #include <set>
 
 #include <cub/util_debug.cuh>
 #include <cub/host/mutex.cuh>
+#include <chrono>
 
 /// CUB namespace
 namespace notcub {
@@ -125,8 +128,10 @@ namespace notcub {
       size_t bytes;                    // Size of allocation in bytes
       unsigned int bin;                // Bin enumeration
       int device;                      // device ordinal
-      cudaStream_t associated_stream;  // Associated associated_stream
-      cudaEvent_t ready_event;  // Signal when associated stream has run to the point at which this block was freed
+      sycl::queue *associated_stream;  // Associated associated_stream
+      sycl::event ready_event;
+      std::chrono::time_point<std::chrono::high_resolution_clock>
+          ready_event_ct1;  // Signal when associated stream has run to the point at which this block was freed
 
       // Constructor (suitable for searching maps for a specific block, given its pointer)
       BlockDescriptor(void *d_ptr)
@@ -309,16 +314,15 @@ namespace notcub {
      *
      * Once freed, the allocation becomes available immediately for reuse.
      */
-    cudaError_t HostAllocate(
-        void **d_ptr,                          ///< [out] Reference to pointer to the allocation
-        size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
-        cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
-    {
+    int HostAllocate(void **d_ptr,                          ///< [out] Reference to pointer to the allocation
+                     size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
+                     sycl::queue *active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
+        try {
       *d_ptr = nullptr;
       int device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      int error = 0;
 
-      if (CubDebug(error = cudaGetDevice(&device)))
+      if (CubDebug(error = device = dpct::dev_mgr::instance().current_device_id()))
         return error;
 
       // Create a block descriptor for the requested allocation
@@ -349,20 +353,32 @@ namespace notcub {
         while ((block_itr != cached_blocks.end()) && (block_itr->bin == search_key.bin)) {
           // To prevent races with reusing blocks returned by the host but still
           // in use for transfers, only consider cached blocks that are from an idle stream
-          if (cudaEventQuery(block_itr->ready_event) != cudaErrorNotReady) {
+          if ((int)block_itr->ready_event.get_info<sycl::info::event::command_execution_status>() == 0) {
             // Reuse existing cache block.  Insert into live blocks.
             found = true;
             search_key = *block_itr;
             search_key.associated_stream = active_stream;
             if (search_key.device != device) {
               // If "associated" device changes, need to re-create the event on the right device
-              if (CubDebug(error = cudaSetDevice(search_key.device)))
+              /*
+              DPCT1003:46: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+              */
+              if (CubDebug(error = (dpct::dev_mgr::instance().select_device(search_key.device), 0)))
                 return error;
-              if (CubDebug(error = cudaEventDestroy(search_key.ready_event)))
+              /*
+              DPCT1027:47: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+              */
+              if (CubDebug(error = 0))
                 return error;
-              if (CubDebug(error = cudaSetDevice(device)))
+              /*
+              DPCT1003:48: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+              */
+              if (CubDebug(error = (dpct::dev_mgr::instance().select_device(device), 0)))
                 return error;
-              if (CubDebug(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming)))
+              /*
+              DPCT1027:49: The call to cudaEventCreateWithFlags was replaced with 0, because this call is redundant in DPC++.
+              */
+              if (CubDebug(error = 0))
                 return error;
               search_key.device = device;
             }
@@ -400,8 +416,14 @@ namespace notcub {
       if (!found) {
         // Attempt to allocate
         // TODO: eventually support allocation flags
-        if (CubDebug(error = cudaHostAlloc(&search_key.d_ptr, search_key.bytes, cudaHostAllocDefault)) ==
-            cudaErrorMemoryAllocation) {
+        /*
+        DPCT1048:44: The original value cudaHostAllocDefault is not meaningful in the migrated code and was removed or replaced with 0. You may need to check the migrated code.
+        */
+        /*
+        DPCT1003:50: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (search_key.d_ptr = (void *)sycl::malloc_host(search_key.bytes, dpct::get_default_queue()),
+                              0)) == 2) {
           // The allocation attempt failed: free all cached blocks on device and retry
           if (debug)
             _CubLog(
@@ -411,8 +433,11 @@ namespace notcub {
                 (long long)search_key.associated_stream,
                 (long long)search_key.device);
 
-          error = cudaSuccess;  // Reset the error we will return
-          cudaGetLastError();   // Reset CUDART's error
+          error = 0;  // Reset the error we will return
+          /*
+          DPCT1010:51: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
+          */
+          0;  // Reset CUDART's error
 
           // Lock
           mutex.Lock();
@@ -426,9 +451,15 @@ namespace notcub {
             // on the current device
 
             // Free pinned host memory.
-            if (CubDebug(error = cudaFreeHost(block_itr->d_ptr)))
+            /*
+            DPCT1003:54: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+            */
+            if (CubDebug(error = (sycl::free(block_itr->d_ptr, dpct::get_default_queue()), 0)))
               break;
-            if (CubDebug(error = cudaEventDestroy(block_itr->ready_event)))
+            /*
+            DPCT1027:55: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+            */
+            if (CubDebug(error = 0))
               break;
 
             // Reduce balance and erase entry
@@ -453,16 +484,33 @@ namespace notcub {
           mutex.Unlock();
 
           // Return under error
+          /*
+          DPCT1000:53: Error handling if-stmt was detected but could not be rewritten.
+          */
           if (error)
+            /*
+            DPCT1001:52: The statement could not be removed.
+            */
             return error;
 
           // Try to allocate again
-          if (CubDebug(error = cudaHostAlloc(&search_key.d_ptr, search_key.bytes, cudaHostAllocDefault)))
+          /*
+          DPCT1048:45: The original value cudaHostAllocDefault is not meaningful in the migrated code and was removed or replaced with 0. You may need to check the migrated code.
+          */
+          /*
+          DPCT1003:56: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+          */
+          if (CubDebug(
+                  error =
+                      (search_key.d_ptr = (void *)sycl::malloc_host(search_key.bytes, dpct::get_default_queue()), 0)))
             return error;
         }
 
         // Create ready event
-        if (CubDebug(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming)))
+        /*
+        DPCT1027:57: The call to cudaEventCreateWithFlags was replaced with 0, because this call is redundant in DPC++.
+        */
+        if (CubDebug(error = 0))
           return error;
 
         // Insert into live blocks
@@ -494,15 +542,19 @@ namespace notcub {
 
       return error;
     }
+    catch (sycl::exception const &exc) {
+      std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+      std::exit(1);
+    }
 
     /**
      * \brief Frees a live allocation of pinned host memory, returning it to the allocator.
      *
      * Once freed, the allocation becomes available immediately for reuse.
      */
-    cudaError_t HostFree(void *d_ptr) {
+    int HostFree(void *d_ptr) try {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      int error = 0;
 
       // Lock
       mutex.Lock();
@@ -539,16 +591,25 @@ namespace notcub {
         }
       }
 
-      if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
+      if (CubDebug(error = entrypoint_device = dpct::dev_mgr::instance().current_device_id()))
         return error;
       if (entrypoint_device != search_key.device) {
-        if (CubDebug(error = cudaSetDevice(search_key.device)))
+        /*
+        DPCT1003:58: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (dpct::dev_mgr::instance().select_device(search_key.device), 0)))
           return error;
       }
 
       if (recached) {
         // Insert the ready event in the associated stream (must have current device set properly)
-        if (CubDebug(error = cudaEventRecord(search_key.ready_event, search_key.associated_stream)))
+        /*
+        DPCT1012:59: Detected kernel execution time measurement pattern and generated an initial code for time measurements in SYCL. You can change the way time is measured depending on your goals.
+        */
+        /*
+        DPCT1024:60: The original code returned the error code that was further consumed by the program logic. This original code was replaced with 0. You may need to rewrite the program logic consuming the error code.
+        */
+        if (search_key.ready_event_ct1 = std::chrono::high_resolution_clock::now(); CubDebug(error = 0))
           return error;
       }
 
@@ -557,9 +618,15 @@ namespace notcub {
 
       if (!recached) {
         // Free the allocation from the runtime and cleanup the event.
-        if (CubDebug(error = cudaFreeHost(d_ptr)))
+        /*
+        DPCT1003:61: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (sycl::free(d_ptr, dpct::get_default_queue()), 0)))
           return error;
-        if (CubDebug(error = cudaEventDestroy(search_key.ready_event)))
+        /*
+        DPCT1027:62: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+        */
+        if (CubDebug(error = 0))
           return error;
 
         if (debug)
@@ -578,18 +645,25 @@ namespace notcub {
 
       // Reset device
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != search_key.device)) {
-        if (CubDebug(error = cudaSetDevice(entrypoint_device)))
+        /*
+        DPCT1003:63: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (dpct::dev_mgr::instance().select_device(entrypoint_device), 0)))
           return error;
       }
 
       return error;
     }
+    catch (sycl::exception const &exc) {
+      std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+      std::exit(1);
+    }
 
     /**
      * \brief Frees all cached pinned host allocations
      */
-    cudaError_t FreeAllCached() {
-      cudaError_t error = cudaSuccess;
+    int FreeAllCached() try {
+      int error = 0;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
 
@@ -601,21 +675,30 @@ namespace notcub {
 
         // Get entry-point device ordinal if necessary
         if (entrypoint_device == INVALID_DEVICE_ORDINAL) {
-          if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
+          if (CubDebug(error = entrypoint_device = dpct::dev_mgr::instance().current_device_id()))
             break;
         }
 
         // Set current device ordinal if necessary
         if (begin->device != current_device) {
-          if (CubDebug(error = cudaSetDevice(begin->device)))
+          /*
+          DPCT1003:64: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+          */
+          if (CubDebug(error = (dpct::dev_mgr::instance().select_device(begin->device), 0)))
             break;
           current_device = begin->device;
         }
 
         // Free host memory
-        if (CubDebug(error = cudaFreeHost(begin->d_ptr)))
+        /*
+        DPCT1003:65: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (sycl::free(begin->d_ptr, dpct::get_default_queue()), 0)))
           break;
-        if (CubDebug(error = cudaEventDestroy(begin->ready_event)))
+        /*
+        DPCT1027:66: The call to cudaEventDestroy was replaced with 0, because this call is redundant in DPC++.
+        */
+        if (CubDebug(error = 0))
           break;
 
         // Reduce balance and erase entry
@@ -638,11 +721,18 @@ namespace notcub {
 
       // Attempt to revert back to entry-point device if necessary
       if (entrypoint_device != INVALID_DEVICE_ORDINAL) {
-        if (CubDebug(error = cudaSetDevice(entrypoint_device)))
+        /*
+        DPCT1003:67: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
+        */
+        if (CubDebug(error = (dpct::dev_mgr::instance().select_device(entrypoint_device), 0)))
           return error;
       }
 
       return error;
+    }
+    catch (sycl::exception const &exc) {
+      std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+      std::exit(1);
     }
 
     /**

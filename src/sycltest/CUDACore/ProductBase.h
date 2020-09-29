@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_Common_ProductBase_h
 #define CUDADataFormats_Common_ProductBase_h
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <atomic>
 #include <memory>
 
@@ -46,13 +48,13 @@ namespace cms {
       // mutable access is needed even if the cms::cuda::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      cudaStream_t stream() const { return stream_.get(); }
+      sycl::queue* stream() const { return stream_.get(); }
 
       // cudaEvent_t is a pointer to a thread-safe object, for which a
       // mutable access is needed even if the cms::cuda::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      cudaEvent_t event() const { return event_.get(); }
+      sycl::event event() const { return event_.get(); }
 
     protected:
       explicit ProductBase(int device, SharedStreamPtr stream, SharedEventPtr event)

@@ -1,9 +1,9 @@
 #ifndef HeterogeneousCore_CUDAUtilities_eventWorkHasCompleted_h
 #define HeterogeneousCore_CUDAUtilities_eventWorkHasCompleted_h
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include "CUDACore/cudaCheck.h"
-
-#include <cuda_runtime.h>
 
 namespace cms {
   namespace cuda {
@@ -15,16 +15,18 @@ namespace cms {
    *
    * In case of errors, throws an exception.
    */
-    inline bool eventWorkHasCompleted(cudaEvent_t event) {
-      const auto ret = cudaEventQuery(event);
-      if (ret == cudaSuccess) {
+    inline bool eventWorkHasCompleted(sycl::event event) try {
+      const auto ret = (int)event.get_info<sycl::info::event::command_execution_status>();
+      if (ret == 0) {
         return true;
-      } else if (ret == cudaErrorNotReady) {
-        return false;
-      }
+      } else
       // leave error case handling to cudaCheck
       cudaCheck(ret);
       return false;  // to keep compiler happy
+    }
+    catch (sycl::exception const &exc) {
+      std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
+      std::exit(1);
     }
   }  // namespace cuda
 }  // namespace cms

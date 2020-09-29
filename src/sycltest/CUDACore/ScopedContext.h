@@ -1,6 +1,8 @@
 #ifndef HeterogeneousCore_CUDACore_ScopedContext_h
 #define HeterogeneousCore_CUDACore_ScopedContext_h
 
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include <optional>
 
 #include "CUDACore/Product.h"
@@ -30,7 +32,7 @@ namespace cms {
         // mutable access is needed even if the ScopedContext itself
         // would be const. Therefore it is ok to return a non-const
         // pointer from a const method here.
-        cudaStream_t stream() const { return stream_.get(); }
+        sycl::queue* stream() const { return stream_.get(); }
         const SharedStreamPtr& streamPtr() const { return stream_; }
 
       protected:
@@ -68,7 +70,7 @@ namespace cms {
         template <typename... Args>
         ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-        void synchronizeStreams(int dataDevice, cudaStream_t dataStream, bool available, cudaEvent_t dataEvent);
+        void synchronizeStreams(int dataDevice, sycl::queue* dataStream, bool available, sycl::event dataEvent);
       };
 
       class ScopedContextHolderHelper {
@@ -83,7 +85,7 @@ namespace cms {
           waitingTaskHolder_ = std::move(waitingTaskHolder);
         }
 
-        void enqueueCallback(int device, cudaStream_t stream);
+        void enqueueCallback(int device, sycl::queue* stream);
 
       private:
         edm::WaitingTaskWithArenaHolder waitingTaskHolder_;

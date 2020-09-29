@@ -1,3 +1,5 @@
+#include <CL/sycl.hpp>
+#include <dpct/dpct.hpp>
 #include "CUDACore/ProductBase.h"
 #include "CUDACore/eventWorkHasCompleted.h"
 
@@ -23,7 +25,7 @@ namespace cms::cuda {
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
     if (event_) {
-      cudaEventSynchronize(event_.get());
+      event_.get().wait_and_throw();
     }
   }
 }  // namespace cms::cuda

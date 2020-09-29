@@ -1,4 +1,4 @@
-cudatest_EXTERNAL_DEPENDS := TBB CUDA CUB
+cudatest_EXTERNAL_DEPENDS := TBB CUDA ONEAPI
 CUDACore_DEPENDS := Framework
 Test1_DEPENDS := Framework CUDACore DataFormats
 Test2_DEPENDS := Framework CUDACore
