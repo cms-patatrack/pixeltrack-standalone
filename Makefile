@@ -129,26 +129,32 @@ export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 # SYCL / oneAPI and compatibility tool
-ONEAPI_BASE := /opt/intel/oneapi/compiler/latest/linux
-DPCT_BASE   := /opt/intel/oneapi/dpcpp-ct/latest
+SYCL_BASE  := /opt/intel/oneapi/compiler/latest/linux
+DPCT_BASE  := /opt/intel/oneapi/dpcpp-ct/latest
+ONEAPI_ENV := /opt/intel/oneapi/setvars.sh
 
 # check if libraries are under lib or lib64
-ifdef ONEAPI_BASE
-ifneq ($(wildcard $(ONEAPI_BASE)/lib/libsycl.so),)
-ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib
-else ifneq ($(wildcard $(ONEAPI_BASE)/lib64/libsycl.so),)
-ONEAPI_LIBDIR := $(ONEAPI_BASE)/lib64
+ifdef SYCL_BASE
+ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib
+else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib64
 else
-ONEAPI_BASE :=
+SYCL_BASE :=
 endif
 endif
-ifdef ONEAPI_BASE
-export ONEAPI_CXX   := $(ONEAPI_BASE)/bin/dpcpp
-export ONEAPI_FLAGS := -fsycl -I$(DPCT_BASE)/include
+ifdef SYCL_BASE
+export SYCL_CXX   := $(SYCL_BASE)/bin/dpcpp
+export SYCL_FLAGS := -fsycl -I$(DPCT_BASE)/include
 ifdef CUDA_BASE
-export ONEAPI_CUDA_PLUGIN := $(wildcard $(ONEAPI_LIBDIR)/libpi_cuda.so)
-export ONEAPI_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
+export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
+export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
 endif
+endif
+
+# check if oneAPI environment file exists
+ifeq ($(wildcard $(ONEAPI_ENV)),)
+ONEAPI_ENV :=
 endif
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
@@ -168,7 +174,7 @@ test_cuda: $(TEST_CUDA_TARGETS)
 
 environment: env.sh
 env.sh: Makefile
-	@echo '#! /bin/bash'                                                    > $@
+	@echo '#! /bin/bash'                                                    >  $@
 	@echo 'if [ -f .original_env ]; then'                                   >> $@
 	@echo '  source .original_env'                                          >> $@
 	@echo 'else'                                                            >> $@
@@ -182,12 +188,19 @@ env.sh: Makefile
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
-	@echo -n '$(ONEAPI_LIBDIR):'                                            >> $@
+ifneq ($(SYCL_BASE),)
+	@echo -n '$(SYCL_LIBDIR):'                                              >> $@
+endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@echo -n 'export PATH='                                                 >> $@
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
-	@echo -n '$(ONEAPI_BASE)/bin:'                                          >> $@
+ifneq ($(SYCL_BASE),)
+	@echo -n '$(SYCL_BASE)/bin:'                                            >> $@
+endif
 	@echo '$$PATH'                                                          >> $@
+ifneq ($(ONEAPI_ENV),)
+	@echo 'source $(ONEAPI_ENV)'                                            >> $@
+endif
 
 define TARGET_template
 include src/$(1)/Makefile.deps
