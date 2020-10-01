@@ -23,6 +23,7 @@ The application is designed to require minimal dependencies on the system:
   * CMake for `kokkostest` and `kokkos` programs
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
 * CUDA 10.2 runtime and drivers (real drivers are not needed for building)
+* [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html)
 
 All other external dependencies (listed below) are downloaded and built automatically.
 * [TBB](https://github.com/intel/tbb) (all programs)
@@ -53,6 +54,7 @@ downloaded automatically during the build process.
 | `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
 | `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
+| `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
 
