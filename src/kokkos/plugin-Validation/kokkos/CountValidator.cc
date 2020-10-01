@@ -50,6 +50,9 @@ namespace KOKKOS_NAMESPACE {
         vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
 
   void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+    // values from cuda program
+    constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance
+    constexpr int vertexTolerance = 1;
     std::stringstream ss;
     bool ok = true;
 
@@ -78,8 +81,17 @@ namespace KOKKOS_NAMESPACE {
       auto const& count = iEvent.get(trackCountToken_);
       auto const& tracks = iEvent.get(trackToken_);
 
-      if (tracks().m_nTracks != count.nTracks()) {
-        ss << "\n N(tracks) is " << tracks().m_nTracks << " expected " << count.nTracks();
+      int nTracks = 0;
+      for (int i = 0; i < tracks().stride(); ++i) {
+        if (tracks().nHits(i) > 0) {
+          ++nTracks;
+        }
+      }
+
+      auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
+      if (rel >= trackTolerance) {
+        ss << "\n N(tracks) is " << nTracks << " expected " << count.nTracks() << ", relative difference " << rel
+           << " is outside tolerance " << trackTolerance;
         ok = false;
       }
     }
@@ -88,8 +100,10 @@ namespace KOKKOS_NAMESPACE {
       auto const& count = iEvent.get(vertexCountToken_);
       auto const& vertices = iEvent.get(vertexToken_);
 
-      if (vertices().nvFinal != count.nVertices()) {
-        ss << "\n N(vertices) is " << vertices().nvFinal << " expected " << count.nVertices();
+      auto diff = std::abs(int(vertices().nvFinal) - int(count.nVertices()));
+      if (diff > vertexTolerance) {
+        ss << "\n N(vertices) is " << vertices().nvFinal << " expected " << count.nVertices() << ", difference " << diff
+           << " is outside tolerance " << vertexTolerance;
         ok = false;
       }
     }
