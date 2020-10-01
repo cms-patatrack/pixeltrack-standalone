@@ -115,14 +115,14 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
   sycl::range<3> threadsPerBlock3{workgroupRectA, workgroupRectB, 1};
   sycl::range<3> blocksPerGrid3{(NUM_VALUES + threadsPerBlock3[0] - 1) / threadsPerBlock3[0], (NUM_VALUES + threadsPerBlock3[1] - 1) / threadsPerBlock3[1], 1};
   stream.submit([&](sycl::handler &cgh) {
-    auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
+    auto threadsPerGrid = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
     auto d_b_get_ct1 = d_b.get();
     auto d_ma_get_ct2 = d_ma.get();
 
     cgh.parallel_for(
-        sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
+        sycl::nd_range<3>(sycl::range<3>(threadsPerGrid.get(2), threadsPerGrid.get(1), threadsPerGrid.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
           vectorProd(d_a_get_ct0, d_b_get_ct1, d_ma_get_ct2, NUM_VALUES, item_ct1);
@@ -130,14 +130,14 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
   });
   
   stream.submit([&](sycl::handler &cgh) {
-    auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
+    auto threadsPerGrid = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_a_get_ct0 = d_a.get();
     auto d_c_get_ct1 = d_c.get();
     auto d_mb_get_ct2 = d_mb.get();
 
     cgh.parallel_for(
-        sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
+        sycl::nd_range<3>(sycl::range<3>(threadsPerGrid.get(2), threadsPerGrid.get(1), threadsPerGrid.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
           vectorProd(d_a_get_ct0, d_c_get_ct1, d_mb_get_ct2, NUM_VALUES, item_ct1);
@@ -145,14 +145,14 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
   });
   
   stream.submit([&](sycl::handler &cgh) {
-    auto dpct_global_range = blocksPerGrid3 * threadsPerBlock3;
+    auto threadsPerGrid = blocksPerGrid3 * threadsPerBlock3;
 
     auto d_ma_get_ct0 = d_ma.get();
     auto d_mb_get_ct1 = d_mb.get();
     auto d_mc_get_ct2 = d_mc.get();
 
     cgh.parallel_for(
-        sycl::nd_range<3>(sycl::range<3>(dpct_global_range.get(2), dpct_global_range.get(1), dpct_global_range.get(0)),
+        sycl::nd_range<3>(sycl::range<3>(threadsPerGrid.get(2), threadsPerGrid.get(1), threadsPerGrid.get(0)),
                           sycl::range<3>(threadsPerBlock3.get(2), threadsPerBlock3.get(1), threadsPerBlock3.get(0))),
         [=](sycl::nd_item<3> item_ct1) {
           matrixMul(d_ma_get_ct0, d_mb_get_ct1, d_mc_get_ct2, NUM_VALUES, item_ct1);
