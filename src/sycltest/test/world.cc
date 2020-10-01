@@ -1,22 +1,35 @@
-#include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include <iostream>
+#include <CL/sycl.hpp>
 
-/*
-DPCT1015:30: Output needs adjustment.
-*/
-void print(sycl::nd_item<3> item_ct1, sycl::stream stream_ct1) { stream_ct1 << "GPU thread %d\n"; }
+void sycl_exception_handler(cl::sycl::exception_list exceptions) {
+  std::ostringstream msg;
+  msg << "Caught asynchronous SYCL exception:";
+  for (auto const &exc_ptr : exceptions) {
+    try {
+      std::rethrow_exception(exc_ptr);
+    } catch (cl::sycl::exception const &e) {
+      msg << '\n' << e.what();
+    }
+    throw std::runtime_error(msg.str());
+  }
+}
+
+void print(sycl::nd_item<1> item, sycl::stream out) {
+  out << "SYCL device thread " << item.get_local_id(0) << sycl::endl;
+}
 
 int main() {
   std::cout << "World from" << std::endl;
-  dpct::get_default_queue().submit([&](sycl::handler &cgh) {
-    sycl::stream stream_ct1(64 * 1024, 80, cgh);
 
-    cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, 4), sycl::range<3>(1, 1, 4)),
-                     [=](sycl::nd_item<3> item_ct1) {
-                       print(item_ct1, stream_ct1);
+  sycl::queue queue{sycl::default_selector(), sycl_exception_handler, sycl::property::queue::in_order()};
+  queue.submit([&](sycl::handler &cgh) {
+    sycl::stream out(64 * 1024, 80, cgh);
+
+    cgh.parallel_for(sycl::nd_range<1>(sycl::range<1>(4), sycl::range<1>(4)),
+                     [=](sycl::nd_item<1> item) {
+                       print(item, out);
                      });
   });
-  dpct::get_current_device().queues_wait_and_throw();
+  queue.wait_and_throw();
   return 0;
 }
