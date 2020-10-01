@@ -1,5 +1,4 @@
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include <cstdlib>
 #include <chrono>
 #include <iomanip>
