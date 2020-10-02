@@ -41,6 +41,11 @@ public:
   cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
 
+  // for validation
+  cms::cuda::host::unique_ptr<float[]> globalCoordToHostAsync(cudaStream_t stream) const;
+  cms::cuda::host::unique_ptr<int32_t[]> chargeToHostAsync(cudaStream_t stream) const;
+  cms::cuda::host::unique_ptr<int16_t[]> sizeToHostAsync(cudaStream_t stream) const;
+
 private:
   static constexpr uint32_t n16 = 4;
   static constexpr uint32_t n32 = 9;
