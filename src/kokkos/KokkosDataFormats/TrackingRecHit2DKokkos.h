@@ -37,9 +37,28 @@ public:
   Kokkos::View<uint32_t const*, MemorySpace> c_hitsLayerStart() { return m_hitsLayerStart; }
   Kokkos::View<int16_t const*, MemorySpace> c_iphi() { return m_iphi; }
 
+#define TO_HOST_ASYNC(name)                                  \
+  template <typename ExecSpace>                              \
+  auto name##ToHostAsync(ExecSpace const& execSpace) const { \
+    auto host = Kokkos::create_mirror_view(m_##name);        \
+    Kokkos::deep_copy(execSpace, host, m_##name);            \
+    return host;                                             \
+  }
+  TO_HOST_ASYNC(xl);
+  TO_HOST_ASYNC(yl);
+  TO_HOST_ASYNC(xerr);
+  TO_HOST_ASYNC(yerr);
+  TO_HOST_ASYNC(xg);
+  TO_HOST_ASYNC(yg);
+  TO_HOST_ASYNC(zg);
+  TO_HOST_ASYNC(rg);
+  TO_HOST_ASYNC(charge);
+  TO_HOST_ASYNC(xsize);
+  TO_HOST_ASYNC(ysize);
+#undef TO_HOST_ASYNC
+
 #ifdef TODO
   // only the local coord and detector index
-  cms::cuda::host::unique_ptr<float[]> localCoordToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
 #endif

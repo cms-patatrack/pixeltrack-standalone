@@ -18,7 +18,7 @@ namespace {
     std::cout
         << name
         << ": [--serial] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation]\n\n"
+           "[--transfer] [--validation] [--histogram]\n\n"
         << "Options\n"
         << " --serial            Use CPU Serial backend\n"
         << " --cuda              Use CUDA backend\n"
@@ -27,6 +27,7 @@ namespace {
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+        << " --histogram         Produce histograms at the end (implies --transfer)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
         << std::endl;
   }
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
+  bool histogram = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -68,6 +70,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--validation") {
       transfer = true;
       validation = true;
+    } else if (*i == "--histogram") {
+      transfer = true;
+      histogram = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -106,6 +111,9 @@ int main(int argc, char** argv) {
         }
         if (validation) {
           edmodules.emplace_back(prefix + "CountValidator");
+        }
+        if (histogram) {
+          edmodules.emplace_back(prefix + "HistoValidator");
         }
 
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
