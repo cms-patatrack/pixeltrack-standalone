@@ -22,3 +22,5 @@ kokkos_cuda::SiPixelRecHitKokkos pluginSiPixelRecHits.so
 kokkos_serial::SiPixelRecHitKokkos pluginSiPixelRecHits.so
 kokkos_cuda::CountValidator pluginValidation.so
 kokkos_serial::CountValidator pluginValidation.so
+kokkos_cuda::HistoValidator pluginValidation.so
+kokkos_serial::HistoValidator pluginValidation.so

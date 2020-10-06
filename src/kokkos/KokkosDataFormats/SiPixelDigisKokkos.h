@@ -54,8 +54,13 @@ public:
   KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_pdigi() const { return pdigi_d; }
   KOKKOS_INLINE_FUNCTION Kokkos::View<uint32_t const*, MemorySpace> c_rawIdArr() const { return rawIdArr_d; }
 
+  template <typename ExecSpace>
+  auto adcToHostAsync(ExecSpace const& execSpace) const {
+    auto host = Kokkos::create_mirror_view(adc_d);
+    Kokkos::deep_copy(execSpace, host, adc_d);
+    return host;
+  }
 #ifdef TODO
-  cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
