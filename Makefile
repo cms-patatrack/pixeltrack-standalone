@@ -128,10 +128,15 @@ export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
 export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
-# SYCL / oneAPI and compatibility tool
-SYCL_BASE  := /opt/intel/oneapi/compiler/latest/linux
-DPCT_BASE  := /opt/intel/oneapi/dpcpp-ct/latest
-ONEAPI_ENV := /opt/intel/oneapi/setvars.sh
+# Intel oneAPI
+ONEAPI_BASE := /opt/intel/oneapi
+ONEAPI_ENV  := $(ONEAPI_BASE)/setvars.sh
+DPCT_BASE   := $(ONEAPI_BASE)/dpcpp-ct/latest
+SYCL_BASE   := $(ONEAPI_BASE)/compiler/latest/linux
+
+# to use a different toolchain
+#   - unset ONEAPI_ENV
+#   - set SYCL_BASE appropriately
 
 # check if libraries are under lib or lib64
 ifdef SYCL_BASE
@@ -150,11 +155,6 @@ ifdef CUDA_BASE
 export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
 export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
 endif
-endif
-
-# check if oneAPI environment file exists
-ifeq ($(wildcard $(ONEAPI_ENV)),)
-ONEAPI_ENV :=
 endif
 
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
@@ -189,16 +189,21 @@ env.sh: Makefile
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 ifneq ($(SYCL_BASE),)
+ifeq ($(wildcard $(ONEAPI_ENV)),)
 	@echo -n '$(SYCL_LIBDIR):'                                              >> $@
+endif
 endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@echo -n 'export PATH='                                                 >> $@
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
 ifneq ($(SYCL_BASE),)
+ifeq ($(wildcard $(ONEAPI_ENV)),)
 	@echo -n '$(SYCL_BASE)/bin:'                                            >> $@
 endif
+endif
 	@echo '$$PATH'                                                          >> $@
-ifneq ($(ONEAPI_ENV),)
+# check if oneAPI environment file exists
+ifneq ($(wildcard $(ONEAPI_ENV)),)
 	@echo 'source $(ONEAPI_ENV)'                                            >> $@
 endif
 
