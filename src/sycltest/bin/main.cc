@@ -80,10 +80,10 @@ int main(int argc, char** argv) try {
     return EXIT_FAILURE;
   }
 
-  // Initialse the CUDA runtime
+  // Initialise the SYCL runtime
   cms::sycltools::enumerateDevices(true);
 
-  // Initialize EventProcessor
+  // Initialise the EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
