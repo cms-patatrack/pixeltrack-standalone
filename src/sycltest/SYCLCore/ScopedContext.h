@@ -146,8 +146,7 @@ namespace cms {
       explicit ScopedContextProduce(const ProductBase& data) : ScopedContextGetterBase(data) {}
 
       /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-      explicit ScopedContextProduce(ContextState& state)
-          : ScopedContextGetterBase(state.releaseStream()) {}
+      explicit ScopedContextProduce(ContextState& state) : ScopedContextGetterBase(state.releaseStream()) {}
 
       /// Record the CUDA event, all asynchronous work must have been queued before the destructor
       ~ScopedContextProduce();
@@ -184,9 +183,7 @@ namespace cms {
     public:
       /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
       explicit ScopedContextTask(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-          : ScopedContextBase(state->stream()),
-            holderHelper_{std::move(waitingTaskHolder)},
-            contextState_{state} {}
+          : ScopedContextBase(state->stream()), holderHelper_{std::move(waitingTaskHolder)}, contextState_{state} {}
 
       ~ScopedContextTask();
 

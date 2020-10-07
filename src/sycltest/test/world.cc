@@ -26,9 +26,7 @@ int main() {
     sycl::stream out(64 * 1024, 80, cgh);
 
     cgh.parallel_for(sycl::nd_range<1>(sycl::range<1>(4), sycl::range<1>(4)),
-                     [=](sycl::nd_item<1> item) {
-                       print(item, out);
-                     });
+                     [=](sycl::nd_item<1> item) { print(item, out); });
   });
   queue.wait_and_throw();
   return 0;

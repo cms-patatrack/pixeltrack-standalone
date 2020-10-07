@@ -72,7 +72,8 @@ namespace cms {
 
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
-    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique_uninitialized(sycl::queue stream) {
+    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique_uninitialized(
+        sycl::queue stream) {
       void *mem = sycl::malloc_device(sizeof(T), stream);
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
                                                                               device::impl::DeviceDeleter{stream}};

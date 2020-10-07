@@ -8,7 +8,8 @@ namespace cms::sycltools {
     if (not event_) {
       return false;
     }
-    return event_->get_info<sycl::info::event::command_execution_status>() == sycl::info::event_command_status::complete;
+    return event_->get_info<sycl::info::event::command_execution_status>() ==
+           sycl::info::event_command_status::complete;
   }
 
   ProductBase::~ProductBase() {

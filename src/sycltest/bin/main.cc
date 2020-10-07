@@ -143,8 +143,7 @@ int main(int argc, char** argv) try {
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
             << std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
   return EXIT_SUCCESS;
-}
-catch (sycl::exception const& exc) {
+} catch (sycl::exception const& exc) {
   std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__ << std::endl;
   std::exit(1);
 }

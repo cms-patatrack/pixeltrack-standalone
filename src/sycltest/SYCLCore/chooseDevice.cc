@@ -9,7 +9,7 @@ namespace cms::sycltools {
     static const std::vector<sycl::device> devices = sycl::device::get_devices(sycl::info::device_type::all);
     if (verbose) {
       std::cerr << "Found " << devices.size() << " SYCL devices:" << std::endl;
-      for (auto const& device: devices)
+      for (auto const& device : devices)
         std::cerr << "  - " << device.get_info<cl::sycl::info::device::name>() << std::endl;
       std::cerr << std::endl;
     }

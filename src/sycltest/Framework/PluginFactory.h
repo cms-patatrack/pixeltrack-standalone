@@ -53,6 +53,7 @@ namespace edm {
 #define EDM_PLUGIN_SYM(x, y) EDM_PLUGIN_SYM2(x, y)
 #define EDM_PLUGIN_SYM2(x, y) x##y
 
-#define DEFINE_FWK_MODULE(type) [[maybe_unused]] static edm::PluginFactory::impl::Registrar<type> EDM_PLUGIN_SYM(maker, __LINE__)(#type);
+#define DEFINE_FWK_MODULE(type) \
+  [[maybe_unused]] static edm::PluginFactory::impl::Registrar<type> EDM_PLUGIN_SYM(maker, __LINE__)(#type);
 
 #endif

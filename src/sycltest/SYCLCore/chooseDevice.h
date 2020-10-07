@@ -8,6 +8,6 @@
 namespace cms::sycltools {
   std::vector<sycl::device> const& enumerateDevices(bool verbose = false);
   sycl::device chooseDevice(edm::StreamID id);
-}
+}  // namespace cms::sycltools
 
 #endif
