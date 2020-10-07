@@ -126,8 +126,10 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
 
   auto d_c = cms::sycltools::make_device_unique<float[]>(NUM_VALUES, stream);
 
+#ifdef DEBUG
   std::cerr << "block size: " << threadsPerBlock << " / " << maxWorkgroupSize << std::endl;
   std::cerr << "grid size:  " << blocksPerGrid << std::endl;
+#endif
   stream.submit([&](sycl::handler &cgh) {
     auto pd_a = d_a.get();
     auto pd_b = d_b.get();
@@ -145,8 +147,10 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
   auto threadsPerGrid3 = blocksPerGrid3 * threadsPerBlock3;
   auto grid3 = sycl::nd_range<3>(threadsPerGrid3, threadsPerBlock3);
 
+#ifdef DEBUG
   std::cerr << "block size: " << threadsPerBlock3 << " / " << maxWorkgroupSize << std::endl;
   std::cerr << "grid size:  " << blocksPerGrid3 << std::endl;
+#endif
   stream.submit([&](sycl::handler &cgh) {
     auto pd_a = d_a.get();
     auto pd_b = d_b.get();
@@ -155,8 +159,10 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
     cgh.parallel_for(grid3, [=](sycl::nd_item<3> item) { vectorProd(pd_a, pd_b, pd_ma, NUM_VALUES, item); });
   });
 
+#ifdef DEBUG
   std::cerr << "block size: " << threadsPerBlock3 << " / " << maxWorkgroupSize << std::endl;
   std::cerr << "grid size:  " << blocksPerGrid3 << std::endl;
+#endif
   stream.submit([&](sycl::handler &cgh) {
     auto pd_a = d_a.get();
     auto pd_c = d_c.get();
@@ -165,8 +171,10 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
     cgh.parallel_for(grid3, [=](sycl::nd_item<3> item) { vectorProd(pd_a, pd_c, pd_mb, NUM_VALUES, item); });
   });
 
+#ifdef DEBUG
   std::cerr << "block size: " << threadsPerBlock3 << " / " << maxWorkgroupSize << std::endl;
   std::cerr << "grid size:  " << blocksPerGrid3 << std::endl;
+#endif
   stream.submit([&](sycl::handler &cgh) {
     auto pd_ma = d_ma.get();
     auto pd_mb = d_mb.get();
@@ -175,8 +183,10 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
     cgh.parallel_for(grid3, [=](sycl::nd_item<3> item) { matrixMul(pd_ma, pd_mb, pd_mc, NUM_VALUES, item); });
   });
 
+#ifdef DEBUG
   std::cerr << "block size: " << threadsPerBlock << " / " << maxWorkgroupSize << std::endl;
   std::cerr << "grid size:  " << blocksPerGrid << std::endl;
+#endif
   stream.submit([&](sycl::handler &cgh) {
     auto pd_mc = d_mc.get();
     auto pd_b = d_b.get();
