@@ -40,7 +40,7 @@ namespace {
 
   template <typename T>
   __global__ void matrixMulVector(const T *a, const T *b, T *c, int numElements) {
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (row < numElements) {
       T tmp = 0;
