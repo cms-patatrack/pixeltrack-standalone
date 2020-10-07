@@ -185,5 +185,8 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo1(sycl::queue stream) {
     cgh.parallel_for(grid, [=](sycl::nd_item<1> item) { matrixMulVector(pd_mc, pd_b, pd_c, NUM_VALUES, item); });
   });
 
+  // wait for all asynchronous work to complete before destroying the device memory buffers
+  stream.submit_barrier().wait();
+
   return d_a;
 }
