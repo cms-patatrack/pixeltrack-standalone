@@ -320,7 +320,7 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
       Kokkos::parallel_for(
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < device_nCells_()) {
               kernel_fishboneCleaner(theCells.data(), quality_d, i);
@@ -332,7 +332,7 @@ namespace KOKKOS_NAMESPACE {
     {
       auto nCells = device_nCells_;
       Kokkos::parallel_for(
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < nCells()) {
               kernel_fastDuplicateRemover(theCells.data(), tuples_d, tracks_d.data(), i);
