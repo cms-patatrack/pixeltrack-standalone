@@ -328,11 +328,9 @@ namespace notcub {
     {
       *d_ptr = nullptr;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
 
       if (device == INVALID_DEVICE_ORDINAL) {
-        if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
-          return error;
+        cudaCheck(cudaGetDevice(&entrypoint_device));
         device = entrypoint_device;
       }
 
@@ -405,14 +403,12 @@ namespace notcub {
       if (!found) {
         // Set runtime's current device to specified device (entrypoint may not be set)
         if (device != entrypoint_device) {
-          if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
-            return error;
-          if (CubDebug(error = cudaSetDevice(device)))
-            return error;
+          cudaCheck(cudaGetDevice(&entrypoint_device));
+          cudaCheck(cudaSetDevice(device));
         }
 
         // Attempt to allocate
-        if (CubDebug(error = cudaMalloc(&search_key.d_ptr, search_key.bytes)) == cudaErrorMemoryAllocation) {
+        if (cudaMalloc(&search_key.d_ptr, search_key.bytes) == cudaErrorMemoryAllocation) {
           // The allocation attempt failed: free all cached blocks on device and retry
           if (debug)
             _CubLog(
@@ -421,7 +417,6 @@ namespace notcub {
                 (long long)search_key.bytes,
                 (long long)search_key.associated_stream);
 
-          error = cudaSuccess;  // Reset the error we will return
           cudaGetLastError();   // Reset CUDART's error
 
           // Lock
@@ -437,10 +432,8 @@ namespace notcub {
             // on the current device
 
             // Free device memory and destroy stream event.
-            if (CubDebug(error = cudaFree(block_itr->d_ptr)))
-              break;
-            if (CubDebug(error = cudaEventDestroy(block_itr->ready_event)))
-              break;
+            cudaCheck(cudaFree(block_itr->d_ptr));
+            cudaCheck(cudaEventDestroy(block_itr->ready_event));
 
             // Reduce balance and erase entry
             cached_bytes[device].free -= block_itr->bytes;
@@ -464,18 +457,12 @@ namespace notcub {
           // Unlock
           mutex.Unlock();
 
-          // Return under error
-          if (error)
-            return error;
-
           // Try to allocate again
-          if (CubDebug(error = cudaMalloc(&search_key.d_ptr, search_key.bytes)))
-            return error;
+          cudaCheck(cudaMalloc(&search_key.d_ptr, search_key.bytes));
         }
 
         // Create ready event
-        if (CubDebug(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming)))
-          return error;
+        cudaCheck(cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming));
 
         // Insert into live blocks
         mutex.Lock();
@@ -495,8 +482,7 @@ namespace notcub {
 
         // Attempt to revert back to previous device if necessary
         if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device)) {
-          if (CubDebug(error = cudaSetDevice(entrypoint_device)))
-            return error;
+          cudaCheck(cudaSetDevice(entrypoint_device));
         }
       }
 
@@ -510,7 +496,7 @@ namespace notcub {
                 (long long)live_blocks.size(),
                 (long long)cached_bytes[device].live);
 
-      return error;
+      return cudaSuccess;
     }
 
     /**
@@ -537,11 +523,9 @@ namespace notcub {
      */
     cudaError_t DeviceFree(int device, void *d_ptr) {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
 
       if (device == INVALID_DEVICE_ORDINAL) {
-        if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
-          return error;
+        cudaCheck(cudaGetDevice(&entrypoint_device));
         device = entrypoint_device;
       }
 
@@ -584,16 +568,18 @@ namespace notcub {
 
       // First set to specified device (entrypoint may not be set)
       if (device != entrypoint_device) {
-        if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
-          return error;
-        if (CubDebug(error = cudaSetDevice(device)))
-          return error;
+        cudaCheck(cudaGetDevice(&entrypoint_device));
+        cudaCheck(cudaSetDevice(device));
       }
 
       if (recached) {
         // Insert the ready event in the associated stream (must have current device set properly)
-        if (CubDebug(error = cudaEventRecord(search_key.ready_event, search_key.associated_stream)))
-          return error;
+        cudaCheck(cudaGetLastError());
+        auto error = cudaEventRecord(search_key.ready_event, search_key.associated_stream);
+        if (error != cudaSuccess) {
+          std::cerr << "error reusing event " << search_key.ready_event << " for stream " << search_key.associated_stream << std::endl;
+        }
+        cudaCheck(error);
       }
 
       // Unlock
@@ -601,10 +587,8 @@ namespace notcub {
 
       if (!recached) {
         // Free the allocation from the runtime and cleanup the event.
-        if (CubDebug(error = cudaFree(d_ptr)))
-          return error;
-        if (CubDebug(error = cudaEventDestroy(search_key.ready_event)))
-          return error;
+        cudaCheck(cudaFree(d_ptr));
+        cudaCheck(cudaEventDestroy(search_key.ready_event));
 
         if (debug)
           // CMS: improved debug message
@@ -624,11 +608,10 @@ namespace notcub {
 
       // Reset device
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device)) {
-        if (CubDebug(error = cudaSetDevice(entrypoint_device)))
-          return error;
+        cudaCheck(cudaSetDevice(entrypoint_device));
       }
 
-      return error;
+      return cudaSuccess;
     }
 
     /**
@@ -644,7 +627,6 @@ namespace notcub {
      * \brief Frees all cached device allocations on all devices
      */
     cudaError_t FreeAllCached() {
-      cudaError_t error = cudaSuccess;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
 
@@ -656,22 +638,18 @@ namespace notcub {
 
         // Get entry-point device ordinal if necessary
         if (entrypoint_device == INVALID_DEVICE_ORDINAL) {
-          if (CubDebug(error = cudaGetDevice(&entrypoint_device)))
-            break;
+          cudaCheck(cudaGetDevice(&entrypoint_device));
         }
 
         // Set current device ordinal if necessary
         if (begin->device != current_device) {
-          if (CubDebug(error = cudaSetDevice(begin->device)))
-            break;
+          cudaCheck(cudaSetDevice(begin->device));
           current_device = begin->device;
         }
 
         // Free device memory
-        if (CubDebug(error = cudaFree(begin->d_ptr)))
-          break;
-        if (CubDebug(error = cudaEventDestroy(begin->ready_event)))
-          break;
+        cudaCheck(cudaFree(begin->d_ptr));
+        cudaCheck(cudaEventDestroy(begin->ready_event));
 
         // Reduce balance and erase entry
         cached_bytes[current_device].free -= begin->bytes;
@@ -694,11 +672,10 @@ namespace notcub {
 
       // Attempt to revert back to entry-point device if necessary
       if (entrypoint_device != INVALID_DEVICE_ORDINAL) {
-        if (CubDebug(error = cudaSetDevice(entrypoint_device)))
-          return error;
+        cudaCheck(cudaSetDevice(entrypoint_device));
       }
 
-      return error;
+      return cudaSuccess;
     }
 
     /**
