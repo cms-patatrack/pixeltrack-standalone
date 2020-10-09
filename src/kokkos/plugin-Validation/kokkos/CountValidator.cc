@@ -12,13 +12,9 @@
 #include "Framework/EDProducer.h"
 
 #include <atomic>
+#include <mutex>
 #include <iostream>
 #include <sstream>
-
-namespace {
-  std::atomic<int> allEvents{0};
-  std::atomic<int> goodEvents{0};
-}  // namespace
 
 namespace KOKKOS_NAMESPACE {
 
@@ -38,7 +34,20 @@ namespace KOKKOS_NAMESPACE {
     edm::EDGetTokenT<SiPixelClustersKokkos<KokkosExecSpace>> clusterToken_;
     edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror> trackToken_;
     edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror> vertexToken_;
+
+    static std::atomic<int> allEvents;
+    static std::atomic<int> goodEvents;
+    static std::atomic<int> sumVertexDifference;
+
+    static std::mutex sumTrackDifferenceMutex;
+    static float sumTrackDifference;
   };
+
+  std::atomic<int> CountValidator::allEvents{0};
+  std::atomic<int> CountValidator::goodEvents{0};
+  std::atomic<int> CountValidator::sumVertexDifference{0};
+  std::mutex CountValidator::sumTrackDifferenceMutex;
+  float CountValidator::sumTrackDifference = 0;
 
   CountValidator::CountValidator(edm::ProductRegistry& reg)
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
@@ -89,6 +98,10 @@ namespace KOKKOS_NAMESPACE {
       }
 
       auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
+      if (static_cast<unsigned int>(nTracks) != count.nTracks()) {
+        std::lock_guard<std::mutex> guard(sumTrackDifferenceMutex);
+        sumTrackDifference += rel;
+      }
       if (rel >= trackTolerance) {
         ss << "\n N(tracks) is " << nTracks << " expected " << count.nTracks() << ", relative difference " << rel
            << " is outside tolerance " << trackTolerance;
@@ -101,6 +114,9 @@ namespace KOKKOS_NAMESPACE {
       auto const& vertices = iEvent.get(vertexToken_);
 
       auto diff = std::abs(int(vertices().nvFinal) - int(count.nVertices()));
+      if (diff != 0) {
+        sumVertexDifference += diff;
+      }
       if (diff > vertexTolerance) {
         ss << "\n N(vertices) is " << vertices().nvFinal << " expected " << count.nVertices() << ", difference " << diff
            << " is outside tolerance " << vertexTolerance;
@@ -119,8 +135,23 @@ namespace KOKKOS_NAMESPACE {
   void CountValidator::endJob() {
     if (allEvents == goodEvents) {
       std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
+      if (sumTrackDifference != 0.f) {
+        std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load()
+                  << " (all within tolerance)\n";
+      }
+      if (sumVertexDifference != 0) {
+        std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
+                  << " (all within tolerance)\n";
+      }
     } else {
       std::cout << "CountValidator: " << (allEvents - goodEvents) << " events failed validation (see details above)\n";
+      if (sumTrackDifference != 0.f) {
+        std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load() << "\n";
+      }
+      if (sumVertexDifference != 0) {
+        std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
+                  << "\n";
+      }
       throw std::runtime_error("CountValidator failed");
     }
   }
