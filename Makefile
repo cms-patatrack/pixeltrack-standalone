@@ -3,9 +3,9 @@ export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Build flags
 export CXX := g++
 USER_CXXFLAGS :=
-HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Xassembler --compress-debug-sections -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
+HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
-export LDFLAGS := -pthread -Wl,-E -lstdc++fs
+export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
@@ -128,6 +128,36 @@ export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
 export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
+# Intel oneAPI
+ONEAPI_BASE := /opt/intel/oneapi
+ONEAPI_ENV  := $(ONEAPI_BASE)/setvars.sh
+DPCT_BASE   := $(ONEAPI_BASE)/dpcpp-ct/latest
+SYCL_BASE   := $(ONEAPI_BASE)/compiler/latest/linux
+SYCL_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Wno-non-template-friend -Werror=format-contains-nul -Werror=return-local-addr -Werror=unused-but-set-variable
+
+# to use a different toolchain
+#   - unset ONEAPI_ENV
+#   - set SYCL_BASE appropriately
+
+# check if libraries are under lib or lib64
+ifdef SYCL_BASE
+ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib
+else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib64
+else
+SYCL_BASE :=
+endif
+endif
+ifdef SYCL_BASE
+export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
+export SYCL_CXXFLAGS := -fsycl -I$(DPCT_BASE)/include $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS))
+ifdef CUDA_BASE
+export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
+export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
+endif
+endif
+
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -145,7 +175,7 @@ test_cuda: $(TEST_CUDA_TARGETS)
 
 environment: env.sh
 env.sh: Makefile
-	@echo '#! /bin/bash'                                                    > $@
+	@echo '#! /bin/bash'                                                    >  $@
 	@echo 'if [ -f .original_env ]; then'                                   >> $@
 	@echo '  source .original_env'                                          >> $@
 	@echo 'else'                                                            >> $@
@@ -159,10 +189,24 @@ env.sh: Makefile
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
+ifneq ($(SYCL_BASE),)
+ifeq ($(wildcard $(ONEAPI_ENV)),)
+	@echo -n '$(SYCL_LIBDIR):'                                              >> $@
+endif
+endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@echo -n 'export PATH='                                                 >> $@
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
+ifneq ($(SYCL_BASE),)
+ifeq ($(wildcard $(ONEAPI_ENV)),)
+	@echo -n '$(SYCL_BASE)/bin:'                                            >> $@
+endif
+endif
 	@echo '$$PATH'                                                          >> $@
+# check if oneAPI environment file exists
+ifneq ($(wildcard $(ONEAPI_ENV)),)
+	@echo 'source $(ONEAPI_ENV)'                                            >> $@
+endif
 
 define TARGET_template
 include src/$(1)/Makefile.deps
