@@ -89,7 +89,7 @@ export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
-export ALPAKA_CUFLAGS := $(CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+export ALPAKA_CUFLAGS := $(CUDA_CUFLAGS)
 
 CUPLA_BASE := $(EXTERNAL_BASE)/cupla
 export CUPLA_DEPS := $(CUPLA_BASE)/lib
@@ -123,7 +123,7 @@ export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 KOKKOS_CUDA_CUFLAGS := $(KOKKOS_NVCC_COMMON) $(USER_CUDAFLAGS)
-export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS) -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS)
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
 export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
@@ -160,7 +160,9 @@ env.sh: Makefile
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
-	@echo 'export PATH=$$PATH:$(CUDA_BASE)/bin'                             >> $@
+	@echo -n 'export PATH='                                                 >> $@
+	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
+	@echo '$$PATH'                                                          >> $@
 
 define TARGET_template
 include src/$(1)/Makefile.deps
