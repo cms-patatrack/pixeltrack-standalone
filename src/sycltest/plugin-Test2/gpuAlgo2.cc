@@ -196,7 +196,7 @@ cms::sycltools::device::unique_ptr<float[]> gpuAlgo2(sycl::queue stream) {
   });
 
   // wait for all asynchronous work to complete before destroying the device memory buffers
-  stream.submit_barrier().wait();
+  stream.wait_and_throw();
 
   return d_a;
 }
