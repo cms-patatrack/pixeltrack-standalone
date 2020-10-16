@@ -163,14 +163,25 @@ endif
 
 # Targets and their dependencies on externals
 TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
-TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
-TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS))
+TARGETS_SYCL = sycltest
+TARGETS_GCC_NVCC = $(filter-out $(TARGETS_SYCL),$(TARGETS))
+
+TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS_GCC_NVCC))
+TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS_GCC_NVCC))
+TEST_SYCL_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS_SYCL))
+
 all: $(TARGETS)
-test: test_cpu test_cuda
+all_gcc_nvcc: $(TARGETS_GCC_NVCC)
+all_sycl: $(TARGETS_SYCL)
+
+test: test_cpu test_cuda test_sycl
 test_cpu: $(TEST_CPU_TARGETS)
 test_cuda: $(TEST_CUDA_TARGETS)
+test_sycl: $(TEST_SYCL_TARGETS)
+
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: all $(TARGETS) test test_cpu test_cuda $(TEST_CPU_TARGETS) $(TEST_CUDA_TARGETS)
+.PHONY: all all_gcc_nvcc $(TARGETS)
+.PHONY: test test_cpu test_cuda $(TEST_CPU_TARGETS) $(TEST_CUDA_TARGETS) $(TEST_SYCL_TARGETS)
 .PHONY: environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
 
 environment: env.sh
