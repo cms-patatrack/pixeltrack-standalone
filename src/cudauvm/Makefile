@@ -6,12 +6,14 @@ EXTERNAL_DEPENDS := $(cudauvm_EXTERNAL_DEPENDS)
 
 $(TARGET):
 test_cpu:
-test_cuda: $(TARGET)
+test_nvidiagpu: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2
 	@echo "Succeeded"
-.PHONY: test_cpu test_cuda
+test_intelagpu:
+test_auto:
+.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
@@ -77,7 +79,7 @@ test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
 TEST_EXE_CUDA_RUN := $(filter-out $(TEST_DIR)/$(TARGET_NAME)/testEigenGPUNoFit,$(TESTS_EXE_CUDA))
-$(foreach test,$(TEST_EXE_CUDA_RUN),$(eval $(call RUNTEST_template,$(test),cuda)))
+$(foreach test,$(TEST_EXE_CUDA_RUN),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
 
 -include $(ALL_DEPENDS)
 

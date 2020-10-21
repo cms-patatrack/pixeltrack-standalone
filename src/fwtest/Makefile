@@ -10,8 +10,10 @@ test_cpu: $(TARGET)
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2
 	@echo "Succeeded"
-test_cuda:
-.PHONY: test_cpu test_cuda
+test_nvidiagpu:
+test_intelagpu:
+test_auto:
+.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))

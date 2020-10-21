@@ -10,12 +10,14 @@ test_cpu: $(TARGET)
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --serial
 	@echo "Succeeded"
-test_cuda: $(TARGET)
+test_nvidiagpu: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --cuda
 	@echo "Succeeded"
-.PHONY: test_cpu test_cuda
+test_intelagpu:
+test_auto:
+.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
@@ -112,7 +114,7 @@ run_$(1): $(1)
 test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
-$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),cuda)))
+$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
 
 -include $(ALL_DEPENDS)
 
