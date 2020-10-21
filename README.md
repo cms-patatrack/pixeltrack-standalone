@@ -89,13 +89,24 @@ Options
 
 ### Additional make targets
 
+Note that the contents of `all`, `test`, and all `test_<arch>` targets
+are filtered based on the availability of compilers/toolchains. Essentially
+* by default programs using only GCC (or "host compiler") are included
+* if `CUDA_BASE` directory exists, programs using CUDA are included
+* if `SYCL_BASE` directory exists, programs using SYCL are included
+
 | Target                  | Description                                             |
 |-------------------------|---------------------------------------------------------|
 | `all` (default)         | Build all programs                                      |
+| `print_targets`         | Print the programs that would be built with `all`       |
+| `test`                  | Run all tests                                           |
+| `test_cpu`              | Run tests that use only CPU                             |
+| `test_nvidiagpu`        | Run tests that require NVIDIA GPU                       |
+| `test_intelgpu`         | Run tests that require Intel GPU                        |
+| `test_auto`             | Run tests that auto-discover the available hardware     |
+| `test_<program>`        | Run tests for program `<program>`                       |
+| `test_<program>_<arch>` | Run tests for program `<program>` that require `<arch>` |
 | `format`                | Format the code with `clang-format`                     |
-| `test`                  | Run all tests (each program with small number of events |
-| `test_cpu`              | Run tests for CPU test programs                         |
-| `test_cuda`             | Run tests for CUDA test programs                        |
 | `clean`                 | Remove all build artifacts                              |
 | `distclean`             | `clean` and remove all externals                        |
 | `dataclean`             | Remove downloaded data files                            |
