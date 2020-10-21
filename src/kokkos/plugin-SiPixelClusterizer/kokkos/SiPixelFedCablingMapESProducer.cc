@@ -29,13 +29,15 @@ namespace KOKKOS_NAMESPACE {
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
     in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);
 
-    Kokkos::View<SiPixelFedCablingMapGPU, KokkosExecSpace> cablingMap_d("cablingMap_d");
+    Kokkos::View<SiPixelFedCablingMapGPU, KokkosExecSpace> cablingMap_d(
+        Kokkos::ViewAllocateWithoutInitializing("cablingMap_d"));
     auto cablingMap_h = Kokkos::create_mirror_view(cablingMap_d);
     cablingMap_h() = obj;
     Kokkos::deep_copy(KokkosExecSpace(), cablingMap_d, cablingMap_h);
     eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper<KokkosExecSpace>>(std::move(cablingMap_d), true));
 
-    Kokkos::View<unsigned char*, KokkosExecSpace> modToUnp_d("modToUnp_d", modToUnpDefSize);
+    Kokkos::View<unsigned char*, KokkosExecSpace> modToUnp_d(Kokkos::ViewAllocateWithoutInitializing("modToUnp_d"),
+                                                             modToUnpDefSize);
     auto modToUnp_h = Kokkos::create_mirror_view(modToUnp_d);
     std::copy(modToUnpDefault.begin(), modToUnpDefault.end(), modToUnp_h.data());
     Kokkos::deep_copy(KokkosExecSpace(), modToUnp_d, modToUnp_h);

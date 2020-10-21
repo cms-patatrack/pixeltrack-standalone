@@ -6,11 +6,13 @@ namespace KOKKOS_NAMESPACE {
                                               uint32_t maxNumberOfTuples,
                                               KokkosExecSpace const& execSpace) {
     //  Fit internals
-    Kokkos::View<double*, KokkosExecSpace> hitsGPU("hitsGPU", maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
-    Kokkos::View<float*, KokkosExecSpace> hits_geGPU("hits_geGPU",
+    Kokkos::View<double*, KokkosExecSpace> hitsGPU(Kokkos::ViewAllocateWithoutInitializing("hitsGPU"),
+                                                   maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
+    Kokkos::View<float*, KokkosExecSpace> hits_geGPU(Kokkos::ViewAllocateWithoutInitializing("hits_geGPU"),
                                                      maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
-    Kokkos::View<double*, KokkosExecSpace> fast_fit_resultsGPU("fast_fit_resultsGPU",
-                                                               maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
+    Kokkos::View<double*, KokkosExecSpace> fast_fit_resultsGPU(
+        Kokkos::ViewAllocateWithoutInitializing("fast_fit_resultsGPU"),
+        maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
 
     // avoid capturing this by the lambdas
     auto const bField = bField_;
@@ -21,12 +23,14 @@ namespace KOKKOS_NAMESPACE {
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
       // fit triplets
       Kokkos::parallel_for(
+          "kernelBLFastFit_3",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFastFit<3>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 3, offset, i);
           });
 
       Kokkos::parallel_for(
+          "kernelBLFit_3",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFit<3>(
@@ -35,12 +39,14 @@ namespace KOKKOS_NAMESPACE {
 
       // fit quads
       Kokkos::parallel_for(
+          "kernelBLFastFit_4",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFastFit<4>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 4, offset, i);
           });
 
       Kokkos::parallel_for(
+          "kernelBLFit_4",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFit<4>(
@@ -50,12 +56,14 @@ namespace KOKKOS_NAMESPACE {
       if (fit5as4_) {
         // fit penta (only first 4)
         Kokkos::parallel_for(
+            "kernelBLFastFit_4",
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFastFit<4>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);
             });
 
         Kokkos::parallel_for(
+            "kernelBLFit_4",
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFit<4>(
@@ -64,12 +72,14 @@ namespace KOKKOS_NAMESPACE {
       } else {
         // fit penta (all 5)
         Kokkos::parallel_for(
+            "kernelBLFastFit_5",
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFastFit<5>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);
             });
 
         Kokkos::parallel_for(
+            "kernelBLFit_5",
             Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFit<5>(

@@ -52,8 +52,9 @@ void test() {
   auto ts_h = Kokkos::create_mirror_view(ts_d);
 
   Kokkos::parallel_for(
-      Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 128),
-      KOKKOS_LAMBDA(const size_t i) { testTSSoA(ts_d, i); });
+      "testTSSoA", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, 128), KOKKOS_LAMBDA(const size_t i) {
+        testTSSoA(ts_d, i);
+      });
   Kokkos::deep_copy(KokkosExecSpace(), ts_h, ts_d);
   KokkosExecSpace().fence();
 }

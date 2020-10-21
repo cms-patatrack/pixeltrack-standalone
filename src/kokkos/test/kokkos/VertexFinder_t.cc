@@ -34,7 +34,7 @@ void vertexFinderOneKernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
   clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, KokkosExecSpace(), policy);
 
   Kokkos::parallel_for(
-      policy, KOKKOS_LAMBDA(const member_type& team_member) {
+      "vertexFinderOneKernel", policy, KOKKOS_LAMBDA(const member_type& team_member) {
         // 4 bytes of shared memory required
         fitVertices(vdata, vws, 50., team_member);
         team_member.team_barrier();
@@ -184,8 +184,9 @@ void test() {
       KokkosExecSpace().fence();
 
       Kokkos::parallel_for(
-          policy,
-          KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member); });
+          "fitVerticesKernel", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+            fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member);
+          });
       // deep copy from device to host
       Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
       KokkosExecSpace().fence();
@@ -206,8 +207,9 @@ void test() {
       }
 
       Kokkos::parallel_for(
-          policy,
-          KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member); });
+          "fitVerticesKernel", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+            fitVerticesKernel(onGPU_d, ws_d, 50.f, team_member);
+          });
       Kokkos::deep_copy(KokkosExecSpace(), onGPU_h, onGPU_d);
       KokkosExecSpace().fence();
 
@@ -228,8 +230,9 @@ void test() {
       policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192));
 #endif
       Kokkos::parallel_for(
-          policy,
-          KOKKOS_LAMBDA(const member_type& team_member) { splitVerticesKernel(onGPU_d, ws_d, 9.f, team_member); });
+          "splitVerticesKernel", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+            splitVerticesKernel(onGPU_d, ws_d, 9.f, team_member);
+          });
       Kokkos::deep_copy(KokkosExecSpace(), ws_h, ws_d);
       nv = ws_h.data()->nvIntermediate;
 
@@ -237,8 +240,9 @@ void test() {
 
       policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
       Kokkos::parallel_for(
-          policy,
-          KOKKOS_LAMBDA(const member_type& team_member) { fitVerticesKernel(onGPU_d, ws_d, 5000.f, team_member); });
+          "fitVerticesKernel", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+            fitVerticesKernel(onGPU_d, ws_d, 5000.f, team_member);
+          });
 
       // equivalent to sortByPt2Kernel + deep copy to host
       sortByPt2Host(onGPU_d, ws_d, onGPU_h, KokkosExecSpace(), policy);

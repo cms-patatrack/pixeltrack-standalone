@@ -33,7 +33,8 @@ namespace KOKKOS_NAMESPACE {
     constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
 
     SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_("word", MAX_FED_WORDS), fedId_("fedId", MAX_FED_WORDS) {}
+        : word_(Kokkos::ViewAllocateWithoutInitializing("word"), MAX_FED_WORDS),
+          fedId_(Kokkos::ViewAllocateWithoutInitializing("fedId"), MAX_FED_WORDS) {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,
@@ -585,8 +586,10 @@ namespace KOKKOS_NAMESPACE {
         // TODO: can not deep_copy Views of different size
         //Kokkos::View<unsigned int *, KokkosExecSpace> word_d("word_d", wordCounter);
         //Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", wordCounter);
-        Kokkos::View<unsigned int *, KokkosExecSpace> word_d("word_d", MAX_FED_WORDS);
-        Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d("fedId_d", MAX_FED_WORDS);
+        Kokkos::View<unsigned int *, KokkosExecSpace> word_d(Kokkos::ViewAllocateWithoutInitializing("word_d"),
+                                                             MAX_FED_WORDS);
+        Kokkos::View<unsigned char *, KokkosExecSpace> fedId_d(Kokkos::ViewAllocateWithoutInitializing("fedId_d"),
+                                                               MAX_FED_WORDS);
         Kokkos::deep_copy(execSpace, word_d, wordFed.word());
         Kokkos::deep_copy(execSpace, fedId_d, wordFed.fedId());
 
@@ -601,7 +604,9 @@ namespace KOKKOS_NAMESPACE {
           auto error_d = digiErrors_d.error();  // returns nullptr if default-constructed
 
           Kokkos::parallel_for(
-              Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, wordCounter), KOKKOS_LAMBDA(const size_t i) {
+              "RawToDigi_kernel",
+              Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, wordCounter),
+              KOKKOS_LAMBDA(const size_t i) {
                 RawToDigi_kernel(cablingMap,
                                  modToUnp,
                                  wordCounter,
@@ -640,6 +645,7 @@ namespace KOKKOS_NAMESPACE {
           auto clusModuleStart_d = clusters_d.clusModuleStart();
 
           Kokkos::parallel_for(
+              "calibDigis",
               Kokkos::RangePolicy<KokkosExecSpace>(
                   execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {
@@ -670,6 +676,7 @@ namespace KOKKOS_NAMESPACE {
           auto moduleStart_d = clusters_d.moduleStart();
           auto clusStart_d = digis_d.clus();
           Kokkos::parallel_for(
+              "countModules",
               Kokkos::RangePolicy<KokkosExecSpace>(
                   execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {

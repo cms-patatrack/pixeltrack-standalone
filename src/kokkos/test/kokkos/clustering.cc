@@ -268,7 +268,7 @@ void test() {
     // Launch Kokkos Kernels
     std::cout << "Kokkos countModules kernel launch for " << n << " iterations\n";
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(0, n), KOKKOS_LAMBDA(const size_t i) {
+        "countModules", Kokkos::RangePolicy<KokkosExecSpace>(0, n), KOKKOS_LAMBDA(const size_t i) {
           KOKKOS_NAMESPACE::gpuClustering::countModules(d_id, d_moduleStart, d_clus, n, i);
         });
     KokkosExecSpace().fence();
@@ -284,8 +284,9 @@ void test() {
               << " threads\n";
 
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules),
-        KOKKOS_LAMBDA(const size_t i) { d_clusInModule(i) = 0; });
+        "setZero", Kokkos::RangePolicy<KokkosExecSpace>(0, MaxNumModules), KOKKOS_LAMBDA(const size_t i) {
+          d_clusInModule(i) = 0;
+        });
 
     gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
                             Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),

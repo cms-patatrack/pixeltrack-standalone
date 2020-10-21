@@ -48,12 +48,14 @@ namespace KOKKOS_NAMESPACE {
     in.read(gainData.data(), nbytes);
 
     typename SiPixelGainForHLTonGPU<KokkosExecSpace>::DecodingStructureWritableView ped_d(
-        "ped_d", gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
+        Kokkos::ViewAllocateWithoutInitializing("ped_d"),
+        gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
     auto ped_h = Kokkos::create_mirror_view(ped_d);
     memcpy(ped_h.data(), gainData.data(), gainData.size());
     Kokkos::deep_copy(KokkosExecSpace(), ped_d, ped_h);
 
-    typename SiPixelGainForHLTonGPU<KokkosExecSpace>::RangeAndColsWritableView rangeAndCols_d("rangeAndCols_d");
+    typename SiPixelGainForHLTonGPU<KokkosExecSpace>::RangeAndColsWritableView rangeAndCols_d(
+        Kokkos::ViewAllocateWithoutInitializing("rangeAndCols_d"));
     auto rangeAndCols_h = Kokkos::create_mirror_view(rangeAndCols_d);
     for (size_t i = 0; i < 2000; ++i) {
       rangeAndCols_h[i] =
@@ -62,7 +64,8 @@ namespace KOKKOS_NAMESPACE {
     }
     Kokkos::deep_copy(KokkosExecSpace(), rangeAndCols_d, rangeAndCols_h);
 
-    typename SiPixelGainForHLTonGPU<KokkosExecSpace>::FieldsWritableView fields_d("fields_d");
+    typename SiPixelGainForHLTonGPU<KokkosExecSpace>::FieldsWritableView fields_d(
+        Kokkos::ViewAllocateWithoutInitializing("fields_d"));
     auto fields_h = Kokkos::create_mirror_view(fields_d);
 #define COPY(name) fields_h().name = gain.name
     COPY(minPed_);

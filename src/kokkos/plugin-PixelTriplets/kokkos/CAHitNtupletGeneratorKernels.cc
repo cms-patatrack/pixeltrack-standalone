@@ -231,8 +231,8 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
     // in principle we can use "nhits" to heuristically dimension the workspace...
-    device_isOuterHitOfCell_ =
-        Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>("device_isOuterHitOfCell_", std::max(1U, nhits));
+    device_isOuterHitOfCell_ = Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_isOuterHitOfCell_"), std::max(1U, nhits));
 
     {
       auto isOuterHitOfCell = device_isOuterHitOfCell_;
@@ -243,7 +243,8 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    device_theCells_ = Kokkos::View<GPUCACell *, KokkosExecSpace>("device_theCells_", m_params.maxNumberOfDoublets_);
+    device_theCells_ = Kokkos::View<GPUCACell *, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_theCells_"), m_params.maxNumberOfDoublets_);
 
 #ifdef GPU_DEBUG
     execSpace.fence();
@@ -312,6 +313,7 @@ namespace KOKKOS_NAMESPACE {
     {
       auto const cuts = m_params.cuts_;
       Kokkos::parallel_for(
+          "kernel_classifyTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) { kernel_classifyTracks(tuples_d, tracks_d.data(), cuts, quality_d, i); });
     }
@@ -320,6 +322,7 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
       Kokkos::parallel_for(
+          "kernel_fishboneCleaner",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < device_nCells_()) {
@@ -332,6 +335,7 @@ namespace KOKKOS_NAMESPACE {
     {
       auto nCells = device_nCells_;
       Kokkos::parallel_for(
+          "kernel_fastDuplicateRemover",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < nCells()) {
@@ -344,6 +348,7 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
       // fill hit->track "map"
       Kokkos::parallel_for(
+          "kernel_countHitInTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
@@ -352,6 +357,7 @@ namespace KOKKOS_NAMESPACE {
           });
       cms::kokkos::launchFinalize(device_hitToTuple_, execSpace);
       Kokkos::parallel_for(
+          "kernel_fillHitInTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
@@ -364,7 +370,9 @@ namespace KOKKOS_NAMESPACE {
       // remove duplicates (tracks that share a hit)
       auto hh_view = hh.view();
       Kokkos::parallel_for(
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
+          "kernel_tripletCleaner",
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()),
+          KOKKOS_LAMBDA(const size_t i) {
             if (i < hitToTuple().nbins()) {
               kernel_tripletCleaner(hh_view, tuples_d, tracks_d.data(), quality_d, hitToTuple.data(), i);
             }
@@ -374,12 +382,15 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.doStats_) {
       // counters (add flag???)
       Kokkos::parallel_for(
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()), KOKKOS_LAMBDA(const size_t i) {
+          "kernel_doStatsForHitInTracks",
+          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()),
+          KOKKOS_LAMBDA(const size_t i) {
             if (i < hitToTuple().nbins()) {
               kernel_doStatsForHitInTracks(hitToTuple.data(), counters_, i);
             }
           });
       Kokkos::parallel_for(
+          "kernel_doStatsForTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
@@ -418,15 +429,20 @@ namespace KOKKOS_NAMESPACE {
     // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
     //////////////////////////////////////////////////////////
 
-    device_hitToTuple_ = Kokkos::View<HitToTuple, KokkosExecSpace>("device_hitToTuple_");
+    device_hitToTuple_ =
+        Kokkos::View<HitToTuple, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_"));
 
-    device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosExecSpace>("device_tupleMultiplicity_");
+    device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_tupleMultiplicity_"));
 
-    device_hitTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>("device_hitTuple_apc_");
-    device_hitToTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>("device_hitToTuple_apc_");
-    device_nCells_ = Kokkos::View<uint32_t, KokkosExecSpace>("device_nCells_");
-    device_tmws_ = Kokkos::View<uint8_t *, KokkosExecSpace>(
-        "device_tmws_", std::max(TupleMultiplicity::wsSize(), HitToTuple::wsSize()));
+    device_hitTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_hitTuple_apc_"));
+    device_hitToTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_apc_"));
+    device_nCells_ = Kokkos::View<uint32_t, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_nCells_"));
+    device_tmws_ =
+        Kokkos::View<uint8_t *, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_tmws_"),
+                                                 std::max(TupleMultiplicity::wsSize(), HitToTuple::wsSize()));
 
     Kokkos::deep_copy(execSpace, device_nCells_, 0);
 
