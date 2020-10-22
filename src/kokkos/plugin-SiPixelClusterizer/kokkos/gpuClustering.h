@@ -61,8 +61,8 @@ namespace gpuClustering {
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
     using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
-    Kokkos::View<Hist*, ExecSpace> d_hist("d_hist", league_size);
-    Kokkos::View<int*, ExecSpace> d_msize("d_msize", league_size);
+    Kokkos::View<Hist*, ExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"), league_size);
+    Kokkos::View<int*, ExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"), league_size);
 
     int loop_count = Hist::totbins();
     Kokkos::parallel_for(

@@ -64,7 +64,7 @@ namespace KOKKOS_NAMESPACE {
                  0.15000000596,     // dcaCutInnerTriplet
                  0.25,              // dcaCutOuterTriplet
                  makeQualityCuts()),
-        m_counters("m_counters") {
+        m_counters(Kokkos::ViewAllocateWithoutInitializing("m_counters")) {
 #ifdef DUMP_GPU_TK_TUPLES
     printf("TK: %s %s % %s %s %s %s %s %s %s %s %s %s %s %s %s\n",
            "tid",
@@ -98,7 +98,7 @@ namespace KOKKOS_NAMESPACE {
 
   Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
       TrackingRecHit2DKokkos<KokkosExecSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) const {
-    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks("tracks");
+    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks(Kokkos::ViewAllocateWithoutInitializing("tracks"));
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.data();

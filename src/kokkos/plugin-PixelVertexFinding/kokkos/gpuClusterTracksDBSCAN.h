@@ -223,17 +223,17 @@ namespace KOKKOS_NAMESPACE {
       auto leagueSize = policy.league_size();
 
       using Hist = HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-      Kokkos::View<Hist*, ExecSpace> vhist("vhist", leagueSize);
+      Kokkos::View<Hist*, ExecSpace> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
 
       Kokkos::parallel_for(
-          policy, KOKKOS_LAMBDA(const member_type& team_member) {
+          "clusterFillHist", policy, KOKKOS_LAMBDA(const member_type& team_member) {
             clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
 
       Hist::finalize(vhist, leagueSize, execSpace);
 
       Kokkos::parallel_for(
-          policy, KOKKOS_LAMBDA(const member_type& team_member) {
+          "clusterTracksDBSCAN", policy, KOKKOS_LAMBDA(const member_type& team_member) {
             clusterTracksDBSCAN(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
     }

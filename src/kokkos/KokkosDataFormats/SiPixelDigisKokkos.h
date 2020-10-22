@@ -8,13 +8,13 @@ class SiPixelDigisKokkos {
 public:
   SiPixelDigisKokkos() = default;
   explicit SiPixelDigisKokkos(size_t maxFedWords)
-      : xx_d{"xx_d", maxFedWords},
-        yy_d{"yy_d", maxFedWords},
-        adc_d{"adc_d", maxFedWords},
-        moduleInd_d{"moduleInd_d", maxFedWords},
-        clus_d{"clus_d", maxFedWords},
-        pdigi_d{"pdigi_d", maxFedWords},
-        rawIdArr_d{"rawIdArr_d", maxFedWords} {}
+      : xx_d{Kokkos::ViewAllocateWithoutInitializing("xx_d"), maxFedWords},
+        yy_d{Kokkos::ViewAllocateWithoutInitializing("yy_d"), maxFedWords},
+        adc_d{Kokkos::ViewAllocateWithoutInitializing("adc_d"), maxFedWords},
+        moduleInd_d{Kokkos::ViewAllocateWithoutInitializing("moduleInd_d"), maxFedWords},
+        clus_d{Kokkos::ViewAllocateWithoutInitializing("clus_d"), maxFedWords},
+        pdigi_d{Kokkos::ViewAllocateWithoutInitializing("pdigi_d"), maxFedWords},
+        rawIdArr_d{Kokkos::ViewAllocateWithoutInitializing("rawIdArr_d"), maxFedWords} {}
   ~SiPixelDigisKokkos() = default;
 
   SiPixelDigisKokkos(const SiPixelDigisKokkos&) = delete;

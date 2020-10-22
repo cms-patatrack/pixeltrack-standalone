@@ -67,7 +67,7 @@ namespace KOKKOS_NAMESPACE {
       using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
 
       Kokkos::parallel_for(
-          policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2(vdata, vws, team_member); });
+          "sortByPt2", policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2(vdata, vws, team_member); });
       Kokkos::deep_copy(execSpace, hdata, vdata);
       execSpace.fence();
 

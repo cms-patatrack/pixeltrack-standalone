@@ -71,6 +71,7 @@ namespace cms {
     template <typename Histo, typename ExecSpace>
     inline void launchZero(Kokkos::View<Histo, ExecSpace> h, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
+          "launchZero_view",
           Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
           KOKKOS_LAMBDA(const size_t i) { h().off[i] = 0; });
     }
@@ -78,6 +79,7 @@ namespace cms {
     template <typename Histo, typename ExecSpace>
     inline void launchZero(Histo* h, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
+          "launchZero_pointer",
           Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
           KOKKOS_LAMBDA(const size_t i) { h->off[i] = 0; });
     }

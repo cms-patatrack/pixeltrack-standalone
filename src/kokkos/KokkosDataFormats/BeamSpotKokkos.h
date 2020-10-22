@@ -11,7 +11,8 @@ class BeamSpotKokkos {
 public:
   BeamSpotKokkos() = default;
   template <typename ExecSpace>
-  BeamSpotKokkos(BeamSpotPOD const* data, ExecSpace const& execSpace) : data_d{"data_d"} {
+  BeamSpotKokkos(BeamSpotPOD const* data, ExecSpace const& execSpace)
+      : data_d{Kokkos::ViewAllocateWithoutInitializing("data_d")} {
     typename Kokkos::View<BeamSpotPOD, MemorySpace>::HostMirror data_h = Kokkos::create_mirror_view(data_d);
     std::memcpy(data_h.data(), data, sizeof(BeamSpotPOD));
     Kokkos::deep_copy(execSpace, data_d, data_h);
