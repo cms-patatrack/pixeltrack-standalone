@@ -10,23 +10,40 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "KokkosCore/kokkosConfigCommon.h"
+#define KOKKOS_MACROS_HPP
+#include <KokkosCore_config.h>
+#undef KOKKOS_MACROS_HPP
 
 #include "EventProcessor.h"
 
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name
-        << ": [--serial] [--pthread] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--numberOfInnerThreads "
-           "NIT] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation]\n\n"
+        << name << ": [--serial]"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " [--pthread]"
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+        << " [--cuda]"
+#endif
+        << " [--numberOfThreads NT] [--numberOfStreams NS]"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " [--numberOfInnerThreads NIT]"
+#endif
+        << "[--maxEvents ME] [--data PATH] [--transfer] [--validation]\n\n"
         << "Options\n"
         << " --serial                Use CPU Serial backend\n"
+#ifdef KOKKOS_ENABLE_THREADS
         << " --pthread               Use CPU pthread backend\n"
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
         << " --cuda                  Use CUDA backend\n"
+#endif
         << " --numberOfThreads       Number of threads to use (default 1)\n"
         << " --numberOfStreams       Number of concurrent events (default 0=numberOfThreads)\n"
+#ifdef KOKKOS_ENABLE_THREADS
         << " --numberOfInnerThreads  Number of inner (intra-event) threads to use (for pthread backend, default 1)\n"
+#endif
         << " --maxEvents             Number of events to process (default -1 for all events in the input file)\n"
         << " --data                  Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer              Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -53,19 +70,25 @@ int main(int argc, char** argv) {
       return EXIT_SUCCESS;
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
+#ifdef KOKKOS_ENABLE_THREADS
     } else if (*i == "--pthread") {
       backends.emplace_back(Backend::PTHREAD);
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
     } else if (*i == "--numberOfStreams") {
       ++i;
       numberOfStreams = std::stoi(*i);
+#ifdef KOKKOS_ENABLE_THREADS
     } else if (*i == "--numberOfInnerThreads") {
       ++i;
       numberOfInnerThreads = std::stoi(*i);
+#endif
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);

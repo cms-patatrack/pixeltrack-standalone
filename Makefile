@@ -109,7 +109,7 @@ KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
 export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 # For SERIAL to be enabled always, allow host-parallel and device-parallel to be (un)set
-export KOKKOS_HOST_PARALLEL := PTHREAD
+export KOKKOS_HOST_PARALLEL :=
 export KOKKOS_DEVICE_PARALLEL := CUDA
 KOKKOS_CUDA_ARCH := 70
 KOKKOS_CMAKE_CUDA_ARCH := 70
