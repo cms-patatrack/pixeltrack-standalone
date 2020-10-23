@@ -1,6 +1,8 @@
+#include "KokkosCore/ProductBase.h"
+
+#ifdef KOKKOS_ENABLE_CUDA
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/eventWorkHasCompleted.h"
-#include "KokkosCore/ProductBase.h"
 
 namespace {
   struct CallbackData {
@@ -30,12 +32,14 @@ namespace {
     }
   }
 }  // namespace
+#endif
 
 namespace cms {
   namespace kokkos {
     namespace impl {
       ExecSpaceSpecificBase::~ExecSpaceSpecificBase() = default;
 
+#ifdef KOKKOS_ENABLE_CUDA
       void ExecSpaceSpecific<Kokkos::Cuda>::enqueueCallback(edm::WaitingTaskWithArenaHolder holder) {
         cudaCheck(cudaStreamAddCallback(
             stream_.get(), cudaScopedContextCallback, new CallbackData{std::move(holder), device()}, 0));
@@ -65,6 +69,7 @@ namespace cms {
       bool ExecSpaceSpecific<Kokkos::Cuda>::isAvailable() const {
         return cms::cuda::eventWorkHasCompleted(event_.get());
       }
+#endif
     }  // namespace impl
   }    // namespace kokkos
 }  // namespace cms

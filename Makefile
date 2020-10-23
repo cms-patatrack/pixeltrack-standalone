@@ -108,6 +108,9 @@ export KOKKOS_INSTALL := $(KOKKOS_BASE)/install
 KOKKOS_LIBDIR := $(KOKKOS_INSTALL)/lib
 export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.a
 KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
+# For SERIAL to be enabled always, allow host-parallel and device-parallel to be (un)set
+export KOKKOS_HOST_PARALLEL := PTHREAD
+export KOKKOS_DEVICE_PARALLEL := CUDA
 KOKKOS_CUDA_ARCH := 70
 KOKKOS_CMAKE_CUDA_ARCH := 70
 ifeq ($(KOKKOS_CUDA_ARCH),70)
@@ -117,20 +120,42 @@ else ifeq ($(KOKKOS_CUDA_ARCH),75)
 else
   $(error Unsupported KOKKOS_CUDA_ARCH $(KOKKOS_CUDA_ARCH). Likely it is sufficient just add another case in the Makefile)
 endif
-KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
-                     -DCMAKE_INSTALL_LIBDIR=lib \
-                     -DKokkos_CXX_STANDARD=14 \
-                     -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_CUDA_DIR=$(CUDA_BASE) $(KOKKOS_CMAKE_CUDA_ARCH)
-# if without CUDA, replace the above line with
-#                     -DCMAKE_CXX_COMPILER=g++
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
-KOKKOS_CUDA_CUFLAGS := $(KOKKOS_NVCC_COMMON) $(USER_CUDAFLAGS)
-export KOKKOS_CUFLAGS := $(KOKKOS_CUDA_CUFLAGS)
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
-export KOKKOS_DLINKFLAGS := $(KOKKOS_CUDA_DLINKFLAGS)
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
+
+KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
+                     -DCMAKE_INSTALL_LIBDIR=lib \
+                     -DKokkos_CXX_STANDARD=14 \
+                     -DKokkos_ENABLE_SERIAL=On
+ifndef KOKKOS_DEVICE_PARALLEL
+  KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=g++
+  export KOKKOS_DEVICE_CXX := $(CXX)
+  export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS)
+  export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS)
+  export KOKKOS_DEVICE_CXXFLAGS := $(CXXFLAGS)
+  export KOKKOS_DEVICE_TEST_CXXFLAGS :=
+else
+  ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+    KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_CUDA_DIR=$(CUDA_BASE) $(KOKKOS_CMAKE_CUDA_ARCH)
+    export KOKKOS_DEVICE_CXX := $(CUDA_NVCC)
+    export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS_NVCC)
+    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS_NVCC)
+    export KOKKOS_DEVICE_CXXFLAGS := $(KOKKOS_NVCC_COMMON) $(CUDA_CXXFLAGS) $(USER_CUDAFLAGS)
+    export KOKKOS_DEVICE_TEST_CXXFLAGS := $(CUDA_TEST_CXXFLAGS)
+  else
+    $(error Unsupported KOKKOS_DEVICE_PARALLEL $(KOKKOS_DEVICE_PARALLEL))
+  endif
+endif
+ifdef KOKKOS_HOST_PARALLEL
+  ifeq ($(KOKKOS_HOST_PARALLEL),PTHREAD)
+    KOKKOS_CMAKEFLAGS += -DKokkos_ENABLE_PTHREAD=On
+  else
+    $(error Unsupported KOKKOS_HOST_PARALLEL $(KOKKOS_HOST_PARALLEL))
+  endif
+endif
 
 # Intel oneAPI
 ONEAPI_BASE := /opt/intel/oneapi

@@ -7,10 +7,12 @@
 
 #include <Kokkos_Core.hpp>
 
+#ifdef KOKKOS_ENABLE_CUDA
 #include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
 #include "CUDACore/SharedStreamPtr.h"
 #include "CUDACore/StreamCache.h"
+#endif
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
@@ -48,6 +50,7 @@ namespace cms {
         ExecSpace space_;
       };
 
+#ifdef KOKKOS_ENABLE_CUDA
       template <>
       class ExecSpaceSpecific<Kokkos::Cuda> : public ExecSpaceSpecificBase {
       public:
@@ -88,6 +91,7 @@ namespace cms {
         cms::cuda::SharedStreamPtr stream_;
         cms::cuda::SharedEventPtr event_;
       };
+#endif
     }  // namespace impl
 
     class ProductBase {
