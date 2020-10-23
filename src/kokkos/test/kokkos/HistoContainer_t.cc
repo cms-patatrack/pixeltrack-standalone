@@ -78,8 +78,8 @@ void go() {
     assert(off_h(10) == h.size());
 
     auto verify = [&](uint32_t i, uint32_t k, uint32_t t1, uint32_t t2) {
-      assert(t1 < N);
-      assert(t2 < N);
+      assert(static_cast<int>(t1) < N);
+      assert(static_cast<int>(t2) < N);
       if (T(v_h(t1) - v_h(t2)) <= 0)
         std::cout << "for " << i << ':' << v_h(k) << " failed " << v_h(t1) << ' ' << v_h(t2) << std::endl;
     };

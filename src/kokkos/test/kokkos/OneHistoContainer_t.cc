@@ -65,14 +65,12 @@ void go() {
         });
 
     Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
-    assert(histo_h().off[-1] == 0);
     assert(0 == histo_h().size());
 
     TeamHist::finalize(histo_d, KokkosExecSpace());
 
     Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
 
-    assert(histo_h().off[-1] == histo_h().off[-2]);
     assert(N == histo_h().size());
 
     Kokkos::parallel_for(
@@ -106,7 +104,7 @@ void go() {
           auto b0 = TeamHist::bin(v_d(j));
           int tot = 0;
           auto ftest = [&](int k) {
-            assert(k >= 0 && k < N);
+            assert(k >= 0 && k < static_cast<int>(N));
             ++tot;
           };
           forEachInWindow(histo_d, v_d(j), v_d(j), ftest);

@@ -204,7 +204,7 @@ public:
 
   static constexpr auto histOff(uint32_t nh) { return NBINS * nh; }
 
-  __host__ static size_t wsSize() {
+  KOKKOS_INLINE_FUNCTION static size_t wsSize() {
 #ifdef TODO  //__CUDACC__
     uint32_t* v = nullptr;
     void* d_temp_storage = nullptr;
@@ -240,9 +240,9 @@ public:
     }
   }
 
-  static KOKKOS_INLINE_FUNCTION uint32_t atomicIncrement(Counter& x) { return Kokkos::atomic_fetch_add(&x, 1); }
+  static KOKKOS_INLINE_FUNCTION uint32_t atomicIncrement(Counter& x) { return Kokkos::atomic_fetch_add(&x, 1U); }
 
-  static KOKKOS_INLINE_FUNCTION uint32_t atomicDecrement(Counter& x) { return Kokkos::atomic_fetch_sub(&x, 1); }
+  static KOKKOS_INLINE_FUNCTION uint32_t atomicDecrement(Counter& x) { return Kokkos::atomic_fetch_sub(&x, 1U); }
 
   KOKKOS_INLINE_FUNCTION void countDirect(T b) {
     assert(b < nbins());

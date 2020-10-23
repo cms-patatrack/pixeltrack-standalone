@@ -237,7 +237,7 @@ namespace gpuClustering {
               }    // pixel loop
             }
             ++nloops;
-            teamMember.team_reduce(Kokkos::Sum<typeof(more)>(more));
+            teamMember.team_reduce(Kokkos::Sum<decltype(more)>(more));
           }  // end while
 
           shared_team_view foundClusters(teamMember.team_scratch(shared_view_level));

@@ -1,5 +1,8 @@
 #ifndef DataFormats_ZVertexSoA_h
 #define DataFormats_ZVertexSoA_h
+
+#include <cstdint>
+
 struct ZVertexSoA {
   static constexpr uint32_t MAXTRACKS = 16 * 1024;
   static constexpr uint32_t MAXVTX = 1024;

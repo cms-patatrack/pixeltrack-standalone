@@ -388,7 +388,9 @@ void test() {
 
 int main(void) {
   kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
+#ifdef KOKKOS_BACKEND_CUDA
   cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024 * 1024 * 1024);
+#endif
   test();
   return 0;
 }

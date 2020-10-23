@@ -56,7 +56,7 @@ void test() {
             flag = 1;
           else
             flag = 0;
-          teamMember.team_reduce(Kokkos::Sum<typeof(flag)>(flag));
+          teamMember.team_reduce(Kokkos::Sum<decltype(flag)>(flag));
         }
       });
 }
