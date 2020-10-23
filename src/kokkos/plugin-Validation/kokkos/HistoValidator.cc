@@ -172,6 +172,10 @@ namespace KOKKOS_NAMESPACE {
   void HistoValidator::endJob() {
 #ifdef KOKKOS_BACKEND_SERIAL
     std::ofstream out("histograms_kokkos_serial.txt");
+#elif defined KOKKOS_BACKEND_PTHREAD
+    std::string fname =
+        "histograms_kokkos_pthread_" + std::to_string(KokkosExecSpace::impl_thread_pool_size()) + ".txt";
+    std::ofstream out(fname.c_str());
 #elif defined KOKKOS_BACKEND_CUDA
     std::ofstream out("histograms_kokkos_cuda.txt");
 #else
