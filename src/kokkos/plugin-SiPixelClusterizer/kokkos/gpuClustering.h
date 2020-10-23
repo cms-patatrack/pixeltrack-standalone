@@ -73,6 +73,9 @@ namespace gpuClustering {
 
     Kokkos::parallel_for(
         "findClus_msize", team_policy(execSpace, league_size, team_size), KOKKOS_LAMBDA(const member_type& teamMember) {
+          if (teamMember.league_rank() >= static_cast<int>(moduleStart(0)))
+            return;
+
           int firstPixel = moduleStart(1 + teamMember.league_rank());
           auto thisModuleId = id(firstPixel);
           assert(thisModuleId < ::gpuClustering::MaxNumModules);
