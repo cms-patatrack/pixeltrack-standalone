@@ -34,8 +34,10 @@ namespace KOKKOS_NAMESPACE {
         // this is refence in CUDA, but that leads to TeamThreadRange to not compile because the lambda itself is const
         auto agc = &hits->averageGeometry();
         auto const& ag = cpeParams->averageGeometry();
+        // workaround for PTHREAD backend
+        constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel;
         Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(teamMember, TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel),
+            Kokkos::TeamThreadRange(teamMember, numberOfLaddersInBarrel),
             [=](int il) {
               agc->ladderZ[il] = ag.ladderZ[il] - bs->z;
               agc->ladderX[il] = ag.ladderX[il] - bs->x;
