@@ -69,7 +69,7 @@ namespace gpuPixelRecHits {
 
 #ifdef GPU_DEBUG
     if (threadIdx.x == 0) {
-      auto k = first;
+      auto k = clusters.moduleStart(1 + blockIdx.x);
       while (digis.moduleInd(k) == InvId)
         ++k;
       assert(digis.moduleInd(k) == me);
