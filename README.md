@@ -51,7 +51,7 @@ downloaded automatically during the build process.
 | `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :white_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
 | `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
 | `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
@@ -132,7 +132,7 @@ If `nvcc` is not in your `$PATH`, the build recipe is
 ```bash
 $ make environment [CUDA_BASE=...]
 $ source env.sh
-$ make -j N kokkos [CUDA_BASE=...] [KOKKOS_CUDA_ARCH=...]
+$ make -j N kokkos [CUDA_BASE=...] [KOKKOS_CUDA_ARCH=...] [...]
 $ ./kokkos --cuda
 ```
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
@@ -140,8 +140,21 @@ $ ./kokkos --cuda
   * Default value is `70` (7.0) for Volta
   * Other accepted values are `75` (Turing), the list can be extended as neeeded
 * The CMake executable can be set with `CMAKE` in case the default one is too old.
-* The backend(s) need to be set explicitly via command line parameters (`--serial` for CPU serial backend, `--cuda` for CUDA backend)
+* The backends to be used in the Kokkos runtime library build are set with `KOKKOS_HOST_PARALLEL` and `KOKKOS_DEVICE_PARALLEL` (see table below)
+   * The Serial backend is always enabled
+* When running, the backend(s) need to be set explicitly via command line parameters
+   * `--serial` for CPU serial backend
+   * `--pthread` for CPU pthread backend
+   * `--cuda` for CUDA backend
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
+
+| Make variable            | Description |
+------------------------------------------
+| `CUDA_BASE`              | Path to CUDA installation |
+| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`)) |
+| `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build, currently needs to be exact. (default: `70`, possible values: `70`, `75`; trivial to extend) |
+| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD) |
+| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`) |
 
 ## Code structure
 
