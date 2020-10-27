@@ -7,14 +7,14 @@
 
 #include "CUDADataFormats/BeamSpotCUDA.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"
-#include "DataFormats/approx_atan2.h"
 
 namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
-                          BeamSpotCUDA::Data const* __restrict__ bs,
+                          BeamSpotPOD const* __restrict__ bs,
                           SiPixelDigisCUDA::DeviceConstView const* __restrict__ pdigis,
                           int numElements,
                           SiPixelClustersCUDA::DeviceConstView const* __restrict__ pclusters,
@@ -69,7 +69,7 @@ namespace gpuPixelRecHits {
 
 #ifdef GPU_DEBUG
     if (threadIdx.x == 0) {
-      auto k = first;
+      auto k = clusters.moduleStart(1 + blockIdx.x);
       while (digis.moduleInd(k) == InvId)
         ++k;
       assert(digis.moduleInd(k) == me);
@@ -134,6 +134,9 @@ namespace gpuPixelRecHits {
 
       __syncthreads();
 
+      // pixmx is not available in the binary dumps
+      //auto pixmx = cpeParams->detParams(me).pixmx;
+      auto pixmx = std::numeric_limits<uint16_t>::max();
       for (int i = first; i < numElements; i += blockDim.x) {
         auto id = digis.moduleInd(i);
         if (id == InvId)
@@ -148,7 +151,7 @@ namespace gpuPixelRecHits {
         assert(cl < MaxHitsInIter);
         auto x = digis.xx(i);
         auto y = digis.yy(i);
-        auto ch = digis.adc(i);
+        auto ch = std::min(digis.adc(i), pixmx);
         atomicAdd(&clusParams.charge[cl], ch);
         if (clusParams.minRow[cl] == x)
           atomicAdd(&clusParams.Q_f_X[cl], ch);

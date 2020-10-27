@@ -4,6 +4,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/requireDevices.h"
 #include "test_common.h"
 
 using namespace Eigen;
@@ -214,6 +215,8 @@ void testEigenvalues() {
 }
 
 int main(int argc, char *argv[]) {
+  cms::cudatest::requireDevices();
+
   testEigenvalues();
   testInverse3x3();
   testInverse4x4();

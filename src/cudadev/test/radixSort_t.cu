@@ -10,8 +10,11 @@
 
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/requireDevices.h"
 #include "CUDACore/launch.h"
 #include "CUDACore/radixSort.h"
+
+using namespace cms::cuda;
 
 template <typename T>
 struct RS {
@@ -161,6 +164,8 @@ void go(bool useShared) {
 }
 
 int main() {
+  cms::cudatest::requireDevices();
+
   bool useShared = false;
 
   std::cout << "using Global memory" << std::endl;

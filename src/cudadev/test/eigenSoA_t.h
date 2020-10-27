@@ -22,7 +22,7 @@ __global__ void testBasicSoA(float* p) {
   assert(!isPowerOf2(1026));
 
   using M3 = Eigen::Matrix<float, 3, 3>;
-  ;
+
   __shared__ eigenSoA::MatrixSoA<M3, 64> m;
 
   int first = threadIdx.x + blockIdx.x * blockDim.x;
@@ -59,10 +59,15 @@ __global__ void testBasicSoA(float* p) {
 #include <random>
 
 #ifdef __CUDACC__
+#include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
+#ifdef __CUDACC__
+  cms::cudatest::requireDevices();
+#endif
+
   float p[1024];
 
   std::uniform_real_distribution<float> rgen(0.01, 0.99);

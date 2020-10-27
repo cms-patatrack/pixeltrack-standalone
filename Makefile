@@ -26,8 +26,12 @@ export LIB_DIR := $(BASE_DIR)/lib
 export TEST_DIR := $(BASE_DIR)/test
 
 # System external definitions
-CUDA_BASE := /usr/local/cuda-10.2
-ifneq ($(wildcard $(CUDA_BASE)),)
+CUDA_BASE := /usr/local/cuda-11.0
+ifeq ($(wildcard $(CUDA_BASE)),)
+# CUDA platform not found
+CUDA_BASE :=
+else
+# CUDA platform at $(CUDA_BASE)
 CUDA_LIBDIR := $(CUDA_BASE)/lib64
 USER_CUDAFLAGS :=
 export CUDA_DEPS := $(CUDA_BASE)/lib64/libcudart.so
@@ -38,15 +42,13 @@ export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 define CUFLAGS_template
 $(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
-$(2)NVCC_COMMON := -std=c++14 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+$(2)NVCC_COMMON := -std=c++17 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
 endef
 $(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
 export CUDA_CUFLAGS
 export CUDA_DLINKFLAGS
-else # no CUDA
-CUDA_BASE=
 endif
 
 # Input data definitions

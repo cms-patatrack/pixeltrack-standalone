@@ -19,8 +19,6 @@
 #include "gpuFishbone.h"
 #include "gpuPixelDoublets.h"
 
-using namespace gpuPixelDoublets;
-
 using HitsOnGPU = TrackingRecHit2DSOAView;
 using HitsOnCPU = TrackingRecHit2DCUDA;
 
@@ -33,11 +31,11 @@ using HitContainer = pixelTrack::HitContainer;
 
 __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
                                       CAConstants::TupleMultiplicity *tupleMultiplicity,
-                                      AtomicPairCounter *apc,
+                                      cms::cuda::AtomicPairCounter *apc,
                                       GPUCACell const *__restrict__ cells,
                                       uint32_t const *__restrict__ nCells,
-                                      CellNeighborsVector const *cellNeighbors,
-                                      CellTracksVector const *cellTracks,
+                                      gpuPixelDoublets::CellNeighborsVector const *cellNeighbors,
+                                      gpuPixelDoublets::CellTracksVector const *cellTracks,
                                       GPUCACell::OuterHitOfCell const *__restrict__ isOuterHitOfCell,
                                       uint32_t nHits,
                                       uint32_t maxNumberOfDoublets,
@@ -81,6 +79,10 @@ __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
       printf("Tuples overflow\n");
     if (*nCells >= maxNumberOfDoublets)
       printf("Cells overflow\n");
+    if (cellNeighbors && cellNeighbors->full())
+      printf("cellNeighbors overflow\n");
+    if (cellTracks && cellTracks->full())
+      printf("cellTracks overflow\n");
   }
 
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
@@ -190,12 +192,12 @@ __global__ void kernel_fastDuplicateRemover(GPUCACell const *__restrict__ cells,
   }
 }
 
-__global__ void kernel_connect(AtomicPairCounter *apc1,
-                               AtomicPairCounter *apc2,  // just to zero them,
+__global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
+                               cms::cuda::AtomicPairCounter *apc2,  // just to zero them,
                                GPUCACell::Hits const *__restrict__ hhp,
                                GPUCACell *cells,
                                uint32_t const *__restrict__ nCells,
-                               CellNeighborsVector *cellNeighbors,
+                               gpuPixelDoublets::CellNeighborsVector *cellNeighbors,
                                GPUCACell::OuterHitOfCell const *__restrict__ isOuterHitOfCell,
                                float hardCurvCut,
                                float ptmin,
@@ -266,9 +268,9 @@ __global__ void kernel_connect(AtomicPairCounter *apc1,
 __global__ void kernel_find_ntuplets(GPUCACell::Hits const *__restrict__ hhp,
                                      GPUCACell *__restrict__ cells,
                                      uint32_t const *nCells,
-                                     CellTracksVector *cellTracks,
+                                     gpuPixelDoublets::CellTracksVector *cellTracks,
                                      HitContainer *foundNtuplets,
-                                     AtomicPairCounter *apc,
+                                     cms::cuda::AtomicPairCounter *apc,
                                      Quality *__restrict__ quality,
                                      unsigned int minHitsPerNtuplet) {
   // recursive: not obvious to widen

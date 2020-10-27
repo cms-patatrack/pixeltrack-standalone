@@ -9,11 +9,12 @@
 
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "CUDACore/GPUSimpleVector.h"
-#include "CUDACore/GPUVecArray.h"
+#include "CUDACore/SimpleVector.h"
+#include "CUDACore/VecArray.h"
 #include "CUDACore/cuda_assert.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
+#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+
 #include "CAConstants.h"
 #include "CircleEq.h"
 
@@ -31,7 +32,7 @@ public:
   using Hits = TrackingRecHit2DSOAView;
   using hindex_type = Hits::hindex_type;
 
-  using TmpTuple = GPU::VecArray<uint32_t, 6>;
+  using TmpTuple = cms::cuda::VecArray<uint32_t, 6>;
 
   using HitContainer = pixelTrack::HitContainer;
   using Quality = trackQuality::Quality;
@@ -56,24 +57,56 @@ public:
     theInnerZ = hh.zGlobal(innerHitId);
     theInnerR = hh.rGlobal(innerHitId);
 
-    outerNeighbors().reset();
-    tracks().reset();
+    // link to default empty
+    theOuterNeighbors = &cellNeighbors[0];
+    theTracks = &cellTracks[0];
     assert(outerNeighbors().empty());
     assert(tracks().empty());
   }
 
   __device__ __forceinline__ int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
+    // use smart cache
+    if (outerNeighbors().empty()) {
+      auto i = cellNeighbors.extend();  // maybe waisted....
+      if (i > 0) {
+        cellNeighbors[i].reset();
+#ifdef __CUDACC__
+        auto zero = (ptrAsInt)(&cellNeighbors[0]);
+        atomicCAS((ptrAsInt*)(&theOuterNeighbors),
+                  zero,
+                  (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
+#else
+        theOuterNeighbors = &cellNeighbors[i];
+#endif
+      } else
+        return -1;
+    }
+    __threadfence();
     return outerNeighbors().push_back(t);
   }
 
   __device__ __forceinline__ int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
+    if (tracks().empty()) {
+      auto i = cellTracks.extend();  // maybe waisted....
+      if (i > 0) {
+        cellTracks[i].reset();
+#ifdef __CUDACC__
+        auto zero = (ptrAsInt)(&cellTracks[0]);
+        atomicCAS((ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
+#else
+        theTracks = &cellTracks[i];
+#endif
+      } else
+        return -1;
+    }
+    __threadfence();
     return tracks().push_back(t);
   }
 
-  __device__ __forceinline__ CellTracks& tracks() { return theTracks; }
-  __device__ __forceinline__ CellTracks const& tracks() const { return theTracks; }
-  __device__ __forceinline__ CellNeighbors& outerNeighbors() { return theOuterNeighbors; }
-  __device__ __forceinline__ CellNeighbors const& outerNeighbors() const { return theOuterNeighbors; }
+  __device__ __forceinline__ CellTracks& tracks() { return *theTracks; }
+  __device__ __forceinline__ CellTracks const& tracks() const { return *theTracks; }
+  __device__ __forceinline__ CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
+  __device__ __forceinline__ CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
   __device__ __forceinline__ float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
   __device__ __forceinline__ float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
   __device__ __forceinline__ float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
@@ -246,7 +279,7 @@ public:
                                        GPUCACell* __restrict__ cells,
                                        CellTracksVector& cellTracks,
                                        HitContainer& foundNtuplets,
-                                       AtomicPairCounter& apc,
+                                       cms::cuda::AtomicPairCounter& apc,
                                        Quality* __restrict__ quality,
                                        TmpTuple& tmpNtuplet,
                                        const unsigned int minHitsPerNtuplet,
@@ -297,8 +330,8 @@ public:
   }
 
 private:
-  CellNeighbors theOuterNeighbors;
-  CellTracks theTracks;
+  CellNeighbors* theOuterNeighbors;
+  CellTracks* theTracks;
 
 public:
   int32_t theDoubletId;

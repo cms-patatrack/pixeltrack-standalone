@@ -9,13 +9,13 @@
 
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "DataFormats/approx_atan2.h"
-#include "CUDACore/GPUVecArray.h"
+#include "CUDACore/VecArray.h"
 #include "CUDACore/cuda_assert.h"
 
 #include "CAConstants.h"
 #include "GPUCACell.h"
 
-namespace gpuPixelDoubletsAlgos {
+namespace gpuPixelDoublets {
 
   using CellNeighbors = CAConstants::CellNeighbors;
   using CellTracks = CAConstants::CellTracks;
@@ -239,6 +239,6 @@ namespace gpuPixelDoubletsAlgos {
     }  // loop in block...
   }
 
-}  // namespace gpuPixelDoubletsAlgos
+}  // namespace gpuPixelDoublets
 
 #endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoupletsAlgos_h

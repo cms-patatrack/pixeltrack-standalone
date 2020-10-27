@@ -5,6 +5,9 @@
 #include <random>
 
 #include "CUDACore/HistoContainer.h"
+#include "CUDACore/requireDevices.h"
+
+using namespace cms::cuda;
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
 void go() {

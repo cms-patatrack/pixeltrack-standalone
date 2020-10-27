@@ -4,6 +4,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/requireDevices.h"
 
 #ifdef USE_BL
 #include "plugin-PixelTriplets/BrokenLine.h"
@@ -328,6 +329,8 @@ void testFit() {
 }
 
 int main(int argc, char* argv[]) {
+  cms::cudatest::requireDevices();
+
   testFit<4>();
   testFit<3>();
   testFit<5>();
