@@ -19,11 +19,9 @@ namespace gpuClustering {
       Kokkos::View<const uint32_t*, ExecSpace> moduleId,     // output: module id of each module
       Kokkos::View<int*, ExecSpace> clusterId,               // output: cluster id of each pixel
       int numElements,
-      const uint32_t league_size,
-      const uint32_t team_size,
+      Kokkos::TeamPolicy<ExecSpace>& teamPolicy,
       ExecSpace const& execSpace) {
-    using team_policy = Kokkos::TeamPolicy<ExecSpace>;
-    using member_type = typename team_policy::member_type;
+    using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
     using charge_view_type = Kokkos::View<int32_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
     size_t charge_view_bytes = charge_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
     using ok_view_type = Kokkos::View<uint8_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
@@ -37,8 +35,7 @@ namespace gpuClustering {
     int shared_view_level = 0;
     Kokkos::parallel_for(
         "clusterChargeCut",
-        team_policy(execSpace, league_size, team_size)
-            .set_scratch_size(shared_view_level, Kokkos::PerTeam(total_shared_bytes)),
+        teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(total_shared_bytes)),
         KOKKOS_LAMBDA(const member_type& teamMember) {
           if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
             return;

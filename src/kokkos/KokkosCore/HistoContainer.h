@@ -104,12 +104,21 @@ namespace cms {
                                    const int nthreads,
                                    ExecSpace const& execSpace) {
       launchZero(h, execSpace);
-      auto nblocks = (totSize + nthreads - 1) / nthreads;
       using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
-#ifndef KOKKOS_BACKEND_SERIAL
-      TeamPolicy tp(execSpace, nblocks, nthreads);
+      // TODO: spreadin the total amount of work (totSize) manually to
+      // the teams in a way that depends on the number of threads per
+      // team feels suboptimal.
+      //
+      // Kokkos::AUTO() for the number of threads does not really work
+      // because the number of blocks depends on the number of threads.
+      //
+      // Maybe this would really be a case for RangePolicy?
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+      const auto nblocks = (totSize + ExecSpace::impl_thread_pool_size()) / ExecSpace::impl_thread_pool_size();
+      TeamPolicy tp(execSpace, nblocks, ExecSpace::impl_thread_pool_size());
 #else
-      TeamPolicy tp(execSpace, nblocks * nthreads, 1);
+      const auto nblocks = (totSize + nthreads - 1) / nthreads;
+      TeamPolicy tp(execSpace, nblocks, nthreads);
 #endif
       Kokkos::parallel_for(
           "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {

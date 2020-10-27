@@ -688,14 +688,11 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::deep_copy(
             execSpace, Kokkos::subview(nModules_Clusters_h, 0), Kokkos::subview(clusters_d.moduleStart(), 0));
 
-#ifdef KOKKOS_BACKEND_SERIAL
-        const uint32_t threadsPerBlock = 1;
-#else
-        const uint32_t threadsPerBlock = 256;
-#endif
         const uint32_t blocks = ::gpuClustering::MaxNumModules;
+        Kokkos::TeamPolicy<KokkosExecSpace> teamPolicy(execSpace, blocks, Kokkos::AUTO());
 #ifdef GPU_DEBUG
-        std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
+        std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << teamPolicy.team_size()
+                  << " threads\n";
 #endif
 
         ::gpuClustering::findClus<KokkosExecSpace>(digis_d.c_moduleInd(),
@@ -706,8 +703,7 @@ namespace KOKKOS_NAMESPACE {
                                                    clusters_d.moduleId(),
                                                    digis_d.clus(),
                                                    int(wordCounter),
-                                                   blocks,
-                                                   threadsPerBlock,
+                                                   teamPolicy,
                                                    execSpace);
 
 #ifdef GPU_DEBUG
@@ -722,8 +718,7 @@ namespace KOKKOS_NAMESPACE {
                                                            clusters_d.c_moduleId(),
                                                            digis_d.clus(),
                                                            int(wordCounter),
-                                                           blocks,
-                                                           threadsPerBlock,
+                                                           teamPolicy,
                                                            execSpace);
 
         // count the module start indices already here (instead of
