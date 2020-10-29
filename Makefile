@@ -27,6 +27,7 @@ export TEST_DIR := $(BASE_DIR)/test
 
 # System external definitions
 CUDA_BASE := /usr/local/cuda-10.2
+ifneq ($(wildcard $(CUDA_BASE)),)
 CUDA_LIBDIR := $(CUDA_BASE)/lib64
 USER_CUDAFLAGS :=
 export CUDA_DEPS := $(CUDA_BASE)/lib64/libcudart.so
@@ -44,6 +45,9 @@ endef
 $(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
 export CUDA_CUFLAGS
 export CUDA_DLINKFLAGS
+else # no CUDA
+CUDA_BASE=
+endif
 
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
@@ -162,16 +166,42 @@ endif
 -include environment
 
 # Targets and their dependencies on externals
-TARGETS := $(notdir $(wildcard $(SRC_DIR)/*))
-TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
-TEST_CUDA_TARGETS := $(patsubst %,test_%_cuda,$(TARGETS))
+TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
+# Split targets by required toolchain
+TARGETS_GCC := fwtest
+TARGETS_SYCL := sycltest
+TARGETS_NVCC := $(filter-out $(TARGETS_GCC) $(TARGETS_SYCL),$(TARGETS_ALL))
+
+# Re-construct targets based on available compilers/toolchains
+TARGETS := $(TARGETS_GCC)
+ifdef CUDA_BASE
+TARGETS += $(TARGETS_NVCC)
+endif
+ifdef SYCL_BASE
+TARGETS += $(TARGETS_SYCL)
+endif
 all: $(TARGETS)
-test: test_cpu test_cuda
+
+# Define test targets for each architecture
+TEST_TARGETS := $(patsubsts %,test_%,$(TARGETS))
+TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
+TEST_NVIDIAGPU_TARGETS := $(patsubst %,test_%_nvidiagpu,$(TARGETS))
+TEST_INTELGPU_TARGETS := $(patsubst %,test_%_intelgpu,$(TARGETS))
+TEST_AUTO_TARGETS := $(patsubst %,test_%_auto,$(TARGETS))
+test: test_cpu test_nvidiagpu test_intelgpu test_auto
 test_cpu: $(TEST_CPU_TARGETS)
-test_cuda: $(TEST_CUDA_TARGETS)
+test_nvidiagpu: $(TEST_NVIDIAGPU_TARGETS)
+test_intelgpu: $(TEST_INTELGPU_TARGETS)
+test_auto: $(TEST_AUTO_TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
-.PHONY: all $(TARGETS) test test_cpu test_cuda $(TEST_CPU_TARGETS) $(TEST_CUDA_TARGETS)
-.PHONY: environment format clean distclean dataclean external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
+.PHONY: all $(TARGETS)
+.PHONY: test $(TEST_TARGETS)
+.PHONY: test_cpu $(TEST_CPU_TARGETS)
+.PHONY: test_nvidiagpu $(TEST_NVIDIAGPU_TARGETS)
+.PHONY: test_intelgpu $(TEST_INTELGPU_TARGETS)
+.PHONY: test_auto $(TEST_AUTO_TARGETS)
+.PHONY: environment print_targets format clean distclean dataclean
+.PHONY: external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
 
 environment: env.sh
 env.sh: Makefile
@@ -186,7 +216,9 @@ env.sh: Makefile
 	@echo                                                                   >> $@
 	@echo -n 'export LD_LIBRARY_PATH='                                      >> $@
 	@echo -n '$(TBB_LIBDIR):'                                               >> $@
+ifdef CUDA_BASE
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
+endif
 	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 ifneq ($(SYCL_BASE),)
@@ -196,7 +228,9 @@ endif
 endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@echo -n 'export PATH='                                                 >> $@
+ifdef CUDA_BASE
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
+endif
 ifneq ($(SYCL_BASE),)
 ifeq ($(wildcard $(ONEAPI_ENV)),)
 	@echo -n '$(SYCL_BASE)/bin:'                                            >> $@
@@ -213,25 +247,43 @@ include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
 
+test_$(1): test_$(1)_cpu test_$(1)_nvidiagpu test_$(1)_intelgpu test_$(1)_auto
+
 test_$(1)_cpu: $(1)
 	@echo
-	@echo "Testing $(1) for CPU backend"
+	@echo "Testing $(1) for CPU"
 	+$(MAKE) -C src/$(1) test_cpu
 	@echo
 
-test_$(1)_cuda: $(1)
+test_$(1)_nvidiagpu: $(1)
 	@echo
-	@echo "Testing $(1) for CUDA backend"
-	+$(MAKE) -C src/$(1) test_cuda
+	@echo "Testing $(1) for NVIDIA GPU device"
+	+$(MAKE) -C src/$(1) test_nvidiagpu
+	@echo
+
+test_$(1)_intelgpu: $(1)
+	@echo
+	@echo "Testing $(1) for Intel GPU device"
+	+$(MAKE) -C src/$(1) test_intelgpu
+	@echo
+
+test_$(1)_auto: $(1)
+	@echo
+	@echo "Testing $(1) for automatic device selection"
+	+$(MAKE) -C src/$(1) test_auto
 	@echo
 endef
 $(foreach target,$(TARGETS),$(eval $(call TARGET_template,$(target))))
+
+print_targets:
+	@echo "Following program targets are available"
+	@echo $(TARGETS)
 
 format:
 	$(CLANG_FORMAT) -i $(shell find src -name "*.h" -o -name "*.cc" -o -name "*.cu")
 
 clean:
-	rm -fR lib obj test $(TARGETS)
+	rm -fR lib obj test $(TARGETS_ALL)
 
 distclean: | clean
 	rm -fR external .original_env
