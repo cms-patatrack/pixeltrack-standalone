@@ -20,8 +20,10 @@ TestProducer3::TestProducer3(edm::ProductRegistry& reg) : getToken_(reg.consumes
 
 void TestProducer3::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   auto const value = event.get(getToken_);
+#ifndef FWTEST_SILENT
   std::cout << "TestProducer3 Event " << event.eventID() << " stream " << event.streamID() << " value " << value
             << std::endl;
+#endif
 }
 
 DEFINE_FWK_MODULE(TestProducer3);

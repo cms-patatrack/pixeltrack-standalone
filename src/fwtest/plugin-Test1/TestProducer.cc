@@ -23,8 +23,10 @@ TestProducer::TestProducer(edm::ProductRegistry& reg)
 
 void TestProducer::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   auto const value = event.get(rawGetToken_).FEDData(1200).size();
+#ifndef FWTEST_SILENT
   std::cout << "TestProducer  Event " << event.eventID() << " stream " << event.streamID() << " ES int "
             << eventSetup.get<int>() << " FED 1200 size " << value << std::endl;
+#endif
   using namespace std::chrono_literals;
   std::this_thread::sleep_for(10ms);
   event.emplace(putToken_, static_cast<unsigned int>(event.eventID() + 10 * event.streamID() + 100));
