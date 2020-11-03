@@ -43,13 +43,17 @@ void TestProducer2::acquire(edm::Event const& event,
     return 42;
   });
 
+#ifndef FWTEST_SILENT
   std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID() << " value "
             << value << std::endl;
+#endif
 }
 
 void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
+#ifndef FWTEST_SILENT
   std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << " from future "
             << future_.get() << std::endl;
+#endif
   ++nevents;
 }
 

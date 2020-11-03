@@ -114,6 +114,10 @@ are filtered based on the availability of compilers/toolchains. Essentially
 
 ### Test program specific notes (if any)
 
+#### `fwtest`
+
+The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... USER_CXXFLAGS="-DFWTEST_SILENT"`).
+
 #### `cuda`
 
 This program is frozen to correspond to CMSSW_11_1_0_pre4.
