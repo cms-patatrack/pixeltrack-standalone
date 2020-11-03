@@ -279,6 +279,7 @@ void test() {
     uint32_t threadsPerModule = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #endif
     uint32_t blocksPerGrid = MaxNumModules;  //nModules;
+    Kokkos::TeamPolicy<KokkosExecSpace> teamPolicy(KokkosExecSpace(), blocksPerGrid, threadsPerModule);
 
     std::cout << "Kokkos findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerModule
               << " threads\n";
@@ -296,8 +297,7 @@ void test() {
                             d_moduleId,
                             d_clus,
                             n,
-                            MaxNumModules,
-                            threadsPerModule,
+                            teamPolicy,
                             KokkosExecSpace());
 
     KokkosExecSpace().fence();
@@ -324,8 +324,7 @@ void test() {
                                     Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleId),
                                     d_clus,
                                     n,
-                                    blocksPerGrid,
-                                    threadsPerModule,
+                                    teamPolicy,
                                     KokkosExecSpace());
     KokkosExecSpace().fence();
 
@@ -388,7 +387,9 @@ void test() {
 
 int main(void) {
   kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
+#ifdef KOKKOS_BACKEND_CUDA
   cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024 * 1024 * 1024);
+#endif
   test();
   return 0;
 }

@@ -130,8 +130,8 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, TkSoA::stride()),
           KOKKOS_LAMBDA(const size_t i) { loadTracks(tksoa, vertices_d, workspace_d, ptMin, i); });
 
-#ifdef KOKKOS_BACKEND_SERIAL
-      auto policy = TeamPolicy(execSpace, 1, 1).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+      auto policy = TeamPolicy(execSpace, 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
 #else
       auto policy = TeamPolicy(execSpace, 1, 1024 - 256).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
 #endif
@@ -169,8 +169,8 @@ namespace KOKKOS_NAMESPACE {
         // one block per vertex...
         Kokkos::parallel_for(
             "splitVertices",
-#ifdef KOKKOS_BACKEND_SERIAL
-            TeamPolicy(execSpace, 1024, 1).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+            TeamPolicy(execSpace, 1024, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
 #else
             TeamPolicy(execSpace, 1024, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4)),
 #endif

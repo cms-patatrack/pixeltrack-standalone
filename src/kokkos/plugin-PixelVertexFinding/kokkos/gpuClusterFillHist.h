@@ -53,7 +53,7 @@ namespace KOKKOS_NAMESPACE {
 
       // fill hist  (bin shall be wider than "eps")
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
-        assert(i < ZVertices::MAXTRACKS);
+        assert(i < static_cast<int>(ZVertices::MAXTRACKS));
         int iz = int(zt[i] * 10.);  // valid if eps<=0.1
         // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
         iz = std::min(std::max(iz, INT8_MIN), INT8_MAX);

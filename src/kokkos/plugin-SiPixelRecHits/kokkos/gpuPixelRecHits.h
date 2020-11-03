@@ -34,16 +34,16 @@ namespace KOKKOS_NAMESPACE {
         // this is refence in CUDA, but that leads to TeamThreadRange to not compile because the lambda itself is const
         auto agc = &hits->averageGeometry();
         auto const& ag = cpeParams->averageGeometry();
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(teamMember, TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel),
-            [=](int il) {
-              agc->ladderZ[il] = ag.ladderZ[il] - bs->z;
-              agc->ladderX[il] = ag.ladderX[il] - bs->x;
-              agc->ladderY[il] = ag.ladderY[il] - bs->y;
-              agc->ladderR[il] = sqrt(agc->ladderX[il] * agc->ladderX[il] + agc->ladderY[il] * agc->ladderY[il]);
-              agc->ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
-              agc->ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
-            });
+        // workaround for PTHREAD backend
+        constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel;
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, numberOfLaddersInBarrel), [=](int il) {
+          agc->ladderZ[il] = ag.ladderZ[il] - bs->z;
+          agc->ladderX[il] = ag.ladderX[il] - bs->x;
+          agc->ladderY[il] = ag.ladderY[il] - bs->y;
+          agc->ladderR[il] = sqrt(agc->ladderX[il] * agc->ladderX[il] + agc->ladderY[il] * agc->ladderY[il]);
+          agc->ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
+          agc->ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
+        });
         if (0 == teamMember.team_rank()) {
           agc->endCapZ[0] = ag.endCapZ[0] - bs->z;
           agc->endCapZ[1] = ag.endCapZ[1] - bs->z;

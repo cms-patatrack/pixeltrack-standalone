@@ -10,24 +10,44 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "KokkosCore/kokkosConfigCommon.h"
+#define KOKKOS_MACROS_HPP
+#include <KokkosCore_config.h>
+#undef KOKKOS_MACROS_HPP
 
 #include "EventProcessor.h"
 
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name
-        << ": [--serial] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation]\n\n"
+        << name << ": [--serial]"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " [--pthread]"
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+        << " [--cuda]"
+#endif
+        << " [--numberOfThreads NT] [--numberOfStreams NS]"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " [--numberOfInnerThreads NIT]"
+#endif
+        << "[--maxEvents ME] [--data PATH] [--transfer] [--validation]\n\n"
         << "Options\n"
-        << " --serial            Use CPU Serial backend\n"
-        << " --cuda              Use CUDA backend\n"
-        << " --numberOfThreads   Number of threads to use (default 1)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
-        << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
-        << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-        << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --serial                Use CPU Serial backend\n"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " --pthread               Use CPU pthread backend\n"
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+        << " --cuda                  Use CUDA backend\n"
+#endif
+        << " --numberOfThreads       Number of threads to use (default 1)\n"
+        << " --numberOfStreams       Number of concurrent events (default 0=numberOfThreads)\n"
+#ifdef KOKKOS_ENABLE_THREADS
+        << " --numberOfInnerThreads  Number of inner (intra-event) threads to use (for pthread backend, default 1)\n"
+#endif
+        << " --maxEvents             Number of events to process (default -1 for all events in the input file)\n"
+        << " --data                  Path to the 'data' directory (default 'data' in the directory of the executable)\n"
+        << " --transfer              Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+        << " --validation            Run (rudimentary) validation at the end (implies --transfer)\n"
         << std::endl;
   }
 }  // namespace
@@ -39,6 +59,7 @@ int main(int argc, char** argv) {
   std::vector<Backend> backends;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
+  int numberOfInnerThreads = 1;
   int maxEvents = -1;
   std::filesystem::path datadir;
   bool transfer = false;
@@ -49,14 +70,25 @@ int main(int argc, char** argv) {
       return EXIT_SUCCESS;
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
+#ifdef KOKKOS_ENABLE_THREADS
+    } else if (*i == "--pthread") {
+      backends.emplace_back(Backend::PTHREAD);
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
     } else if (*i == "--numberOfStreams") {
       ++i;
       numberOfStreams = std::stoi(*i);
+#ifdef KOKKOS_ENABLE_THREADS
+    } else if (*i == "--numberOfInnerThreads") {
+      ++i;
+      numberOfInnerThreads = std::stoi(*i);
+#endif
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);
@@ -86,7 +118,7 @@ int main(int argc, char** argv) {
   }
 
   // Initialize Kokkos
-  kokkos_common::InitializeScopeGuard kokkosGuard(backends);
+  kokkos_common::InitializeScopeGuard kokkosGuard(backends, numberOfInnerThreads);
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
@@ -101,6 +133,7 @@ int main(int argc, char** argv) {
       }
     };
     addModules("kokkos_serial::", Backend::SERIAL);
+    addModules("kokkos_pthread::", Backend::PTHREAD);
     addModules("kokkos_cuda::", Backend::CUDA);
     esmodules = {"IntESProducer"};
     if (transfer) {

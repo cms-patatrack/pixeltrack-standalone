@@ -64,6 +64,8 @@ public:
 #endif
 
 private:
+  uint32_t m_nHits;
+
   // local coord
   Kokkos::View<float*, MemorySpace> m_xl;
   Kokkos::View<float*, MemorySpace> m_yl;
@@ -87,7 +89,6 @@ private:
 
   Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
 
-  uint32_t m_nHits;
   Kokkos::View<uint32_t const*, MemorySpace> m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
   // needed as kernel params...

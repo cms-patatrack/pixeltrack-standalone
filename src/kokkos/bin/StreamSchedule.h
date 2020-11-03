@@ -33,6 +33,10 @@ namespace edm {
     StreamSchedule(StreamSchedule&&);
     StreamSchedule& operator=(StreamSchedule&&);
 
+    // If PHTREAD backend is enabled
+    void runToCompletion();
+
+    // Default way
     void runToCompletionAsync(WaitingTaskHolder h);
 
     void endJob();

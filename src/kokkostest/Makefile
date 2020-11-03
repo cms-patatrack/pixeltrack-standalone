@@ -27,7 +27,15 @@ LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
-MY_LDFLAGS_NVCC := --linker-options '-rpath,$(LIB_DIR)/$(TARGET_NAME)'
+ifndef KOKKOS_DEVICE_PARALLEL
+MY_DEVICE_CXXFLAGS := $(MY_CXXFLAGS)
+MY_DEVICE_LDFLAGS := $(MY_LDFLAGS)
+else
+ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+MY_DEVICE_CXXFLAGS := $(MY_CXXFLAGS) -x cu
+MY_DEVICE_LDFLAGS := --linker-options '-rpath,$(LIB_DIR)/$(TARGET_NAME)'
+endif
+endif
 LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
 
 ALL_DEPENDS := $(EXE_DEP)
@@ -47,13 +55,25 @@ $(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/$(1)/kokkos/*.cc)
 # serial backend
 $(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
 $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
-# CUDA backend
-$(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
-$(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
-# this means all built kokkos objects...
-$(1)_CUOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ)
+# host parallel backend
+$(1)_PARALLEL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.parallel.o))
+$(1)_PARALLEL_DEP := $$($(1)_PARALLEL_OBJ:$.o=$.d)
+# device parallel backend
+$(1)_DEVICE_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.device.o))
+$(1)_DEVICE_DEP := $$($(1)_DEVICE_OBJ:$.o=$.d)
 
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_HOST_DEP) $$($(1)_SERIAL_DEP) $$($(1)_CUDA_DEP)
+# this means all built kokkos objects...
+$(1)_DEVOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_HOST_DEP) $$($(1)_SERIAL_DEP)
+ifdef KOKKOS_HOST_PARALLEL
+$(1)_DEVOBJ += $$($(1)_PARALLEL_OBJ)
+ALL_DEPENDS += $$((1)_PARALLEL_DEP)
+endif
+ifdef KOKKOS_DEVICE_PARALLEL
+$(1)_DEVOBJ += $$($(1)_DEVICE_OBJ)
+ALL_DEPENDS += $$($(1)_DEVICE_DEP)
+endif
+
 $(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1).so
 LIBS += $$($(1)_LIB)
 $(1)_LDFLAGS := -l$(1)
@@ -76,13 +96,25 @@ $(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/kokkos/*.cc)
 # serial backend
 $(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
 $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
-# CUDA backend
-$(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
-$(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
-# this means all built kokkos objects...
-$(1)_CUOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ)
+# host parallel backend
+$(1)_PARALLEL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.parallel.o))
+$(1)_PARALLEL_DEP := $$($(1)_PARALLEL_OBJ:$.o=$.d)
+# device parallel backend
+$(1)_DEVICE_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.device.o))
+$(1)_DEVICE_DEP := $$($(1)_DEVICE_OBJ:$.o=$.d)
 
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_HOST_DEP) $$($(1)_SERIAL_DEP) $$($(1)_CUDA_DEP)
+# this means all built kokkos objects...
+$(1)_DEVOBJ := $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_HOST_DEP) $$($(1)_SERIAL_DEP)
+ifdef KOKKOS_HOST_PARALLEL
+$(1)_DEVOBJ += $$($(1)_PARALLEL_OBJ)
+ALL_DEPENDS += $$((1)_PARALLEL_DEP)
+endif
+ifdef KOKKOS_DEVICE_PARALLEL
+$(1)_DEVOBJ += $$($(1)_DEVICE_OBJ)
+ALL_DEPENDS += $$($(1)_DEVICE_DEP)
+endif
+
 $(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
 PLUGINS += $$($(1)_LIB)
 endef
@@ -94,16 +126,31 @@ TESTS_PORTABLE_SRC := $(wildcard $(TARGET_DIR)/test/kokkos/*.cc)
 TESTS_SERIAL_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.serial.o))
 TESTS_SERIAL_DEP := $(TESTS_SERIAL_OBJ:$.o=$.d)
 TESTS_SERIAL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.serial,$(TESTS_PORTABLE_SRC))
-# CUDA backend
-TESTS_CUDA_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.cuda.o))
-TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
-TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
+# host parallel backend
+TESTS_PARALLEL_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.parallel.o))
+TESTS_PARALLEL_DEP := $(TESTS_PARALLEL_OBJ:$.o=$.d)
+TESTS_PARALLEL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.parallel,$(TESTS_PORTABLE_SRC))
+# device parallel backend
+TESTS_DEVICE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.device.o))
+TESTS_DEVICE_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
+TESTS_DEVICE_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.device,$(TESTS_PORTABLE_SRC))
 #
-TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_CUDA_EXE)
-TESTS_CUOBJ := $(TESTS_SERIAL_OBJ) $(TESTS_CUDA_OBJ)
-ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_CUDA_DEP)
+TESTS_EXE := $(TESTS_SERIAL_EXE)
+TESTS_DEVOBJ := $(TESTS_SERIAL_OBJ)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP)
+ifdef KOKKOS_HOST_PARALLEL
+TESTS_EXE += $(TESTS_PARALLEL_EXE)
+TESTS_DEVOBJ += $(TESTS_PARALLEL_OBJ)
+ALL_DEPENDS += $(TESTS_PARALLEL_DEP)
+endif
+ifdef KOKKOS_DEVICE_PARALLEL
+TESTS_EXE += $(TESTS_DEVICE_EXE)
+TESTS_DEVOBJ += $(TESTS_DEVICE_OBJ)
+ALL_DEPENDS += $(TESTS_PARALLEL_DEP)
+endif
+
 # Needed to keep the unit test object files after building $(TARGET)
-.SECONDARY: $(TESTS_CUOBJ)
+.SECONDARY: $(TESTS_DEVOBJ)
 
 define RUNTEST_template
 run_$(1): $(1)
@@ -114,7 +161,12 @@ run_$(1): $(1)
 test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
-$(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
+ifdef KOKKOS_HOST_PARALLEL
+$(foreach test,$(TESTS_PARALLEL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+endif
+ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+$(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
+endif
 
 -include $(ALL_DEPENDS)
 
@@ -132,31 +184,40 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
 	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
-ifeq ($$(strip $$($(1)_CUOBJ)),)
+ifeq ($$(strip $$($(1)_DEVOBJ)),)
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
 else
-$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_HOST_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_CUDA_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_DEVOBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) $$($(1)_OBJ) $$($(1)_CUOBJ) $(LDFLAGS_NVCC) -shared $(SO_LDFLAGS_NVCC) $(LIB_LDFLAGS) $(MY_LDFLAGS_NVCC)  $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
+	$(KOKKOS_DEVICE_CXX) $$($(1)_OBJ) $$($(1)_DEVOBJ) $(KOKKOS_DEVICE_LDFLAGS) -shared $(KOKKOS_DEVICE_SO_LDFLAGS) $(LIB_LDFLAGS) $(MY_DEVICE_LDFLAGS)  $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(LIB_LDFLAGS) -o $$@
 endif
 
 # Anything depending on Kokkos
 # Host-only code, need a special rule because have to build with nvcc if CUDA backend is enabled
 $(OBJ_DIR)/$(2)/kokkoshost/%.cc.o: $(SRC_DIR)/$(2)/kokkoshost/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) -x cu $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 # Portable code, for serial backend
 $(OBJ_DIR)/$(2)/kokkos/%.cc.serial.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_SERIAL $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
-# Portable code, for CUDA backend
-$(OBJ_DIR)/$(2)/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(2)/kokkos/%.cc
+# Portable code, for host parallel backend
+ifdef KOKKOS_HOST_PARALLEL
+$(OBJ_DIR)/$(2)/kokkos/%.cc.parallel.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+endif
+
+# Portable code, for device parallel backend
+ifdef KOKKOS_DEVICE_PARALLEL
+$(OBJ_DIR)/$(2)/kokkos/%.cc.device.o: $(SRC_DIR)/$(2)/kokkos/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+endif
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
@@ -175,17 +236,30 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 # Serial backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_SERIAL $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) $^ $(MY_LDFLAGS_NVCC) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
-# CUDA backend
-$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
+# Host parallel backend
+ifdef KOKKOS_HOST_PARALLEL
+$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) -x cu -DKOKKOS_BACKEND_CUDA $(KOKKOS_CUFLAGS) $(CUDA_CXXFLAGS) $(CUDA_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 
-$(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.cuda.o | $(LIBS)
+$(TEST_DIR)/$(TARGET_NAME)/%.parallel: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) $^ $(MY_LDFLAGS_NVCC) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+endif
+
+# Device parallel backend
+ifdef KOKKOS_DEVICE_PARALLEL
+$(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(KOKKOS_DEVICE_TEST_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.device: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+endif

@@ -146,7 +146,9 @@ void verifyBulk(Kokkos::View<HistoType, ArrayLayout, ExecSpace> assoc,
 
 int main() {
   kokkos_common::InitializeScopeGuard kokkosGuard({KokkosBackend<KokkosExecSpace>::value});
+#ifdef KOKKOS_BACKEND_CUDA
   cudaDeviceSetLimit(cudaLimitPrintfFifoSize, 1024 * 1024 * 1024);
+#endif
 
   std::cout << "OneToManyAssoc " << Assoc::nbins() << ' ' << Assoc::capacity() << ' ' << Assoc::wsSize() << std::endl;
   std::cout << "OneToManyAssoc (small) " << SmallAssoc::nbins() << ' ' << SmallAssoc::capacity() << ' '

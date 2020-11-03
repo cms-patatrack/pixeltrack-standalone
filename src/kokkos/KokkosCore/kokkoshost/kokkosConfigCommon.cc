@@ -7,13 +7,19 @@ namespace kokkos_common {
   public:
     explicit Impl(std::vector<Backend> const& backends, Kokkos::InitArguments const& args) {
       Kokkos::Impl::pre_initialize(args);
-      if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
-        Kokkos::Serial::impl_initialize();
-      }
+      // Initialize SERIAL always
+      Kokkos::Serial::impl_initialize();
+      // Initialize THREADS always if enabled in Kokkos build
+      // Not initializing tends to lead to "use of uninitialized execution space" errors at run time
+#ifdef KOKKOS_ENABLE_THREADS
+      Kokkos::Threads::impl_initialize(args.num_threads);
+#endif
       if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
-        // CUDA execution space requires a host execution space as well
-        Kokkos::Serial::impl_initialize();
+#ifdef KOKKOS_ENABLE_CUDA
         Kokkos::Cuda::impl_initialize();
+#else
+        throw std::runtime_error("CUDA backend was disabled at build time");
+#endif
       }
       Kokkos::Impl::post_initialize(args);
     }
@@ -21,9 +27,9 @@ namespace kokkos_common {
     ~Impl() { Kokkos::finalize(); }
   };
 
-  InitializeScopeGuard::InitializeScopeGuard(std::vector<Backend> const& backends) {
+  InitializeScopeGuard::InitializeScopeGuard(std::vector<Backend> const& backends, int numberOfInnerThreads) {
     // for now pass in the default arguments
-    Kokkos::InitArguments arguments;
+    Kokkos::InitArguments arguments(numberOfInnerThreads);
     pimpl_ = std::make_unique<Impl>(backends, arguments);
   }
 

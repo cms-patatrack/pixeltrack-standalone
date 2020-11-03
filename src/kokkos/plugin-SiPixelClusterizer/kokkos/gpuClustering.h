@@ -49,11 +49,9 @@ namespace gpuClustering {
                 Kokkos::View<uint32_t*, ExecSpace> moduleId,           // output: module id of each module
                 Kokkos::View<int*, ExecSpace> clusterId,               // output: cluster id of each pixel
                 int numElements,
-                const uint32_t league_size,
-                const uint32_t team_size,
+                Kokkos::TeamPolicy<ExecSpace>& teamPolicy,
                 ExecSpace const& execSpace) {
-    using team_policy = Kokkos::TeamPolicy<ExecSpace>;
-    using member_type = typename team_policy::member_type;
+    using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
     using shared_team_view = Kokkos::View<uint32_t, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
     size_t shared_view_bytes = shared_team_view::shmem_size();
 
@@ -61,18 +59,21 @@ namespace gpuClustering {
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
     using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
-    Kokkos::View<Hist*, ExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"), league_size);
-    Kokkos::View<int*, ExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"), league_size);
+    Kokkos::View<Hist*, ExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"), teamPolicy.league_size());
+    Kokkos::View<int*, ExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"), teamPolicy.league_size());
 
     int loop_count = Hist::totbins();
     Kokkos::parallel_for(
-        "init_hist_off", team_policy(execSpace, league_size, team_size), KOKKOS_LAMBDA(const member_type& teamMember) {
+        "init_hist_off", teamPolicy, KOKKOS_LAMBDA(const member_type& teamMember) {
           Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, loop_count),
                                [&](const int index) { d_hist(teamMember.league_rank()).off[index] = 0; });
         });
 
     Kokkos::parallel_for(
-        "findClus_msize", team_policy(execSpace, league_size, team_size), KOKKOS_LAMBDA(const member_type& teamMember) {
+        "findClus_msize", teamPolicy, KOKKOS_LAMBDA(const member_type& teamMember) {
+          if (teamMember.league_rank() >= static_cast<int>(moduleStart(0)))
+            return;
+
           int firstPixel = moduleStart(1 + teamMember.league_rank());
           auto thisModuleId = id(firstPixel);
           assert(thisModuleId < ::gpuClustering::MaxNumModules);
@@ -119,12 +120,11 @@ namespace gpuClustering {
           }
         });
 
-    Hist::finalize(d_hist, league_size, execSpace);
+    Hist::finalize(d_hist, teamPolicy.league_size(), execSpace);
     int shared_view_level = 0;
     Kokkos::parallel_for(
         "findClus_msize",
-        team_policy(execSpace, league_size, team_size)
-            .set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes)),
+        teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes)),
         KOKKOS_LAMBDA(const member_type& teamMember) {
           if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
             return;
@@ -140,10 +140,10 @@ namespace gpuClustering {
 
           const uint32_t hist_size = d_hist(teamMember.league_rank()).size();
 
-#ifndef KOKKOS_BACKEND_SERIAL
-          const uint32_t maxiter = 16;
-#else
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
           const uint32_t maxiter = hist_size;
+#else
+          const uint32_t maxiter = 16;
 #endif
 
           constexpr int maxNeighbours = 10;
@@ -237,7 +237,7 @@ namespace gpuClustering {
               }    // pixel loop
             }
             ++nloops;
-            teamMember.team_reduce(Kokkos::Sum<typeof(more)>(more));
+            teamMember.team_reduce(Kokkos::Sum<decltype(more)>(more));
           }  // end while
 
           shared_team_view foundClusters(teamMember.team_scratch(shared_view_level));

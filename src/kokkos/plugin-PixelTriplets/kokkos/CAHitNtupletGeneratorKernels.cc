@@ -45,9 +45,9 @@ namespace KOKKOS_NAMESPACE {
     assert(teamSize > 0 && 0 == teamSize % 16);
     teamSize *= stride;
 
-#ifdef KOKKOS_BACKEND_SERIAL
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+    // unit team size and stride loop for host execution
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
-    // unit stride loop for serial execution
     stride = 1;
 #else
     Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
@@ -97,9 +97,9 @@ namespace KOKKOS_NAMESPACE {
       int stride = 16;
       int blockSize = teamSize / stride;
       int leagueSize = (nhits + blockSize - 1) / blockSize;
-#ifdef KOKKOS_BACKEND_SERIAL
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+      // unit team size and stride loop for host execution
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
-      // unit stride loop for serial execution
       stride = 1;
 #else
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
@@ -175,9 +175,9 @@ namespace KOKKOS_NAMESPACE {
       int stride = 16;
       int blockSize = teamSize / stride;
       int leagueSize = (nhits + blockSize - 1) / blockSize;
-#ifdef KOKKOS_BACKEND_SERIAL
+#if defined KOKKOS_BACKEND_SERIAL || KOKKOS_BACKEND_PTHREAD
+      // unit team size and stride loop for host execution
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
-      // unit stride loop for serial execution
       stride = 1;
 #else
       Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
@@ -191,8 +191,8 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.doStats_) {
       teamSize = 128;
       leagueSize = (std::max(nhits, m_params.maxNumberOfDoublets_) + teamSize - 1) / teamSize;
-#ifdef KOKKOS_BACKEND_SERIAL
-      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, 1);
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
+      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, Kokkos::AUTO());
 #else
       policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize);
 #endif
@@ -262,12 +262,12 @@ namespace KOKKOS_NAMESPACE {
     }
 
     assert(nActualPairs <= gpuPixelDoublets::nPairs);
-#ifdef KOKKOS_BACKEND_SERIAL
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
     int stride = 1;
     Kokkos::TeamPolicy<KokkosExecSpace,
                        Kokkos::LaunchBounds<gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize,
                                             gpuPixelDoublets::getDoubletsFromHistoMinBlocksPerMP>>
-        tempPolicy{execSpace, 1, Kokkos::AUTO()};
+        tempPolicy{execSpace, KokkosExecSpace::impl_thread_pool_size(), 1};
 #else
     int stride = 4;
     int teamSize = gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize / stride;

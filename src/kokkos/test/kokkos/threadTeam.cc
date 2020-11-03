@@ -12,7 +12,9 @@ namespace {
   KOKKOS_INLINE_FUNCTION void kernel(Kokkos::View<int*, KokkosExecSpace> data,
                                      Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
     //printf("%d %d %d\n", static_cast<int>(teamMember.league_rank()), static_cast<int>(teamMember.team_size()), static_cast<int>(teamMember.team_rank()));
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, ELEMENTS_PER_TEAM), [=](int i) {
+    // workaround for PTHREAD backend
+    constexpr int elements_per_team = ELEMENTS_PER_TEAM;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, elements_per_team), [=](int i) {
       data[teamMember.league_rank() * ELEMENTS_PER_TEAM + i] *= 10;
       //printf("%d %d %d\n", static_cast<int>(teamMember.league_rank()), static_cast<int>(teamMember.team_size()), i);
     });
@@ -56,7 +58,7 @@ void test() {
             flag = 1;
           else
             flag = 0;
-          teamMember.team_reduce(Kokkos::Sum<typeof(flag)>(flag));
+          teamMember.team_reduce(Kokkos::Sum<decltype(flag)>(flag));
         }
       });
 }

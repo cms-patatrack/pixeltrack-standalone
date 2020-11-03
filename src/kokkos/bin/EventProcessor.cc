@@ -5,6 +5,10 @@
 
 #include "EventProcessor.h"
 
+#define KOKKOS_MACROS_HPP
+#include <KokkosCore_config.h>
+#undef KOKKOS_MACROS_HPP
+
 namespace edm {
   EventProcessor::EventProcessor(int maxEvents,
                                  int numberOfStreams,
@@ -26,6 +30,11 @@ namespace edm {
   }
 
   void EventProcessor::runToCompletion() {
+#ifdef KOKKOS_ENABLE_THREADS
+    for (auto& s : schedules_) {
+      s.runToCompletion();
+    }
+#else
     // The task that waits for all other work
     auto globalWaitTask = make_empty_waiting_task();
     globalWaitTask->increment_ref_count();
@@ -36,6 +45,7 @@ namespace edm {
     if (globalWaitTask->exceptionPtr()) {
       std::rethrow_exception(*(globalWaitTask->exceptionPtr()));
     }
+#endif
   }
 
   void EventProcessor::endJob() {
