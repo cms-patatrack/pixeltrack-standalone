@@ -87,6 +87,7 @@ namespace cms {
     template <typename Histo, typename ExecSpace>
     inline void launchFinalize(Kokkos::View<Histo, ExecSpace> h, ExecSpace const& execSpace) {
       Kokkos::parallel_scan(
+          "launchFinalize",
           Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
           KOKKOS_LAMBDA(const int& i, float& upd, const bool& final) {
             upd += h().off[i];
