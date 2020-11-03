@@ -151,7 +151,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
     int nTracks = 0;
     for (int i = 0; i < tracks->stride(); ++i) {
-      if (tracks->nHits(i) > 0) {
+      if (tracks->nHits(i) > 0 and tracks->quality(i) >= trackQuality::loose) {
         ++nTracks;
         histos["track_nhits"].fill(tracks->nHits(i));
         histos["track_chi2"].fill(tracks->chi2(i));
