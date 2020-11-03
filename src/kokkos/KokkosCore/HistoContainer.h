@@ -366,16 +366,35 @@ public:
 #pragma hd_warning_disable
   template <typename Histo, typename ExecSpace>
   static void finalize(Kokkos::View<Histo*, ExecSpace> histo, const int32_t N, ExecSpace const& execSpace) {
-    for (int k = 0; k < N; k++) {
-      Kokkos::parallel_scan(
-          "nFinalize",
-          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
-          KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final) {
-            update += histo(k).off[i];
-            if (final)
-              histo(k).off[i] = update;
-          });
-    }
+    // Temporary array to hold the offsets of the first element of each block
+    Kokkos::View<uint32_t*, ExecSpace> firstOffset(Kokkos::ViewAllocateWithoutInitializing("firstoffSet"), N);
+
+    // First do a prefix scan over the all the blocks
+    Kokkos::parallel_scan(
+        "nFinalize",
+        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N * Histo::totbins()),
+        KOKKOS_LAMBDA(const int ind, uint32_t& update, const bool final) {
+          const int k = ind / Histo::totbins();
+          const int i = ind % Histo::totbins();
+          update += histo(k).off[i];
+          if (final)
+            histo(k).off[i] = update;
+        });
+    // Then record the offset of the last element of each block
+    Kokkos::parallel_for(
+        "collectOffset", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N), KOKKOS_LAMBDA(const int k) {
+          firstOffset[k] = (k == 0) ? 0 : histo(k - 1).off[Histo::totbins() - 1];
+        });
+    // Finally subtract the offset of last element of the "previous block" from the values of the current block
+    Kokkos::parallel_for(
+        "subtractOffset",
+        Kokkos::TeamPolicy<ExecSpace>(execSpace, N, Kokkos::AUTO()),
+        KOKKOS_LAMBDA(typename Kokkos::TeamPolicy<ExecSpace>::member_type const& teamMember) {
+          const int k = teamMember.league_rank();
+          const auto first = firstOffset(k);
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, Histo::totbins()),
+                               [=](const int i) { histo(k).off[i] -= first; });
+        });
   }
 
   constexpr auto size() const { return uint32_t(off[totbins() - 1]); }
