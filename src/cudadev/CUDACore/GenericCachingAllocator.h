@@ -15,87 +15,6 @@
 
 // Inspired by cub::CachingDeviceAllocator
 
-/*
-struct CUDAHostTraits {
-  using DeviceType = int;
-  using QueueType = cudaStream_t;
-  using EventType = cudaEvent_t;
-  struct Dummy {};
-
-  constexpr DeviceType kInvalidDevice = -1;
-
-  static DeviceType currentDevice() {
-    return cms::cuda::currentDevice();
-  }
-
-  static Dummy setDevice(DeviceType device) {
-    return {};
-  }
-
-  static bool canReuseInDevice(DeviceType a, DeviceType b) {
-    // Pinned host memory can be reused in any device, but in case of
-    // changes the event must be re-created
-    return true;
-  }
-
-  static bool canReuseInQueue(QueueType a, QueueType b) {
-    // For pinned host memory a freed block without completed event
-    // can not be re-used even for operations in the same queue
-    return false;
-  }
-
-  static bool eventWorkHasCompleted(EventType e) {
-    return cms::cuda::eventWorkHasCompleted(e);
-  }
-
-  static EventType createEvent() {
-    EventType e;
-    cudaCheck(cudaEventCreateWithFlags(&e, cudaEventDisableTiming));
-    return e;
-  }
-
-  static void destroyEvent(EventType e) {
-    cudaCheck(cudaEventDestroy(e));
-  }
-
-  static EventType recreateEvent(EventType e, DeviceType prev, DeviceType next) {
-    cudaCheck(cudaSetDevice(prev));
-    destroyEvent(e);
-    cudaCheck(cudaSetDevice(next));
-    return createEvent();
-  }
-
-  static EventType recordEvent(EventType e, QueueType queue) {
-    cudaCheck(cudaEventRecord(e, queue));
-  }
-
-  static std::ostream& printDevice(std::ostream& os, DeviceType dev) {
-    os << "Host";
-    return os;
-  }
-
-  static void* allocate(size_t bytes) {
-    void* ptr;
-    cudaCheck(cudaHostAlloc(&ptr, bytes, cudaHostAllocDefault));
-    return ptr;
-  }
-
-  static void* tryAllocate(size_t bytes) {
-    void* ptr;
-    auto error = cudaHostAlloc(&ptr, bytes, cudaHostAllocDefault);
-    if (error == cudaErrorMemoryAllocation) {
-      return nullptr;
-    }
-    cudaCheck(error);
-    return ptr;
-  }
-
-  static void free(void* ptr) {
-    cudaCheck(cudaFreeHost(ptr));
-  }
-}
-*/
-
 namespace allocator {
   inline unsigned int intPow(unsigned int base, unsigned int exp) {
     unsigned int ret = 1;
@@ -183,7 +102,7 @@ public:
 
     // allocate if necessary
     if (searchKey.ptr == nullptr) {
-      auto scopedSetDevice = Traits::setDevice(device);
+      [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(device);
 
       searchKey.ptr = Traits::tryAllocate(searchKey.bytes);
       if (searchKey.ptr == nullptr) {
@@ -233,7 +152,7 @@ public:
     searchKey.device = device;
     searchKey.ptr = ptr;
 
-    auto scopedSetDevice = Traits::setDevice(device);
+    [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(device);
 
     {
       std::scoped_lock lock(mutex_);
@@ -385,7 +304,7 @@ private:
 
     while (not cachedBlocks_.empty()) {
       auto iBlock = cachedBlocks_.begin();
-      auto scopedSetDevice = Traits::setDevice(iBlock->device);
+      [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(iBlock->device);
       Traits::free(iBlock->ptr);
       Traits::destroyEvent(iBlock->readyEvent);
       cachedBytes_[iBlock->device].free -= iBlock->bytes;
@@ -393,9 +312,9 @@ private:
       if (debug_) {
         std::cout << "\t";
         Traits::printDevice(std::cout, iBlock->device)
-            << " freed " << iBlock->bytes << " bytes.\n\t\t  " << (cachedBlocks_.size()-1) << " available blocks cached ("
-            << cachedBytes_[iBlock->device].free << " bytes), " << liveBlocks_.size() << " live blocks ("
-            << cachedBytes_[iBlock->device].live << " bytes) outstanding." << std::endl;
+            << " freed " << iBlock->bytes << " bytes.\n\t\t  " << (cachedBlocks_.size() - 1)
+            << " available blocks cached (" << cachedBytes_[iBlock->device].free << " bytes), " << liveBlocks_.size()
+            << " live blocks (" << cachedBytes_[iBlock->device].live << " bytes) outstanding." << std::endl;
       }
 
       cachedBlocks_.erase(iBlock);
