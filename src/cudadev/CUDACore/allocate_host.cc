@@ -6,8 +6,7 @@
 #include "getCachingHostAllocator.h"
 
 namespace {
-  const size_t maxAllocationSize =
-      notcub::CachingDeviceAllocator::IntPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
+  const size_t maxAllocationSize = allocator::intPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
 }
 
 namespace cms::cuda {
