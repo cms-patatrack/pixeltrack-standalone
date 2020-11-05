@@ -167,13 +167,13 @@ $ ./kokkos --cuda
    * `--cuda` for CUDA backend
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
 
-| Make variable            | Description |
-------------------------------------------
-| `CUDA_BASE`              | Path to CUDA installation |
-| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`)) |
+| Make variable            | Description                                                                                                                             |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `CUDA_BASE`              | Path to CUDA installation                                                                                                               |
+| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`))                                                               |
 | `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build, currently needs to be exact. (default: `70`, possible values: `70`, `75`; trivial to extend) |
-| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD) |
-| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`) |
+| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD)                                                                 |
+| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`)                                                                |
 
 ## Code structure
 
