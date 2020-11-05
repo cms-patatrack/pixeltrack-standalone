@@ -14,11 +14,16 @@
 
 #include <atomic>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 
 namespace {
   std::atomic<int> allEvents = 0;
   std::atomic<int> goodEvents = 0;
+  std::atomic<int> sumVertexDifference = 0;
+
+  std::mutex sumTrackDifferenceMutex;
+  float sumTrackDifference = 0;
 }  // namespace
 
 class CountValidator : public edm::EDProducer {
@@ -89,7 +94,12 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
       }
     }
 
-    if (auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks()); rel >= trackTolerance) {
+    auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
+    if (static_cast<unsigned int>(nTracks) != count.nTracks()) {
+      std::lock_guard<std::mutex> guard(sumTrackDifferenceMutex);
+      sumTrackDifference += rel;
+    }
+    if (rel >= trackTolerance) {
       ss << "\n N(tracks) is " << nTracks << " expected " << count.nTracks() << ", relative difference " << rel
          << " is outside tolerance " << trackTolerance;
       ok = false;
@@ -100,7 +110,11 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     auto const& count = iEvent.get(vertexCountToken_);
     auto const& vertices = iEvent.get(vertexToken_);
 
-    if (auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices())); diff > vertexTolerance) {
+    auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices()));
+    if (diff != 0) {
+      sumVertexDifference += diff;
+    }
+    if (diff > vertexTolerance) {
       ss << "\n N(vertices) is " << vertices->nvFinal << " expected " << count.nVertices() << ", difference " << diff
          << " is outside tolerance " << vertexTolerance;
       ok = false;
@@ -118,6 +132,14 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 void CountValidator::endJob() {
   if (allEvents == goodEvents) {
     std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
+    if (sumTrackDifference != 0.f) {
+      std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load()
+                << " (all within tolerance)\n";
+    }
+    if (sumVertexDifference != 0) {
+      std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
+                << " (all within tolerance)\n";
+    }
   } else {
     std::cout << "CountValidator: " << (allEvents - goodEvents) << " events failed validation (see details above)\n";
     throw std::runtime_error("CountValidator failed");
