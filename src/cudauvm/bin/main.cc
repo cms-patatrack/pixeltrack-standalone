@@ -94,6 +94,9 @@ int main(int argc, char** argv) {
 #ifdef CUDAUVM_DISABLE_PREFETCH
   std::cout << "cudaMemPrefetchAsync() calls are disabled" << std::endl;
 #endif
+#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
+  std::cout << "Managed memory is disabled in BeamSpotToCUDA" << std::endl;
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;

@@ -128,17 +128,22 @@ This program contains developments after CMSSW_11_1_0_pre4.
 
 #### `cudauvm`
 
-The purpose of this program is to test the performance of the CUDA managed memory.
-
-To disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`, compile with
+The purpose of this program is to test the performance of the CUDA
+managed memory. There are various macros that can be used to switch on
+and off various behaviors. The default behavior is to use use managed
+memory only for those memory blocks that are used for memory
+transfers, call `cudaMemPrefetchAsync()`, and
+`cudaMemAdvise(cudaMemAdviseSetReadMostly)`. The macros can be set at
+compile time along
 ```
 make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 ```
 
-To disable `cudaMemPrefetchAsync`, compile with
-```
-make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_PREFETCH"
-```
+| Macro                                | Effect                                              |
+|--------------------------------------|-----------------------------------------------------|
+| `-DCUDAUVM_DISABLE_ADVISE`           | Disable `cudaMemPrefetchAsync`                      |
+| `-DCUDAUVM_DISABLE_PREFETCH`         | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)` |
+| `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT` | Disable managed memory in `BeamSpotToCUDA`          |
 
 #### `kokkos` and `kokkostest`
 
