@@ -18,7 +18,7 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
 
   std::memcpy(gainData_, gainData.data(), gainData.size());
   for (int device = 0, ndev = cms::cuda::deviceCount(); device < ndev; ++device) {
-#ifndef CUDAUVM_DISABLE_ADVICE
+#ifndef CUDAUVM_DISABLE_ADVISE
     cudaCheck(cudaMemAdvise(gainForHLT_, sizeof(SiPixelGainForHLTonGPU), cudaMemAdviseSetReadMostly, device));
     cudaCheck(cudaMemAdvise(gainData_, gainData.size(), cudaMemAdviseSetReadMostly, device));
 #endif

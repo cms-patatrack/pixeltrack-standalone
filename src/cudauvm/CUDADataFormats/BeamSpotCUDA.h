@@ -5,6 +5,8 @@
 
 #include <cuda_runtime.h>
 
+#include <thread>
+
 class BeamSpotCUDA {
 public:
   // alignas(128) doesn't really make sense as there is only one
@@ -22,11 +24,13 @@ public:
 
   BeamSpotCUDA() = default;
   BeamSpotCUDA(Data const& data_h, int device, cudaStream_t stream);
+  ~BeamSpotCUDA();
 
   Data const* data() const { return data_d_.get(); }
 
 private:
   cms::cuda::managed::unique_ptr<Data> data_d_;
+  int device_;
 };
 
 #endif

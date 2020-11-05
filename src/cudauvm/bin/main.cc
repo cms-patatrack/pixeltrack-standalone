@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
 
-#ifdef CUDAUVM_DISABLE_ADVICE
+#ifdef CUDAUVM_DISABLE_ADVISE
   std::cout << "cudaMemAdvise() calls are disabled" << std::endl;
 #endif
 #ifdef CUDAUVM_DISABLE_PREFETCH
