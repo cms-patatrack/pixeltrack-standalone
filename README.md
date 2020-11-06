@@ -128,17 +128,22 @@ This program contains developments after CMSSW_11_1_0_pre4.
 
 #### `cudauvm`
 
-The purpose of this program is to test the performance of the CUDA managed memory.
-
-To disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`, compile with
+The purpose of this program is to test the performance of the CUDA
+managed memory. There are various macros that can be used to switch on
+and off various behaviors. The default behavior is to use use managed
+memory only for those memory blocks that are used for memory
+transfers, call `cudaMemPrefetchAsync()`, and
+`cudaMemAdvise(cudaMemAdviseSetReadMostly)`. The macros can be set at
+compile time along
 ```
 make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 ```
 
-To disable `cudaMemPrefetchAsync`, compile with
-```
-make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_PREFETCH"
-```
+| Macro                                | Effect                                              |
+|--------------------------------------|-----------------------------------------------------|
+| `-DCUDAUVM_DISABLE_ADVISE`           | Disable `cudaMemPrefetchAsync`                      |
+| `-DCUDAUVM_DISABLE_PREFETCH`         | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)` |
+| `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT` | Disable managed memory in `BeamSpotToCUDA`          |
 
 #### `kokkos` and `kokkostest`
 
@@ -162,13 +167,13 @@ $ ./kokkos --cuda
    * `--cuda` for CUDA backend
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
 
-| Make variable            | Description |
-------------------------------------------
-| `CUDA_BASE`              | Path to CUDA installation |
-| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`)) |
+| Make variable            | Description                                                                                                                             |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `CUDA_BASE`              | Path to CUDA installation                                                                                                               |
+| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`))                                                               |
 | `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build, currently needs to be exact. (default: `70`, possible values: `70`, `75`; trivial to extend) |
-| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD) |
-| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`) |
+| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD)                                                                 |
+| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`)                                                                |
 
 ## Code structure
 

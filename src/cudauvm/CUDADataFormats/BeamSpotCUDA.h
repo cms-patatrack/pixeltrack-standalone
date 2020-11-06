@@ -1,7 +1,11 @@
 #ifndef CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 #define CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 
+#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
+#include "CUDACore/device_unique_ptr.h"
+#else
 #include "CUDACore/managed_unique_ptr.h"
+#endif
 
 #include <cuda_runtime.h>
 
@@ -23,14 +27,22 @@ public:
   };
 
   BeamSpotCUDA() = default;
+#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
+  BeamSpotCUDA(Data const* data_h, cudaStream_t stream);
+#else
   BeamSpotCUDA(Data const& data_h, int device, cudaStream_t stream);
+#endif
   ~BeamSpotCUDA();
 
   Data const* data() const { return data_d_.get(); }
 
 private:
+#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
+  cms::cuda::device::unique_ptr<Data> data_d_;
+#else
   cms::cuda::managed::unique_ptr<Data> data_d_;
   int device_;
+#endif
 };
 
 #endif
