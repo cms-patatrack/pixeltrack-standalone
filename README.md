@@ -24,21 +24,44 @@ portability solutions with the
 tracking application. The version here corresponds to
 [CMSSW_11_2_0_pre8_Patatrack](https://github.com/cms-patatrack/cmssw/tree/CMSSW_11_2_0_pre8_Patatrack).
 
-The application is designed to require minimal dependencies on the system:
+The application is designed to require minimal dependencies on the system. All programs require
 * GNU Make, `curl`, `md5sum`, `tar`
-  * CMake for `kokkostest` and `kokkos` programs
-* C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
-* CUDA 11.0 runtime and drivers (real drivers are not needed for building)
-* [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html)
+* C++17 capable compiler. Ffor programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8 or 9, possibly 10 with CUDA 11.1
+  * testing is currently done with GCC 8
 
-All other external dependencies (listed below) are downloaded and built automatically.
-* [TBB](https://github.com/intel/tbb) (all programs)
-* [CUB](https://nvlabs.github.io/cub/) (`cudatest` and `cuda` programs)
-* [Eigen](http://eigen.tuxfamily.org/) (`cuda` program)
-* [Kokkos](https://github.com/kokkos/kokkos) (`kokkostest` and `kokkos` programs)
-* [Boost](https://www.boost.org/) (`alpakatest` and `alpaka` programs)
-  * Boost libraries from the system can also be used, but they need to be newer than 1.65.1
-* [Alpaka](https://github.com/alpaka-group/alpaka) (`alpakatest` and `alpaka` programs)
+In addition, the individual programs assume the following be found from the system
+
+| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+|--------------|--------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------|
+| `cudatest`   |                    | :heavy_check_mark:          |                                                                                                                  |
+| `cuda`       |                    | :heavy_check_mark:          |                                                                                                                  |
+| `cudadev`    |                    | :heavy_check_mark:          |                                                                                                                  |
+| `cudauvm`    |                    | :heavy_check_mark:          |                                                                                                                  |
+| `kokkostest` | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
+| `kokkos`     | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
+| `alpakatest` |                    | :heavy_check_mark:          |                                                                                                                  |
+| `alpaka`     |                    | :heavy_check_mark:          |                                                                                                                  |
+| `sycltest`   |                    |                             | :heavy_check_mark:                                                                                               |
+
+
+All other dependencies (listed below) are downloaded and built automatically
+
+
+| Application  | [TBB](https://github.com/intel/tbb) | [Eigen](http://eigen.tuxfamily.org/) | [Kokkos](https://github.com/kokkos/kokkos) | [Boost](https://www.boost.org/) (*) | [Alpaka](https://github.com/alpaka-group/alpaka) |
+|--------------|-------------------------------------|--------------------------------------|--------------------------------------------|-------------------------------------|--------------------------------------------------|
+| `fwtest`     | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |
+| `cudatest`   | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |
+| `cuda`       | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
+| `cudadev`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
+| `cudauvm`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
+| `kokkostest` | :heavy_check_mark:                  |                                      | :heavy_check_mark:                         |                                     |                                                  |
+| `kokkos`     | :heavy_check_mark:                  | :heavy_check_mark:                   | :heavy_check_mark:                         |                                     |                                                  |
+| `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |
+| `alpaka`     | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |
+| `sycltest`   | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |
+
+
+* (*) Boost libraries from the system can also be used, but they need to be newer than 1.65.1
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
@@ -49,20 +72,22 @@ downloaded automatically during the build process.
 
 ## Status
 
-| Application  | Description                      | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   |
-|--------------|----------------------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
-| `fwtest`     | Framework test                   | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cudatest`   | CUDA FW test                     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :white_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
-| `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |
-| `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |
-| `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |
+| Application  | Description                      | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   | Validation code    | Validated          |
+|--------------|----------------------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
+| `fwtest`     | Framework test                   | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `cudatest`   | CUDA FW test                     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :white_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |
+| `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |
+| `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
+
+The column "Validated" means that the program produces the same histograms as the reference `cuda` program within numerical precision (judged "by eye").
 
 ## Quick recipe
 
@@ -126,11 +151,11 @@ The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... 
 
 #### `cuda`
 
-This program is frozen to correspond to CMSSW_11_1_0_pre4.
+This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
 #### `cudadev`
 
-This program currently contains code from CMSSW_11_2_0_pre8_Patatrack.
+This program currently contains code from CMSSW_11_2_0_pre8_Patatrack (currently equivalent to `cuda`).
 
 #### `cudauvm`
 
