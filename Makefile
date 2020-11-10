@@ -95,7 +95,8 @@ export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
-export ALPAKA_CUFLAGS := $(CUDA_CUFLAGS)
+# Temporarily filter out missing-braces warning, see https://github.com/cms-patatrack/pixeltrack-standalone/issues/126
+export ALPAKA_CUFLAGS := $(filter-out -Werror=missing-braces,$(CUDA_CUFLAGS))
 
 CUPLA_BASE := $(EXTERNAL_BASE)/cupla
 export CUPLA_DEPS := $(CUPLA_BASE)/lib
@@ -194,8 +195,6 @@ endif
 
 # Targets and their dependencies on externals
 TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
-# Temporarily filter out programs that do not build (yet) with CUDA 11
-TARGETS_ALL := $(filter-out alpakatest alpaka,$(TARGETS_ALL))
 # Temporarily filter out programs that do not run (yet) with CUDA 11
 TARGETS_ALL := $(filter-out cuda cudauvm,$(TARGETS_ALL))
 
@@ -382,7 +381,7 @@ $(BOOST_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b release-0.4.1 $@
+	git clone git@github.com:alpaka-group/alpaka.git -b 0.5.0 $@
 
 # Cupla
 .PHONY: external_cupla
