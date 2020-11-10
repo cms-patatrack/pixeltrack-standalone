@@ -3,6 +3,7 @@
 
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
+#include "CUDACore/managed_unique_ptr.h"
 #include "CUDACore/cudaCompat.h"
 
 #include <cuda_runtime.h>
@@ -11,7 +12,7 @@ class SiPixelDigisCUDA {
 public:
   SiPixelDigisCUDA() = default;
   explicit SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream);
-  ~SiPixelDigisCUDA() = default;
+  ~SiPixelDigisCUDA();
 
   SiPixelDigisCUDA(const SiPixelDigisCUDA &) = delete;
   SiPixelDigisCUDA &operator=(const SiPixelDigisCUDA &) = delete;
@@ -50,10 +51,17 @@ public:
   uint32_t const *c_pdigi() const { return pdigi_d.get(); }
   uint32_t const *c_rawIdArr() const { return rawIdArr_d.get(); }
 
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+#else
+  void adcPrefetchAsync(int device, cudaStream_t stream) const;
+  void clusPrefetchAsync(int device, cudaStream_t stream) const;
+  void pdigiPrefetchAsync(int device, cudaStream_t stream) const;
+  void rawIdArrPrefetchAsync(int device, cudaStream_t stream) const;
+#endif
 
   class DeviceConstView {
   public:
@@ -79,10 +87,17 @@ public:
 
 private:
   // These are consumed by downstream device code
-  cms::cuda::device::unique_ptr<uint16_t[]> xx_d;         // local coordinates of each pixel
-  cms::cuda::device::unique_ptr<uint16_t[]> yy_d;         //
+#ifdef CUDAUVM_MANAGED_TEMPORARY
+  cms::cuda::managed::unique_ptr<uint16_t[]> xx_d;         // local coordinates of each pixel
+  cms::cuda::managed::unique_ptr<uint16_t[]> yy_d;         //
+  cms::cuda::managed::unique_ptr<uint16_t[]> moduleInd_d;  // module id of each pixel
+#else
+  cms::cuda::device::unique_ptr<uint16_t[]> xx_d;          // local coordinates of each pixel
+  cms::cuda::device::unique_ptr<uint16_t[]> yy_d;          //
+  cms::cuda::device::unique_ptr<uint16_t[]> moduleInd_d;   // module id of each pixel
+#endif
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   cms::cuda::device::unique_ptr<uint16_t[]> adc_d;        // ADC of each pixel
-  cms::cuda::device::unique_ptr<uint16_t[]> moduleInd_d;  // module id of each pixel
   cms::cuda::device::unique_ptr<int32_t[]> clus_d;        // cluster id of each pixel
   cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
 
@@ -90,9 +105,22 @@ private:
   // separate product?
   cms::cuda::device::unique_ptr<uint32_t[]> pdigi_d;
   cms::cuda::device::unique_ptr<uint32_t[]> rawIdArr_d;
+#else
+  cms::cuda::managed::unique_ptr<uint16_t[]> adc_d;        // ADC of each pixel
+  cms::cuda::managed::unique_ptr<int32_t[]> clus_d;        // cluster id of each pixel
+  cms::cuda::managed::unique_ptr<DeviceConstView> view_d;  // "me" pointer
+
+  // These are for CPU output; should we (eventually) place them to a
+  // separate product?
+  cms::cuda::managed::unique_ptr<uint32_t[]> pdigi_d;
+  cms::cuda::managed::unique_ptr<uint32_t[]> rawIdArr_d;
+#endif
 
   uint32_t nModules_h = 0;
   uint32_t nDigis_h = 0;
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+  int device_;
+#endif
 };
 
 #endif

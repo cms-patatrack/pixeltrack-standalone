@@ -7,9 +7,13 @@
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/GPUSimpleVector.h"
-#include "CUDACore/host_unique_ptr.h"
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
 #include "CUDACore/host_noncached_unique_ptr.h"
+#include "CUDACore/host_unique_ptr.h"
+#endif
+#include "CUDACore/managed_unique_ptr.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -146,17 +150,31 @@ namespace pixelgpudetails {
   public:
     class WordFedAppender {
     public:
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       WordFedAppender();
+#else
+      WordFedAppender(cudaStream_t stream);
+#endif
       ~WordFedAppender() = default;
 
       void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
+
+#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
+      void memAdvise();
+      void clearAdvise();
+#endif
 
       const unsigned int* word() const { return word_.get(); }
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       cms::cuda::host::noncached::unique_ptr<unsigned int[]> word_;
       cms::cuda::host::noncached::unique_ptr<unsigned char[]> fedId_;
+#else
+      cms::cuda::managed::unique_ptr<unsigned int[]> word_;
+      cms::cuda::managed::unique_ptr<unsigned char[]> fedId_;
+#endif
     };
 
     SiPixelRawToClusterGPUKernel() = default;
@@ -180,6 +198,7 @@ namespace pixelgpudetails {
                            cudaStream_t stream);
 
     std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
       digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);
       clusters_d.setNClusters(nModules_Clusters_h[1]);
       // need to explicitly deallocate while the associated CUDA
@@ -189,6 +208,10 @@ namespace pixelgpudetails {
       // the CUDA streams are cached within the cms::cuda::StreamCache, but it is
       // still better to release as early as possible
       nModules_Clusters_h.reset();
+#else
+      digis_d.setNModulesDigis(clusters_d.moduleStart()[0], nDigis);
+      clusters_d.setNClusters(clusters_d.clusModuleStart()[gpuClustering::MaxNumModules]);
+#endif
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
     }
 
@@ -198,7 +221,9 @@ namespace pixelgpudetails {
     uint32_t nDigis = 0;
 
     // Data to be put in the event
+#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
     cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
+#endif
     SiPixelDigisCUDA digis_d;
     SiPixelClustersCUDA clusters_d;
     SiPixelDigiErrorsCUDA digiErrors_d;
