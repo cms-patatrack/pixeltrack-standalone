@@ -7,8 +7,6 @@
 
 namespace gpuPixelDoublets {
 
-  using namespace gpuPixelDoubletsAlgos;
-
   constexpr int nPairs = 13 + 2 + 4;
   static_assert(nPairs <= CAConstants::maxNumberOfLayerPairs());
 
@@ -75,6 +73,17 @@ namespace gpuPixelDoublets {
     int first = blockIdx.x * blockDim.x + threadIdx.x;
     for (int i = first; i < nHits; i += gridDim.x * blockDim.x)
       isOuterHitOfCell[i].reset();
+
+    if (0 == first) {
+      cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
+      cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
+      auto i = cellNeighbors->extend();
+      assert(0 == i);
+      (*cellNeighbors)[0].reset();
+      i = cellTracks->extend();
+      assert(0 == i);
+      (*cellTracks)[0].reset();
+    }
   }
 
   constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y

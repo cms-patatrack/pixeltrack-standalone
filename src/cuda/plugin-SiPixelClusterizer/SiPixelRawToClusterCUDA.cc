@@ -44,6 +44,7 @@ private:
   std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
   PixelFormatterErrors errors_;
 
+  const bool isRun2_;
   const bool includeErrors_;
   const bool useQuality_;
 };
@@ -52,6 +53,7 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
     : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
       digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigisCUDA>>()),
       clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClustersCUDA>>()),
+      isRun2_(true),
       includeErrors_(true),
       useQuality_(true) {
   if (includeErrors_) {
@@ -145,7 +147,8 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   }  // end of for loop
 
-  gpuAlgo_.makeClustersAsync(gpuMap,
+  gpuAlgo_.makeClustersAsync(isRun2_,
+                             gpuMap,
                              gpuModulesToUnpack,
                              gpuGains,
                              *wordFedAppender_,

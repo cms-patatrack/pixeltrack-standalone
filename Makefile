@@ -197,7 +197,7 @@ TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
 # Temporarily filter out programs that do not build (yet) with CUDA 11
 TARGETS_ALL := $(filter-out alpakatest alpaka,$(TARGETS_ALL))
 # Temporarily filter out programs that do not run (yet) with CUDA 11
-TARGETS_ALL := $(filter-out cuda cudauvm,$(TARGETS_ALL))
+TARGETS_ALL := $(filter-out cudauvm,$(TARGETS_ALL))
 
 # Split targets by required toolchain
 TARGETS_GCC := fwtest

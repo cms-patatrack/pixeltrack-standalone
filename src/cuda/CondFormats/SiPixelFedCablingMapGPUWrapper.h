@@ -2,7 +2,7 @@
 #define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 
 #include "CUDACore/ESProduct.h"
-#include "CUDACore/CUDAHostAllocator.h"
+#include "CUDACore/HostAllocator.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
@@ -25,7 +25,7 @@ public:
   const unsigned char *getModToUnpAllAsync(cudaStream_t cudaStream) const;
 
 private:
-  std::vector<unsigned char, CUDAHostAllocator<unsigned char>> modToUnpDefault;
+  std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;
   bool hasQuality_;
 
   SiPixelFedCablingMapGPU *cablingMapHost = nullptr;  // pointer to struct in CPU

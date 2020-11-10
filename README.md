@@ -22,7 +22,7 @@ The purpose of this package is to explore various performance
 portability solutions with the
 [Patatrack](https://patatrack.web.cern.ch/patatrack/wiki/) pixel
 tracking application. The version here corresponds to
-[CMSSW_11_1_0_pre4_Patatrack](https://github.com/cms-patatrack/cmssw/tree/CMSSW_11_1_0_pre4_Patatrack).
+[CMSSW_11_2_0_pre8_Patatrack](https://github.com/cms-patatrack/cmssw/tree/CMSSW_11_2_0_pre8_Patatrack).
 
 The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
