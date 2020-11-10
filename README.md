@@ -124,7 +124,7 @@ This program is frozen to correspond to CMSSW_11_1_0_pre4.
 
 #### `cudadev`
 
-This program contains developments after CMSSW_11_1_0_pre4.
+This program currently contains code from CMSSW_11_2_0_pre8_Patatrack.
 
 #### `cudauvm`
 
