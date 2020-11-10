@@ -21,24 +21,19 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-// cub includes
-#include <cub/cub.cuh>
-
 // CMSSW includes
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/currentDevice.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
-
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
-
-#include "gpuCalibPixel.h"
-#include "gpuClusterChargeCut.h"
-#include "gpuClustering.h"
 
 // local includes
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "gpuCalibPixel.h"
+#include "gpuClusterChargeCut.h"
+#include "gpuClustering.h"
 
 namespace pixelgpudetails {
 
@@ -389,7 +384,7 @@ namespace pixelgpudetails {
                                    uint32_t *pdigi,
                                    uint32_t *rawIdArr,
                                    uint16_t *moduleId,
-                                   GPU::SimpleVector<PixelErrorCompact> *err,
+                                   cms::cuda::SimpleVector<PixelErrorCompact> *err,
                                    bool useQualityInfo,
                                    bool includeErrors,
                                    bool debug) {
@@ -515,8 +510,8 @@ namespace pixelgpudetails {
     }
 
     __shared__ uint32_t ws[32];
-    blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
+    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
     for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
       moduleStart[i] += moduleStart[1024];
@@ -550,7 +545,8 @@ namespace pixelgpudetails {
   }
 
   // Interface to outside
-  void SiPixelRawToClusterGPUKernel::makeClustersAsync(const SiPixelFedCablingMapGPU *cablingMap,
+  void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
+                                                       const SiPixelFedCablingMapGPU *cablingMap,
                                                        const unsigned char *modToUnp,
                                                        const SiPixelGainForHLTonGPU *gains,
                                                        const WordFedAppender &wordFed,
@@ -638,7 +634,8 @@ namespace pixelgpudetails {
       int blocks =
           (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
 
-      gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0, stream>>>(digis_d.moduleInd(),
+      gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0, stream>>>(isRun2,
+                                                                        digis_d.moduleInd(),
                                                                         digis_d.c_xx(),
                                                                         digis_d.c_yy(),
                                                                         digis_d.adc(),

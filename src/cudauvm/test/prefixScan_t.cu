@@ -1,9 +1,22 @@
 #include <iostream>
 
-#include <cub/cub.cuh>
-
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/prefixScan.h"
+#include "CUDACore/requireDevices.h"
+
+using namespace cms::cuda;
+
+template <typename T>
+struct format_traits {
+public:
+  static const constexpr char *failed_msg = "failed %d %d %d: %d %d\n";
+};
+
+template <>
+struct format_traits<float> {
+public:
+  static const constexpr char *failed_msg = "failed %d %d %d: %f %f\n";
+};
 
 template <typename T>
 __global__ void testPrefixScan(uint32_t size) {
@@ -23,7 +36,7 @@ __global__ void testPrefixScan(uint32_t size) {
   assert(1 == co[0]);
   for (auto i = first + 1; i < size; i += blockDim.x) {
     if (c[i] != c[i - 1] + 1)
-      printf("failed %d %d %d: %d %d\n", size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);
@@ -47,7 +60,7 @@ __global__ void testWarpPrefixScan(uint32_t size) {
   assert(1 == co[0]);
   if (i != 0) {
     if (c[i] != c[i - 1] + 1)
-      printf("failed %d %d %d: %d %d\n", size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);
@@ -71,6 +84,8 @@ __global__ void verify(uint32_t const *v, uint32_t n) {
 }
 
 int main() {
+  cms::cudatest::requireDevices();
+
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;
   testWarpPrefixScan<int><<<1, 32>>>(32);
@@ -117,34 +132,17 @@ int main() {
     // the block counter
     int32_t *d_pc;
     cudaCheck(cudaMalloc(&d_pc, sizeof(int32_t)));
-    cudaCheck(cudaMemset(d_pc, 0, 4));
+    cudaCheck(cudaMemset(d_pc, 0, sizeof(int32_t)));
 
     nthreads = 1024;
     nblocks = (num_items + nthreads - 1) / nthreads;
-    multiBlockPrefixScan<<<nblocks, nthreads, 0>>>(d_in, d_out1, num_items, d_pc);
+    std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nblocks << std::endl;
+    multiBlockPrefixScan<<<nblocks, nthreads, 4 * nblocks>>>(d_in, d_out1, num_items, d_pc);
+    cudaCheck(cudaGetLastError());
     verify<<<nblocks, nthreads, 0>>>(d_out1, num_items);
+    cudaCheck(cudaGetLastError());
     cudaDeviceSynchronize();
 
-    // test cub
-    std::cout << "cub" << std::endl;
-    // Determine temporary device storage requirements for inclusive prefix sum
-    void *d_temp_storage = nullptr;
-    size_t temp_storage_bytes = 0;
-    cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out2, num_items);
-
-    std::cout << "temp storage " << temp_storage_bytes << std::endl;
-
-    // Allocate temporary storage for inclusive prefix sum
-    // fake larger ws already available
-    temp_storage_bytes *= 8;
-    cudaCheck(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-    std::cout << "temp storage " << temp_storage_bytes << std::endl;
-    // Run inclusive prefix sum
-    CubDebugExit(cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out2, num_items));
-    std::cout << "temp storage " << temp_storage_bytes << std::endl;
-
-    verify<<<nblocks, nthreads, 0>>>(d_out2, num_items);
-    cudaDeviceSynchronize();
   }  // ksize
   return 0;
 }

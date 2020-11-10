@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "CUDACore/ESProduct.h"
-#include "CUDACore/CUDAHostAllocator.h"
+#include "CUDACore/HostAllocator.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 class PixelCPEFast {
