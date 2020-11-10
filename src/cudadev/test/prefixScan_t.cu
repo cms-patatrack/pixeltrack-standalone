@@ -2,6 +2,21 @@
 
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/prefixScan.h"
+#include "CUDACore/requireDevices.h"
+
+using namespace cms::cuda;
+
+template <typename T>
+struct format_traits {
+public:
+  static const constexpr char *failed_msg = "failed %d %d %d: %d %d\n";
+};
+
+template <>
+struct format_traits<float> {
+public:
+  static const constexpr char *failed_msg = "failed %d %d %d: %f %f\n";
+};
 
 template <typename T>
 __global__ void testPrefixScan(uint32_t size) {
@@ -21,7 +36,7 @@ __global__ void testPrefixScan(uint32_t size) {
   assert(1 == co[0]);
   for (auto i = first + 1; i < size; i += blockDim.x) {
     if (c[i] != c[i - 1] + 1)
-      printf("failed %d %d %d: %d %d\n", size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);
@@ -45,7 +60,7 @@ __global__ void testWarpPrefixScan(uint32_t size) {
   assert(1 == co[0]);
   if (i != 0) {
     if (c[i] != c[i - 1] + 1)
-      printf("failed %d %d %d: %d %d\n", size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);
@@ -69,6 +84,8 @@ __global__ void verify(uint32_t const *v, uint32_t n) {
 }
 
 int main() {
+  cms::cudatest::requireDevices();
+
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;
   testWarpPrefixScan<int><<<1, 32>>>(32);
@@ -125,6 +142,7 @@ int main() {
     verify<<<nblocks, nthreads, 0>>>(d_out1, num_items);
     cudaCheck(cudaGetLastError());
     cudaDeviceSynchronize();
+
   }  // ksize
   return 0;
 }

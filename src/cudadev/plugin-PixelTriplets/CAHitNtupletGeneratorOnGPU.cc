@@ -92,17 +92,16 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
 }
 
 CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
-  if (m_params.doStats_) {
-    // crash on multi-gpu processes
-    if (m_params.onGPU_) {
-      CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
-    } else {
-      CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
-    }
-  }
   if (m_params.onGPU_) {
+    if (m_params.doStats_) {
+      // crash on multi-gpu processes
+      CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
+    }
     cudaFree(m_counters);
   } else {
+    if (m_params.doStats_) {
+      CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
+    }
     delete m_counters;
   }
 }
@@ -116,14 +115,15 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecH
 
   CAHitNtupletGeneratorKernelsGPU kernels(m_params);
   kernels.counters_ = m_counters;
-  HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
 
   kernels.allocateOnGPU(stream);
-  fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
 
   kernels.buildDoublets(hits_d, stream);
   kernels.launchKernels(hits_d, soa, stream);
   kernels.fillHitDetIndices(hits_d.view(), soa, stream);  // in principle needed only if Hits not "available"
+
+  HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
+  fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
   if (m_params.useRiemannFit_) {
     fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
   } else {

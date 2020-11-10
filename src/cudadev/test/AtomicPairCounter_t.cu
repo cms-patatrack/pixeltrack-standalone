@@ -1,9 +1,12 @@
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/AtomicPairCounter.h"
+#include <iostream>
 
+#include <cuda_runtime.h>
+
+#include "CUDACore/AtomicPairCounter.h"
+#include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 
-__global__ void update(AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
+__global__ void update(cms::cuda::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
   auto i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n)
     return;
@@ -17,12 +20,12 @@ __global__ void update(AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uin
     cont[j] = i;
 };
 
-__global__ void finalize(AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
+__global__ void finalize(cms::cuda::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
   assert(dc->get().m == n);
   ind[n] = dc->get().n;
 }
 
-__global__ void verify(AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) {
+__global__ void verify(cms::cuda::AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) {
   auto i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n)
     return;
@@ -37,13 +40,12 @@ __global__ void verify(AtomicPairCounter const *dc, uint32_t const *ind, uint32_
     assert(cont[ib] == k);
 }
 
-#include <iostream>
 int main() {
-  AtomicPairCounter *dc_d;
-  cudaCheck(cudaMalloc(&dc_d, sizeof(AtomicPairCounter)));
-  cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
+  cms::cuda::AtomicPairCounter *dc_d;
+  cudaCheck(cudaMalloc(&dc_d, sizeof(cms::cuda::AtomicPairCounter)));
+  cudaCheck(cudaMemset(dc_d, 0, sizeof(cms::cuda::AtomicPairCounter)));
 
-  std::cout << "size " << sizeof(AtomicPairCounter) << std::endl;
+  std::cout << "size " << sizeof(cms::cuda::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
@@ -56,8 +58,8 @@ int main() {
   finalize<<<1, 1>>>(dc_d, n_d, m_d, 10000);
   verify<<<2000, 512>>>(dc_d, n_d, m_d, 10000);
 
-  AtomicPairCounter dc;
-  cudaCheck(cudaMemcpy(&dc, dc_d, sizeof(AtomicPairCounter), cudaMemcpyDeviceToHost));
+  cms::cuda::AtomicPairCounter dc;
+  cudaCheck(cudaMemcpy(&dc, dc_d, sizeof(cms::cuda::AtomicPairCounter), cudaMemcpyDeviceToHost));
 
   std::cout << dc.get().n << ' ' << dc.get().m << std::endl;
 

@@ -28,7 +28,7 @@ The application is designed to require minimal dependencies on the system:
 * GNU Make, `curl`, `md5sum`, `tar`
   * CMake for `kokkostest` and `kokkos` programs
 * C++17 capable compiler that works with `nvcc`, in the current setup this pretty much means GCC 8
-* CUDA 10.2 runtime and drivers (real drivers are not needed for building)
+* CUDA 11.0 runtime and drivers (real drivers are not needed for building)
 * [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html)
 
 All other external dependencies (listed below) are downloaded and built automatically.
@@ -130,7 +130,7 @@ This program is frozen to correspond to CMSSW_11_1_0_pre4.
 
 #### `cudadev`
 
-This program contains developments after CMSSW_11_1_0_pre4.
+This program currently contains code from CMSSW_11_2_0_pre8_Patatrack.
 
 #### `cudauvm`
 
