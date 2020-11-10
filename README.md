@@ -6,6 +6,12 @@
 * [Status](#status)
 * [Quick recipe](#quick-recipe)
   * [Additional make targets](#additional-make-targets)
+  * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
+    * [`fwtest`](#fwtest)
+    * [`cuda`](#cuda)
+    * [`cudadev`](#cudadev)
+    * [`cudauvm`](#cudauvm)
+    * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
 * [Contribution guide](#contribution-guide)
@@ -147,12 +153,18 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 
 #### `kokkos` and `kokkostest`
 
-If `nvcc` is not in your `$PATH`, the build recipe is
 ```bash
+# If nvcc is not in $PATH, create environment file and source it
 $ make environment [CUDA_BASE=...]
 $ source env.sh
+
+# Actual build command
 $ make -j N kokkos [CUDA_BASE=...] [KOKKOS_CUDA_ARCH=...] [...]
 $ ./kokkos --cuda
+
+# If changing KOKKOS_HOST_PARALLEL or KOKKOS_DEVICE_PARALLEL, clean up existing build first
+$ make clean external_kokkos_clean
+$ make kokkos ...
 ```
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
 * The target CUDA architecture needs to be set explicitly with `KOKKOS_CUDA_ARCH`
@@ -172,7 +184,7 @@ $ ./kokkos --cuda
 | `CUDA_BASE`              | Path to CUDA installation                                                                                                               |
 | `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`))                                                               |
 | `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build, currently needs to be exact. (default: `70`, possible values: `70`, `75`; trivial to extend) |
-| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD)                                                                 |
+| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD`)                                                                |
 | `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`)                                                                |
 
 ## Code structure
