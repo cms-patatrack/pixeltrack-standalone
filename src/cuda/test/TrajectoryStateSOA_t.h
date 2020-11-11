@@ -51,10 +51,15 @@ __global__ void testTSSoA(TS* pts, int n) {
 }
 
 #ifdef __CUDACC__
+#include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
+#ifdef __CUDACC__
+  cms::cudatest::requireDevices();
+#endif
+
   TS ts;
 
 #ifdef __CUDACC__
