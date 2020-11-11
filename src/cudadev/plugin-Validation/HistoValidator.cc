@@ -183,7 +183,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 }
 
 void HistoValidator::endJob() {
-  std::ofstream out("histograms_cuda.txt");
+  std::ofstream out("histograms_cudadev.txt");
   for (auto const& elem : histos) {
     out << elem.first << " " << elem.second << "\n";
   }
