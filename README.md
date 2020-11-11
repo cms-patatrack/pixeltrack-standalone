@@ -78,7 +78,7 @@ downloaded automatically during the build process.
 | `cudatest`   | CUDA FW test                     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :white_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
@@ -155,7 +155,7 @@ This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
 #### `cudadev`
 
-This program currently contains code from CMSSW_11_2_0_pre8_Patatrack (currently equivalent to `cuda`).
+This program is currently equivalent to `cuda`.
 
 #### `cudauvm`
 
