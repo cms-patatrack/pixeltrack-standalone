@@ -49,6 +49,9 @@ def run(nev, nstr, cores_main, opts, logfilename):
         logfile.write(" ".join(taskset+command))
         logfile.write("\n----\n")
         logfile.flush()
+        if opts.dryRun:
+            print(" ".join(taskset+command))
+            return (0, 0)
         p = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
         try:
             p.wait()
@@ -112,7 +115,10 @@ def main(opts):
         if (nstr, nth) in alreadyExists:
             continue
 
-        nev = nev_per_stream*nstr
+        if opts.maxStreamsToAddEvents > 0 and nstr > opts.maxStreamsToAddEvents:
+            nev = nev_per_stream * opts.maxStreamsToAddEvents
+        else:
+            nev = nev_per_stream*nstr
         (cores_main, cores_bkg) = partition_cores(cores, nth)
         msg = "Number of streams %d threads %d events %d" % (nstr, nth, nev)
         if opts.taskset:
@@ -121,6 +127,8 @@ def main(opts):
         throughputs = []
         for i in range(opts.repeat):
             (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr%d_nth%d_n%d.txt"%(nstr, nth, i))
+            if opts.dryRun:
+                continue
             throughputs.append(th)
             data["results"].append(dict(
                 threads=nth,
@@ -135,7 +143,10 @@ def main(opts):
                 stop = True
                 break
 
-        printMessage("Number of streams %d threads %d, average throughput %f" % (nstr, nth, (sum(throughputs)/len(throughputs))))
+        thr = 0
+        if len(throughputs) > 0:
+            thr = sum(throughputs)/len(throughputs)
+        printMessage("Number of streams %d threads %d, average throughput %f" % (nstr, nth, thr))
         print()
         if stop:
             print("Reached max wall time of %d s, stopping scan" % opts.stopAfterWallTime)
@@ -164,10 +175,14 @@ if __name__ == "__main__":
                         help="Comma separated list of numbers of streams to use in the scan (default: empty for always the same as the number of threads). If both number of threads and number of streams have more than 1 element, a 2D scan is done with all the combinations")
     parser.add_argument("--eventsPerStream", type=int, default=None,
                         help="Number of events to be used per EDM stream (default: 400*4kev for cuda, others also hardcoded in the top of the script file)")
+    parser.add_argument("--maxStreamsToAddEvents", type=int, default=-1,
+                        help="Maximum number of streams to add events (default: -1 for no limit")
     parser.add_argument("--stopAfterWallTime", type=int, default=-1,
                         help="Stop running after the wall time of the job reaches this many in seconds (default: -1 for no limit)")
     parser.add_argument("--repeat", type=int, default=1,
                         help="Repeat each point this many times (default: 1)")
+    parser.add_argument("--dryRun", action="store_true",
+                        help="Print out commands, don't actually run anything")
 
     parser.add_argument("args", nargs=argparse.REMAINDER)
 
