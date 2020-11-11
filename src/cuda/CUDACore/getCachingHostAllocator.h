@@ -13,10 +13,10 @@ namespace cms::cuda::allocator {
   inline notcub::CachingHostAllocator& getCachingHostAllocator() {
     if (debug) {
       std::cout << "cub::CachingHostAllocator settings\n"
-          << "  bin growth " << binGrowth << "\n"
-          << "  min bin    " << minBin << "\n"
-          << "  max bin    " << maxBin << "\n"
-          << "  resulting bins:\n";
+                << "  bin growth " << binGrowth << "\n"
+                << "  min bin    " << minBin << "\n"
+                << "  max bin    " << maxBin << "\n"
+                << "  resulting bins:\n";
       for (auto bin = minBin; bin <= maxBin; ++bin) {
         auto binSize = notcub::CachingDeviceAllocator::IntPow(binGrowth, bin);
         if (binSize >= (1 << 30) and binSize % (1 << 30) == 0) {
@@ -34,11 +34,11 @@ namespace cms::cuda::allocator {
 
     // the public interface is thread safe
     static notcub::CachingHostAllocator allocator{binGrowth,
-                                                                  minBin,
-                                                                  maxBin,
-                                                                  minCachedBytes(),
-                                                                  false,  // do not skip cleanup
-                                                                  debug};
+                                                  minBin,
+                                                  maxBin,
+                                                  minCachedBytes(),
+                                                  false,  // do not skip cleanup
+                                                  debug};
     return allocator;
   }
 }  // namespace cms::cuda::allocator

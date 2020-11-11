@@ -44,10 +44,10 @@ namespace cms::cuda::allocator {
   inline notcub::CachingDeviceAllocator& getCachingDeviceAllocator() {
     if (debug) {
       std::cout << "cub::CachingDeviceAllocator settings\n"
-          << "  bin growth " << binGrowth << "\n"
-          << "  min bin    " << minBin << "\n"
-          << "  max bin    " << maxBin << "\n"
-          << "  resulting bins:\n";
+                << "  bin growth " << binGrowth << "\n"
+                << "  min bin    " << minBin << "\n"
+                << "  max bin    " << maxBin << "\n"
+                << "  resulting bins:\n";
       for (auto bin = minBin; bin <= maxBin; ++bin) {
         auto binSize = notcub::CachingDeviceAllocator::IntPow(binGrowth, bin);
         if (binSize >= (1 << 30) and binSize % (1 << 30) == 0) {
