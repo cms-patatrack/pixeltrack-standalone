@@ -2,16 +2,14 @@
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
 #include <cuda_runtime.h>
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
 
-#include "CUDACore/GPUSimpleVector.h"
+#include "CUDACore/SimpleVector.h"
+#include "CUDADataFormats/PixelTrackHeterogeneous.h"
+#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
-#include "HelixFitOnGPU.h"
-
-// FIXME  (split header???)
 #include "GPUCACell.h"
+#include "HelixFitOnGPU.h"
 
 namespace edm {
   class Event;

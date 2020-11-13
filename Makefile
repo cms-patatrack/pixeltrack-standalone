@@ -195,8 +195,6 @@ endif
 
 # Targets and their dependencies on externals
 TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
-# Temporarily filter out programs that do not run (yet) with CUDA 11
-TARGETS_ALL := $(filter-out cudauvm,$(TARGETS_ALL))
 
 # Split targets by required toolchain
 TARGETS_GCC := fwtest

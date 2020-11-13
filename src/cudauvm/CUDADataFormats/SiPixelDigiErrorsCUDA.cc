@@ -10,29 +10,29 @@
 SiPixelDigiErrorsCUDA::SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors, cudaStream_t stream)
     : formatterErrors_h(std::move(errors)) {
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  error_d = cms::cuda::make_device_unique<GPU::SimpleVector<PixelErrorCompact>>(stream);
+  error_d = cms::cuda::make_device_unique<cms::cuda::SimpleVector<PixelErrorCompact>>(stream);
   data_d = cms::cuda::make_device_unique<PixelErrorCompact[]>(maxFedWords, stream);
   cms::cuda::memsetAsync(data_d, 0x00, maxFedWords, stream);
 
-  error_h = cms::cuda::make_host_unique<GPU::SimpleVector<PixelErrorCompact>>(stream);
-  GPU::make_SimpleVector(error_h.get(), maxFedWords, data_d.get());
+  error_h = cms::cuda::make_host_unique<cms::cuda::SimpleVector<PixelErrorCompact>>(stream);
+  cms::cuda::make_SimpleVector(error_h.get(), maxFedWords, data_d.get());
   assert(error_h->empty());
   assert(error_h->capacity() == static_cast<int>(maxFedWords));
 
   cms::cuda::copyAsync(error_d, error_h, stream);
 #else
   maxFedWords_ = maxFedWords;
-  error_d = cms::cuda::make_managed_unique<GPU::SimpleVector<PixelErrorCompact>>(stream);
+  error_d = cms::cuda::make_managed_unique<cms::cuda::SimpleVector<PixelErrorCompact>>(stream);
   data_d = cms::cuda::make_managed_unique<PixelErrorCompact[]>(maxFedWords, stream);
   std::memset(data_d.get(), 0, maxFedWords * sizeof(PixelErrorCompact));
 
-  GPU::make_SimpleVector(error_d.get(), maxFedWords, data_d.get());
+  cms::cuda::make_SimpleVector(error_d.get(), maxFedWords, data_d.get());
   assert(error_d->empty());
   assert(error_d->capacity() == static_cast<int>(maxFedWords));
 
   auto device = cms::cuda::currentDevice();
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(error_d.get(), sizeof(GPU::SimpleVector<PixelErrorCompact>), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(error_d.get(), sizeof(cms::cuda::SimpleVector<PixelErrorCompact>), device, stream));
   cudaCheck(cudaMemPrefetchAsync(data_d.get(), maxFedWords * sizeof(PixelErrorCompact), device, stream));
 #endif
 #endif  // CUDAUVM_DISABLE_MANAGED_CLUSTERING
@@ -55,12 +55,12 @@ SiPixelDigiErrorsCUDA::HostDataError SiPixelDigiErrorsCUDA::dataErrorToHostAsync
   }
   auto err = *error_h;
   err.set_data(data.get());
-  return HostDataError(std::move(err), std::move(data));
+  return HostDataError(err, std::move(data));
 }
 #else
 void SiPixelDigiErrorsCUDA::prefetchAsync(int device, cudaStream_t stream) const {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(error_d.get(), sizeof(GPU::SimpleVector<PixelErrorCompact>), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(error_d.get(), sizeof(cms::cuda::SimpleVector<PixelErrorCompact>), device, stream));
   cudaCheck(cudaMemPrefetchAsync(data_d.get(), maxFedWords_ * sizeof(PixelErrorCompact), device, stream));
 #endif
 }

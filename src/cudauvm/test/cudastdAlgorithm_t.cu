@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "CUDACore/cudastdAlgorithm.h"
+#include "CUDACore/requireDevices.h"
 #include "CUDACore/launch.h"
 
 __global__ void testBinaryFind() {
@@ -22,4 +23,8 @@ __global__ void testBinaryFind() {
 
 void wrapper() { cms::cuda::launch(testBinaryFind, {32, 64}); }
 
-int main() { wrapper(); }
+int main() {
+  cms::cudatest::requireDevices();
+
+  wrapper();
+}

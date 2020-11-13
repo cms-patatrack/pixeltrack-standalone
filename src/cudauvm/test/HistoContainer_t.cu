@@ -4,9 +4,12 @@
 #include <limits>
 #include <random>
 
-#include "CUDACore/device_unique_ptr.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/HistoContainer.h"
+#include "CUDACore/cudaCheck.h"
+#include "CUDACore/device_unique_ptr.h"
+#include "CUDACore/requireDevices.h"
+
+using namespace cms::cuda;
 
 template <typename T>
 void go() {
@@ -15,7 +18,7 @@ void go() {
 
   constexpr int N = 12000;
   T v[N];
-  auto v_d = cms::cuda::make_device_unique<T[]>(N, nullptr);
+  auto v_d = make_device_unique<T[]>(N, nullptr);
 
   cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
 
@@ -25,14 +28,13 @@ void go() {
 
   using Hist = HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
-            << Hist::capacity() << ' ' << Hist::wsSize() << ' '
+            << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
   Hist h;
-  auto h_d = cms::cuda::make_device_unique<Hist[]>(1, nullptr);
-  auto ws_d = cms::cuda::make_device_unique<uint8_t[]>(Hist::wsSize(), nullptr);
+  auto h_d = make_device_unique<Hist[]>(1, nullptr);
 
-  auto off_d = cms::cuda::make_device_unique<uint32_t[]>(nParts + 1, nullptr);
+  auto off_d = make_device_unique<uint32_t[]>(nParts + 1, nullptr);
 
   for (int it = 0; it < 5; ++it) {
     offsets[0] = 0;
@@ -67,7 +69,7 @@ void go() {
 
     cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
 
-    cms::cuda::fillManyFromVector(h_d.get(), ws_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256, 0);
+    fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256, 0);
     cudaCheck(cudaMemcpy(&h, h_d.get(), sizeof(Hist), cudaMemcpyDeviceToHost));
     assert(0 == h.off[0]);
     assert(offsets[10] == h.size());
@@ -144,6 +146,8 @@ void go() {
 }
 
 int main() {
+  cms::cudatest::requireDevices();
+
   go<int16_t>();
   go<int8_t>();
 

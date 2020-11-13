@@ -13,6 +13,7 @@
 
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/requireDevices.h"
 #include "CUDACore/launch.h"
 #endif
 
@@ -21,6 +22,10 @@
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 int main(void) {
+#ifdef __CUDACC__
+  cms::cudatest::requireDevices();
+#endif
+
   using namespace gpuClustering;
 
   int numElements = 256 * 2000;

@@ -1,4 +1,4 @@
-cudauvm_EXTERNAL_DEPENDS := TBB CUDA CUB EIGEN
+cudauvm_EXTERNAL_DEPENDS := TBB CUDA EIGEN
 BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats

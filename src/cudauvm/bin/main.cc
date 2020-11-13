@@ -18,7 +18,7 @@ namespace {
     std::cout
         << name
         << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
-           "[--empty]\n\n"
+           "[--histogram] [--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
@@ -26,6 +26,7 @@ namespace {
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --histogram         Produce histograms at the end (implies --transfer)\n"
         << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
@@ -40,6 +41,7 @@ int main(int argc, char** argv) {
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
+  bool histogram = false;
   bool empty = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
@@ -62,6 +64,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--validation") {
       transfer = true;
       validation = true;
+    } else if (*i == "--histogram") {
+      transfer = true;
+      histogram = true;
     } else if (*i == "--empty") {
       empty = true;
     } else {
@@ -118,6 +123,9 @@ int main(int argc, char** argv) {
     }
     if (validation) {
       edmodules.emplace_back("CountValidator");
+    }
+    if (histogram) {
+      edmodules.emplace_back("HistoValidator");
     }
   }
   edm::EventProcessor processor(
