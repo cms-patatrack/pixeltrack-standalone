@@ -57,7 +57,7 @@ namespace gpuClustering {
 
     constexpr int maxPixInModule = 4000;
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
-    using Hist = HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
+    using Hist = cms::kokkos::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
     Kokkos::View<Hist*, ExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"), teamPolicy.league_size());
     Kokkos::View<int*, ExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"), teamPolicy.league_size());

@@ -166,7 +166,8 @@ namespace KOKKOS_NAMESPACE {
       SiPixelRawToClusterGPUKernel& operator=(const SiPixelRawToClusterGPUKernel&) = delete;
       SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
 
-      void makeClustersAsync(const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace>& cablingMap,
+      void makeClustersAsync(bool isRun2,
+                             const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace>& cablingMap,
                              const Kokkos::View<const unsigned char*, KokkosExecSpace>& modToUnp,
                              const SiPixelGainForHLTonGPU<KokkosExecSpace>& gains,
                              const WordFedAppender& wordFed,

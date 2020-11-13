@@ -9,7 +9,7 @@
 
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "DataFormats/approx_atan2.h"
-#include "KokkosCore/GPUVecArray.h"
+#include "KokkosCore/VecArray.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -17,7 +17,7 @@
 #include "../GPUCACell.h"
 
 namespace KOKKOS_NAMESPACE {
-  namespace gpuPixelDoubletsAlgos {
+  namespace gpuPixelDoublets {
     using CellNeighbors = CAConstants::CellNeighbors;
     using CellTracks = CAConstants::CellTracks;
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
@@ -248,7 +248,7 @@ namespace KOKKOS_NAMESPACE {
 #endif
       }  // loop in block...
     }
-  }  // namespace gpuPixelDoubletsAlgos
+  }  // namespace gpuPixelDoublets
 }  // namespace KOKKOS_NAMESPACE
 
 #endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoupletsAlgos_h

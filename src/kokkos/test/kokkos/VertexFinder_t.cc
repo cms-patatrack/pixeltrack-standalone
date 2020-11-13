@@ -20,11 +20,9 @@
 using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
 using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
-using namespace KOKKOS_NAMESPACE::gpuVertexFinder;
-
 #ifdef ONE_KERNEL
-void vertexFinderOneKernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                           Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+void vertexFinderOneKernel(Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
+                           Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
                            typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror hdata,
                            int minT,       // min number of neighbours to be "seed"
                            float eps,      // max absolute distance to cluster
@@ -108,11 +106,11 @@ struct ClusterGenerator {
 };
 
 // a macro SORRY
-#define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(WorkSpace, M))
+#define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, M))
 
 void test() {
-  Kokkos::View<ZVertices, KokkosExecSpace> onGPU_d("onGPU_d");
-  Kokkos::View<WorkSpace, KokkosExecSpace> ws_d("ws_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace> onGPU_d("onGPU_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace> ws_d("ws_d");
 
   Event ev;
 

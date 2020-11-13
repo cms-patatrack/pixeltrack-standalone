@@ -68,7 +68,7 @@ namespace KOKKOS_NAMESPACE {
 
 #ifdef GPU_DEBUG
       if (teamMember.team_rank() == 0) {
-        auto k = first;
+        auto k = clusters.moduleStart(1 + teamMember.league_rank());
         while (digis.moduleInd(k) == InvId)
           ++k;
         assert(digis.moduleInd(k) == me);
@@ -132,6 +132,9 @@ namespace KOKKOS_NAMESPACE {
 
         teamMember.team_barrier();
 
+        // pixmx is not available in the binary dumps
+        //auto pixmx = cpeParams->detParams(me).pixmx;
+        auto pixmx = std::numeric_limits<uint16_t>::max();
         // TODO: can't use parallel_for+TeamThreadRange because of the break
         for (int i = first; i < numElements; i += teamMember.team_size()) {
           auto id = digis.moduleInd(i);
@@ -147,7 +150,7 @@ namespace KOKKOS_NAMESPACE {
           assert(cl < MaxHitsInIter);
           auto x = digis.xx(i);
           auto y = digis.yy(i);
-          auto ch = digis.adc(i);
+          auto ch = std::min(digis.adc(i), pixmx);
           Kokkos::atomic_add<int32_t>(&clusParams->charge[cl], ch);
           if (clusParams->minRow[cl] == x)
             Kokkos::atomic_add<int32_t>(&clusParams->Q_f_X[cl], ch);

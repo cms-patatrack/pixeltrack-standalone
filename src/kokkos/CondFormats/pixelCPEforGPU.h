@@ -37,6 +37,9 @@ namespace pixelCPEforGPU {
     float shiftY;
     float chargeWidthX;
     float chargeWidthY;
+    // CMSSW 11.2.x adds
+    //uint16_t pixmx;  // max pix charge
+    // which would break reading the binary dumps
 
     float x0, y0, z0;  // the vertex in the local coord of the detector
 

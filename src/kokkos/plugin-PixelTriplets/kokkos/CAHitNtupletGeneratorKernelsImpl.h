@@ -17,10 +17,6 @@
 #include "gpuPixelDoublets.h"
 
 namespace KOKKOS_NAMESPACE {
-#ifdef TODO
-  using namespace gpuPixelDoublets;
-#endif
-
   using HitsOnGPU = TrackingRecHit2DSOAView;
   using HitsOnCPU = TrackingRecHit2DKokkos<KokkosExecSpace>;
 
@@ -35,7 +31,7 @@ namespace KOKKOS_NAMESPACE {
   KOKKOS_INLINE_FUNCTION void kernel_checkOverflows(
       HitContainer const *foundNtuplets,
       Kokkos::View<TupleMultiplicity, KokkosExecSpace> tupleMultiplicity,
-      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc,
+      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc,
       Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
       Kokkos::View<uint32_t, KokkosExecSpace> nCells,
       Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used
@@ -89,6 +85,10 @@ namespace KOKKOS_NAMESPACE {
         printf("Tuples overflow\n");
       if (nCells() >= maxNumberOfDoublets)
         printf("Cells overflow\n");
+      if (cellNeighbors().full())
+        printf("cellNeighbors overflow\n");
+      if (cellTracks().full())
+        printf("cellTracks overflow\n");
     }
 
     for (int idx = first, nt = nCells(); idx < nt; idx += leagueSize * teamSize) {
@@ -187,8 +187,8 @@ namespace KOKKOS_NAMESPACE {
   }
 
   KOKKOS_INLINE_FUNCTION void kernel_connect(
-      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc1,
-      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc2,  // just to zero them,
+      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc1,
+      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc2,  // just to zero them,
       TrackingRecHit2DSOAView const *__restrict__ hhp,
       Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
       Kokkos::View<uint32_t, KokkosExecSpace> nCells,
@@ -275,7 +275,7 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
       Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,
       HitContainer *foundNtuplets,
-      Kokkos::View<AtomicPairCounter, KokkosExecSpace> apc,
+      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc,
       Quality *__restrict__ quality,
       unsigned int minHitsPerNtuplet,
       const size_t idx) {

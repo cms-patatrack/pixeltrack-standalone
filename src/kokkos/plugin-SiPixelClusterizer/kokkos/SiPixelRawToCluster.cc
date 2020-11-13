@@ -40,6 +40,7 @@ namespace KOKKOS_NAMESPACE {
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
     PixelFormatterErrors errors_;
 
+    const bool isRun2_;
     const bool includeErrors_;
     const bool useQuality_;
   };
@@ -48,6 +49,7 @@ namespace KOKKOS_NAMESPACE {
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
         digiPutToken_(reg.produces<SiPixelDigisKokkos<KokkosExecSpace>>()),
         clusterPutToken_(reg.produces<SiPixelClustersKokkos<KokkosExecSpace>>()),
+        isRun2_(true),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
@@ -133,7 +135,8 @@ namespace KOKKOS_NAMESPACE {
       wordCounterGPU += (ew - bw);
 
     }  // end of for loop
-    gpuAlgo_.makeClustersAsync(gpuMap,
+    gpuAlgo_.makeClustersAsync(isRun2_,
+                               gpuMap,
                                gpuModulesToUnpack,
                                gpuGains,
                                *wordFedAppender_,

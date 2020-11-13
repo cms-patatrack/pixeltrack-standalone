@@ -21,7 +21,7 @@ void go() {
   constexpr uint32_t partSize = N / nParts;
   //  uint32_t offsets[nParts + 1];
 
-  using Hist = HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
+  using Hist = cms::kokkos::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << Hist::wsSize() << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;

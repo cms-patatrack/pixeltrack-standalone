@@ -79,7 +79,7 @@ namespace KOKKOS_NAMESPACE {
                            hhp,
                            d_theCells_,
                            d_nCells_,
-                           d_theCellNeighbors_,  // not used at the moment
+                           d_theCellNeighbors_,
                            d_isOuterHitOfCell_,
                            hardCurvCut,
                            ptmin,
@@ -234,12 +234,34 @@ namespace KOKKOS_NAMESPACE {
     device_isOuterHitOfCell_ = Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace>(
         Kokkos::ViewAllocateWithoutInitializing("device_isOuterHitOfCell_"), std::max(1U, nhits));
 
+    device_theCellNeighborsContainer_ = Kokkos::View<CAConstants::CellNeighbors *, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighborsContainer_"),
+        CAConstants::maxNumOfActiveDoublets());
+    device_theCellTracksContainer_ = Kokkos::View<CAConstants::CellTracks *, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_theCellTracksContainer_"),
+        CAConstants::maxNumOfActiveDoublets());
+
     {
       auto isOuterHitOfCell = device_isOuterHitOfCell_;
+      auto cellNeighbors = device_theCellNeighbors_;
+      auto cellNeighborsContainer = device_theCellNeighborsContainer_;
+      auto cellTracks = device_theCellTracks_;
+      auto cellTracksContainer = device_theCellTracksContainer_;
       Kokkos::parallel_for(
           "initDoublets", Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits), KOKKOS_LAMBDA(const size_t i) {
             assert(isOuterHitOfCell.data());
             isOuterHitOfCell(i).reset();
+
+            if (0 == i) {
+              cellNeighbors().construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer.data());
+              cellTracks().construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer.data());
+              auto j = cellNeighbors().extend();
+              assert(0 == j);
+              cellNeighbors()[0].reset();
+              j = cellTracks().extend();
+              assert(0 == j);
+              cellTracks()[0].reset();
+            }
           });
     }
 
@@ -429,15 +451,20 @@ namespace KOKKOS_NAMESPACE {
     // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
     //////////////////////////////////////////////////////////
 
+    device_theCellNeighbors_ = Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighbors_"));
+    device_theCellTracks_ = Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace>(
+        Kokkos::ViewAllocateWithoutInitializing("device_theCellTracks_"));
+
     device_hitToTuple_ =
         Kokkos::View<HitToTuple, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_"));
 
     device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosExecSpace>(
         Kokkos::ViewAllocateWithoutInitializing("device_tupleMultiplicity_"));
 
-    device_hitTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>(
+    device_hitTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace>(
         Kokkos::ViewAllocateWithoutInitializing("device_hitTuple_apc_"));
-    device_hitToTuple_apc_ = Kokkos::View<AtomicPairCounter, KokkosExecSpace>(
+    device_hitToTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace>(
         Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_apc_"));
     device_nCells_ = Kokkos::View<uint32_t, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_nCells_"));
     device_tmws_ =

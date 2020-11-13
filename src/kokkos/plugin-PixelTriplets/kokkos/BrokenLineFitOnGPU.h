@@ -19,8 +19,6 @@ namespace KOKKOS_NAMESPACE {
   using Tuples = pixelTrack::HitContainer;
   using OutputSoA = pixelTrack::TrackSoA;
 
-  using namespace Eigen;
-
   // #define BL_DUMP_HITS
   template <int N>
   KOKKOS_INLINE_FUNCTION void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,

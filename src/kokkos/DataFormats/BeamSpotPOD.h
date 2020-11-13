@@ -1,10 +1,16 @@
-#ifndef DataFormats_BeamSpotPOD_h
-#define DataFormats_BeamSpotPOD_h
+#ifndef DataFormats_BeamSpot_interface_BeamSpotPOD_h
+#define DataFormats_BeamSpot_interface_BeamSpotPOD_h
 
+// This struct is a transient-only, simplified representation of the beamspot
+// data used as the underlying type for data transfers and operations in
+// heterogeneous code (e.g. in CUDA code).
+
+// The covariance matrix is not used in that code, so is left out here.
+
+// CMSSW 11.2.x uses alignas(128) to align to the CUDA L1 cache line size
+// here it would break reading the beamspot data from the binary dumps
 struct BeamSpotPOD {
   float x, y, z;  // position
-  // TODO: add covariance matrix
-
   float sigmaZ;
   float beamWidthX, beamWidthY;
   float dxdz, dydz;
@@ -12,4 +18,4 @@ struct BeamSpotPOD {
   float betaStar;
 };
 
-#endif
+#endif  // DataFormats_BeamSpot_interface_BeamSpotPOD_h

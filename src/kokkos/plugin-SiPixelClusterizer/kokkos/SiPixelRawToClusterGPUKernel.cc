@@ -360,7 +360,7 @@ namespace KOKKOS_NAMESPACE {
                                           Kokkos::View<uint32_t *, KokkosExecSpace> pdigi,
                                           Kokkos::View<uint32_t *, KokkosExecSpace> rawIdArr,
                                           Kokkos::View<uint16_t *, KokkosExecSpace> moduleId,
-                                          GPU::SimpleVector<PixelErrorCompact> *err,
+                                          cms::kokkos::SimpleVector<PixelErrorCompact> *err,
                                           const bool useQualityInfo,
                                           const bool includeErrors,
                                           const bool debug,
@@ -554,6 +554,7 @@ namespace KOKKOS_NAMESPACE {
   namespace pixelgpudetails {
     // Interface to outside
     void SiPixelRawToClusterGPUKernel::makeClustersAsync(
+        bool isRun2,
         const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace> &cablingMap,
         const Kokkos::View<const unsigned char *, KokkosExecSpace> &modToUnp,
         const SiPixelGainForHLTonGPU<KokkosExecSpace> &gains,
@@ -649,7 +650,8 @@ namespace KOKKOS_NAMESPACE {
               Kokkos::RangePolicy<KokkosExecSpace>(
                   execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
               KOKKOS_LAMBDA(const size_t i) {
-                gpuCalibPixel::calibDigis(moduleInd_d,
+                gpuCalibPixel::calibDigis(isRun2,
+                                          moduleInd_d,
                                           xx_d,
                                           yy_d,
                                           adc_d,

@@ -9,7 +9,7 @@
 
 #include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
-#include "KokkosCore/GPUVecArray.h"
+#include "KokkosCore/VecArray.h"
 #include "KokkosCore/kokkos_assert.h"
 #include "KokkosCore/kokkosConfig.h"
 
