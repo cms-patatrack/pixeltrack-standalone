@@ -7,11 +7,12 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
+#include "KokkosCore/SimpleVector.h"
+#include "KokkosCore/VecArray.h"
 #include "KokkosCore/kokkos_assert.h"
-#include "KokkosCore/GPUSimpleVector.h"
-#include "KokkosCore/GPUVecArray.h"
-#include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
+#include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
+
 #include "CAConstants.h"
 #include "CircleEq.h"
 
@@ -29,7 +30,7 @@ public:
   using Hits = TrackingRecHit2DSOAView;
   using hindex_type = Hits::hindex_type;
 
-  using TmpTuple = GPU::VecArray<uint32_t, 6>;
+  using TmpTuple = cms::kokkos::VecArray<uint32_t, 6>;
 
   using HitContainer = pixelTrack::HitContainer;
   using Quality = trackQuality::Quality;
@@ -37,8 +38,8 @@ public:
 
   GPUCACell() = default;
 
-  KOKKOS_INLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,  // not used at the moment
-                                   CellTracksVector& cellTracks,        // not used at the moment
+  KOKKOS_INLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,
+                                   CellTracksVector& cellTracks,
                                    Hits const& hh,
                                    int layerPairId,
                                    int doubletId,
@@ -54,24 +55,53 @@ public:
     theInnerZ = hh.zGlobal(innerHitId);
     theInnerR = hh.rGlobal(innerHitId);
 
-    outerNeighbors().reset();
-    tracks().reset();
+    // link to default empty
+    theOuterNeighbors = &cellNeighbors[0];
+    theTracks = &cellTracks[0];
     assert(outerNeighbors().empty());
     assert(tracks().empty());
   }
 
   KOKKOS_INLINE_FUNCTION int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
+    // use smart cache
+    if (outerNeighbors().empty()) {
+      auto i = cellNeighbors.extend();  // maybe waisted....
+      if (i > 0) {
+        cellNeighbors[i].reset();
+        auto zero = (ptrAsInt)(&cellNeighbors[0]);
+        Kokkos::atomic_compare_exchange((ptrAsInt*)(&theOuterNeighbors),
+                                        zero,
+                                        (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
+        // effectively: theOuterNeighbors = &cellNeighbors[i];
+      } else
+        return -1;
+    }
+    // TODO: is this allowed?
+    Kokkos::memory_fence();
     return outerNeighbors().push_back(t);
   }
 
   KOKKOS_INLINE_FUNCTION int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
+    if (tracks().empty()) {
+      auto i = cellTracks.extend();  // maybe waisted....
+      if (i > 0) {
+        cellTracks[i].reset();
+        auto zero = (ptrAsInt)(&cellTracks[0]);
+        Kokkos::atomic_compare_exchange(
+            (ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
+        // effectively: theTracks = &cellTracks[i];
+      } else
+        return -1;
+    }
+    // TODO: is this allowed?
+    Kokkos::memory_fence();
     return tracks().push_back(t);
   }
 
-  KOKKOS_INLINE_FUNCTION CellTracks& tracks() { return theTracks; }
-  KOKKOS_INLINE_FUNCTION CellTracks const& tracks() const { return theTracks; }
-  KOKKOS_INLINE_FUNCTION CellNeighbors& outerNeighbors() { return theOuterNeighbors; }
-  KOKKOS_INLINE_FUNCTION CellNeighbors const& outerNeighbors() const { return theOuterNeighbors; }
+  KOKKOS_INLINE_FUNCTION CellTracks& tracks() { return *theTracks; }
+  KOKKOS_INLINE_FUNCTION CellTracks const& tracks() const { return *theTracks; }
+  KOKKOS_INLINE_FUNCTION CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
+  KOKKOS_INLINE_FUNCTION CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
   KOKKOS_INLINE_FUNCTION float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
   KOKKOS_INLINE_FUNCTION float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
   KOKKOS_INLINE_FUNCTION float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
@@ -244,7 +274,7 @@ public:
                                             GPUCACell* __restrict__ cells,
                                             CellTracksVector& cellTracks,
                                             HitContainer& foundNtuplets,
-                                            AtomicPairCounter& apc,
+                                            cms::kokkos::AtomicPairCounter& apc,
                                             Quality* __restrict__ quality,
                                             TmpTuple& tmpNtuplet,
                                             const unsigned int minHitsPerNtuplet,
@@ -295,8 +325,8 @@ public:
   }
 
 private:
-  CellNeighbors theOuterNeighbors;
-  CellTracks theTracks;
+  CellNeighbors* theOuterNeighbors;
+  CellTracks* theTracks;
 
 public:
   int32_t theDoubletId;

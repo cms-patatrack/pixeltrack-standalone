@@ -4,8 +4,8 @@
 #include <cstdint>
 
 #include "KokkosCore/HistoContainer.h"
-#include "KokkosCore/GPUSimpleVector.h"
-#include "KokkosCore/GPUVecArray.h"
+#include "KokkosCore/SimpleVector.h"
+#include "KokkosCore/VecArray.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
 // #define ONLY_PHICUT
@@ -25,7 +25,7 @@ namespace CAConstants {
   constexpr uint32_t maxNumberOfQuadruplets() { return maxNumberOfTuples(); }
 #ifndef ONLY_PHICUT
 #ifndef GPU_SMALL_EVENTS
-  constexpr uint32_t maxNumberOfDoublets() { return 448 * 1024; }
+  constexpr uint32_t maxNumberOfDoublets() { return 512 * 1024; }
   constexpr uint32_t maxCellsPerHit() { return 128; }
 #else
   constexpr uint32_t maxNumberOfDoublets() { return 128 * 1024; }
@@ -35,7 +35,7 @@ namespace CAConstants {
   constexpr uint32_t maxNumberOfDoublets() { return 2 * 1024 * 1024; }
   constexpr uint32_t maxCellsPerHit() { return 8 * 128; }
 #endif
-  constexpr uint32_t maxNumOfActiveDoublets() { return maxNumberOfDoublets() / 4; }
+  constexpr uint32_t maxNumOfActiveDoublets() { return maxNumberOfDoublets() / 8; }
 
   constexpr uint32_t maxNumberOfLayerPairs() { return 20; }
   constexpr uint32_t maxNumberOfLayers() { return 10; }
@@ -46,22 +46,22 @@ namespace CAConstants {
   using tindex_type = uint16_t;  //  for tuples
 
 #ifndef ONLY_PHICUT
-  using CellNeighbors = GPU::VecArray<uint32_t, 36>;
-  using CellTracks = GPU::VecArray<tindex_type, 42>;
+  using CellNeighbors = cms::kokkos::VecArray<uint32_t, 36>;
+  using CellTracks = cms::kokkos::VecArray<tindex_type, 48>;
 #else
-  using CellNeighbors = GPU::VecArray<uint32_t, 64>;
-  using CellTracks = GPU::VecArray<tindex_type, 64>;
+  using CellNeighbors = cms::kokkos::VecArray<uint32_t, 64>;
+  using CellTracks = cms::kokkos::VecArray<tindex_type, 64>;
 #endif
 
-  using CellNeighborsVector = GPU::SimpleVector<CellNeighbors>;
-  using CellTracksVector = GPU::SimpleVector<CellTracks>;
+  using CellNeighborsVector = cms::kokkos::SimpleVector<CellNeighbors>;
+  using CellTracksVector = cms::kokkos::SimpleVector<CellTracks>;
 
-  using OuterHitOfCell = GPU::VecArray<uint32_t, maxCellsPerHit()>;
+  using OuterHitOfCell = cms::kokkos::VecArray<uint32_t, maxCellsPerHit()>;
 
-  using TuplesContainer = OneToManyAssoc<hindex_type, maxTuples(), 5 * maxTuples()>;
-  using HitToTuple =
+  using TuplesContainer = cms::kokkos::OneToManyAssoc<hindex_type, maxTuples(), 5 * maxTuples()>;
+  using HitToTuple = cms::kokkos::
       OneToManyAssoc<tindex_type, pixelGPUConstants::maxNumberOfHits, 4 * maxTuples()>;  // 3.5 should be enough
-  using TupleMultiplicity = OneToManyAssoc<tindex_type, 8, maxTuples()>;
+  using TupleMultiplicity = cms::kokkos::OneToManyAssoc<tindex_type, 8, maxTuples()>;
 
 }  // namespace CAConstants
 

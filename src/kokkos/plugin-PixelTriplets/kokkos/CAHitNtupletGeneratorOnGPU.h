@@ -6,7 +6,7 @@
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 
-#include "KokkosCore/GPUSimpleVector.h"
+#include "KokkosCore/SimpleVector.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "HelixFitOnGPU.h"

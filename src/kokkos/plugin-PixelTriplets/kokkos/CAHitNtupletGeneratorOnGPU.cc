@@ -102,14 +102,15 @@ namespace KOKKOS_NAMESPACE {
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.data();
-    HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
 
     kernels.allocateOnGPU(execSpace);
-    fitter.allocateOnGPU(&(tracks().hitIndices), kernels.tupleMultiplicity().data(), tracks.data());
 
     kernels.buildDoublets(hits_d, execSpace);
     kernels.launchKernels(hits_d, tracks, execSpace);
     kernels.fillHitDetIndices(hits_d.view(), tracks, execSpace);  // in principle needed only if Hits not "available"
+
+    HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
+    fitter.allocateOnGPU(&(tracks().hitIndices), kernels.tupleMultiplicity().data(), tracks.data());
     if (m_params.useRiemannFit_) {
       fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), execSpace);
     } else {

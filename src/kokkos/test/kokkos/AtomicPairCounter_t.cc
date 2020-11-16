@@ -9,10 +9,10 @@ typedef Kokkos::TeamPolicy<KokkosExecSpace> team_policy;
 typedef Kokkos::TeamPolicy<KokkosExecSpace>::member_type member_type;
 
 void test() {
-  Kokkos::View<AtomicPairCounter *, KokkosExecSpace> dc_d("dc_d", 1);
-  Kokkos::View<AtomicPairCounter *, KokkosExecSpace>::HostMirror dc_h("dc_h", 1);
+  Kokkos::View<cms::kokkos::AtomicPairCounter *, KokkosExecSpace> dc_d("dc_d", 1);
+  Kokkos::View<cms::kokkos::AtomicPairCounter *, KokkosExecSpace>::HostMirror dc_h("dc_h", 1);
 
-  std::cout << "size " << sizeof(AtomicPairCounter) << std::endl;
+  std::cout << "size " << sizeof(cms::kokkos::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;

@@ -182,8 +182,10 @@ namespace KOKKOS_NAMESPACE {
     Counters* counters_ = nullptr;
 
   private:
-    Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> device_theCellNeighbors_;  // not used at the moment
-    Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> device_theCellTracks_;        // not used at the moment
+    Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> device_theCellNeighbors_;
+    Kokkos::View<CAConstants::CellNeighbors*, KokkosExecSpace> device_theCellNeighborsContainer_;
+    Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> device_theCellTracks_;
+    Kokkos::View<CAConstants::CellTracks*, KokkosExecSpace> device_theCellTracksContainer_;
 
     Kokkos::View<GPUCACell*, KokkosExecSpace> device_theCells_;
     Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> device_isOuterHitOfCell_;
@@ -191,15 +193,15 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::View<HitToTuple, KokkosExecSpace> device_hitToTuple_;
 
-    Kokkos::View<AtomicPairCounter, KokkosExecSpace> device_hitToTuple_apc_;
+    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> device_hitToTuple_apc_;
 
-    Kokkos::View<AtomicPairCounter, KokkosExecSpace> device_hitTuple_apc_;
+    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> device_hitTuple_apc_;
 
     Kokkos::View<TupleMultiplicity, KokkosExecSpace> device_tupleMultiplicity_;
 
     Kokkos::View<uint8_t*, KokkosExecSpace> device_tmws_;
 
-    //Kokkos::View<AtomicPairCounter::c_type*, KokkosExecSpace> device_storage_;
+    //Kokkos::View<cms::kokkos::AtomicPairCounter::c_type*, KokkosExecSpace> device_storage_;
 
     // params
     Params const& m_params;

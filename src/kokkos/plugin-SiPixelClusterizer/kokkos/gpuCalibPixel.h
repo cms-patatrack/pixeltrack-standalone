@@ -14,12 +14,14 @@ namespace KOKKOS_NAMESPACE {
 
     constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
 
+    // valid for run2
     constexpr float VCaltoElectronGain = 47;         // L2-4: 47 +- 4.7
     constexpr float VCaltoElectronGain_L1 = 50;      // L1:   49.6 +- 2.6
     constexpr float VCaltoElectronOffset = -60;      // L2-4: -60 +- 130
     constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
     KOKKOS_INLINE_FUNCTION void calibDigis(
+        bool isRun2,
         Kokkos::View<uint16_t*, KokkosExecSpace> id,
         Kokkos::View<uint16_t const*, KokkosExecSpace> x,
         Kokkos::View<uint16_t const*, KokkosExecSpace> y,
@@ -42,8 +44,8 @@ namespace KOKKOS_NAMESPACE {
         return;
       }
 
-      float conversionFactor = id[index] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain;
-      float offset = id[index] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset;
+      float conversionFactor = (isRun2) ? (id[index] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
+      float offset = (isRun2) ? (id[index] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
 
       bool isDeadColumn = false, isNoisyColumn = false;
 

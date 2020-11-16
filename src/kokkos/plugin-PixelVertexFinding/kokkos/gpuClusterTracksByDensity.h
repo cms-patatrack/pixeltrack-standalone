@@ -215,7 +215,7 @@ namespace KOKKOS_NAMESPACE {
 
       auto leagueSize = policy.league_size();
 
-      using Hist = HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
+      using Hist = cms::kokkos::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
       Kokkos::View<Hist*, ExecSpace> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
 
       Kokkos::parallel_for(

@@ -15,7 +15,7 @@ public:
 
   using Quality = trackQuality::Quality;
   using hindex_type = uint16_t;
-  using HitContainer = OneToManyAssoc<hindex_type, S, 5 * S>;
+  using HitContainer = cms::kokkos::OneToManyAssoc<hindex_type, S, 5 * S>;
 
   // Always check quality is at least loose!
   // CUDA does not support enums  in __lgc ...

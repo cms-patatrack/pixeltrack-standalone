@@ -2,7 +2,7 @@
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 
 #include "DataFormats/PixelErrors.h"
-#include "KokkosCore/GPUSimpleVector.h"
+#include "KokkosCore/SimpleVector.h"
 
 #include "KokkosCore/kokkosConfig.h"
 
@@ -30,12 +30,12 @@ public:
 
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-  GPU::SimpleVector<PixelErrorCompact>* error() { return error_d.data(); }
-  GPU::SimpleVector<PixelErrorCompact> const* error() const { return error_d.data(); }
-  GPU::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.data(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact>* error() { return error_d.data(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact> const* error() const { return error_d.data(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.data(); }
 
 #ifdef TODO
-  using HostDataError = std::pair<GPU::SimpleVector<PixelErrorCompact>,
+  using HostDataError = std::pair<cms::kokkos::SimpleVector<PixelErrorCompact>,
                                   typename Kokkos::View<PixelErrorCompact[], MemorySpace>::HostMirror>;
   HostDataError dataErrorToHostAsync() const {}
 
@@ -44,8 +44,8 @@ public:
 
 private:
   Kokkos::View<PixelErrorCompact*, MemorySpace> data_d;
-  Kokkos::View<GPU::SimpleVector<PixelErrorCompact>, MemorySpace> error_d;
-  typename Kokkos::View<GPU::SimpleVector<PixelErrorCompact>, MemorySpace>::HostMirror error_h;
+  Kokkos::View<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace> error_d;
+  typename Kokkos::View<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace>::HostMirror error_h;
   PixelFormatterErrors formatterErrors_h;
 };
 

@@ -6,8 +6,6 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelDoublets {
 
-    using namespace gpuPixelDoubletsAlgos;
-
     using CellNeighbors = CAConstants::CellNeighbors;
     using CellTracks = CAConstants::CellTracks;
     using CellNeighborsVector = CAConstants::CellNeighborsVector;

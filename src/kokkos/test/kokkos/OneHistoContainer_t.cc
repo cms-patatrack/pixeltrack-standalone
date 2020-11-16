@@ -28,7 +28,7 @@ void go() {
   Kokkos::View<T*, KokkosExecSpace> v_d("v_d", N);
   auto v_h = Kokkos::create_mirror_view(v_d);
 
-  using Hist = HistoContainer<T, NBINS, N, S>;
+  using Hist = cms::kokkos::HistoContainer<T, NBINS, N, S>;
   std::cout << "HistoContainer " << Hist::nbits() << ' ' << Hist::nbins() << ' ' << Hist::capacity() << ' '
             << (rmax - rmin) / Hist::nbins() << std::endl;
   std::cout << "bins " << int(Hist::bin(0)) << ' ' << int(Hist::bin(rmin)) << ' ' << int(Hist::bin(rmax)) << std::endl;
@@ -44,7 +44,7 @@ void go() {
 
     printf("start kernel for %d data\n", N);
 
-    using TeamHist = HistoContainer<T, NBINS, N, S, uint16_t>;
+    using TeamHist = cms::kokkos::HistoContainer<T, NBINS, N, S, uint16_t>;
 
     Kokkos::View<TeamHist, KokkosExecSpace> histo_d("histo_d");
     auto histo_h = Kokkos::create_mirror_view(histo_d);

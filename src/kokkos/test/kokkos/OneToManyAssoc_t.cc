@@ -13,11 +13,11 @@
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
 constexpr uint32_t MaxAssocs = 4 * MaxTk;
-using Assoc = OneToManyAssoc<uint16_t, MaxElem, MaxAssocs>;
+using Assoc = cms::kokkos::OneToManyAssoc<uint16_t, MaxElem, MaxAssocs>;
 
-using SmallAssoc = OneToManyAssoc<uint16_t, 128, MaxAssocs>;
+using SmallAssoc = cms::kokkos::OneToManyAssoc<uint16_t, 128, MaxAssocs>;
 
-using Multiplicity = OneToManyAssoc<uint16_t, 8, MaxTk>;
+using Multiplicity = cms::kokkos::OneToManyAssoc<uint16_t, 8, MaxTk>;
 
 using TeamPolicy = Kokkos::TeamPolicy<KokkosExecSpace>;
 using MemberType = TeamPolicy::member_type;
@@ -120,7 +120,7 @@ void verify(Kokkos::View<Assoc, ArrayLayout, ExecSpace> assoc) {
 }
 
 template <typename Assoc, typename ExecSpace>
-void fillBulk(Kokkos::View<AtomicPairCounter, ExecSpace> apc,
+void fillBulk(Kokkos::View<cms::kokkos::AtomicPairCounter, ExecSpace> apc,
               Kokkos::View<uint16_t**, ExecSpace> const tk,
               Kokkos::View<Assoc, ExecSpace> assoc,
               const uint32_t& n,
@@ -136,7 +136,7 @@ void fillBulk(Kokkos::View<AtomicPairCounter, ExecSpace> apc,
 
 template <typename HistoType, typename ArrayLayout, typename ExecSpace>
 void verifyBulk(Kokkos::View<HistoType, ArrayLayout, ExecSpace> assoc,
-                Kokkos::View<AtomicPairCounter, ArrayLayout, ExecSpace> apc) {
+                Kokkos::View<cms::kokkos::AtomicPairCounter, ArrayLayout, ExecSpace> apc) {
   if (apc().get().m >= HistoType::nbins())
     printf("Overflow %d %d\n", apc().get().m, HistoType::nbins());
   if (assoc().size() >= HistoType::capacity())
@@ -174,7 +174,7 @@ int main() {
   auto a_h = Kokkos::create_mirror_view(a_d);
   Kokkos::View<SmallAssoc, KokkosExecSpace> sa_d("sa_d");
   auto sa_h = Kokkos::create_mirror_view(sa_d);
-  Kokkos::View<AtomicPairCounter, KokkosExecSpace> dc_d("dc_d");
+  Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> dc_d("dc_d");
   auto dc_h = Kokkos::create_mirror_view(dc_d);
 
   Kokkos::View<long long, KokkosExecSpace> ave_d("ave_d");
