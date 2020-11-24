@@ -30,15 +30,15 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::View<float*, KokkosExecSpace> d_c{"d_c", NUM_VALUES};
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, NUM_VALUES),
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, NUM_VALUES)),
         KOKKOS_LAMBDA(const size_t i) { d_c[i] = d_a[i] + d_b[i]; });
 
     Kokkos::View<float**, KokkosExecSpace> d_ma{"d_ma", NUM_VALUES, NUM_VALUES};
     Kokkos::View<float**, KokkosExecSpace> d_mb{"d_mb", NUM_VALUES, NUM_VALUES};
     Kokkos::View<float**, KokkosExecSpace> d_mc{"d_mc", NUM_VALUES, NUM_VALUES};
 
-    auto policy =
-        Kokkos::MDRangePolicy<KokkosExecSpace, Kokkos::Rank<2>>(execSpace, {{0, 0}}, {{NUM_VALUES, NUM_VALUES}});
+    auto policy = hintLightWeight(
+        Kokkos::MDRangePolicy<KokkosExecSpace, Kokkos::Rank<2>>(execSpace, {{0, 0}}, {{NUM_VALUES, NUM_VALUES}}));
     Kokkos::parallel_for(
         policy, KOKKOS_LAMBDA(const size_t row, const size_t col) { vectorProd(d_a, d_b, d_ma, row, col); });
     Kokkos::parallel_for(
@@ -53,7 +53,8 @@ namespace KOKKOS_NAMESPACE {
         });
 
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, NUM_VALUES), KOKKOS_LAMBDA(const size_t row) {
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, NUM_VALUES)),
+        KOKKOS_LAMBDA(const size_t row) {
           float tmp = 0;
           for (int i = 0; i < NUM_VALUES; ++i) {
             tmp += d_ma(row, i) * d_b[i];
