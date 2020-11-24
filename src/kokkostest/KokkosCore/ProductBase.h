@@ -39,10 +39,11 @@ namespace cms {
 
         void recordEvent() {}
         void enqueueCallback(edm::WaitingTaskWithArenaHolder withArenaHolder) {
+          space_.fence();
           auto holder = withArenaHolder.makeWaitingTaskHolderAndRelease();
           holder.doneWaiting(nullptr);
         }
-        void synchronizeWith(ExecSpaceSpecific const&) const {}
+        void synchronizeWith(ExecSpaceSpecific const& other) const { other.execSpace().fence(); }
 
         ExecSpace const& execSpace() const { return space_; }
 
