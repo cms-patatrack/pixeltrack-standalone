@@ -229,7 +229,8 @@ test_auto: $(TEST_AUTO_TARGETS)
 .PHONY: test_nvidiagpu $(TEST_NVIDIAGPU_TARGETS)
 .PHONY: test_intelgpu $(TEST_INTELGPU_TARGETS)
 .PHONY: test_auto $(TEST_AUTO_TARGETS)
-.PHONY: environment print_targets format clean distclean dataclean
+.PHONY: format $(patsubst %,format_%,$(TARGETS_ALL))
+.PHONY: environment print_targets clean distclean dataclean
 .PHONY: external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
 
 environment: env.sh
@@ -308,8 +309,14 @@ print_targets:
 	@echo "Following program targets are available"
 	@echo $(TARGETS)
 
-format:
-	$(CLANG_FORMAT) -i $(shell find src -name "*.h" -o -name "*.cc" -o -name "*.cu")
+define FORMAT_template
+format_$(1):
+	@echo "Formatting $(1)"
+	@$(CLANG_FORMAT) -i $$(shell find $(SRC_DIR)/$(1) -name "*.h" -o -name "*.cc" -o -name "*.cu")
+endef
+$(foreach target,$(TARGETS_ALL),$(eval $(call FORMAT_template,$(target))))
+
+format: $(patsubst %,format_%,$(TARGETS_ALL))
 
 clean:
 	rm -fR lib obj test $(TARGETS_ALL)
