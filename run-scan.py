@@ -126,7 +126,19 @@ def main(opts):
         printMessage(msg)
         throughputs = []
         for i in range(opts.repeat):
-            (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr%d_nth%d_n%d.txt"%(nstr, nth, i))
+            tryAgain = opts.tryAgain
+            while tryAgain > 0:
+                try:
+                    (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr%d_nth%d_n%d.txt"%(nstr, nth, i))
+                    break
+                except Exception as e:
+                    tryAgain -= 1
+                    if tryAgain == 0:
+                        raise
+                    print("Got exception (see below), trying again ({} times left)".format(tryAgain))
+                    print("--------------------")
+                    print(str(e))
+                    print("--------------------")
             if opts.dryRun:
                 continue
             throughputs.append(th)
@@ -181,6 +193,8 @@ if __name__ == "__main__":
                         help="Stop running after the wall time of the job reaches this many in seconds (default: -1 for no limit)")
     parser.add_argument("--repeat", type=int, default=1,
                         help="Repeat each point this many times (default: 1)")
+    parser.add_argument("--tryAgain", type=int, default=1,
+                        help="In case of failure on a point, try again at most this many times (default: 1)")
     parser.add_argument("--dryRun", action="store_true",
                         help="Print out commands, don't actually run anything")
 
