@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 
+#include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/kokkosConfigCommon.h"
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
@@ -35,7 +36,7 @@ namespace gpuClustering {
     int shared_view_level = 0;
     Kokkos::parallel_for(
         "clusterChargeCut",
-        teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(total_shared_bytes)),
+        hintLightWeight(teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(total_shared_bytes))),
         KOKKOS_LAMBDA(const member_type& teamMember) {
           if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
             return;

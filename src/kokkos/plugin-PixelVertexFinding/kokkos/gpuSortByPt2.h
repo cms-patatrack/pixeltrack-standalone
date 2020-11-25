@@ -1,6 +1,8 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 
+#include "KokkosCore/hintLightWeight.h"
+
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
@@ -67,7 +69,9 @@ namespace KOKKOS_NAMESPACE {
       using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
 
       Kokkos::parallel_for(
-          "sortByPt2", policy, KOKKOS_LAMBDA(const member_type& team_member) { sortByPt2(vdata, vws, team_member); });
+          "sortByPt2", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
+            sortByPt2(vdata, vws, team_member);
+          });
       Kokkos::deep_copy(execSpace, hdata, vdata);
       execSpace.fence();
 

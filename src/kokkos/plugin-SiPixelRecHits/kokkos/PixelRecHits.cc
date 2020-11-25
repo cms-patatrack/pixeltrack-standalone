@@ -10,6 +10,7 @@
 
 #include "CondFormats/pixelCPEforGPU.h"
 //#include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/hintLightWeight.h"
 
 #include "PixelRecHits.h"
 #include "gpuPixelRecHits.h"
@@ -41,7 +42,7 @@ namespace KOKKOS_NAMESPACE {
 
       if (digis_d.nModules() > 0) {  // protect from empty events
                                      // one team for each active module (with digis)
-        TeamPolicy policy(execSpace, digis_d.nModules(), Kokkos::AUTO());
+        auto policy = hintLightWeight(TeamPolicy(execSpace, digis_d.nModules(), Kokkos::AUTO()));
         Kokkos::parallel_for(
             "getHits",
             policy.set_scratch_size(0, Kokkos::PerTeam(sizeof(pixelCPEforGPU::ClusParams))),
@@ -60,7 +61,9 @@ namespace KOKKOS_NAMESPACE {
         auto clusModuleStart = clusters_d.clusModuleStart();
         auto hitsLayerStart = hits_d.hitsLayerStart();
         Kokkos::parallel_for(
-            "hitsLayerStart", Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, 11), KOKKOS_LAMBDA(const size_t i) {
+            "hitsLayerStart",
+            hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, 11)),
+            KOKKOS_LAMBDA(const size_t i) {
               // TODO: for some reason uncommenting the assert leads to
               // cudaFuncGetAttributes( &attr, cuda_parallel_launch_local_memory<DriverType>) error( cudaErrorInvalidDeviceFunction): invalid device function .../pixeltrack-standalone/external/kokkos/install/include/Cuda/Kokkos_Cuda_KernelLaunch.hpp:448
               //assert(0 == clusModuleStart[0]);

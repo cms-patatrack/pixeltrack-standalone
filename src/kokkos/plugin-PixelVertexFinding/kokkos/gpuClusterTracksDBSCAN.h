@@ -1,8 +1,9 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
 
-#include "KokkosCore/kokkos_assert.h"
 #include "KokkosCore/HistoContainer.h"
+#include "KokkosCore/hintLightWeight.h"
+#include "KokkosCore/kokkos_assert.h"
 
 #include "gpuVertexFinder.h"
 #include "gpuClusterFillHist.h"
@@ -226,14 +227,14 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::View<Hist*, ExecSpace> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
 
       Kokkos::parallel_for(
-          "clusterFillHist", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+          "clusterFillHist", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
             clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
 
       Hist::finalize(vhist, leagueSize, execSpace);
 
       Kokkos::parallel_for(
-          "clusterTracksDBSCAN", policy, KOKKOS_LAMBDA(const member_type& team_member) {
+          "clusterTracksDBSCAN", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
             clusterTracksDBSCAN(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
     }
