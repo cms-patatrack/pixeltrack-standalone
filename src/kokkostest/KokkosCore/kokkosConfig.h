@@ -37,6 +37,12 @@ struct KokkosBackend<Kokkos::Cuda> {
 };
 #endif
 
+// shorthand because this will be used a lot
+template <typename T>
+auto hintLightWeight(T&& policy) {
+  return Kokkos::Experimental::require(policy, Kokkos::Experimental::WorkItemProperty::HintLightWeight);
+}
+
 // trick to force expanding KOKKOS_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_KOKKOS_MODULE2(name) DEFINE_FWK_MODULE(name)
 #define DEFINE_FWK_KOKKOS_MODULE(name) DEFINE_FWK_KOKKOS_MODULE2(KOKKOS_NAMESPACE::name)
