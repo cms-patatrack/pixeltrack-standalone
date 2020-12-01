@@ -21,7 +21,8 @@ namespace {
            "[--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
+        << " --numberOfStreams   Number of concurrent batch of events (default 0=numberOfThreads)\n"
+        << " --batchEvents       Number of events to process in a batch (default 1 for individual events)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
            "(default -1 for disabled; conflicts with --maxEvents)\n"
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
   int numberOfStreams = 0;
+  int batchEvents = 1;
   int maxEvents = -1;
   int runForMinutes = -1;
   std::filesystem::path datadir;
@@ -54,6 +56,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--numberOfStreams") {
       ++i;
       numberOfStreams = std::stoi(*i);
+    } else if (*i == "--batchEvents") {
+      ++i;
+      batchEvents = std::stoul(*i);
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);
@@ -98,14 +103,16 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
+    edmodules = {
+        "TestProducer", "TestProducerExternalWork", "TestBatchingProducer", "TestBatchingProducerExternalWork"};
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer
     }
   }
   edm::EventProcessor processor(
-      maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+      batchEvents, maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+  maxEvents = processor.maxEvents();
 
   if (runForMinutes < 0) {
     std::cout << "Processing " << processor.maxEvents() << " events, of which " << numberOfStreams
