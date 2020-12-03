@@ -1,12 +1,15 @@
 #include "CAHitNtupletGeneratorKernels.h"
 #include "CAHitNtupletGeneratorKernelsImpl.h"
 
+#include "KokkosCore/hintLightWeight.h"
+
 namespace KOKKOS_NAMESPACE {
   void CAHitNtupletGeneratorKernels::fillHitDetIndices(HitsView const *hv,
                                                        Kokkos::View<TkSoA, KokkosExecSpace> tracks_d,
                                                        KokkosExecSpace const &execSpace) {
     Kokkos::parallel_for(
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitContainer::capacity()), KOKKOS_LAMBDA(size_t i) {
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitContainer::capacity())),
+        KOKKOS_LAMBDA(size_t i) {
           kernel_fillHitDetIndices(&(tracks_d().hitIndices), hv, &(tracks_d().detIndices), i);
         });
 #ifdef GPU_DEBUG
@@ -47,10 +50,10 @@ namespace KOKKOS_NAMESPACE {
 
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
     // unit team size and stride loop for host execution
-    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+    auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, 1});
     stride = 1;
 #else
-    Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
+    auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, teamSize});
 #endif
     const auto *hhp = hh.view();
 
@@ -99,10 +102,10 @@ namespace KOKKOS_NAMESPACE {
       int leagueSize = (nhits + blockSize - 1) / blockSize;
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
       // unit team size and stride loop for host execution
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+      auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, 1});
       stride = 1;
 #else
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
+      auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, teamSize});
 #endif
       Kokkos::parallel_for(
           "earlyfishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
@@ -115,7 +118,7 @@ namespace KOKKOS_NAMESPACE {
       auto const minHitsPerNtuplet = m_params.minHitsPerNtuplet_;
       Kokkos::parallel_for(
           "kernel_find_ntuplets",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_)),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < d_nCells_()) {
               kernel_find_ntuplets(
@@ -127,7 +130,7 @@ namespace KOKKOS_NAMESPACE {
     if (m_params.doStats_)
       Kokkos::parallel_for(
           "kernel_mark_used",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_)),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < d_nCells_()) {
               kernel_mark_used(hhp, d_theCells_, i);
@@ -143,7 +146,7 @@ namespace KOKKOS_NAMESPACE {
     // remove duplicates (tracks that share a doublet)
     Kokkos::parallel_for(
         "kernel_earlyDuplicateRemover",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_)),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < d_nCells_()) {
             kernel_earlyDuplicateRemover(d_theCells_, tuples_d, quality_d, i);
@@ -152,7 +155,7 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::parallel_for(
         "kernel_countMultiplicity",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples()),
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples())),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < tuples_d->nbins()) {
             kernel_countMultiplicity(tuples_d, quality_d, d_tupleMultiplicity_.data(), i);
@@ -163,7 +166,7 @@ namespace KOKKOS_NAMESPACE {
 
     Kokkos::parallel_for(
         "kernel_fillMultiplicity",
-        Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples()),
+        hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxTuples())),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < tuples_d->nbins()) {
             kernel_fillMultiplicity(tuples_d, quality_d, d_tupleMultiplicity_.data(), i);
@@ -177,10 +180,10 @@ namespace KOKKOS_NAMESPACE {
       int leagueSize = (nhits + blockSize - 1) / blockSize;
 #if defined KOKKOS_BACKEND_SERIAL || KOKKOS_BACKEND_PTHREAD
       // unit team size and stride loop for host execution
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, 1};
+      auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, 1});
       stride = 1;
 #else
-      Kokkos::TeamPolicy<KokkosExecSpace> policy{execSpace, leagueSize, teamSize};
+      auto policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>{execSpace, leagueSize, teamSize});
 #endif
       Kokkos::parallel_for(
           "latefishbone", policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosExecSpace>::member_type &teamMember) {
@@ -192,9 +195,9 @@ namespace KOKKOS_NAMESPACE {
       teamSize = 128;
       leagueSize = (std::max(nhits, m_params.maxNumberOfDoublets_) + teamSize - 1) / teamSize;
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
-      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, Kokkos::AUTO());
+      policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, Kokkos::AUTO()));
 #else
-      policy = Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize);
+      policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize));
 #endif
       Kokkos::parallel_for(
           "kernel_checkOverflows",
@@ -248,7 +251,9 @@ namespace KOKKOS_NAMESPACE {
       auto cellTracks = device_theCellTracks_;
       auto cellTracksContainer = device_theCellTracksContainer_;
       Kokkos::parallel_for(
-          "initDoublets", Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits), KOKKOS_LAMBDA(const size_t i) {
+          "initDoublets",
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits)),
+          KOKKOS_LAMBDA(const size_t i) {
             assert(isOuterHitOfCell.data());
             isOuterHitOfCell(i).reset();
 
@@ -318,7 +323,7 @@ namespace KOKKOS_NAMESPACE {
                                                        m_params.doPtCut_,
                                                        m_params.maxNumberOfDoublets_,
                                                        stride);
-    Kokkos::parallel_for("getDoubletsFromHisto", tempPolicy, getdoublets);
+    Kokkos::parallel_for("getDoubletsFromHisto", hintLightWeight(tempPolicy), getdoublets);
 
 #ifdef GPU_DEBUG
     execSpace.fence();

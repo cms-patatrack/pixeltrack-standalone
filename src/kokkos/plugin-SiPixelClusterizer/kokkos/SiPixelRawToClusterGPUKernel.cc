@@ -18,6 +18,7 @@
 #include <string>
 
 // CMSSW includes
+#include "KokkosCore/hintLightWeight.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
@@ -478,7 +479,7 @@ namespace pixelgpudetails {
 
     Kokkos::parallel_for(
         "fillHitsModuleStart_set_moduleStart",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules)),
         KOKKOS_LAMBDA(const int &index) {
           moduleStart(index + 1) = std::min(gpuClustering::maxHitsInModule(), cluStart(index));
         });
@@ -492,7 +493,7 @@ namespace pixelgpudetails {
     // blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanA",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1025),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 1, 1025)),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
           upd += moduleStart[i];
           if (final)
@@ -501,7 +502,7 @@ namespace pixelgpudetails {
     // blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
     Kokkos::parallel_scan(
         "fillHitsModuleStart_scanB",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, 1025 + gpuClustering::MaxNumModules - 1024),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, 1025 + gpuClustering::MaxNumModules - 1024)),
         KOKKOS_LAMBDA(const int &i, float &upd, const bool &final) {
           upd += moduleStart[i];
           if (final)
@@ -510,12 +511,14 @@ namespace pixelgpudetails {
 
     Kokkos::parallel_for(
         "fillHitsModuleStart_update_moduleStart",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules + 1),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 1025, gpuClustering::MaxNumModules + 1)),
         KOKKOS_LAMBDA(const int &index) { moduleStart(index) += moduleStart(1024); });
 
 #ifdef GPU_DEBUG
     Kokkos::parallel_for(
-        "fillHitsModuleStart_debugA", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, 1), KOKKOS_LAMBDA(const int &index) {
+        "fillHitsModuleStart_debugA",
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, 1)),
+        KOKKOS_LAMBDA(const int &index) {
           assert(0 == moduleStart(0));
           auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart(0));
           assert(c0 == moduleStart(1));
@@ -526,7 +529,7 @@ namespace pixelgpudetails {
 
     Kokkos::parallel_for(
         "fillHitsModuleStart_debugB",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1)),
         KOKKOS_LAMBDA(const int &index) {
           if (0 != index)
             assert(moduleStart(i) >= moduleStart(i - i));
@@ -541,7 +544,7 @@ namespace pixelgpudetails {
     // avoid overflow
     Kokkos::parallel_for(
         "fillHitsModuleStart_debugB",
-        Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1),
+        hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, gpuClustering::MaxNumModules + 1)),
         KOKKOS_LAMBDA(const int &index) {
           constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
           if (moduleStart(index) > MAX_HITS)
@@ -606,7 +609,7 @@ namespace KOKKOS_NAMESPACE {
 
           Kokkos::parallel_for(
               "RawToDigi_kernel",
-              Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, wordCounter),
+              hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, wordCounter)),
               KOKKOS_LAMBDA(const size_t i) {
                 RawToDigi_kernel(cablingMap,
                                  modToUnp,
@@ -647,8 +650,8 @@ namespace KOKKOS_NAMESPACE {
 
           Kokkos::parallel_for(
               "calibDigis",
-              Kokkos::RangePolicy<KokkosExecSpace>(
-                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+              hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(
+                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules)))),
               KOKKOS_LAMBDA(const size_t i) {
                 gpuCalibPixel::calibDigis(isRun2,
                                           moduleInd_d,
@@ -679,8 +682,8 @@ namespace KOKKOS_NAMESPACE {
           auto clusStart_d = digis_d.clus();
           Kokkos::parallel_for(
               "countModules",
-              Kokkos::RangePolicy<KokkosExecSpace>(
-                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules))),
+              hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(
+                  execSpace, 0, std::max(int(wordCounter), int(::gpuClustering::MaxNumModules)))),
               KOKKOS_LAMBDA(const size_t i) {
                 gpuClustering::countModules(moduleInd_d, moduleStart_d, clusStart_d, wordCounter, i);
               });

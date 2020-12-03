@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "Geometry/phase1PixelTopology.h"
+#include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/HistoContainer.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
@@ -64,13 +65,13 @@ namespace gpuClustering {
 
     int loop_count = Hist::totbins();
     Kokkos::parallel_for(
-        "init_hist_off", teamPolicy, KOKKOS_LAMBDA(const member_type& teamMember) {
+        "init_hist_off", hintLightWeight(teamPolicy), KOKKOS_LAMBDA(const member_type& teamMember) {
           Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, loop_count),
                                [&](const int index) { d_hist(teamMember.league_rank()).off[index] = 0; });
         });
 
     Kokkos::parallel_for(
-        "findClus_msize", teamPolicy, KOKKOS_LAMBDA(const member_type& teamMember) {
+        "findClus_msize", hintLightWeight(teamPolicy), KOKKOS_LAMBDA(const member_type& teamMember) {
           if (teamMember.league_rank() >= static_cast<int>(moduleStart(0)))
             return;
 
@@ -124,7 +125,7 @@ namespace gpuClustering {
     int shared_view_level = 0;
     Kokkos::parallel_for(
         "findClus_msize",
-        teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes)),
+        hintLightWeight(teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes))),
         KOKKOS_LAMBDA(const member_type& teamMember) {
           if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
             return;

@@ -1,5 +1,7 @@
 #include "BrokenLineFitOnGPU.h"
 
+#include "KokkosCore/hintLightWeight.h"
+
 namespace KOKKOS_NAMESPACE {
   void HelixFitOnGPU::launchBrokenLineKernels(HitsView const* hv,
                                               uint32_t hitsInFit,
@@ -24,14 +26,14 @@ namespace KOKKOS_NAMESPACE {
       // fit triplets
       Kokkos::parallel_for(
           "kernelBLFastFit_3",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFastFit<3>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 3, offset, i);
           });
 
       Kokkos::parallel_for(
           "kernelBLFit_3",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFit<3>(
                 tupleMultiplicity, bField, outputSoa, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 3, offset, i);
@@ -40,14 +42,14 @@ namespace KOKKOS_NAMESPACE {
       // fit quads
       Kokkos::parallel_for(
           "kernelBLFastFit_4",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFastFit<4>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 4, offset, i);
           });
 
       Kokkos::parallel_for(
           "kernelBLFit_4",
-          Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+          hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
           KOKKOS_LAMBDA(size_t i) {
             kernelBLFit<4>(
                 tupleMultiplicity, bField, outputSoa, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 4, offset, i);
@@ -57,14 +59,14 @@ namespace KOKKOS_NAMESPACE {
         // fit penta (only first 4)
         Kokkos::parallel_for(
             "kernelBLFastFit_4",
-            Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+            hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFastFit<4>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);
             });
 
         Kokkos::parallel_for(
             "kernelBLFit_4",
-            Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+            hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFit<4>(
                   tupleMultiplicity, bField, outputSoa, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);
@@ -73,14 +75,14 @@ namespace KOKKOS_NAMESPACE {
         // fit penta (all 5)
         Kokkos::parallel_for(
             "kernelBLFastFit_5",
-            Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+            hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFastFit<5>(tuples, tupleMultiplicity, hv, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);
             });
 
         Kokkos::parallel_for(
             "kernelBLFit_5",
-            Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits()),
+            hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, Rfit::maxNumberOfConcurrentFits())),
             KOKKOS_LAMBDA(size_t i) {
               kernelBLFit<5>(
                   tupleMultiplicity, bField, outputSoa, hitsGPU, hits_geGPU, fast_fit_resultsGPU, 5, offset, i);

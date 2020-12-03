@@ -8,8 +8,9 @@
 
 #include <Kokkos_Core.hpp>
 
-#include "AtomicPairCounter.h"
-#include "kokkos_assert.h"
+#include "KokkosCore/AtomicPairCounter.h"
+#include "KokkosCore/hintLightWeight.h"
+#include "KokkosCore/kokkos_assert.h"
 
 namespace cms {
   namespace kokkos {
@@ -72,7 +73,7 @@ namespace cms {
     inline void launchZero(Kokkos::View<Histo, ExecSpace> h, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
           "launchZero_view",
-          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
           KOKKOS_LAMBDA(const size_t i) { h().off[i] = 0; });
     }
 
@@ -80,7 +81,7 @@ namespace cms {
     inline void launchZero(Histo* h, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
           "launchZero_pointer",
-          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
           KOKKOS_LAMBDA(const size_t i) { h->off[i] = 0; });
     }
 
@@ -88,7 +89,7 @@ namespace cms {
     inline void launchFinalize(Kokkos::View<Histo, ExecSpace> h, ExecSpace const& execSpace) {
       Kokkos::parallel_scan(
           "launchFinalize",
-          Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+          hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
           KOKKOS_LAMBDA(const int& i, float& upd, const bool& final) {
             upd += h().off[i];
             if (final)
@@ -116,10 +117,10 @@ namespace cms {
       // Maybe this would really be a case for RangePolicy?
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
       const auto nblocks = (totSize + ExecSpace::impl_thread_pool_size()) / ExecSpace::impl_thread_pool_size();
-      TeamPolicy tp(execSpace, nblocks, ExecSpace::impl_thread_pool_size());
+      auto tp = hintLightWeight(TeamPolicy(execSpace, nblocks, ExecSpace::impl_thread_pool_size()));
 #else
       const auto nblocks = (totSize + nthreads - 1) / nthreads;
-      TeamPolicy tp(execSpace, nblocks, nthreads);
+      auto tp = hintLightWeight(TeamPolicy(execSpace, nblocks, nthreads));
 #endif
       Kokkos::parallel_for(
           "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
@@ -137,17 +138,17 @@ namespace cms {
                       Kokkos::View<Assoc, ExecSpace> assoc,
                       ExecSpace const& execSpace) {
       Kokkos::parallel_for(
-          "finalizeBulk", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Assoc::totbins()), KOKKOS_LAMBDA(const int& i) {
-            assoc().bulkFinalizeFill(apc, i);
-          });
+          "finalizeBulk",
+          hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Assoc::totbins())),
+          KOKKOS_LAMBDA(const int& i) { assoc().bulkFinalizeFill(apc, i); });
     }
 
     template <typename Assoc, typename ExecSpace>
     void finalizeBulk(Kokkos::View<AtomicPairCounter, ExecSpace> const apc, Assoc* assoc, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
-          "finalizeBulk", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Assoc::totbins()), KOKKOS_LAMBDA(const int& i) {
-            assoc->bulkFinalizeFill(apc, i);
-          });
+          "finalizeBulk",
+          hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Assoc::totbins())),
+          KOKKOS_LAMBDA(const int& i) { assoc->bulkFinalizeFill(apc, i); });
     }
 
     // iteratate over N bins left and right of the one containing "v"
@@ -346,7 +347,7 @@ namespace cms {
         //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
         Kokkos::parallel_scan(
             "finalize",
-            Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins()),
+            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
             KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final) {
               update += histo().off[i];
               if (final)
@@ -370,7 +371,7 @@ namespace cms {
         // First do a prefix scan over the all the blocks
         Kokkos::parallel_scan(
             "nFinalize",
-            Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N * Histo::totbins()),
+            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N * Histo::totbins())),
             KOKKOS_LAMBDA(const int ind, uint32_t& update, const bool final) {
               const int k = ind / Histo::totbins();
               const int i = ind % Histo::totbins();
@@ -380,13 +381,13 @@ namespace cms {
             });
         // Then record the offset of the last element of each block
         Kokkos::parallel_for(
-            "collectOffset", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N), KOKKOS_LAMBDA(const int k) {
-              firstOffset[k] = (k == 0) ? 0 : histo(k - 1).off[Histo::totbins() - 1];
-            });
+            "collectOffset",
+            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N)),
+            KOKKOS_LAMBDA(const int k) { firstOffset[k] = (k == 0) ? 0 : histo(k - 1).off[Histo::totbins() - 1]; });
         // Finally subtract the offset of last element of the "previous block" from the values of the current block
         Kokkos::parallel_for(
             "subtractOffset",
-            Kokkos::TeamPolicy<ExecSpace>(execSpace, N, Kokkos::AUTO()),
+            hintLightWeight(Kokkos::TeamPolicy<ExecSpace>(execSpace, N, Kokkos::AUTO())),
             KOKKOS_LAMBDA(typename Kokkos::TeamPolicy<ExecSpace>::member_type const& teamMember) {
               const int k = teamMember.league_rank();
               const auto first = firstOffset(k);
