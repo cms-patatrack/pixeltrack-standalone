@@ -39,7 +39,7 @@ void TestProducer2::acquire(edm::Event const& event,
   future_ = std::async([holder = std::move(holder)]() mutable {
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(1s);
-    holder.doneWaiting(std::exception_ptr());
+    holder.doneWaiting();
     return 42;
   });
 

@@ -57,6 +57,12 @@ namespace edm {
     // into the correct arena of threads. Use of the arena allows doneWaiting
     // to be called from a thread outside the arena of threads that will manage
     // the task. doneWaiting can be called from a non-TBB thread.
+    void doneWaiting();
+
+    // This spawns the task. The arena is needed to get the task spawned
+    // into the correct arena of threads. Use of the arena allows doneWaiting
+    // to be called from a thread outside the arena of threads that will manage
+    // the task. doneWaiting can be called from a non-TBB thread.
     void doneWaiting(std::exception_ptr iExcept);
 
     // This next function is useful if you know from the context that
