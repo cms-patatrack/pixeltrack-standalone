@@ -23,8 +23,13 @@ namespace {
 }  // namespace
 
 namespace edm {
-  Source::Source(int maxEvents, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
-      : maxEvents_(maxEvents), numEvents_(0), rawToken_(reg.produces<FEDRawDataCollection>()), validation_(validation) {
+  Source::Source(
+      int batchEvents, int maxEvents, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
+      : batchEvents_(batchEvents),
+        maxEvents_(maxEvents),
+        numEvents_(0),
+        rawToken_(reg.produces<FEDRawDataCollection>()),
+        validation_(validation) {
     std::ifstream in_raw(datadir / "raw.bin", std::ios::binary);
     std::ifstream in_digiclusters;
     std::ifstream in_tracks;
@@ -74,27 +79,45 @@ namespace edm {
       assert(raw_.size() == vertices_.size());
     }
 
+    if (batchEvents_ < 1) {
+      batchEvents_ = 1;
+    }
+
     if (maxEvents_ < 0) {
       maxEvents_ = raw_.size();
     }
   }
 
-  std::unique_ptr<Event> Source::produce(int streamId, ProductRegistry const &reg) {
-    const int old = numEvents_.fetch_add(1);
-    const int iev = old + 1;
-    if (old >= maxEvents_) {
-      return nullptr;
-    }
-    auto ev = std::make_unique<Event>(streamId, iev, reg);
-    const int index = old % raw_.size();
+  EventBatch Source::produce(int streamId, ProductRegistry const &reg) {
 
-    ev->emplace(rawToken_, raw_[index]);
-    if (validation_) {
-      ev->emplace(digiClusterToken_, digiclusters_[index]);
-      ev->emplace(trackToken_, tracks_[index]);
-      ev->emplace(vertexToken_, vertices_[index]);
+    // atomically increase the event counter, without overflowing over maxEvents_
+    int old_value = numEvents_;
+    int new_value;
+    do {
+     new_value = std::min(old_value + batchEvents_, maxEvents_);
+    } while (not numEvents_.compare_exchange_weak(old_value, new_value));
+
+    // check how many events should be read
+    const int size = new_value - old_value;
+    EventBatch events;
+    if (size <= 0) {
+      return events;
     }
 
-    return ev;
+    events.reserve(size);
+    for (int i = 1; i <= size; ++i) {
+      const int iev = old_value + i;
+      Event &event = events.emplace(streamId, iev, reg);
+      const int index = (iev - 1) % raw_.size();
+
+      event.emplace(rawToken_, raw_[index]);
+      if (validation_) {
+        event.emplace(digiClusterToken_, digiclusters_[index]);
+        event.emplace(trackToken_, tracks_[index]);
+        event.emplace(vertexToken_, vertices_[index]);
+      }
+    }
+
+    return events;
   }
 }  // namespace edm
