@@ -38,7 +38,7 @@ namespace edm {
     void endJob();
 
   private:
-    void processOneEventAsync(WaitingTaskHolder h);
+    void processEventBatchAsync(WaitingTaskHolder h);
 
     ProductRegistry registry_;
     Source* source_;

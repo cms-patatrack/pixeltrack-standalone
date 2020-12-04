@@ -10,7 +10,9 @@
 #include "Framework/RunningAverage.h"
 #include "CUDACore/ScopedContext.h"
 
-class PixelVertexSoAFromCUDA : public edm::EDProducerExternalWork {
+using PixelVertexSoAFromCUDA_AsyncState = cms::cuda::host::unique_ptr<ZVertexSoA>;
+
+class PixelVertexSoAFromCUDA : public edm::EDProducerExternalWork<PixelVertexSoAFromCUDA_AsyncState> {
 public:
   explicit PixelVertexSoAFromCUDA(edm::ProductRegistry& reg);
   ~PixelVertexSoAFromCUDA() override = default;
@@ -18,13 +20,12 @@ public:
 private:
   void acquire(edm::Event const& iEvent,
                edm::EventSetup const& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
+               edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+               AsyncState& state) const override;
+  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup, AsyncState& state) override;
 
   edm::EDGetTokenT<cms::cuda::Product<ZVertexHeterogeneous>> tokenCUDA_;
   edm::EDPutTokenT<ZVertexHeterogeneous> tokenSOA_;
-
-  cms::cuda::host::unique_ptr<ZVertexSoA> m_soa;
 };
 
 PixelVertexSoAFromCUDA::PixelVertexSoAFromCUDA(edm::ProductRegistry& reg)
@@ -33,17 +34,18 @@ PixelVertexSoAFromCUDA::PixelVertexSoAFromCUDA(edm::ProductRegistry& reg)
 
 void PixelVertexSoAFromCUDA::acquire(edm::Event const& iEvent,
                                      edm::EventSetup const& iSetup,
-                                     edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+                                     edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+                                     AsyncState& state) const {
   auto const& inputDataWrapped = iEvent.get(tokenCUDA_);
   cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
   auto const& inputData = ctx.get(inputDataWrapped);
 
-  m_soa = inputData.toHostAsync(ctx.stream());
+  state = inputData.toHostAsync(ctx.stream());
 }
 
-void PixelVertexSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
+void PixelVertexSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup, AsyncState& state) {
   // No copies....
-  iEvent.emplace(tokenSOA_, ZVertexHeterogeneous(std::move(m_soa)));
+  iEvent.emplace(tokenSOA_, ZVertexHeterogeneous(std::move(state)));
 }
 
 DEFINE_FWK_MODULE(PixelVertexSoAFromCUDA);
