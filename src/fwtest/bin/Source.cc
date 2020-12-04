@@ -89,8 +89,16 @@ namespace edm {
   }
 
   EventBatch Source::produce(int streamId, ProductRegistry const &reg) {
-    const int old = numEvents_.fetch_add(batchEvents_);
-    const int size = std::min(batchEvents_, maxEvents_ - old);
+
+    // atomically increase the event counter, without overflowing over maxEvents_
+    int old_value = numEvents_;
+    int new_value;
+    do {
+     new_value = std::min(old_value + batchEvents_, maxEvents_);
+    } while (not numEvents_.compare_exchange_weak(old_value, new_value));
+
+    // check how many events should be read
+    const int size = new_value - old_value;
     EventBatch events;
     if (size <= 0) {
       return events;
@@ -98,7 +106,7 @@ namespace edm {
 
     events.reserve(size);
     for (int i = 1; i <= size; ++i) {
-      const int iev = old + i;
+      const int iev = old_value + i;
       Event &event = events.emplace(streamId, iev, reg);
       const int index = (iev - 1) % raw_.size();
 
