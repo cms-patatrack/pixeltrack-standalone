@@ -22,7 +22,13 @@
 #include <string>
 #include <vector>
 
-class SiPixelRawToClusterCUDA : public edm::EDProducerExternalWork {
+struct SiPixelRawToClusterCUDA_AsyncState {
+  cms::cuda::ContextState ctx;
+  pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo;
+  pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender wordFedAppender;
+};
+
+class SiPixelRawToClusterCUDA : public edm::EDProducerExternalWork<SiPixelRawToClusterCUDA_AsyncState> {
 public:
   explicit SiPixelRawToClusterCUDA(edm::ProductRegistry& reg);
   ~SiPixelRawToClusterCUDA() override = default;
@@ -30,19 +36,14 @@ public:
 private:
   void acquire(const edm::Event& iEvent,
                const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+               edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+               AsyncState& state) const override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) override;
 
-  cms::cuda::ContextState ctxState_;
-
-  edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
+  const edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
+  const edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrorsCUDA>> digiErrorPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterPutToken_;
-
-  pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
-  std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
-  PixelFormatterErrors errors_;
+  const edm::EDPutTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterPutToken_;
 
   const bool isRun2_;
   const bool includeErrors_;
@@ -59,14 +60,13 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
   if (includeErrors_) {
     digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
   }
-
-  wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
 }
 
 void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
-                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
+                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+                                      AsyncState& state) const {
+  cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), state.ctx};
 
   auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
@@ -85,7 +85,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   const auto& buffers = iEvent.get(rawGetToken_);
 
-  errors_.clear();
+  PixelFormatterErrors errors;
 
   // GPU specific: Data extraction for RawToDigi GPU
   unsigned int wordCounterGPU = 0;
@@ -115,7 +115,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
     // check CRC bit
     const uint64_t* trailer = reinterpret_cast<const uint64_t*>(rawData.data()) + (nWords - 1);
-    if (not errorcheck.checkCRC(errorsInEvent, fedId, trailer, errors_)) {
+    if (not errorcheck.checkCRC(errorsInEvent, fedId, trailer, errors)) {
       continue;
     }
 
@@ -125,7 +125,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
     bool moreHeaders = true;
     while (moreHeaders) {
       header++;
-      bool headerStatus = errorcheck.checkHeader(errorsInEvent, fedId, header, errors_);
+      bool headerStatus = errorcheck.checkHeader(errorsInEvent, fedId, header, errors);
       moreHeaders = headerStatus;
     }
 
@@ -134,7 +134,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
     trailer++;
     while (moreTrailers) {
       trailer--;
-      bool trailerStatus = errorcheck.checkTrailer(errorsInEvent, fedId, nWords, trailer, errors_);
+      bool trailerStatus = errorcheck.checkTrailer(errorsInEvent, fedId, nWords, trailer, errors);
       moreTrailers = trailerStatus;
     }
 
@@ -142,33 +142,33 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
     const uint32_t* ew = (const uint32_t*)(trailer);
 
     assert(0 == (ew - bw) % 2);
-    wordFedAppender_->initializeWordFed(fedId, wordCounterGPU, bw, (ew - bw));
+    state.wordFedAppender.initializeWordFed(fedId, wordCounterGPU, bw, (ew - bw));
     wordCounterGPU += (ew - bw);
 
   }  // end of for loop
 
-  gpuAlgo_.makeClustersAsync(isRun2_,
-                             gpuMap,
-                             gpuModulesToUnpack,
-                             gpuGains,
-                             *wordFedAppender_,
-                             std::move(errors_),
-                             wordCounterGPU,
-                             fedCounter,
-                             useQuality_,
-                             includeErrors_,
-                             false,  // debug
-                             ctx.stream());
+  state.gpuAlgo.makeClustersAsync(isRun2_,
+                                  gpuMap,
+                                  gpuModulesToUnpack,
+                                  gpuGains,
+                                  state.wordFedAppender,
+                                  std::move(errors),
+                                  wordCounterGPU,
+                                  fedCounter,
+                                  useQuality_,
+                                  includeErrors_,
+                                  false,  // debug
+                                  ctx.stream());
 }
 
-void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  cms::cuda::ScopedContextProduce ctx{ctxState_};
+void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) {
+  cms::cuda::ScopedContextProduce ctx{state.ctx};
 
-  auto tmp = gpuAlgo_.getResults();
+  auto tmp = state.gpuAlgo.getResults();
   ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
   ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
   if (includeErrors_) {
-    ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
+    ctx.emplace(iEvent, digiErrorPutToken_, state.gpuAlgo.getErrors());
   }
 }
 
