@@ -120,6 +120,13 @@ def main(opts):
         else:
             nev = nev_per_stream*nstr
         (cores_main, cores_bkg) = partition_cores(cores, nth)
+
+        if opts.warmup:
+          printMessage("Warming up")
+          run(nev, nstr, cores_main, opts, "warmup.txt")
+          print()
+          opts.warmup = False
+
         msg = "Number of streams %d threads %d events %d" % (nstr, nth, nev)
         if opts.taskset:
             msg += ", running on cores %s" % ",".join(cores_main)
@@ -195,6 +202,8 @@ if __name__ == "__main__":
                         help="Repeat each point this many times (default: 1)")
     parser.add_argument("--tryAgain", type=int, default=1,
                         help="In case of failure on a point, try again at most this many times (default: 1)")
+    parser.add_argument("--warmup", action="store_true",
+                        help="Run the command once before starting the profiling")
     parser.add_argument("--dryRun", action="store_true",
                         help="Print out commands, don't actually run anything")
 
