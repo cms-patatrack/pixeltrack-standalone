@@ -15,26 +15,31 @@ test_nvidiagpu: $(TARGET)
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --cuda
 	@echo "Succeeded"
-test_intelagpu:
+test_amdgpu: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --hip
+	@echo "Succeeded"
+test_intelgpu:
 test_auto:
-.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
+.PHONY: test_cpu test_nvidiagpu test_amdgpu test_intelgpu test_auto
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
 LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
+ifneq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+LIBNAMES := $(filter-out CUDACore,$(LIBNAMES))
+endif
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
-ifndef KOKKOS_DEVICE_PARALLEL
 MY_DEVICE_CXXFLAGS := $(MY_CXXFLAGS)
 MY_DEVICE_LDFLAGS := $(MY_LDFLAGS)
-else
 ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
-MY_DEVICE_CXXFLAGS := $(MY_CXXFLAGS) -x cu
+MY_DEVICE_CXXFLAGS += -x cu
 MY_DEVICE_LDFLAGS := --linker-options '-rpath,$(LIB_DIR)/$(TARGET_NAME)'
-endif
 endif
 LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
 
@@ -132,7 +137,7 @@ TESTS_PARALLEL_DEP := $(TESTS_PARALLEL_OBJ:$.o=$.d)
 TESTS_PARALLEL_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.parallel,$(TESTS_PORTABLE_SRC))
 # device parallel backend
 TESTS_DEVICE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.device.o))
-TESTS_DEVICE_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
+TESTS_DEVICE_DEP := $(TESTS_DEVICE_OBJ:$.o=$.d)
 TESTS_DEVICE_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.device,$(TESTS_PORTABLE_SRC))
 #
 TESTS_EXE := $(TESTS_SERIAL_EXE)
@@ -166,6 +171,9 @@ $(foreach test,$(TESTS_PARALLEL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)
 endif
 ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
 $(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
+endif
+ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+$(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
 endif
 
 -include $(ALL_DEPENDS)
@@ -240,7 +248,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/t
 
 $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(KOKKOS_DEVICE_CXX) $^ $(KOKKOS_DEVICE_LDFLAGS) $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 # Host parallel backend
 ifdef KOKKOS_HOST_PARALLEL
@@ -250,7 +258,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o: $(SRC_DIR)/$(TARGET_NAME)
 
 $(TEST_DIR)/$(TARGET_NAME)/%.parallel: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(KOKKOS_DEVICE_CXX) $^ $(KOKKOS_DEVICE_LDFLAGS) $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif
 
 # Device parallel backend
@@ -261,5 +269,5 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o: $(SRC_DIR)/$(TARGET_NAME)/t
 
 $(TEST_DIR)/$(TARGET_NAME)/%.device: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) $^ $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(KOKKOS_DEVICE_CXX) $^ $(KOKKOS_DEVICE_LDFLAGS) $(MY_DEVICE_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif

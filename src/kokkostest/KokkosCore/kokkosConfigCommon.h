@@ -9,7 +9,7 @@
 namespace kokkos_common {
   class InitializeScopeGuard {
   public:
-    enum class Backend { SERIAL, PTHREAD, CUDA };
+    enum class Backend { SERIAL, PTHREAD, CUDA, HIP };
 
     explicit InitializeScopeGuard(std::vector<Backend> const& backends, int numberOfInnerThreads = 1);
     ~InitializeScopeGuard();

@@ -1,10 +1,13 @@
 IntESProducer pluginTest1.so
 kokkos_cuda::TestProducer pluginTest1.so
+kokkos_hip::TestProducer pluginTest1.so
 kokkos_pthread::TestProducer pluginTest1.so
 kokkos_serial::TestProducer pluginTest1.so
 kokkos_cuda::TestProducer2 pluginTest2.so
+kokkos_hip::TestProducer2 pluginTest2.so
 kokkos_pthread::TestProducer2 pluginTest2.so
 kokkos_serial::TestProducer2 pluginTest2.so
 kokkos_cuda::TestProducer3 pluginTest2.so
+kokkos_hip::TestProducer3 pluginTest2.so
 kokkos_pthread::TestProducer3 pluginTest2.so
 kokkos_serial::TestProducer3 pluginTest2.so

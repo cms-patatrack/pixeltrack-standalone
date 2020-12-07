@@ -1,4 +1,9 @@
-kokkostest_EXTERNAL_DEPENDS := TBB CUDA KOKKOS
+kokkostest_EXTERNAL_DEPENDS := TBB KOKKOS
+ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+  kokkostest_EXTERNAL_DEPENDS += CUDA
+else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+  kokkostest_EXTERNAL_DEPENDS += HIP
+endif
 KokkosCore_DEPENDS := Framework
 Test1_DEPENDS := Framework DataFormats KokkosCore CUDACore
 Test2_DEPENDS := Framework KokkosCore CUDACore
