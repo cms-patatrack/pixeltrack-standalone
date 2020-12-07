@@ -23,8 +23,13 @@ namespace {
 }  // namespace
 
 namespace edm {
-  Source::Source(int maxEvents, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
-      : maxEvents_(maxEvents), numEvents_(0), rawToken_(reg.produces<FEDRawDataCollection>()), validation_(validation) {
+  Source::Source(
+      int batchEvents, int maxEvents, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
+      : batchEvents_(batchEvents),
+        maxEvents_(maxEvents),
+        numEvents_(0),
+        rawToken_(reg.produces<FEDRawDataCollection>()),
+        validation_(validation) {
     std::ifstream in_raw(datadir / "raw.bin", std::ios::binary);
     std::ifstream in_digiclusters;
     std::ifstream in_tracks;
@@ -74,27 +79,38 @@ namespace edm {
       assert(raw_.size() == vertices_.size());
     }
 
+    if (batchEvents_ < 1) {
+      batchEvents_ = 1;
+    }
+
     if (maxEvents_ < 0) {
       maxEvents_ = raw_.size();
     }
   }
 
-  std::unique_ptr<Event> Source::produce(int streamId, ProductRegistry const &reg) {
-    const int old = numEvents_.fetch_add(1);
-    const int iev = old + 1;
-    if (old >= maxEvents_) {
-      return nullptr;
-    }
-    auto ev = std::make_unique<Event>(streamId, iev, reg);
-    const int index = old % raw_.size();
-
-    ev->emplace(rawToken_, raw_[index]);
-    if (validation_) {
-      ev->emplace(digiClusterToken_, digiclusters_[index]);
-      ev->emplace(trackToken_, tracks_[index]);
-      ev->emplace(vertexToken_, vertices_[index]);
+  std::vector<Event> Source::produce(int streamId, ProductRegistry const &reg) {
+    const int old = numEvents_.fetch_add(batchEvents_);
+    const int size = std::min(batchEvents_, maxEvents_ - old);
+    std::vector<Event> events;
+    if (size <= 0) {
+      return events;
     }
 
-    return ev;
+    events.reserve(size);
+    for (int i = 1; i <= size; ++i) {
+      const int iev = old + i;
+      events.emplace_back(streamId, iev, reg);
+      auto ev = &events.back();
+      const int index = (iev - 1) % raw_.size();
+
+      ev->emplace(rawToken_, raw_[index]);
+      if (validation_) {
+        ev->emplace(digiClusterToken_, digiclusters_[index]);
+        ev->emplace(trackToken_, tracks_[index]);
+        ev->emplace(vertexToken_, vertices_[index]);
+      }
+    }
+
+    return events;
   }
 }  // namespace edm
