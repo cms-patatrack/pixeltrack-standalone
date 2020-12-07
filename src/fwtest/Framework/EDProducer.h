@@ -38,6 +38,28 @@ namespace edm {
   private:
   };
 
+  class EDBatchingProducer {
+  public:
+    EDBatchingProducer() = default;
+    virtual ~EDBatchingProducer() = default;
+
+    bool hasAcquire() const { return false; }
+
+    void doAcquire(std::vector<Event const*> const& events,
+                   EventSetup const& eventSetup,
+                   WaitingTaskWithArenaHolder holder) {}
+
+    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) { produce(events, eventSetup); }
+
+    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup) = 0;
+
+    void doEndJob() { endJob(); }
+
+    virtual void endJob() {}
+
+  private:
+  };
+
   template <typename T = void>
   class EDProducerExternalWork {
   public:
@@ -111,6 +133,70 @@ namespace edm {
     }
 
     virtual void produce(Event& event, EventSetup const& eventSetup) = 0;
+
+    void doEndJob() { endJob(); }
+
+    virtual void endJob() {}
+
+  private:
+  };
+
+  template <typename T = void>
+  class EDBatchingProducerExternalWork {
+  public:
+    using AsyncState = T;
+
+    EDBatchingProducerExternalWork() = default;
+    virtual ~EDBatchingProducerExternalWork() = default;
+
+    bool hasAcquire() const { return true; }
+
+    void doAcquire(std::vector<Event const*> const& events,
+                   EventSetup const& eventSetup,
+                   WaitingTaskWithArenaHolder holder) {
+      acquire(events, eventSetup, holder, state_);
+    }
+
+    virtual void acquire(std::vector<Event const*> const& events,
+                         EventSetup const& eventSetup,
+                         WaitingTaskWithArenaHolder holder,
+                         AsyncState& state) const = 0;
+
+    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) {
+      produce(events, eventSetup, state_);
+    }
+
+    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup, AsyncState& state) = 0;
+
+    void doEndJob() { endJob(); }
+
+    virtual void endJob() {}
+
+  private:
+    AsyncState state_;
+  };
+
+  template <>
+  class EDBatchingProducerExternalWork<void> {
+  public:
+    EDBatchingProducerExternalWork() = default;
+    virtual ~EDBatchingProducerExternalWork() = default;
+
+    bool hasAcquire() const { return true; }
+
+    void doAcquire(std::vector<Event const*> const& events,
+                   EventSetup const& eventSetup,
+                   WaitingTaskWithArenaHolder holder) {
+      acquire(events, eventSetup, holder);
+    }
+
+    virtual void acquire(std::vector<Event const*> const& events,
+                         EventSetup const& eventSetup,
+                         WaitingTaskWithArenaHolder holder) const = 0;
+
+    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) { produce(events, eventSetup); }
+
+    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup) = 0;
 
     void doEndJob() { endJob(); }
 
