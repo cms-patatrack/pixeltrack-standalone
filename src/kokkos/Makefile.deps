@@ -1,4 +1,9 @@
-kokkos_EXTERNAL_DEPENDS := TBB CUDA KOKKOS EIGEN
+kokkos_EXTERNAL_DEPENDS := TBB KOKKOS EIGEN
+ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+  kokkos_EXTERNAL_DEPENDS += CUDA
+else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+  kokkos_EXTERNAL_DEPENDS += HIP
+endif
 BeamSpotProducer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats
 PixelTriplets_DEPENDS := Framework KokkosCore KokkosDataFormats
 PixelVertexFinding_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats

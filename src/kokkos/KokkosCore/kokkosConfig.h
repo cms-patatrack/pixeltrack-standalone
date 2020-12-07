@@ -13,6 +13,9 @@ using KokkosExecSpace = Kokkos::Threads;
 #elif defined KOKKOS_BACKEND_CUDA
 using KokkosExecSpace = Kokkos::Cuda;
 #define KOKKOS_NAMESPACE kokkos_cuda
+#elif defined KOKKOS_BACKEND_HIP
+using KokkosExecSpace = Kokkos::Experimental::HIP;
+#define KOKKOS_NAMESPACE kokkos_hip
 #else
 #error "Unsupported Kokkos backend"
 #endif
@@ -34,6 +37,12 @@ struct KokkosBackend<Kokkos::Threads> {
 template <>
 struct KokkosBackend<Kokkos::Cuda> {
   static constexpr auto value = kokkos_common::InitializeScopeGuard::Backend::CUDA;
+};
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+template <>
+struct KokkosBackend<Kokkos::Experimental::HIP> {
+  static constexpr auto value = kokkos_common::InitializeScopeGuard::Backend::HIP;
 };
 #endif
 
