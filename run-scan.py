@@ -123,7 +123,7 @@ def main(opts):
 
         if opts.warmup:
           printMessage("Warming up")
-          run(nev, nstr, cores_main, opts, "warmup.txt")
+          run(nev, nstr, cores_main, opts, opts.output+"_warmup.txt")
           print()
           opts.warmup = False
 
