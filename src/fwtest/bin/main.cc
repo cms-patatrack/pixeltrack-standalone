@@ -87,7 +87,8 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
+    edmodules = {
+        "TestProducer", "TestProducerExternalWork", "TestBatchingProducer", "TestBatchingProducerExternalWork"};
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer
