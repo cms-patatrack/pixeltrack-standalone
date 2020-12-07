@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Framework/Event.h"
+#include "Framework/EventBatch.h"
 #include "DataFormats/FEDRawDataCollection.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
@@ -22,7 +23,7 @@ namespace edm {
     int maxEvents() const { return maxEvents_; }
 
     // thread safe
-    std::vector<Event> produce(int streamId, ProductRegistry const& reg);
+    EventBatch produce(int streamId, ProductRegistry const& reg);
 
   private:
     int batchEvents_;

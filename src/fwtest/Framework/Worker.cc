@@ -2,7 +2,7 @@
 #include "Framework/Worker.h"
 
 namespace edm {
-  void Worker::prefetchAsync(std::vector<Event*> const& events, EventSetup const& eventSetup, WaitingTask* iTask) {
+  void Worker::prefetchAsync(EventRange events, EventSetup const& eventSetup, WaitingTask* iTask) {
     //std::cout << "prefetchAsync for " << this << " iTask " << iTask << std::endl;
     bool expected = false;
     if (prefetchRequested_.compare_exchange_strong(expected, true)) {

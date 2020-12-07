@@ -57,10 +57,9 @@ namespace edm {
     auto events = source_->produce(streamId_, registry_);
     if (not events.empty()) {
       // Pass the event batch ownership to the "end-of-event" task
-      // Pass non-owning pointers to the event to preceding tasks
-      //std::cout << "Begin processing a batch of " << events.size() << " events starting from " << events.front().eventID() << std::endl;
-      auto eventsPtr = std::vector<Event*>(events.size(), nullptr);
-      std::transform(events.begin(), events.end(), eventsPtr.begin(), [](auto& event) { return &event; });
+      // Pass a non-owning event range to the preceding tasks
+      //std::cout << "Begin processing a batch of " << events.size() << " events starting from " << events.range().at(0).eventID() << std::endl;
+      auto eventsRange = events.range();
       auto nextEventTask = make_waiting_task(
           tbb::task::allocate_root(),
           [this, h = std::move(h), events = std::move(events)](std::exception_ptr const* iPtr) mutable {
@@ -81,7 +80,7 @@ namespace edm {
 
       for (auto iWorker = path_.rbegin(); iWorker != path_.rend(); ++iWorker) {
         //std::cout << "calling doWorkAsync for " << iWorker->get() << " with nextEventTask " << nextEventTask << std::endl;
-        (*iWorker)->doWorkAsync(eventsPtr, *eventSetup_, nextEventTask);
+        (*iWorker)->doWorkAsync(eventsRange, *eventSetup_, nextEventTask);
       }
     } else {
       h.doneWaiting();

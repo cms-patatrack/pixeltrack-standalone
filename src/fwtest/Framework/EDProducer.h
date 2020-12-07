@@ -1,10 +1,9 @@
 #ifndef EDProducerBase_h
 #define EDProducerBase_h
 
-#include <cassert>
 #include <memory>
-#include <vector>
 
+#include "Framework/EventRange.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
 namespace edm {
@@ -18,14 +17,11 @@ namespace edm {
 
     bool hasAcquire() const { return false; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {}
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {}
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) {
-      for (Event* event : events) {
-        assert(event);
-        produce(*event, eventSetup);
+    void doProduce(EventRange events, EventSetup const& eventSetup) {
+      for (Event& event : events) {
+        produce(event, eventSetup);
       }
     }
 
@@ -45,13 +41,11 @@ namespace edm {
 
     bool hasAcquire() const { return false; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {}
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {}
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) { produce(events, eventSetup); }
+    void doProduce(EventRange events, EventSetup const& eventSetup) { produce(events, eventSetup); }
 
-    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup) = 0;
+    virtual void produce(EventRange events, EventSetup const& eventSetup) = 0;
 
     void doEndJob() { endJob(); }
 
@@ -70,16 +64,13 @@ namespace edm {
 
     bool hasAcquire() const { return true; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {
       if (events.size() > statesSize_) {
         statesSize_ = events.size();
         states_ = std::make_unique<AsyncState[]>(statesSize_);
       }
       for (size_t i = 0; i < events.size(); ++i) {
-        assert(events[i]);
-        acquire(*events[i], eventSetup, holder, states_[i]);
+        acquire(events[i], eventSetup, holder, states_[i]);
       }
     }
 
@@ -88,10 +79,9 @@ namespace edm {
                          WaitingTaskWithArenaHolder holder,
                          AsyncState& state) const = 0;
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) {
+    void doProduce(EventRange events, EventSetup const& eventSetup) {
       for (size_t i = 0; i < events.size(); ++i) {
-        assert(events[i]);
-        produce(*events[i], eventSetup, states_[i]);
+        produce(events[i], eventSetup, states_[i]);
       }
     }
 
@@ -114,21 +104,17 @@ namespace edm {
 
     bool hasAcquire() const { return true; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {
-      for (Event const* event : events) {
-        assert(event);
-        acquire(*event, eventSetup, holder);
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {
+      for (Event const& event : events) {
+        acquire(event, eventSetup, holder);
       }
     }
 
     virtual void acquire(Event const& event, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) const = 0;
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) {
-      for (Event* event : events) {
-        assert(event);
-        produce(*event, eventSetup);
+    void doProduce(EventRange events, EventSetup const& eventSetup) {
+      for (Event& event : events) {
+        produce(event, eventSetup);
       }
     }
 
@@ -151,22 +137,18 @@ namespace edm {
 
     bool hasAcquire() const { return true; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {
       acquire(events, eventSetup, holder, state_);
     }
 
-    virtual void acquire(std::vector<Event const*> const& events,
+    virtual void acquire(ConstEventRange events,
                          EventSetup const& eventSetup,
                          WaitingTaskWithArenaHolder holder,
                          AsyncState& state) const = 0;
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) {
-      produce(events, eventSetup, state_);
-    }
+    void doProduce(EventRange events, EventSetup const& eventSetup) { produce(events, eventSetup, state_); }
 
-    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup, AsyncState& state) = 0;
+    virtual void produce(EventRange events, EventSetup const& eventSetup, AsyncState& states) = 0;
 
     void doEndJob() { endJob(); }
 
@@ -184,19 +166,17 @@ namespace edm {
 
     bool hasAcquire() const { return true; }
 
-    void doAcquire(std::vector<Event const*> const& events,
-                   EventSetup const& eventSetup,
-                   WaitingTaskWithArenaHolder holder) {
+    void doAcquire(ConstEventRange events, EventSetup const& eventSetup, WaitingTaskWithArenaHolder holder) {
       acquire(events, eventSetup, holder);
     }
 
-    virtual void acquire(std::vector<Event const*> const& events,
+    virtual void acquire(ConstEventRange events,
                          EventSetup const& eventSetup,
                          WaitingTaskWithArenaHolder holder) const = 0;
 
-    void doProduce(std::vector<Event*> const& events, EventSetup const& eventSetup) { produce(events, eventSetup); }
+    void doProduce(EventRange events, EventSetup const& eventSetup) { produce(events, eventSetup); }
 
-    virtual void produce(std::vector<Event*> const& events, EventSetup const& eventSetup) = 0;
+    virtual void produce(EventRange events, EventSetup const& eventSetup) = 0;
 
     void doEndJob() { endJob(); }
 

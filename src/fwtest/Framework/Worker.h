@@ -5,6 +5,7 @@
 //#include <iostream>
 #include <vector>
 
+#include "Framework/EventRange.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskList.h"
@@ -23,10 +24,10 @@ namespace edm {
     void setItemsToGet(std::vector<Worker*> workers) { itemsToGet_ = std::move(workers); }
 
     // thread safe
-    void prefetchAsync(std::vector<Event*> const& events, EventSetup const& eventSetup, WaitingTask* iTask);
+    void prefetchAsync(EventRange events, EventSetup const& eventSetup, WaitingTask* iTask);
 
     // not thread safe
-    virtual void doWorkAsync(std::vector<Event*> const& events, EventSetup const& eventSetup, WaitingTask* iTask) = 0;
+    virtual void doWorkAsync(EventRange events, EventSetup const& eventSetup, WaitingTask* iTask) = 0;
 
     // not thread safe
     virtual void doEndJob() = 0;
@@ -50,7 +51,7 @@ namespace edm {
   public:
     explicit WorkerT(ProductRegistry& reg) : producer_(reg) {}
 
-    void doWorkAsync(std::vector<Event*> const& events, EventSetup const& eventSetup, WaitingTask* iTask) override {
+    void doWorkAsync(EventRange events, EventSetup const& eventSetup, WaitingTask* iTask) override {
       waitingTasksWork_.add(iTask);
       //std::cout << "doWorkAsync for " << this << " with iTask " << iTask << std::endl;
       bool expected = false;
@@ -75,23 +76,22 @@ namespace edm {
             });
         if (producer_.hasAcquire()) {
           WaitingTaskWithArenaHolder runProduceHolder{moduleTask};
-          moduleTask = make_waiting_task(tbb::task::allocate_root(),
-                                         [this, events, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
-                                             std::exception_ptr const* iPtr) mutable {
-                                           if (iPtr) {
-                                             runProduceHolder.doneWaiting(*iPtr);
-                                           } else {
-                                             std::exception_ptr exceptionPtr;
-                                             try {
-                                               //auto const & const_events = reinterpret_cast<std::vector<Event const*> const&>(events);
-                                               std::vector<Event const*> const_events(events.begin(), events.end());
-                                               producer_.doAcquire(const_events, eventSetup, runProduceHolder);
-                                             } catch (...) {
-                                               exceptionPtr = std::current_exception();
-                                             }
-                                             runProduceHolder.doneWaiting(exceptionPtr);
-                                           }
-                                         });
+          moduleTask = make_waiting_task(
+              tbb::task::allocate_root(),
+              [this, events = ConstEventRange(events), &eventSetup, runProduceHolder = std::move(runProduceHolder)](
+                  std::exception_ptr const* iPtr) mutable {
+                if (iPtr) {
+                  runProduceHolder.doneWaiting(*iPtr);
+                } else {
+                  std::exception_ptr exceptionPtr;
+                  try {
+                    producer_.doAcquire(events, eventSetup, runProduceHolder);
+                  } catch (...) {
+                    exceptionPtr = std::current_exception();
+                  }
+                  runProduceHolder.doneWaiting(exceptionPtr);
+                }
+              });
         }
         //std::cout << "calling prefetchAsync " << this << " with moduleTask " << moduleTask << std::endl;
         prefetchAsync(events, eventSetup, moduleTask);

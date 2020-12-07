@@ -88,10 +88,10 @@ namespace edm {
     }
   }
 
-  std::vector<Event> Source::produce(int streamId, ProductRegistry const &reg) {
+  EventBatch Source::produce(int streamId, ProductRegistry const &reg) {
     const int old = numEvents_.fetch_add(batchEvents_);
     const int size = std::min(batchEvents_, maxEvents_ - old);
-    std::vector<Event> events;
+    EventBatch events;
     if (size <= 0) {
       return events;
     }
@@ -99,15 +99,14 @@ namespace edm {
     events.reserve(size);
     for (int i = 1; i <= size; ++i) {
       const int iev = old + i;
-      events.emplace_back(streamId, iev, reg);
-      auto ev = &events.back();
+      Event &event = events.emplace(streamId, iev, reg);
       const int index = (iev - 1) % raw_.size();
 
-      ev->emplace(rawToken_, raw_[index]);
+      event.emplace(rawToken_, raw_[index]);
       if (validation_) {
-        ev->emplace(digiClusterToken_, digiclusters_[index]);
-        ev->emplace(trackToken_, tracks_[index]);
-        ev->emplace(vertexToken_, vertices_[index]);
+        event.emplace(digiClusterToken_, digiclusters_[index]);
+        event.emplace(trackToken_, tracks_[index]);
+        event.emplace(vertexToken_, vertices_[index]);
       }
     }
 

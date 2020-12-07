@@ -4,6 +4,7 @@
 
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
+#include "Framework/EventRange.h"
 #include "Framework/PluginFactory.h"
 
 class TestBatchingProducer : public edm::EDBatchingProducer {
@@ -11,18 +12,18 @@ public:
   explicit TestBatchingProducer(edm::ProductRegistry& reg);
 
 private:
-  void produce(std::vector<edm::Event*> const& events, edm::EventSetup const& eventSetup) override;
+  void produce(edm::EventRange events, edm::EventSetup const& eventSetup) override;
 
   edm::EDGetTokenT<unsigned int> getToken_;
 };
 
 TestBatchingProducer::TestBatchingProducer(edm::ProductRegistry& reg) : getToken_(reg.consumes<unsigned int>()) {}
 
-void TestBatchingProducer::produce(std::vector<edm::Event*> const& events, edm::EventSetup const& eventSetup) {
-  for (edm::Event* event : events) {
-    auto const value = event->get(getToken_);
+void TestBatchingProducer::produce(edm::EventRange events, edm::EventSetup const& eventSetup) {
+  for (edm::Event& event : events) {
+    auto const value = event.get(getToken_);
 #ifndef FWTEST_SILENT
-    std::cout << "TestBatchingProducer Event " << event->eventID() << " stream " << event->streamID() << " value "
+    std::cout << "TestBatchingProducer Event " << event.eventID() << " stream " << event.streamID() << " value "
               << value << std::endl;
 #endif
   }

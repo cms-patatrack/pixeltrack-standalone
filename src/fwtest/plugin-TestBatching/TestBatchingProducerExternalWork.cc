@@ -7,6 +7,7 @@
 
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
+#include "Framework/EventRange.h"
 #include "Framework/PluginFactory.h"
 
 namespace {
@@ -22,11 +23,11 @@ public:
   explicit TestBatchingProducerExternalWork(edm::ProductRegistry& reg);
 
 private:
-  void acquire(std::vector<edm::Event const*> const& events,
+  void acquire(edm::ConstEventRange events,
                edm::EventSetup const& eventSetup,
                edm::WaitingTaskWithArenaHolder holder,
                AsyncState& state) const override;
-  void produce(std::vector<edm::Event*> const& events, edm::EventSetup const& eventSetup, AsyncState& state) override;
+  void produce(edm::EventRange events, edm::EventSetup const& eventSetup, AsyncState& state) override;
 
   void endJob() override;
 
@@ -36,17 +37,16 @@ private:
 TestBatchingProducerExternalWork::TestBatchingProducerExternalWork(edm::ProductRegistry& reg)
     : getToken_(reg.consumes<unsigned int>()) {}
 
-void TestBatchingProducerExternalWork::acquire(std::vector<edm::Event const*> const& events,
+void TestBatchingProducerExternalWork::acquire(edm::ConstEventRange events,
                                                edm::EventSetup const& eventSetup,
                                                edm::WaitingTaskWithArenaHolder holder,
                                                AsyncState& state) const {
-  for (edm::Event const* event : events) {
-    assert(event);
-    auto const value = event->get(getToken_);
-    assert(value == static_cast<unsigned int>(event->eventID() + 10 * event->streamID() + 100));
+  for (edm::Event const& event : events) {
+    auto const value = event.get(getToken_);
+    assert(value == static_cast<unsigned int>(event.eventID() + 10 * event.streamID() + 100));
 
     // cannot move form the holder as it is used more than once
-    state[event->eventID()] = std::async([holder]() mutable {
+    state[event.eventID()] = std::async([holder]() mutable {
       using namespace std::chrono_literals;
       std::this_thread::sleep_for(1s);
       holder.doneWaiting();
@@ -54,20 +54,19 @@ void TestBatchingProducerExternalWork::acquire(std::vector<edm::Event const*> co
     });
 
 #ifndef FWTEST_SILENT
-    std::cout << "TestBatchingProducerExternalWork::acquire Event " << event->eventID() << " stream "
-              << event->streamID() << " value " << value << std::endl;
+    std::cout << "TestBatchingProducerExternalWork::acquire Event " << event.eventID() << " stream " << event.streamID()
+              << " value " << value << std::endl;
 #endif
   }
 }
 
-void TestBatchingProducerExternalWork::produce(std::vector<edm::Event*> const& events,
+void TestBatchingProducerExternalWork::produce(edm::EventRange events,
                                                edm::EventSetup const& eventSetup,
                                                AsyncState& state) {
 #ifndef FWTEST_SILENT
-  for (edm::Event* event : events) {
-    assert(event);
-    std::cout << "TestBatchingProducerExternalWork::produce Event " << event->eventID() << " stream "
-              << event->streamID() << " from future " << state[event->eventID()].get() << std::endl;
+  for (edm::Event& event : events) {
+    std::cout << "TestBatchingProducerExternalWork::produce Event " << event.eventID() << " stream " << event.streamID()
+              << " from future " << state[event.eventID()].get() << std::endl;
   }
 #endif
   ++nevents;
