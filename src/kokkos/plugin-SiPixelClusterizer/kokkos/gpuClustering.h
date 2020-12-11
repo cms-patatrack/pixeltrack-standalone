@@ -9,8 +9,6 @@
 #include "KokkosCore/HistoContainer.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
-#include "cuda.h"
-
 namespace KOKKOS_NAMESPACE {
   namespace gpuClustering {
 
