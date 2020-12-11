@@ -409,6 +409,7 @@ external_eigen: $(EIGEN_BASE)
 $(EIGEN_BASE):
 	git clone https://github.com/cms-externals/eigen-git-mirror $@
 	cd $@ && git checkout -b cms_branch b20a61c3a0dc9a79790cd258130a99b574662272
+	cd $@ && patch -p1 < ../../eigen_hip.patch
 
 # Boost
 .PHONY: external_boost
