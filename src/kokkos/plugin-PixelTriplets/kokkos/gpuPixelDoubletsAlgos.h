@@ -8,8 +8,8 @@
 #include <limits>
 
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
-#include "DataFormats/approx_atan2.h"
 #include "KokkosCore/VecArray.h"
+#include "KokkosDataFormats/approx_atan2.h"
 
 #include <Kokkos_Core.hpp>
 
