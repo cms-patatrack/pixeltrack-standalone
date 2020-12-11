@@ -103,8 +103,6 @@ void testMultiply() {
   printIt(&multiply_result);
 #endif
   // GPU
-  Eigen::Matrix<double, row1, col2>* multiply_resultGPUret = new Eigen::Matrix<double, row1, col2>();
-
   Kokkos::deep_copy(KokkosExecSpace(), d_j, h_j);
   Kokkos::deep_copy(KokkosExecSpace(), d_c, h_c);
   Kokkos::deep_copy(KokkosExecSpace(), d_multiply_result, h_multiply_result);
