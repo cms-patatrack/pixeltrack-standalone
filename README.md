@@ -182,9 +182,19 @@ This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
 The location of CUDA 11 libraries can be set with `CUDA_BASE` variable.
 
-The use of caching allocator can be disabled at compile time with
+The use of caching allocator can be disabled at compile time setting the
+`CUDA_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
 ```
 make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR"
+```
+
+If the caching allocator is disabled and CUDA version is 11.2 or greater is detected,
+device allocations and deallocations will use the stream-ordered CUDA functions
+`cudaMallocAsync` and `cudaFreeAsync`. Their use can be disabled explicitly at
+compile time setting also the `CUDA_DISABLE_ASYNC_ALLOCATOR` preprocessor symbol:
+
+```
+make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR -DCUDA_DISABLE_ASYNC_ALLOCATOR"
 ```
 
 #### `cudadev`
