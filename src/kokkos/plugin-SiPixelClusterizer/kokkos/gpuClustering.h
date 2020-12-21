@@ -149,7 +149,7 @@ namespace gpuClustering {
           assert((hist_size / teamMember.team_size()) <= maxiter);
       // nearest neighbour
 
-#ifdef KOKKOS_BACKEND_CUDA
+#if defined KOKKOS_BACKEND_CUDA || defined KOKKOS_BACKEND_HIP
           uint16_t nn[maxiter][maxNeighbours];
           uint8_t nnn[maxiter];
 

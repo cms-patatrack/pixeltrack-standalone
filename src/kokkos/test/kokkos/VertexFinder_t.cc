@@ -222,7 +222,7 @@ void test() {
       }
 
       // 6744 bytes of scratch memory required for splitVerticesKernel with team_size = 64
-#ifdef KOKKOS_BACKEND_CUDA
+#if defined KOKKOS_BACKEND_CUDA || defined KOKKOS_BACKEND_HIP
       policy = team_policy(KokkosExecSpace(), 1024, 64).set_scratch_size(0, Kokkos::PerTeam(8192));
 #else
       policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192));
