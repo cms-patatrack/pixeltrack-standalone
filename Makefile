@@ -406,7 +406,7 @@ $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA
 external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
-	git clone --branch 3.2.00 https://github.com/kokkos/kokkos.git $@
+	git clone --branch 3.3.00 https://github.com/kokkos/kokkos.git $@
 
 $(KOKKOS_BUILD):
 	mkdir -p $@
