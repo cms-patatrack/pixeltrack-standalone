@@ -172,8 +172,8 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 
 | Macro                                  | Effect                                                |
 |----------------------------------------|-------------------------------------------------------|
-| `-DCUDAUVM_DISABLE_ADVISE`             | Disable `cudaMemPrefetchAsync`                        |
-| `-DCUDAUVM_DISABLE_PREFETCH`           | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`   |
+| `-DCUDAUVM_DISABLE_ADVISE`             | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`   |
+| `-DCUDAUVM_DISABLE_PREFETCH`           | Disable `cudaMemPrefetchAsync`                        |
 | `-DCUDAUVM_MANAGED_TEMPORARY`          | Use managed memory also for temporary data structures |
 | `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT`   | Disable managed memory in `BeamSpotToCUDA`            |
 | `-DCUDAUVM_DISABLE_MANAGED_CLUSTERING` | Disable managed memory in `SiPixelRawToClusterCUDA`   |
