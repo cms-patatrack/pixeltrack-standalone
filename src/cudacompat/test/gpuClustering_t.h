@@ -11,10 +11,10 @@
 
 #ifdef __CUDACC__
 
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
+#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
+#include "CUDACore/requireDevices.h"
 #endif  // __CUDACC__
 
 // dirty, but works
@@ -34,7 +34,6 @@ int main(void) {
   auto h_x = std::make_unique<uint16_t[]>(numElements);
   auto h_y = std::make_unique<uint16_t[]>(numElements);
   auto h_adc = std::make_unique<uint16_t[]>(numElements);
-
   auto h_clus = std::make_unique<int[]>(numElements);
 
 #ifdef __CUDACC__
@@ -47,11 +46,9 @@ int main(void) {
   auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
   auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
 #else  // __CUDACC__
-
   auto h_moduleStart = std::make_unique<uint32_t[]>(MaxNumModules + 1);
   auto h_clusInModule = std::make_unique<uint32_t[]>(MaxNumModules);
   auto h_moduleId = std::make_unique<uint32_t[]>(MaxNumModules);
-
 #endif
 
   // later random number
@@ -302,6 +299,7 @@ int main(void) {
 
     cudaDeviceSynchronize();
 #else  // __CUDACC__
+
     h_moduleStart[0] = nModules;
     countModules(h_id.get(), h_moduleStart.get(), h_clus.get(), n);
     memset(h_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
