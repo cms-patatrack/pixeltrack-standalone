@@ -17,15 +17,9 @@
 #include <iostream>
 #include <string>
 
-// CUDA includes
-#include <cuda.h>
-#include <cuda_runtime.h>
-
 // CMSSW includes
+#include "CUDACore/cudaCompat.h"
 #include "CUDADataFormats/gpuClusteringConstants.h"
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/device_unique_ptr.h"
-#include "CUDACore/host_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 // local includes
@@ -40,8 +34,8 @@ namespace pixelgpudetails {
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
-    word_ = cms::cuda::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
-    fedId_ = cms::cuda::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
+    word_ = std::make_unique<unsigned int[]>(MAX_FED_WORDS);
+    fedId_ = std::make_unique<unsigned char[]>(MAX_FED_WORDS);
   }
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
@@ -519,140 +513,85 @@ namespace pixelgpudetails {
   }
 
   // Interface to outside
-  void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
-                                                       const SiPixelFedCablingMapGPU *cablingMap,
-                                                       const unsigned char *modToUnp,
-                                                       const SiPixelGainForHLTonGPU *gains,
-                                                       const WordFedAppender &wordFed,
-                                                       PixelFormatterErrors &&errors,
-                                                       const uint32_t wordCounter,
-                                                       const uint32_t fedCounter,
-                                                       bool useQualityInfo,
-                                                       bool includeErrors,
-                                                       bool debug,
-                                                       cudaStream_t stream) {
-    nDigis = wordCounter;
-
+  void SiPixelRawToClusterGPUKernel::makeClusters(bool isRun2,
+                                                  const SiPixelFedCablingMapGPU *cablingMap,
+                                                  const unsigned char *modToUnp,
+                                                  const SiPixelGainForHLTonGPU *gains,
+                                                  const WordFedAppender &wordFed,
+                                                  PixelFormatterErrors &&errors,
+                                                  const uint32_t wordCounter,
+                                                  const uint32_t fedCounter,
+                                                  bool useQualityInfo,
+                                                  bool includeErrors,
+                                                  bool debug) {
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-    digis_d = SiPixelDigisCUDA(pixelgpudetails::MAX_FED_WORDS, stream);
+    digis_d = SiPixelDigisSoA(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsCUDA(pixelgpudetails::MAX_FED_WORDS, std::move(errors), stream);
+      digiErrors_d = SiPixelDigiErrorsSoA(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
     }
-    clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules, stream);
-
-    nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
+    clusters_d = SiPixelClustersSoA(gpuClustering::MaxNumModules);
 
     if (wordCounter)  // protect in case of empty event....
     {
-      const int threadsPerBlock = 512;
-      const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
-
       assert(0 == wordCounter % 2);
-      // wordCounter is the total no of words in each event to be trasfered on device
-      auto word_d = cms::cuda::make_device_unique<uint32_t[]>(wordCounter, stream);
-      auto fedId_d = cms::cuda::make_device_unique<uint8_t[]>(wordCounter, stream);
-
-      cudaCheck(
-          cudaMemcpyAsync(word_d.get(), wordFed.word(), wordCounter * sizeof(uint32_t), cudaMemcpyDefault, stream));
-      cudaCheck(cudaMemcpyAsync(
-          fedId_d.get(), wordFed.fedId(), wordCounter * sizeof(uint8_t) / 2, cudaMemcpyDefault, stream));
-
       // Launch rawToDigi kernel
-      RawToDigi_kernel<<<blocks, threadsPerBlock, 0, stream>>>(
-          cablingMap,
-          modToUnp,
-          wordCounter,
-          word_d.get(),
-          fedId_d.get(),
-          digis_d.xx(),
-          digis_d.yy(),
-          digis_d.adc(),
-          digis_d.pdigi(),
-          digis_d.rawIdArr(),
-          digis_d.moduleInd(),
-          digiErrors_d.error(),  // returns nullptr if default-constructed
-          useQualityInfo,
-          includeErrors,
-          debug);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
-
-      if (includeErrors) {
-        digiErrors_d.copyErrorToHostAsync(stream);
-      }
+      RawToDigi_kernel(cablingMap,
+                       modToUnp,
+                       wordCounter,
+                       wordFed.word(),
+                       wordFed.fedId(),
+                       digis_d.xx(),
+                       digis_d.yy(),
+                       digis_d.adc(),
+                       digis_d.pdigi(),
+                       digis_d.rawIdArr(),
+                       digis_d.moduleInd(),
+                       digiErrors_d.error(),  // returns nullptr if default-constructed
+                       useQualityInfo,
+                       includeErrors,
+                       debug);
     }
     // End of Raw2Digi and passing data for clustering
 
     {
       // clusterizer ...
       using namespace gpuClustering;
-      int threadsPerBlock = 256;
-      int blocks =
-          (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
+      gpuCalibPixel::calibDigis(isRun2,
+                                digis_d.moduleInd(),
+                                digis_d.c_xx(),
+                                digis_d.c_yy(),
+                                digis_d.adc(),
+                                gains,
+                                wordCounter,
+                                clusters_d.moduleStart(),
+                                clusters_d.clusInModule(),
+                                clusters_d.clusModuleStart());
 
-      gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0, stream>>>(isRun2,
-                                                                        digis_d.moduleInd(),
-                                                                        digis_d.c_xx(),
-                                                                        digis_d.c_yy(),
-                                                                        digis_d.adc(),
-                                                                        gains,
-                                                                        wordCounter,
-                                                                        clusters_d.moduleStart(),
-                                                                        clusters_d.clusInModule(),
-                                                                        clusters_d.clusModuleStart());
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
-
-#ifdef GPU_DEBUG
-      std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of " << threadsPerBlock
-                << " threads\n";
-#endif
-
-      countModules<<<blocks, threadsPerBlock, 0, stream>>>(
-          digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
-      cudaCheck(cudaGetLastError());
+      countModules(digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
 
       // read the number of modules into a data member, used by getProduct())
-      cudaCheck(cudaMemcpyAsync(
-          &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
+      digis_d.setNModulesDigis(clusters_d.moduleStart()[0], wordCounter);
 
-      threadsPerBlock = 256;
-      blocks = MaxNumModules;
-#ifdef GPU_DEBUG
-      std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
-#endif
-      findClus<<<blocks, threadsPerBlock, 0, stream>>>(digis_d.c_moduleInd(),
-                                                       digis_d.c_xx(),
-                                                       digis_d.c_yy(),
-                                                       clusters_d.c_moduleStart(),
-                                                       clusters_d.clusInModule(),
-                                                       clusters_d.moduleId(),
-                                                       digis_d.clus(),
-                                                       wordCounter);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
+      findClus(digis_d.c_moduleInd(),
+               digis_d.c_xx(),
+               digis_d.c_yy(),
+               clusters_d.c_moduleStart(),
+               clusters_d.clusInModule(),
+               clusters_d.moduleId(),
+               digis_d.clus(),
+               wordCounter);
 
       // apply charge cut
-      clusterChargeCut<<<blocks, threadsPerBlock, 0, stream>>>(digis_d.moduleInd(),
-                                                               digis_d.c_adc(),
-                                                               clusters_d.c_moduleStart(),
-                                                               clusters_d.clusInModule(),
-                                                               clusters_d.c_moduleId(),
-                                                               digis_d.clus(),
-                                                               wordCounter);
-      cudaCheck(cudaGetLastError());
+      clusterChargeCut(digis_d.moduleInd(),
+                       digis_d.c_adc(),
+                       clusters_d.c_moduleStart(),
+                       clusters_d.clusInModule(),
+                       clusters_d.c_moduleId(),
+                       digis_d.clus(),
+                       wordCounter);
 
       // count the module start indices already here (instead of
       // rechits) so that the number of clusters/hits can be made
@@ -660,20 +599,10 @@ namespace pixelgpudetails {
       // synchronization/ExternalWork
 
       // MUST be ONE block
-      fillHitsModuleStart<<<1, 1024, 0, stream>>>(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
+      fillHitsModuleStart(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
 
       // last element holds the number of all clusters
-      cudaCheck(cudaMemcpyAsync(&(nModules_Clusters_h[1]),
-                                clusters_d.clusModuleStart() + gpuClustering::MaxNumModules,
-                                sizeof(uint32_t),
-                                cudaMemcpyDefault,
-                                stream));
-
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
-
+      clusters_d.setNClusters(clusters_d.clusModuleStart()[gpuClustering::MaxNumModules]);
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails

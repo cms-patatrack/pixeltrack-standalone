@@ -17,16 +17,15 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name
-        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
+        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--validation] "
            "[--histogram] [--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-        << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
-        << " --histogram         Produce histograms at the end (implies --transfer)\n"
+        << " --validation        Run (rudimentary) validation at the end\n"
+        << " --histogram         Produce histograms at the end\n"
         << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
@@ -39,7 +38,6 @@ int main(int argc, char** argv) {
   int numberOfStreams = 0;
   int maxEvents = -1;
   std::filesystem::path datadir;
-  bool transfer = false;
   bool validation = false;
   bool histogram = false;
   bool empty = false;
@@ -59,13 +57,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--data") {
       ++i;
       datadir = *i;
-    } else if (*i == "--transfer") {
-      transfer = true;
     } else if (*i == "--validation") {
-      transfer = true;
       validation = true;
     } else if (*i == "--histogram") {
-      transfer = true;
       histogram = true;
     } else if (*i == "--empty") {
       empty = true;
@@ -85,6 +79,8 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+
+  // TODO: remove when can run without a GPU
   int numberOfDevices;
   auto status = cudaGetDeviceCount(&numberOfDevices);
   if (cudaSuccess != status) {
@@ -98,19 +94,11 @@ int main(int argc, char** argv) {
   std::vector<std::string> esmodules;
   if (not empty) {
     edmodules = {
-        "BeamSpotToCUDA", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "PixelVertexProducerCUDA"};
+        "BeamSpotToPOD", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "PixelVertexProducerCUDA"};
     esmodules = {"BeamSpotESProducer",
                  "SiPixelFedCablingMapGPUWrapperESProducer",
                  "SiPixelGainCalibrationForHLTGPUESProducer",
                  "PixelCPEFastESProducer"};
-    if (transfer) {
-      auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
-      assert(capos != edmodules.end());
-      edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
-      auto vertpos = std::find(edmodules.begin(), edmodules.end(), "PixelVertexProducerCUDA");
-      assert(vertpos != edmodules.end());
-      edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
-    }
     if (validation) {
       edmodules.emplace_back("CountValidator");
     }

@@ -7,11 +7,20 @@
 SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
                                                                  std::vector<char> gainData)
     : gainData_(std::move(gainData)) {
+  /*
   cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
   *gainForHLTonHost_ = gain;
+  */
+  gainForHLTonHost_ = new SiPixelGainForHLTonGPU(gain);
+  gainForHLTonHost_->v_pedestals = reinterpret_cast<SiPixelGainForHLTonGPU_DecodingStructure*>(gainData_.data());
 }
 
-SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() { cudaCheck(cudaFreeHost(gainForHLTonHost_)); }
+SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() {
+  /*
+  cudaCheck(cudaFreeHost(gainForHLTonHost_));
+  */
+  delete gainForHLTonHost_;
+}
 
 SiPixelGainCalibrationForHLTGPU::GPUData::~GPUData() {
   cudaCheck(cudaFree(gainForHLTonGPU));

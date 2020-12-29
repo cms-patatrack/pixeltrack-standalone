@@ -1,5 +1,6 @@
 BeamSpotESProducer pluginBeamSpotProducer.so
 BeamSpotToCUDA pluginBeamSpotProducer.so
+BeamSpotToPOD pluginBeamSpotProducer.so
 CAHitNtupletCUDA pluginPixelTriplets.so
 CountValidator pluginValidation.so
 HistoValidator pluginValidation.so

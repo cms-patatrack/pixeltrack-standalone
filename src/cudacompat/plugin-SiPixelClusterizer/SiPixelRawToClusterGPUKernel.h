@@ -2,14 +2,13 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <memory>
 
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDACore/cudaCompat.h"
+#include "CUDADataFormats/SiPixelDigisSoA.h"
+#include "CUDADataFormats/SiPixelDigiErrorsSoA.h"
+#include "CUDADataFormats/SiPixelClustersSoA.h"
 #include "CUDACore/SimpleVector.h"
-#include "CUDACore/host_unique_ptr.h"
-#include "CUDACore/host_noncached_unique_ptr.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -155,8 +154,8 @@ namespace pixelgpudetails {
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
-      cms::cuda::host::noncached::unique_ptr<unsigned int[]> word_;
-      cms::cuda::host::noncached::unique_ptr<unsigned char[]> fedId_;
+      std::unique_ptr<unsigned int[]> word_;
+      std::unique_ptr<unsigned char[]> fedId_;
     };
 
     SiPixelRawToClusterGPUKernel() = default;
@@ -167,42 +166,29 @@ namespace pixelgpudetails {
     SiPixelRawToClusterGPUKernel& operator=(const SiPixelRawToClusterGPUKernel&) = delete;
     SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
 
-    void makeClustersAsync(bool isRun2,
-                           const SiPixelFedCablingMapGPU* cablingMap,
-                           const unsigned char* modToUnp,
-                           const SiPixelGainForHLTonGPU* gains,
-                           const WordFedAppender& wordFed,
-                           PixelFormatterErrors&& errors,
-                           const uint32_t wordCounter,
-                           const uint32_t fedCounter,
-                           bool useQualityInfo,
-                           bool includeErrors,
-                           bool debug,
-                           cudaStream_t stream);
+    void makeClusters(bool isRun2,
+                      const SiPixelFedCablingMapGPU* cablingMap,
+                      const unsigned char* modToUnp,
+                      const SiPixelGainForHLTonGPU* gains,
+                      const WordFedAppender& wordFed,
+                      PixelFormatterErrors&& errors,
+                      const uint32_t wordCounter,
+                      const uint32_t fedCounter,
+                      bool useQualityInfo,
+                      bool includeErrors,
+                      bool debug);
 
-    std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
-      digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);
-      clusters_d.setNClusters(nModules_Clusters_h[1]);
-      // need to explicitly deallocate while the associated CUDA
-      // stream is still alive
-      //
-      // technically the statement above is not true anymore now that
-      // the CUDA streams are cached within the cms::cuda::StreamCache, but it is
-      // still better to release as early as possible
-      nModules_Clusters_h.reset();
+    std::pair<SiPixelDigisSoA, SiPixelClustersSoA> getResults() {
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
     }
 
-    SiPixelDigiErrorsCUDA&& getErrors() { return std::move(digiErrors_d); }
+    SiPixelDigiErrorsSoA&& getErrors() { return std::move(digiErrors_d); }
 
   private:
-    uint32_t nDigis = 0;
-
     // Data to be put in the event
-    cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
-    SiPixelDigisCUDA digis_d;
-    SiPixelClustersCUDA clusters_d;
-    SiPixelDigiErrorsCUDA digiErrors_d;
+    SiPixelDigisSoA digis_d;
+    SiPixelClustersSoA clusters_d;
+    SiPixelDigiErrorsSoA digiErrors_d;
   };
 
   // see RecoLocalTracker/SiPixelClusterizer

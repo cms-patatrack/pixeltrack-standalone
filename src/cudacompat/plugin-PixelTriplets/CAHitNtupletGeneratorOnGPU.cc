@@ -43,7 +43,7 @@ namespace {
 
 using namespace std;
 CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg)
-    : m_params(true,              // onGPU
+    : m_params(false,             // onGPU
                3,                 // minHitsPerNtuplet,
                458752,            // maxNumberOfDoublets
                false,             //useRiemannFit

@@ -32,7 +32,7 @@ private:
 };
 
 PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
-    : m_OnGPU(true),
+    : m_OnGPU(false),
       m_gpuAlgo(true,   // oneKernel
                 true,   // useDensity
                 false,  // useDBSCAN

@@ -5,8 +5,8 @@
 #include <cstdio>
 #include <limits>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "DataFormats/BeamSpotPOD.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
 #include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"

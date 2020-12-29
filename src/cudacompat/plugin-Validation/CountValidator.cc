@@ -1,8 +1,6 @@
-#include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
+#include "CUDADataFormats/SiPixelClustersSoA.h"
+#include "CUDADataFormats/SiPixelDigisSoA.h"
 #include "CUDADataFormats/ZVertexHeterogeneous.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
@@ -38,8 +36,8 @@ private:
   edm::EDGetTokenT<TrackCount> trackCountToken_;
   edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterToken_;
+  edm::EDGetTokenT<SiPixelDigisSoA> digiToken_;
+  edm::EDGetTokenT<SiPixelClustersSoA> clusterToken_;
   edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
   edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
 };
@@ -48,8 +46,8 @@ CountValidator::CountValidator(edm::ProductRegistry& reg)
     : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
       trackCountToken_(reg.consumes<TrackCount>()),
       vertexCountToken_(reg.consumes<VertexCount>()),
-      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
+      digiToken_(reg.consumes<SiPixelDigisSoA>()),
+      clusterToken_(reg.consumes<SiPixelClustersSoA>()),
       trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
       vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
 
@@ -63,11 +61,9 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   ss << "Event " << iEvent.eventID() << " ";
 
   {
-    auto const& pdigis = iEvent.get(digiToken_);
-    cms::cuda::ScopedContextProduce ctx{pdigis};
     auto const& count = iEvent.get(digiClusterCountToken_);
-    auto const& digis = ctx.get(iEvent, digiToken_);
-    auto const& clusters = ctx.get(iEvent, clusterToken_);
+    auto const& digis = iEvent.get(digiToken_);
+    auto const& clusters = iEvent.get(clusterToken_);
 
     if (digis.nModules() != count.nModules()) {
       ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();

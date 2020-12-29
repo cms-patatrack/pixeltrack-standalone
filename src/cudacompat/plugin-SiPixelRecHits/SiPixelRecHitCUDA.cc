@@ -1,10 +1,9 @@
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
-#include "CUDACore/Product.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/SiPixelClustersSoA.h"
+#include "CUDADataFormats/SiPixelDigisSoA.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
+#include "DataFormats/BeamSpotPOD.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
@@ -23,39 +22,34 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   // The mess with inputs will be cleaned up when migrating to the new framework
-  edm::EDGetTokenT<cms::cuda::Product<BeamSpotCUDA>> tBeamSpot;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> token_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> tokenDigi_;
+  edm::EDGetTokenT<BeamSpotPOD> tBeamSpot;
+  edm::EDGetTokenT<SiPixelClustersSoA> token_;
+  edm::EDGetTokenT<SiPixelDigisSoA> tokenDigi_;
 
-  edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> tokenHit_;
+  edm::EDPutTokenT<TrackingRecHit2DCPU> tokenHit_;
 
   pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
 };
 
 SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
-    : tBeamSpot(reg.consumes<cms::cuda::Product<BeamSpotCUDA>>()),
-      token_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
-      tokenDigi_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
+    : tBeamSpot(reg.consumes<BeamSpotPOD>()),
+      token_(reg.consumes<SiPixelClustersSoA>()),
+      tokenDigi_(reg.consumes<SiPixelDigisSoA>()),
+      tokenHit_(reg.produces<TrackingRecHit2DCPU>()) {}
 
 void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   PixelCPEFast const& fcpe = es.get<PixelCPEFast>();
 
-  auto const& pclusters = iEvent.get(token_);
-  cms::cuda::ScopedContextProduce ctx{pclusters};
-
-  auto const& clusters = ctx.get(pclusters);
-  auto const& digis = ctx.get(iEvent, tokenDigi_);
-  auto const& bs = ctx.get(iEvent, tBeamSpot);
+  auto const& clusters = iEvent.get(token_);
+  auto const& digis = iEvent.get(tokenDigi_);
+  auto const& bs = iEvent.get(tBeamSpot);
 
   auto nHits = clusters.nClusters();
   if (nHits >= TrackingRecHit2DSOAView::maxHits()) {
     std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
   }
 
-  ctx.emplace(iEvent,
-              tokenHit_,
-              gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.getGPUProductAsync(ctx.stream()), ctx.stream()));
+  iEvent.emplace(tokenHit_, gpuAlgo_.makeHits(digis, clusters, bs, &fcpe.getCPUProduct()));
 }
 
 DEFINE_FWK_MODULE(SiPixelRecHitCUDA);

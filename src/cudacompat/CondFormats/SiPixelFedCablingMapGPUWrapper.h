@@ -20,9 +20,11 @@ public:
 
   // returns pointer to GPU memory
   const SiPixelFedCablingMapGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
+  const SiPixelFedCablingMapGPU *getCPUProduct() const { return cablingMapHost; }
 
   // returns pointer to GPU memory
   const unsigned char *getModToUnpAllAsync(cudaStream_t cudaStream) const;
+  const unsigned char *getModToUnpAll() const { return modToUnpDefault.data(); }
 
 private:
   std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;
