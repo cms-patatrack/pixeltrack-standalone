@@ -14,6 +14,7 @@ n_blocks_per_stream = {
     "fwtest": 1,
     "cuda": {"": 100, "transfer": 100},
     "cudauvm": {"": 100, "transfer": 100},
+    "cudacompat": {"": 8},
 }
 
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")

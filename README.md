@@ -11,6 +11,7 @@
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
     * [`cudauvm`](#cudauvm)
+    * [`cudacompat`](#cudacompat)
     * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
@@ -37,6 +38,7 @@ In addition, the individual programs assume the following be found from the syst
 | `cuda`       |                    | :heavy_check_mark:          |                                                                                                                  |
 | `cudadev`    |                    | :heavy_check_mark:          |                                                                                                                  |
 | `cudauvm`    |                    | :heavy_check_mark:          |                                                                                                                  |
+| `cudacompat` |                    | :heavy_check_mark:          |                                                                                                                  |
 | `kokkostest` | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
 | `kokkos`     | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
 | `alpakatest` |                    | :heavy_check_mark:          |                                                                                                                  |
@@ -54,6 +56,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | `cuda`       | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `cudadev`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `cudauvm`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
+| `cudacompat` | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `kokkostest` | :heavy_check_mark:                  |                                      | :heavy_check_mark:                         |                                     |                                                  |
 | `kokkos`     | :heavy_check_mark:                  | :heavy_check_mark:                   | :heavy_check_mark:                         |                                     |                                                  |
 | `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |
@@ -79,6 +82,7 @@ downloaded automatically during the build process.
 | `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudacompat` | CPU version (with `cudaCompat`)  | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
@@ -182,6 +186,14 @@ To use managed memory also for temporary device-only allocations, compile with
 ```
 make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_MANAGED_TEMPORARY"
 ```
+
+#### `cudacompat`
+
+This program is a fork of `cuda` by extending the use of `cudaCompat` to clustering and RecHits. The aim is to run the same code on CPU. Currently, however, the program requires a GPU because of (still) using pinned host memory in a few places. In the future the program could be extended to provide both CUDA and CPU flavors.
+
+The program contains the changes from following external PRs on top of `cuda`
+* [cms-patatrack/cmssw#586](https://github.com/cms-patatrack/cmssw/pull/586)
+* [cms-patatrack/cmssw#588](https://github.com/cms-patatrack/cmssw/pull/588)
 
 #### `kokkos` and `kokkostest`
 
