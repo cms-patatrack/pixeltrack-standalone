@@ -233,11 +233,15 @@ TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
 TARGETS_GCC := fwtest
 TARGETS_SYCL := sycltest
 TARGETS_NVCC := $(filter-out $(TARGETS_GCC) $(TARGETS_SYCL),$(TARGETS_ALL))
+TARGETS_HIPCC := kokkostest kokkos
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
 ifdef CUDA_BASE
 TARGETS += $(TARGETS_NVCC)
+endif
+ifdef ROCM_BASE
+TARGETS += $(TARGETS_HIPCC)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
@@ -251,10 +255,19 @@ TEST_NVIDIAGPU_TARGETS := $(patsubst %,test_%_nvidiagpu,$(TARGETS))
 TEST_AMDGPU_TARGETS := $(patsubst %,test_%_amdgpu,$(TARGETS))
 TEST_INTELGPU_TARGETS := $(patsubst %,test_%_intelgpu,$(TARGETS))
 TEST_AUTO_TARGETS := $(patsubst %,test_%_auto,$(TARGETS))
-test: test_cpu test_nvidiagpu test_amdgpu test_intelgpu test_auto
+test: test_cpu test_auto
+ifdef CUDA_BASE
+test: test_nvidiagpu
+endif
+ifdef ROCM_BASE
+test: test_amdgpu
+endif
+ifdef SYCL_BASE
+test: test_intelgpu
+endif
 test_cpu: $(TEST_CPU_TARGETS)
 test_nvidiagpu: $(TEST_NVIDIAGPU_TARGETS)
-test_amdgpu := $(TEST_AMDGPU_TARGETS)
+test_amdgpu: $(TEST_AMDGPU_TARGETS)
 test_intelgpu: $(TEST_INTELGPU_TARGETS)
 test_auto: $(TEST_AUTO_TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
@@ -313,7 +326,16 @@ include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
 
-test_$(1): test_$(1)_cpu test_$(1)_nvidiagpu test_$(1)_intelgpu test_$(1)_auto
+test_$(1): test_$(1)_cpu test_$(1)_auto
+ifdef CUDA_BASE
+test_$(1): test_$(1)_nvidiagpu
+endif
+ifdef ROCM_BASE
+test_$(1): test_$(1)_amdgpu
+endif
+ifdef SYCL_BASE
+test_$(1): test_$(1)_intelgpu
+endif
 
 test_$(1)_cpu: $(1)
 	@echo
