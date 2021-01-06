@@ -246,6 +246,8 @@ endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
 endif
+# remove possible duplicates
+TARGETS := $(sort $(TARGETS))
 all: $(TARGETS)
 
 # Define test targets for each architecture
