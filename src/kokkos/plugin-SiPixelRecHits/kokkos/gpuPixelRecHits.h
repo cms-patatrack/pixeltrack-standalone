@@ -5,10 +5,10 @@
 #include <cstdio>
 #include <limits>
 
+#include "CondFormats/pixelCPEforGPU.h"
+#include "KokkosDataFormats/approx_atan2.h"
 #include "KokkosDataFormats/BeamSpotKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
-#include "CondFormats/pixelCPEforGPU.h"
-#include "DataFormats/approx_atan2.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelRecHits {

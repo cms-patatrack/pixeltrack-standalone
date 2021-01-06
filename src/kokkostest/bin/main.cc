@@ -26,6 +26,9 @@ namespace {
 #ifdef KOKKOS_ENABLE_CUDA
         << " [--cuda]"
 #endif
+#ifdef KOKKOS_ENABLE_HIP
+        << " [--hip]"
+#endif
         << " [--numberOfThreads NT] [--numberOfStreams NS]"
 #ifdef KOKKOS_ENABLE_THREADS
         << " [--numberOfInnerThreads NIT]"
@@ -38,6 +41,9 @@ namespace {
 #endif
 #ifdef KOKKOS_ENABLE_CUDA
         << " --cuda                  Use CUDA backend\n"
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+        << " --hip                   Use HIP backend\n"
 #endif
         << " --numberOfThreads       Number of threads to use (default 1)\n"
         << " --numberOfStreams       Number of concurrent events (default 0=numberOfThreads)\n"
@@ -77,6 +83,10 @@ int main(int argc, char** argv) {
 #ifdef KOKKOS_ENABLE_CUDA
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+    } else if (*i == "--hip") {
+      backends.emplace_back(Backend::HIP);
 #endif
     } else if (*i == "--numberOfThreads") {
       ++i;
@@ -135,6 +145,7 @@ int main(int argc, char** argv) {
     addModules("kokkos_serial::", Backend::SERIAL);
     addModules("kokkos_pthread::", Backend::PTHREAD);
     addModules("kokkos_cuda::", Backend::CUDA);
+    addModules("kokkos_hip::", Backend::HIP);
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer

@@ -7,11 +7,11 @@
 #include <cstdio>
 #include <limits>
 
-#include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
 #include "KokkosCore/VecArray.h"
 #include "KokkosCore/kokkos_assert.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosDataFormats/approx_atan2.h"
 
 #include "../GPUCACell.h"
 

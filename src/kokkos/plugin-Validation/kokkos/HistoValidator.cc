@@ -178,6 +178,8 @@ namespace KOKKOS_NAMESPACE {
     std::ofstream out(fname.c_str());
 #elif defined KOKKOS_BACKEND_CUDA
     std::ofstream out("histograms_kokkos_cuda.txt");
+#elif defined KOKKOS_BACKEND_HIP
+    std::ofstream out("histograms_kokkos_hip.txt");
 #else
 #error "Support for a new Kokkos backend must be added here"
 #endif

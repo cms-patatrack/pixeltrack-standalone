@@ -199,6 +199,8 @@ namespace KOKKOS_NAMESPACE {
 #else
       policy = hintLightWeight(Kokkos::TeamPolicy<KokkosExecSpace>(execSpace, leagueSize, teamSize));
 #endif
+      auto maxNumberOfDoublets = m_params.maxNumberOfDoublets_;
+      auto d_counters = counters_;
       Kokkos::parallel_for(
           "kernel_checkOverflows",
           policy,
@@ -212,8 +214,8 @@ namespace KOKKOS_NAMESPACE {
                                   d_theCellTracks_,
                                   d_isOuterHitOfCell_,
                                   nhits,
-                                  m_params.maxNumberOfDoublets_,
-                                  counters_,
+                                  maxNumberOfDoublets,
+                                  d_counters,
                                   teamMember);
           });
     }
@@ -348,11 +350,12 @@ namespace KOKKOS_NAMESPACE {
     auto theCells = device_theCells_;
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
+      auto d_nCells = device_nCells_;
       Kokkos::parallel_for(
           "kernel_fishboneCleaner",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
-            if (i < device_nCells_()) {
+            if (i < d_nCells()) {
               kernel_fishboneCleaner(theCells.data(), quality_d, i);
             }
           });
@@ -408,12 +411,13 @@ namespace KOKKOS_NAMESPACE {
 
     if (m_params.doStats_) {
       // counters (add flag???)
+      auto d_counters = counters_;
       Kokkos::parallel_for(
           "kernel_doStatsForHitInTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < hitToTuple().nbins()) {
-              kernel_doStatsForHitInTracks(hitToTuple.data(), counters_, i);
+              kernel_doStatsForHitInTracks(hitToTuple.data(), d_counters, i);
             }
           });
       Kokkos::parallel_for(
@@ -421,7 +425,7 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
-              kernel_doStatsForTracks(tuples_d, quality_d, counters_, i);
+              kernel_doStatsForTracks(tuples_d, quality_d, d_counters, i);
             }
           });
     }

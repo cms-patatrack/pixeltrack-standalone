@@ -10,6 +10,8 @@ export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-ls
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
 
+GCC_TOOLCHAIN := $(abspath $(dir $(shell which $(CXX)))/..)
+
 CLANG_FORMAT := clang-format-8
 CMAKE := cmake
 
@@ -26,6 +28,7 @@ export LIB_DIR := $(BASE_DIR)/lib
 export TEST_DIR := $(BASE_DIR)/test
 
 # System external definitions
+# CUDA
 CUDA_BASE := /usr/local/cuda-11.0
 ifeq ($(wildcard $(CUDA_BASE)),)
 # CUDA platform not found
@@ -49,6 +52,19 @@ endef
 $(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
 export CUDA_CUFLAGS
 export CUDA_DLINKFLAGS
+endif
+
+# ROCm
+ROCM_BASE := /usr/local/rocm-3.10
+ifeq ($(wildcard $(ROCM_BASE)),)
+# ROCm platform not found
+ROCM_BASE :=
+else
+# ROCm platform at $(ROCM_BASE)
+export HIP_DEPS := $(ROCM_BASE)/lib/libamdhip64.so
+export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
+HIPCC_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable 
+export HIPCC_FLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
 endif
 
 # Input data definitions
@@ -115,7 +131,6 @@ KOKKOS_MAKEFILE := $(KOKKOS_BUILD)/Makefile
 export KOKKOS_HOST_PARALLEL :=
 export KOKKOS_DEVICE_PARALLEL := CUDA
 KOKKOS_CUDA_ARCH := 70
-KOKKOS_CMAKE_CUDA_ARCH := 70
 ifeq ($(KOKKOS_CUDA_ARCH),50)
   KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_MAXWELL50=On
 else ifeq ($(KOKKOS_CUDA_ARCH),70)
@@ -125,7 +140,14 @@ else ifeq ($(KOKKOS_CUDA_ARCH),75)
 else
   $(error Unsupported KOKKOS_CUDA_ARCH $(KOKKOS_CUDA_ARCH). Likely it is sufficient just add another case in the Makefile)
 endif
-export KOKKOS_DEPS := $(KOKKOS_LIB)
+KOKKOS_HIP_ARCH := VEGA900
+ifeq ($(KOKKOS_HIP_ARCH),VEGA900)
+  KOKKOS_CMAKE_HIP_ARCH := -DKokkos_ARCH_VEGA900=On
+else ifeq ($(KOKKOS_HIP_ARCH),VEGA909)
+  KOKKOS_CMAKE_HIP_ARCH := -DKokkos_ARCH_VEGA909=On
+else
+  $(error Unsupported KOKKOS_HIP_ARCH $(KOKKOS_HIP_ARCH). Likely it is sufficient just add another case in the Makefile)
+endif
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
@@ -150,6 +172,14 @@ else
     export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS_NVCC)
     export KOKKOS_DEVICE_CXXFLAGS := $(KOKKOS_NVCC_COMMON) $(CUDA_CXXFLAGS) $(USER_CUDAFLAGS)
     export KOKKOS_DEVICE_TEST_CXXFLAGS := $(CUDA_TEST_CXXFLAGS)
+  else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+    KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(ROCM_HIPCC) -DCMAKE_CXX_FLAGS="--gcc-toolchain=$(GCC_TOOLCHAIN)" -DKokkos_ENABLE_HIP=On $(KOKKOS_CMAKE_HIP_ARCH) -DBUILD_SHARED_LIBS=On
+    export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
+    export KOKKOS_DEVICE_CXX := $(ROCM_HIPCC)
+    export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
+    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
+    export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_FLAGS)
+    export KOKKOS_DEVICE_TEST_CXXFLAGS := 
   else
     $(error Unsupported KOKKOS_DEVICE_PARALLEL $(KOKKOS_DEVICE_PARALLEL))
   endif
@@ -161,6 +191,7 @@ ifdef KOKKOS_HOST_PARALLEL
     $(error Unsupported KOKKOS_HOST_PARALLEL $(KOKKOS_HOST_PARALLEL))
   endif
 endif
+export KOKKOS_DEPS := $(KOKKOS_LIB)
 
 # Intel oneAPI
 ONEAPI_BASE := /opt/intel/oneapi
@@ -202,11 +233,15 @@ TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
 TARGETS_GCC := fwtest
 TARGETS_SYCL := sycltest
 TARGETS_NVCC := $(filter-out $(TARGETS_GCC) $(TARGETS_SYCL),$(TARGETS_ALL))
+TARGETS_HIPCC := kokkostest kokkos
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
 ifdef CUDA_BASE
 TARGETS += $(TARGETS_NVCC)
+endif
+ifdef ROCM_BASE
+TARGETS += $(TARGETS_HIPCC)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
@@ -217,11 +252,22 @@ all: $(TARGETS)
 TEST_TARGETS := $(patsubsts %,test_%,$(TARGETS))
 TEST_CPU_TARGETS := $(patsubst %,test_%_cpu,$(TARGETS))
 TEST_NVIDIAGPU_TARGETS := $(patsubst %,test_%_nvidiagpu,$(TARGETS))
+TEST_AMDGPU_TARGETS := $(patsubst %,test_%_amdgpu,$(TARGETS))
 TEST_INTELGPU_TARGETS := $(patsubst %,test_%_intelgpu,$(TARGETS))
 TEST_AUTO_TARGETS := $(patsubst %,test_%_auto,$(TARGETS))
-test: test_cpu test_nvidiagpu test_intelgpu test_auto
+test: test_cpu test_auto
+ifdef CUDA_BASE
+test: test_nvidiagpu
+endif
+ifdef ROCM_BASE
+test: test_amdgpu
+endif
+ifdef SYCL_BASE
+test: test_intelgpu
+endif
 test_cpu: $(TEST_CPU_TARGETS)
 test_nvidiagpu: $(TEST_NVIDIAGPU_TARGETS)
+test_amdgpu: $(TEST_AMDGPU_TARGETS)
 test_intelgpu: $(TEST_INTELGPU_TARGETS)
 test_auto: $(TEST_AUTO_TARGETS)
 # $(TARGETS) needs to be PHONY because only the called Makefile knows their dependencies
@@ -229,6 +275,7 @@ test_auto: $(TEST_AUTO_TARGETS)
 .PHONY: test $(TEST_TARGETS)
 .PHONY: test_cpu $(TEST_CPU_TARGETS)
 .PHONY: test_nvidiagpu $(TEST_NVIDIAGPU_TARGETS)
+.PHONY: test_amdgpu $(TEST_AMDGPU_TARGETS)
 .PHONY: test_intelgpu $(TEST_INTELGPU_TARGETS)
 .PHONY: test_auto $(TEST_AUTO_TARGETS)
 .PHONY: format $(patsubst %,format_%,$(TARGETS_ALL))
@@ -279,7 +326,16 @@ include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
 
-test_$(1): test_$(1)_cpu test_$(1)_nvidiagpu test_$(1)_intelgpu test_$(1)_auto
+test_$(1): test_$(1)_cpu test_$(1)_auto
+ifdef CUDA_BASE
+test_$(1): test_$(1)_nvidiagpu
+endif
+ifdef ROCM_BASE
+test_$(1): test_$(1)_amdgpu
+endif
+ifdef SYCL_BASE
+test_$(1): test_$(1)_intelgpu
+endif
 
 test_$(1)_cpu: $(1)
 	@echo
@@ -291,6 +347,12 @@ test_$(1)_nvidiagpu: $(1)
 	@echo
 	@echo "Testing $(1) for NVIDIA GPU device"
 	+$(MAKE) -C src/$(1) test_nvidiagpu
+	@echo
+
+test_$(1)_amdgpu: $(1)
+	@echo
+	@echo "Testing $(1) for AMD GPU device"
+	+$(MAKE) -C src/$(1) test_amdgpu
 	@echo
 
 test_$(1)_intelgpu: $(1)
@@ -369,6 +431,7 @@ external_eigen: $(EIGEN_BASE)
 $(EIGEN_BASE):
 	git clone https://github.com/cms-externals/eigen-git-mirror $@
 	cd $@ && git checkout -b cms_branch b20a61c3a0dc9a79790cd258130a99b574662272
+	cd $@ && patch -p1 < ../../eigen_hip.patch
 
 # Boost
 .PHONY: external_boost
@@ -414,6 +477,9 @@ $(KOKKOS_BUILD):
 $(KOKKOS_MAKEFILE): $(KOKKOS_SRC) | $(KOKKOS_BUILD)
 	cd $(KOKKOS_BUILD) && $(CMAKE) $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
 
+# Let Kokkos' generated Makefile to define its own CXXFLAGS
+# Except we need -fPIC (!)
+$(KOKKOS_LIB): CXXFLAGS:=-fPIC
 $(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
 	$(MAKE) -C $(KOKKOS_BUILD)
 	$(MAKE) -C $(KOKKOS_BUILD) install

@@ -27,23 +27,27 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system. All programs require
 * GNU Make, `curl`, `md5sum`, `tar`
-* C++17 capable compiler. Ffor programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8 or 9, possibly 10 with CUDA 11.1
+* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8 or 9, possibly 10 with CUDA 11.1
   * testing is currently done with GCC 8
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
-|--------------|--------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------|
-| `cudatest`   |                    | :heavy_check_mark:          |                                                                                                                  |
-| `cuda`       |                    | :heavy_check_mark:          |                                                                                                                  |
-| `cudadev`    |                    | :heavy_check_mark:          |                                                                                                                  |
-| `cudauvm`    |                    | :heavy_check_mark:          |                                                                                                                  |
-| `cudacompat` |                    | :heavy_check_mark:          |                                                                                                                  |
-| `kokkostest` | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
-| `kokkos`     | :heavy_check_mark: | :heavy_check_mark:          |                                                                                                                  |
-| `alpakatest` |                    | :heavy_check_mark:          |                                                                                                                  |
-| `alpaka`     |                    | :heavy_check_mark:          |                                                                                                                  |
-| `sycltest`   |                    |                             | :heavy_check_mark:                                                                                               |
+| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | ROCm 3.10              | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+|--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `cudadev`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `cudauvm`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `cudacompat` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `kokkostest` | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
+| `kokkos`     | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
+| `alpakatest` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `alpaka`     |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `sycltest`   |                    |                             |                        | :heavy_check_mark:                                                                                               |
+|              |                    |                             |                        |                                                                                                                  |
+
+1. `kokkos` and `kokkostest` have an optional dependence on CUDA, by default it is required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
+2. `kokkos` and `kokkostest` have an optional dependence on ROCm, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 
 
 All other dependencies (listed below) are downloaded and built automatically
@@ -137,6 +141,7 @@ are filtered based on the availability of compilers/toolchains. Essentially
 | `test`                  | Run all tests                                           |
 | `test_cpu`              | Run tests that use only CPU                             |
 | `test_nvidiagpu`        | Run tests that require NVIDIA GPU                       |
+| `test_amdgpu`           | Run tests that require AMD GPU                          |
 | `test_intelgpu`         | Run tests that require Intel GPU                        |
 | `test_auto`             | Run tests that auto-discover the available hardware     |
 | `test_<program>`        | Run tests for program `<program>`                       |
@@ -211,9 +216,7 @@ $ make clean external_kokkos_clean
 $ make kokkos ...
 ```
 * Note that if `CUDA_BASE` needs to be set, it needs to be set for both `make` commands.
-* The target CUDA architecture needs to be set explicitly with `KOKKOS_CUDA_ARCH`
-  * Default value is `70` (7.0) for Volta
-  * Other accepted values are `75` (Turing), the list can be extended as neeeded
+* The target CUDA architecture needs to be set explicitly with `KOKKOS_CUDA_ARCH` (see table below)
 * The CMake executable can be set with `CMAKE` in case the default one is too old.
 * The backends to be used in the Kokkos runtime library build are set with `KOKKOS_HOST_PARALLEL` and `KOKKOS_DEVICE_PARALLEL` (see table below)
    * The Serial backend is always enabled
@@ -221,15 +224,22 @@ $ make kokkos ...
    * `--serial` for CPU serial backend
    * `--pthread` for CPU pthread backend
    * `--cuda` for CUDA backend
+   * `--hip` for HIP backend
 * Use of multiple threads (`--numberOfThreads`) has not been tested and likely does not work correctly. Concurrent events (`--numberOfStreams`) works.
+* Support for HIP backend is still work in progress
+  * `kokkostest` runs
+  * `kokkos` fails at run time inside the "Pixel tracking"
+  * Target AMD GPU architecture needs to be set explicitly with `KOKKOS_HIP_ARCH` (see table below)
 
-| Make variable            | Description                                                                                                                             |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `CUDA_BASE`              | Path to CUDA installation                                                                                                               |
-| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`))                                                               |
-| `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build, currently needs to be exact. (default: `70`, possible values: `70`, `75`; trivial to extend) |
-| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD`)                                                                |
-| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`)                                                                |
+| Make variable            | Description                                                                                                                                                                 |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CMAKE`                  | Path to CMake executable (by default assume `cmake` is found in `$PATH`))                                                                                                   |
+| `KOKKOS_HOST_PARALLEL`   | Host-parallel backend (default empty, possible values: empty, `PTHREAD`)                                                                                                    |
+| `KOKKOS_DEVICE_PARALLEL` | Device-parallel backend (default `CUDA`, possible values: empty, `CUDA`, `HIP`)                                                                                             |
+| `CUDA_BASE`              | Path to CUDA installation. Relevant only if `KOKKOS_DEVICE_PARALLEL=CUDA`.                                                                                                  |
+| `KOKKOS_CUDA_ARCH`       | Target CUDA architecture for Kokkos build (default: `70`, possible values: `50`, `70`, `75`; trivial to extend). Relevant only if `KOKKOS_DEVICE_PARALLEL=CUDA`.            |
+| `ROCM_BASE`              | Path to ROCm installation. Relevant only if `KOKKOS_DEVICE_PARALLEL=HIP`.                                                                                                   |
+| `KOKKOS_HIP_ARCH`        | Target AMD GPU architecture for Kokkos build (default: `VEGA900`, possible values: `VEGA900`, `VEGA909`; trivial to extend). Relevant only if `KOKKOS_DEVICE_PARALLEL=HIP`. |
 
 ## Code structure
 

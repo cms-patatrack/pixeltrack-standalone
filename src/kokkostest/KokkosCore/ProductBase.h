@@ -111,12 +111,13 @@ namespace cms {
 
       template <typename ExecSpace>
       impl::ExecSpaceSpecific<ExecSpace> const& execSpaceSpecific() const {
-        if (typeid(*execSpaceSpecific_) != typeid(impl::ExecSpaceSpecific<ExecSpace>)) {
+        auto const& sp = *execSpaceSpecific_;
+        if (typeid(sp) != typeid(impl::ExecSpaceSpecific<ExecSpace>)) {
           throw std::runtime_error(std::string("Incompatible Execution space: has ") +
-                                   typeid(*execSpaceSpecific_).name() + ", but " +
+                                   typeid(sp).name() + ", but " +
                                    typeid(impl::ExecSpaceSpecific<ExecSpace>).name() + " was asked for");
         }
-        return static_cast<impl::ExecSpaceSpecific<ExecSpace> const&>(*execSpaceSpecific_);
+        return static_cast<impl::ExecSpaceSpecific<ExecSpace> const&>(sp);
       }
 
     private:

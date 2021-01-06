@@ -21,6 +21,13 @@ namespace kokkos_common {
         throw std::runtime_error("CUDA backend was disabled at build time");
 #endif
       }
+      if (std::find(backends.begin(), backends.end(), Backend::HIP) != backends.end()) {
+#ifdef KOKKOS_ENABLE_HIP
+        Kokkos::Experimental::HIP::impl_initialize();
+#else
+        throw std::runtime_error("HIP backend was disabled at build time");
+#endif
+      }
       Kokkos::Impl::post_initialize(args);
     }
 
