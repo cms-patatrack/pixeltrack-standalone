@@ -224,7 +224,7 @@ namespace notcub {
     // Fields
     //---------------------------------------------------------------------
 
-    // CMS: use std::mutex instead of hipcub::Mutex, declare mutable
+    // CMS: use std::mutex instead of cub::Mutex, declare mutable
     mutable std::mutex mutex;  /// Mutex for thread-safety
 
     unsigned int bin_growth;  /// Geometric growth factor for bin-sizes

@@ -8,7 +8,6 @@
 
 // CUDA headers
 #include <hip/hip_runtime.h>
-#include <hip/hip_runtime.h>
 
 namespace cms {
   namespace cuda {
