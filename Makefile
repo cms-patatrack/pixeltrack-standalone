@@ -223,20 +223,32 @@ endif
 
 # Targets and their dependencies on externals
 TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
+define TARGET_ALL_DEPS_template
+include src/$(1)/Makefile.deps
+endef
+$(foreach target,$(TARGETS_ALL),$(eval $(call TARGET_ALL_DEPS_template,$(target))))
 
 # Split targets by required toolchain
-TARGETS_GCC := fwtest
-TARGETS_SYCL := sycltest
-TARGETS_NVCC := $(filter-out $(TARGETS_GCC) $(TARGETS_SYCL),$(TARGETS_ALL))
-TARGETS_HIPCC := kokkostest kokkos
+TARGETS_CUDA :=
+TARGETS_HIP :=
+TARGETS_SYCL :=
+define SPLIT_TARGETS_template
+ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
+  TARGETS_$(1) += $(2)
+endif
+endef
+TOOLCHAINS := CUDA HIP SYCL
+$(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
+
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_HIP) $(TARGETS_SYCL),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
 ifdef CUDA_BASE
-TARGETS += $(TARGETS_NVCC)
+TARGETS += $(TARGETS_CUDA)
 endif
 ifdef ROCM_BASE
-TARGETS += $(TARGETS_HIPCC)
+TARGETS += $(TARGETS_HIP)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
@@ -319,7 +331,6 @@ ifneq ($(wildcard $(ONEAPI_ENV)),)
 endif
 
 define TARGET_template
-include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
 
