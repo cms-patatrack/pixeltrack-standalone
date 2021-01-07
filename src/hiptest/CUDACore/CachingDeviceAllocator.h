@@ -121,13 +121,13 @@ namespace notcub {
      * Descriptor for device memory allocations
      */
     struct BlockDescriptor {
-      void *d_ptr;                     // Device pointer
-      size_t bytes;                    // Size of allocation in bytes
-      size_t bytesRequested;           // CMS: requested allocatoin size (for monitoring only)
-      unsigned int bin;                // Bin enumeration
-      int device;                      // device ordinal
-      cudaStream_t associated_stream;  // Associated associated_stream
-      cudaEvent_t ready_event;  // Signal when associated stream has run to the point at which this block was freed
+      void *d_ptr;                    // Device pointer
+      size_t bytes;                   // Size of allocation in bytes
+      size_t bytesRequested;          // CMS: requested allocatoin size (for monitoring only)
+      unsigned int bin;               // Bin enumeration
+      int device;                     // device ordinal
+      hipStream_t associated_stream;  // Associated associated_stream
+      hipEvent_t ready_event;  // Signal when associated stream has run to the point at which this block was freed
 
       // Constructor (suitable for searching maps for a specific block, given its pointer and device)
       BlockDescriptor(void *d_ptr, int device)
@@ -224,7 +224,7 @@ namespace notcub {
     // Fields
     //---------------------------------------------------------------------
 
-    // CMS: use std::mutex instead of cub::Mutex, declare mutable
+    // CMS: use std::mutex instead of hipcub::Mutex, declare mutable
     mutable std::mutex mutex;  /// Mutex for thread-safety
 
     unsigned int bin_growth;  /// Geometric growth factor for bin-sizes
@@ -302,7 +302,7 @@ namespace notcub {
      * Changing the ceiling of cached bytes does not cause any allocations (in-use or
      * cached-in-reserve) to be freed.  See \p FreeAllCached().
      */
-    cudaError_t SetMaxCachedBytes(size_t max_cached_bytes) {
+    hipError_t SetMaxCachedBytes(size_t max_cached_bytes) {
       // Lock
       // CMS: use RAII instead of (un)locking explicitly
       std::unique_lock mutex_locker(mutex);
@@ -318,7 +318,7 @@ namespace notcub {
       // Unlock (redundant, kept for style uniformity)
       mutex_locker.unlock();
 
-      return cudaSuccess;
+      return hipSuccess;
     }
 
     /**
@@ -328,21 +328,21 @@ namespace notcub {
      * with which it was associated with during allocation, and it becomes available for reuse within other
      * streams when all prior work submitted to \p active_stream has completed.
      */
-    cudaError_t DeviceAllocate(
-        int device,                            ///< [in] Device on which to place the allocation
-        void **d_ptr,                          ///< [out] Reference to pointer to the allocation
-        size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
-        cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
+    hipError_t DeviceAllocate(
+        int device,                           ///< [in] Device on which to place the allocation
+        void **d_ptr,                         ///< [out] Reference to pointer to the allocation
+        size_t bytes,                         ///< [in] Minimum number of bytes for the allocation
+        hipStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
     {
       // CMS: use RAII instead of (un)locking explicitly
       std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
       *d_ptr = nullptr;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      hipError_t error = hipSuccess;
 
       if (device == INVALID_DEVICE_ORDINAL) {
         // CMS: throw exception on error
-        cudaCheck(error = cudaGetDevice(&entrypoint_device));
+        cudaCheck(error = hipGetDevice(&entrypoint_device));
         device = entrypoint_device;
       }
 
@@ -377,7 +377,7 @@ namespace notcub {
           // in use by the device, only consider cached blocks that are
           // either (from the active stream) or (from an idle stream)
           if ((active_stream == block_itr->associated_stream) ||
-              (cudaEventQuery(block_itr->ready_event) != cudaErrorNotReady)) {
+              (hipEventQuery(block_itr->ready_event) != hipErrorNotReady)) {
             // Reuse existing cache block.  Insert into live blocks.
             found = true;
             search_key = *block_itr;
@@ -419,13 +419,13 @@ namespace notcub {
         // Set runtime's current device to specified device (entrypoint may not be set)
         if (device != entrypoint_device) {
           // CMS: throw exception on error
-          cudaCheck(error = cudaGetDevice(&entrypoint_device));
-          cudaCheck(error = cudaSetDevice(device));
+          cudaCheck(error = hipGetDevice(&entrypoint_device));
+          cudaCheck(error = hipSetDevice(device));
         }
 
         // Attempt to allocate
         // CMS: silently ignore errors and retry or pass them to the caller
-        if ((error = cudaMalloc(&search_key.d_ptr, search_key.bytes)) == cudaErrorMemoryAllocation) {
+        if ((error = hipMalloc(&search_key.d_ptr, search_key.bytes)) == hipErrorOutOfMemory) {
           // The allocation attempt failed: free all cached blocks on device and retry
           if (debug)
             // CMS: use raw printf
@@ -435,8 +435,8 @@ namespace notcub {
                 (long long)search_key.bytes,
                 (long long)search_key.associated_stream);
 
-          error = cudaSuccess;  // Reset the error we will return
-          cudaGetLastError();   // Reset CUDART's error
+          error = hipSuccess;  // Reset the error we will return
+          hipGetLastError();   // Reset CUDART's error
 
           // Lock
           mutex_locker.lock();
@@ -446,15 +446,15 @@ namespace notcub {
           CachedBlocks::iterator block_itr = cached_blocks.lower_bound(free_key);
 
           while ((block_itr != cached_blocks.end()) && (block_itr->device == device)) {
-            // No need to worry about synchronization with the device: cudaFree is
+            // No need to worry about synchronization with the device: hipFree is
             // blocking and will synchronize across all kernels executing
             // on the current device
 
             // Free device memory and destroy stream event.
             // CMS: silently ignore errors and pass them to the caller
-            if ((error = cudaFree(block_itr->d_ptr)))
+            if ((error = hipFree(block_itr->d_ptr)))
               break;
-            if ((error = cudaEventDestroy(block_itr->ready_event)))
+            if ((error = hipEventDestroy(block_itr->ready_event)))
               break;
 
             // Reduce balance and erase entry
@@ -486,12 +486,12 @@ namespace notcub {
 
           // Try to allocate again
           // CMS: throw exception on error
-          cudaCheck(error = cudaMalloc(&search_key.d_ptr, search_key.bytes));
+          cudaCheck(error = hipMalloc(&search_key.d_ptr, search_key.bytes));
         }
 
         // Create ready event
         // CMS: throw exception on error
-        cudaCheck(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming));
+        cudaCheck(error = hipEventCreateWithFlags(&search_key.ready_event, hipEventDisableTiming));
 
         // Insert into live blocks
         mutex_locker.lock();
@@ -513,7 +513,7 @@ namespace notcub {
         // Attempt to revert back to previous device if necessary
         if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device)) {
           // CMS: throw exception on error
-          cudaCheck(error = cudaSetDevice(entrypoint_device));
+          cudaCheck(error = hipSetDevice(entrypoint_device));
         }
       }
 
@@ -538,10 +538,10 @@ namespace notcub {
      * with which it was associated with during allocation, and it becomes available for reuse within other
      * streams when all prior work submitted to \p active_stream has completed.
      */
-    cudaError_t DeviceAllocate(
-        void **d_ptr,                          ///< [out] Reference to pointer to the allocation
-        size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
-        cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
+    hipError_t DeviceAllocate(
+        void **d_ptr,                         ///< [out] Reference to pointer to the allocation
+        size_t bytes,                         ///< [in] Minimum number of bytes for the allocation
+        hipStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
     {
       return DeviceAllocate(INVALID_DEVICE_ORDINAL, d_ptr, bytes, active_stream);
     }
@@ -553,15 +553,15 @@ namespace notcub {
      * with which it was associated with during allocation, and it becomes available for reuse within other
      * streams when all prior work submitted to \p active_stream has completed.
      */
-    cudaError_t DeviceFree(int device, void *d_ptr) {
+    hipError_t DeviceFree(int device, void *d_ptr) {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      hipError_t error = hipSuccess;
       // CMS: use RAII instead of (un)locking explicitly
       std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
 
       if (device == INVALID_DEVICE_ORDINAL) {
         // CMS: throw exception on error
-        cudaCheck(error = cudaGetDevice(&entrypoint_device));
+        cudaCheck(error = hipGetDevice(&entrypoint_device));
         device = entrypoint_device;
       }
 
@@ -607,14 +607,14 @@ namespace notcub {
       // First set to specified device (entrypoint may not be set)
       if (device != entrypoint_device) {
         // CMS: throw exception on error
-        cudaCheck(error = cudaGetDevice(&entrypoint_device));
-        cudaCheck(error = cudaSetDevice(device));
+        cudaCheck(error = hipGetDevice(&entrypoint_device));
+        cudaCheck(error = hipSetDevice(device));
       }
 
       if (recached) {
         // Insert the ready event in the associated stream (must have current device set properly)
         // CMS: throw exception on error
-        cudaCheck(error = cudaEventRecord(search_key.ready_event, search_key.associated_stream));
+        cudaCheck(error = hipEventRecord(search_key.ready_event, search_key.associated_stream));
       }
 
       // Unlock
@@ -623,8 +623,8 @@ namespace notcub {
       if (!recached) {
         // Free the allocation from the runtime and cleanup the event.
         // CMS: throw exception on error
-        cudaCheck(error = cudaFree(d_ptr));
-        cudaCheck(error = cudaEventDestroy(search_key.ready_event));
+        cudaCheck(error = hipFree(d_ptr));
+        cudaCheck(error = hipEventDestroy(search_key.ready_event));
 
         if (debug)
           // CMS: improved debug message
@@ -645,7 +645,7 @@ namespace notcub {
       // Reset device
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device)) {
         // CMS: throw exception on error
-        cudaCheck(error = cudaSetDevice(entrypoint_device));
+        cudaCheck(error = hipSetDevice(entrypoint_device));
       }
 
       return error;
@@ -658,13 +658,13 @@ namespace notcub {
      * with which it was associated with during allocation, and it becomes available for reuse within other
      * streams when all prior work submitted to \p active_stream has completed.
      */
-    cudaError_t DeviceFree(void *d_ptr) { return DeviceFree(INVALID_DEVICE_ORDINAL, d_ptr); }
+    hipError_t DeviceFree(void *d_ptr) { return DeviceFree(INVALID_DEVICE_ORDINAL, d_ptr); }
 
     /**
      * \brief Frees all cached device allocations on all devices
      */
-    cudaError_t FreeAllCached() {
-      cudaError_t error = cudaSuccess;
+    hipError_t FreeAllCached() {
+      hipError_t error = hipSuccess;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
       // CMS: use RAII instead of (un)locking explicitly
@@ -677,23 +677,23 @@ namespace notcub {
         // Get entry-point device ordinal if necessary
         if (entrypoint_device == INVALID_DEVICE_ORDINAL) {
           // CMS: silently ignore errors and pass them to the caller
-          if ((error = cudaGetDevice(&entrypoint_device)))
+          if ((error = hipGetDevice(&entrypoint_device)))
             break;
         }
 
         // Set current device ordinal if necessary
         if (begin->device != current_device) {
           // CMS: silently ignore errors and pass them to the caller
-          if ((error = cudaSetDevice(begin->device)))
+          if ((error = hipSetDevice(begin->device)))
             break;
           current_device = begin->device;
         }
 
         // Free device memory
         // CMS: silently ignore errors and pass them to the caller
-        if ((error = cudaFree(begin->d_ptr)))
+        if ((error = hipFree(begin->d_ptr)))
           break;
-        if ((error = cudaEventDestroy(begin->ready_event)))
+        if ((error = hipEventDestroy(begin->ready_event)))
           break;
 
         // Reduce balance and erase entry
@@ -718,7 +718,7 @@ namespace notcub {
       // Attempt to revert back to entry-point device if necessary
       if (entrypoint_device != INVALID_DEVICE_ORDINAL) {
         // CMS: throw exception on error
-        cudaCheck(error = cudaSetDevice(entrypoint_device));
+        cudaCheck(error = hipSetDevice(entrypoint_device));
       }
 
       return error;

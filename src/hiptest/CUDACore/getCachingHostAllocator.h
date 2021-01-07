@@ -12,7 +12,7 @@
 namespace cms::cuda::allocator {
   inline notcub::CachingHostAllocator& getCachingHostAllocator() {
     if (debug) {
-      std::cout << "cub::CachingHostAllocator settings\n"
+      std::cout << "hipcub::CachingHostAllocator settings\n"
                 << "  bin growth " << binGrowth << "\n"
                 << "  min bin    " << minBin << "\n"
                 << "  max bin    " << maxBin << "\n"

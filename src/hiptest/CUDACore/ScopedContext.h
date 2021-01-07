@@ -26,11 +26,11 @@ namespace cms {
       public:
         int device() const { return currentDevice_; }
 
-        // cudaStream_t is a pointer to a thread-safe object, for which a
+        // hipStream_t is a pointer to a thread-safe object, for which a
         // mutable access is needed even if the ScopedContext itself
         // would be const. Therefore it is ok to return a non-const
         // pointer from a const method here.
-        cudaStream_t stream() const { return stream_.get(); }
+        hipStream_t stream() const { return stream_.get(); }
         const SharedStreamPtr& streamPtr() const { return stream_; }
 
       protected:
@@ -68,7 +68,7 @@ namespace cms {
         template <typename... Args>
         ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-        void synchronizeStreams(int dataDevice, cudaStream_t dataStream, bool available, cudaEvent_t dataEvent);
+        void synchronizeStreams(int dataDevice, hipStream_t dataStream, bool available, hipEvent_t dataEvent);
       };
 
       class ScopedContextHolderHelper {
@@ -83,7 +83,7 @@ namespace cms {
           waitingTaskHolder_ = std::move(waitingTaskHolder);
         }
 
-        void enqueueCallback(int device, cudaStream_t stream);
+        void enqueueCallback(int device, hipStream_t stream);
 
       private:
         edm::WaitingTaskWithArenaHolder waitingTaskHolder_;

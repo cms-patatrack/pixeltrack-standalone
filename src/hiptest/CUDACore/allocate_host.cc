@@ -11,7 +11,7 @@ namespace {
 }
 
 namespace cms::cuda {
-  void *allocate_host(size_t nbytes, cudaStream_t stream) {
+  void *allocate_host(size_t nbytes, hipStream_t stream) {
     void *ptr = nullptr;
     if constexpr (allocator::useCaching) {
       if (nbytes > maxAllocationSize) {
@@ -20,7 +20,7 @@ namespace cms::cuda {
       }
       cudaCheck(allocator::getCachingHostAllocator().HostAllocate(&ptr, nbytes, stream));
     } else {
-      cudaCheck(cudaMallocHost(&ptr, nbytes));
+      cudaCheck(hipHostMalloc(&ptr, nbytes));
     }
     return ptr;
   }
@@ -29,7 +29,7 @@ namespace cms::cuda {
     if constexpr (allocator::useCaching) {
       cudaCheck(allocator::getCachingHostAllocator().HostFree(ptr));
     } else {
-      cudaCheck(cudaFreeHost(ptr));
+      cudaCheck(hipHostFree(ptr));
     }
   }
 

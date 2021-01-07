@@ -42,17 +42,17 @@ namespace cms {
 
       int device() const { return device_; }
 
-      // cudaStream_t is a pointer to a thread-safe object, for which a
+      // hipStream_t is a pointer to a thread-safe object, for which a
       // mutable access is needed even if the cms::cuda::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      cudaStream_t stream() const { return stream_.get(); }
+      hipStream_t stream() const { return stream_.get(); }
 
-      // cudaEvent_t is a pointer to a thread-safe object, for which a
+      // hipEvent_t is a pointer to a thread-safe object, for which a
       // mutable access is needed even if the cms::cuda::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      cudaEvent_t event() const { return event_.get(); }
+      hipEvent_t event() const { return event_.get(); }
 
     protected:
       explicit ProductBase(int device, SharedStreamPtr stream, SharedEventPtr event)
@@ -73,7 +73,7 @@ namespace cms {
         return changed;
       }
 
-      // The cudaStream_t is really shared among edm::Event products, so
+      // The hipStream_t is really shared among edm::Event products, so
       // using shared_ptr also here
       SharedStreamPtr stream_;  //!
       // shared_ptr because of caching in cms::cuda::EventCache

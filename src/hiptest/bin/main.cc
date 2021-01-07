@@ -8,7 +8,7 @@
 
 #include <tbb/task_scheduler_init.h>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "EventProcessor.h"
 
@@ -80,8 +80,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   int numberOfDevices;
-  auto status = cudaGetDeviceCount(&numberOfDevices);
-  if (cudaSuccess != status) {
+  auto status = hipGetDeviceCount(&numberOfDevices);
+  if (hipSuccess != status) {
     std::cout << "Failed to initialize the CUDA runtime";
     return EXIT_FAILURE;
   }

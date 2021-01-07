@@ -38,7 +38,7 @@ namespace cms {
 
     // Allocate pinned host memory
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(cudaStream_t stream) {
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(hipStream_t stream) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem = allocate_host(sizeof(T), stream);
@@ -46,7 +46,7 @@ namespace cms {
     }
 
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(size_t n, cudaStream_t stream) {
+    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(size_t n, hipStream_t stream) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
@@ -59,14 +59,14 @@ namespace cms {
 
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(cudaStream_t stream) {
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(hipStream_t stream) {
       void *mem = allocate_host(sizeof(T), stream);
       return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem)};
     }
 
     template <typename T>
     typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique_uninitialized(
-        size_t n, cudaStream_t stream) {
+        size_t n, hipStream_t stream) {
       using element_type = typename std::remove_extent<T>::type;
       void *mem = allocate_host(n * sizeof(element_type), stream);
       return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem)};

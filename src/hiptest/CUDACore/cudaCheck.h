@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 // CUDA headers
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
 
 namespace cms {
   namespace cuda {
@@ -30,8 +30,8 @@ namespace cms {
     }
 
     inline bool cudaCheck_(
-        const char* file, int line, const char* cmd, CUresult result, const char* description = nullptr) {
-      if (result == CUDA_SUCCESS)
+        const char* file, int line, const char* cmd, hipError_t result, const char* description = nullptr) {
+      if (result == hipSuccess)
         return true;
 
       const char* error;
@@ -43,12 +43,12 @@ namespace cms {
     }
 
     inline bool cudaCheck_(
-        const char* file, int line, const char* cmd, cudaError_t result, const char* description = nullptr) {
-      if (result == cudaSuccess)
+        const char* file, int line, const char* cmd, hipError_t result, const char* description = nullptr) {
+      if (result == hipSuccess)
         return true;
 
-      const char* error = cudaGetErrorName(result);
-      const char* message = cudaGetErrorString(result);
+      const char* error = hipGetErrorName(result);
+      const char* message = hipGetErrorString(result);
       abortOnCudaError(file, line, cmd, error, message, description);
       return false;
     }

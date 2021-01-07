@@ -11,11 +11,11 @@
 namespace cms::cuda::allocator {
   // Use caching or not
   constexpr bool useCaching = true;
-  // Growth factor (bin_growth in cub::CachingDeviceAllocator
+  // Growth factor (bin_growth in hipcub::CachingDeviceAllocator
   constexpr unsigned int binGrowth = 2;
-  // Smallest bin, corresponds to binGrowth^minBin bytes (min_bin in cub::CacingDeviceAllocator
+  // Smallest bin, corresponds to binGrowth^minBin bytes (min_bin in hipcub::CacingDeviceAllocator
   constexpr unsigned int minBin = 8;
-  // Largest bin, corresponds to binGrowth^maxBin bytes (max_bin in cub::CachingDeviceAllocator). Note that unlike in cub, allocations larger than binGrowth^maxBin are set to fail.
+  // Largest bin, corresponds to binGrowth^maxBin bytes (max_bin in hipcub::CachingDeviceAllocator). Note that unlike in cub, allocations larger than binGrowth^maxBin are set to fail.
   constexpr unsigned int maxBin = 30;
   // Total storage for the allocator. 0 means no limit.
   constexpr size_t maxCachedBytes = 0;
@@ -26,15 +26,15 @@ namespace cms::cuda::allocator {
   inline size_t minCachedBytes() {
     size_t ret = std::numeric_limits<size_t>::max();
     int currentDevice;
-    cudaCheck(cudaGetDevice(&currentDevice));
+    cudaCheck(hipGetDevice(&currentDevice));
     const int numberOfDevices = deviceCount();
     for (int i = 0; i < numberOfDevices; ++i) {
       size_t freeMemory, totalMemory;
-      cudaCheck(cudaSetDevice(i));
-      cudaCheck(cudaMemGetInfo(&freeMemory, &totalMemory));
+      cudaCheck(hipSetDevice(i));
+      cudaCheck(hipMemGetInfo(&freeMemory, &totalMemory));
       ret = std::min(ret, static_cast<size_t>(maxCachedFraction * freeMemory));
     }
-    cudaCheck(cudaSetDevice(currentDevice));
+    cudaCheck(hipSetDevice(currentDevice));
     if (maxCachedBytes > 0) {
       ret = std::min(ret, maxCachedBytes);
     }
@@ -43,7 +43,7 @@ namespace cms::cuda::allocator {
 
   inline notcub::CachingDeviceAllocator& getCachingDeviceAllocator() {
     if (debug) {
-      std::cout << "cub::CachingDeviceAllocator settings\n"
+      std::cout << "hipcub::CachingDeviceAllocator settings\n"
                 << "  bin growth " << binGrowth << "\n"
                 << "  min bin    " << minBin << "\n"
                 << "  max bin    " << maxBin << "\n"

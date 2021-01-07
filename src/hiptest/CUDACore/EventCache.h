@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "Framework/ReusableObjectHolder.h"
 #include "CUDACore/SharedEventPtr.h"
@@ -21,7 +21,7 @@ namespace cms {
       // Gets a (cached) CUDA event for the current device. The event
       // will be returned to the cache by the shared_ptr destructor. The
       // returned event is guaranteed to be in the state where all
-      // captured work has completed, i.e. cudaEventQuery() == cudaSuccess.
+      // captured work has completed, i.e. hipEventQuery() == hipSuccess.
       //
       // This function is thread safe
       SharedEventPtr get();
@@ -39,7 +39,7 @@ namespace cms {
       public:
         Deleter() = default;
         Deleter(int d) : device_{d} {}
-        void operator()(cudaEvent_t event) const;
+        void operator()(hipEvent_t event) const;
 
       private:
         int device_ = -1;

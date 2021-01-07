@@ -12,7 +12,7 @@ namespace {
 }
 
 namespace cms::cuda {
-  void *allocate_device(int dev, size_t nbytes, cudaStream_t stream) {
+  void *allocate_device(int dev, size_t nbytes, hipStream_t stream) {
     void *ptr = nullptr;
     if constexpr (allocator::useCaching) {
       if (nbytes > maxAllocationSize) {
@@ -22,7 +22,7 @@ namespace cms::cuda {
       cudaCheck(allocator::getCachingDeviceAllocator().DeviceAllocate(dev, &ptr, nbytes, stream));
     } else {
       ScopedSetDevice setDeviceForThisScope(dev);
-      cudaCheck(cudaMalloc(&ptr, nbytes));
+      cudaCheck(hipMalloc(&ptr, nbytes));
     }
     return ptr;
   }
@@ -32,7 +32,7 @@ namespace cms::cuda {
       cudaCheck(allocator::getCachingDeviceAllocator().DeviceFree(device, ptr));
     } else {
       ScopedSetDevice setDeviceForThisScope(device);
-      cudaCheck(cudaFree(ptr));
+      cudaCheck(hipFree(ptr));
     }
   }
 

@@ -121,12 +121,12 @@ namespace notcub {
      * Descriptor for pinned host memory allocations
      */
     struct BlockDescriptor {
-      void *d_ptr;                     // Host pointer
-      size_t bytes;                    // Size of allocation in bytes
-      unsigned int bin;                // Bin enumeration
-      int device;                      // device ordinal
-      cudaStream_t associated_stream;  // Associated associated_stream
-      cudaEvent_t ready_event;  // Signal when associated stream has run to the point at which this block was freed
+      void *d_ptr;                    // Host pointer
+      size_t bytes;                   // Size of allocation in bytes
+      unsigned int bin;               // Bin enumeration
+      int device;                     // device ordinal
+      hipStream_t associated_stream;  // Associated associated_stream
+      hipEvent_t ready_event;  // Signal when associated stream has run to the point at which this block was freed
 
       // Constructor (suitable for searching maps for a specific block, given its pointer)
       BlockDescriptor(void *d_ptr)
@@ -309,17 +309,17 @@ namespace notcub {
      *
      * Once freed, the allocation becomes available immediately for reuse.
      */
-    cudaError_t HostAllocate(
-        void **d_ptr,                          ///< [out] Reference to pointer to the allocation
-        size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
-        cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
+    hipError_t HostAllocate(
+        void **d_ptr,                         ///< [out] Reference to pointer to the allocation
+        size_t bytes,                         ///< [in] Minimum number of bytes for the allocation
+        hipStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
     {
       std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
       *d_ptr = nullptr;
       int device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      hipError_t error = hipSuccess;
 
-      cudaCheck(error = cudaGetDevice(&device));
+      cudaCheck(error = hipGetDevice(&device));
 
       // Create a block descriptor for the requested allocation
       bool found = false;
@@ -349,17 +349,17 @@ namespace notcub {
         while ((block_itr != cached_blocks.end()) && (block_itr->bin == search_key.bin)) {
           // To prevent races with reusing blocks returned by the host but still
           // in use for transfers, only consider cached blocks that are from an idle stream
-          if (cudaEventQuery(block_itr->ready_event) != cudaErrorNotReady) {
+          if (hipEventQuery(block_itr->ready_event) != hipErrorNotReady) {
             // Reuse existing cache block.  Insert into live blocks.
             found = true;
             search_key = *block_itr;
             search_key.associated_stream = active_stream;
             if (search_key.device != device) {
               // If "associated" device changes, need to re-create the event on the right device
-              cudaCheck(error = cudaSetDevice(search_key.device));
-              cudaCheck(error = cudaEventDestroy(search_key.ready_event));
-              cudaCheck(error = cudaSetDevice(device));
-              cudaCheck(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming));
+              cudaCheck(error = hipSetDevice(search_key.device));
+              cudaCheck(error = hipEventDestroy(search_key.ready_event));
+              cudaCheck(error = hipSetDevice(device));
+              cudaCheck(error = hipEventCreateWithFlags(&search_key.ready_event, hipEventDisableTiming));
               search_key.device = device;
             }
 
@@ -396,8 +396,7 @@ namespace notcub {
       if (!found) {
         // Attempt to allocate
         // TODO: eventually support allocation flags
-        if ((error = cudaHostAlloc(&search_key.d_ptr, search_key.bytes, cudaHostAllocDefault)) ==
-            cudaErrorMemoryAllocation) {
+        if ((error = hipHostMalloc(&search_key.d_ptr, search_key.bytes, hipHostMallocDefault)) == hipErrorOutOfMemory) {
           // The allocation attempt failed: free all cached blocks on device and retry
           if (debug)
             printf(
@@ -407,8 +406,8 @@ namespace notcub {
                 (long long)search_key.associated_stream,
                 (long long)search_key.device);
 
-          error = cudaSuccess;  // Reset the error we will return
-          cudaGetLastError();   // Reset CUDART's error
+          error = hipSuccess;  // Reset the error we will return
+          hipGetLastError();   // Reset CUDART's error
 
           // Lock
           mutex_locker.lock();
@@ -417,14 +416,14 @@ namespace notcub {
           CachedBlocks::iterator block_itr = cached_blocks.begin();
 
           while ((block_itr != cached_blocks.end())) {
-            // No need to worry about synchronization with the device: cudaFree is
+            // No need to worry about synchronization with the device: hipFree is
             // blocking and will synchronize across all kernels executing
             // on the current device
 
             // Free pinned host memory.
-            if ((error = cudaFreeHost(block_itr->d_ptr)))
+            if ((error = hipHostFree(block_itr->d_ptr)))
               break;
-            if ((error = cudaEventDestroy(block_itr->ready_event)))
+            if ((error = hipEventDestroy(block_itr->ready_event)))
               break;
 
             // Reduce balance and erase entry
@@ -453,11 +452,11 @@ namespace notcub {
             return error;
 
           // Try to allocate again
-          cudaCheck(error = cudaHostAlloc(&search_key.d_ptr, search_key.bytes, cudaHostAllocDefault));
+          cudaCheck(error = hipHostMalloc(&search_key.d_ptr, search_key.bytes, hipHostMallocDefault));
         }
 
         // Create ready event
-        cudaCheck(error = cudaEventCreateWithFlags(&search_key.ready_event, cudaEventDisableTiming));
+        cudaCheck(error = hipEventCreateWithFlags(&search_key.ready_event, hipEventDisableTiming));
 
         // Insert into live blocks
         mutex_locker.lock();
@@ -494,9 +493,9 @@ namespace notcub {
      *
      * Once freed, the allocation becomes available immediately for reuse.
      */
-    cudaError_t HostFree(void *d_ptr) {
+    hipError_t HostFree(void *d_ptr) {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
-      cudaError_t error = cudaSuccess;
+      hipError_t error = hipSuccess;
 
       // Lock
       std::unique_lock<std::mutex> mutex_locker(mutex);
@@ -533,14 +532,14 @@ namespace notcub {
         }
       }
 
-      cudaCheck(error = cudaGetDevice(&entrypoint_device));
+      cudaCheck(error = hipGetDevice(&entrypoint_device));
       if (entrypoint_device != search_key.device) {
-        cudaCheck(error = cudaSetDevice(search_key.device));
+        cudaCheck(error = hipSetDevice(search_key.device));
       }
 
       if (recached) {
         // Insert the ready event in the associated stream (must have current device set properly)
-        cudaCheck(error = cudaEventRecord(search_key.ready_event, search_key.associated_stream));
+        cudaCheck(error = hipEventRecord(search_key.ready_event, search_key.associated_stream));
       }
 
       // Unlock
@@ -548,8 +547,8 @@ namespace notcub {
 
       if (!recached) {
         // Free the allocation from the runtime and cleanup the event.
-        cudaCheck(error = cudaFreeHost(d_ptr));
-        cudaCheck(error = cudaEventDestroy(search_key.ready_event));
+        cudaCheck(error = hipHostFree(d_ptr));
+        cudaCheck(error = hipEventDestroy(search_key.ready_event));
 
         if (debug)
           printf(
@@ -567,7 +566,7 @@ namespace notcub {
 
       // Reset device
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != search_key.device)) {
-        cudaCheck(error = cudaSetDevice(entrypoint_device));
+        cudaCheck(error = hipSetDevice(entrypoint_device));
       }
 
       return error;
@@ -576,8 +575,8 @@ namespace notcub {
     /**
      * \brief Frees all cached pinned host allocations
      */
-    cudaError_t FreeAllCached() {
-      cudaError_t error = cudaSuccess;
+    hipError_t FreeAllCached() {
+      hipError_t error = hipSuccess;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
 
@@ -589,21 +588,21 @@ namespace notcub {
 
         // Get entry-point device ordinal if necessary
         if (entrypoint_device == INVALID_DEVICE_ORDINAL) {
-          if ((error = cudaGetDevice(&entrypoint_device)))
+          if ((error = hipGetDevice(&entrypoint_device)))
             break;
         }
 
         // Set current device ordinal if necessary
         if (begin->device != current_device) {
-          if ((error = cudaSetDevice(begin->device)))
+          if ((error = hipSetDevice(begin->device)))
             break;
           current_device = begin->device;
         }
 
         // Free host memory
-        if ((error = cudaFreeHost(begin->d_ptr)))
+        if ((error = hipHostFree(begin->d_ptr)))
           break;
-        if ((error = cudaEventDestroy(begin->ready_event)))
+        if ((error = hipEventDestroy(begin->ready_event)))
           break;
 
         // Reduce balance and erase entry
@@ -626,7 +625,7 @@ namespace notcub {
 
       // Attempt to revert back to entry-point device if necessary
       if (entrypoint_device != INVALID_DEVICE_ORDINAL) {
-        cudaCheck(error = cudaSetDevice(entrypoint_device));
+        cudaCheck(error = hipSetDevice(entrypoint_device));
       }
 
       return error;

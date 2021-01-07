@@ -3,13 +3,13 @@
 
 #include "CUDACore/cudaCheck.h"
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 namespace cms {
   namespace cuda {
     inline int currentDevice() {
       int dev;
-      cudaCheck(cudaGetDevice(&dev));
+      cudaCheck(hipGetDevice(&dev));
       return dev;
     }
   }  // namespace cuda

@@ -5,10 +5,10 @@
 #include "CUDACore/ScopedSetDevice.h"
 
 namespace cms::cuda {
-  void StreamCache::Deleter::operator()(cudaStream_t stream) const {
+  void StreamCache::Deleter::operator()(hipStream_t stream) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
-      cudaCheck(cudaStreamDestroy(stream));
+      cudaCheck(hipStreamDestroy(stream));
     }
   }
 
@@ -19,8 +19,8 @@ namespace cms::cuda {
   SharedStreamPtr StreamCache::get() {
     const auto dev = currentDevice();
     return cache_[dev].makeOrGet([dev]() {
-      cudaStream_t stream;
-      cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+      hipStream_t stream;
+      cudaCheck(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
       return std::unique_ptr<BareStream, Deleter>(stream, Deleter{dev});
     });
   }
