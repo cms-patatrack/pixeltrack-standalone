@@ -36,6 +36,7 @@ public:
   auto phiBinner() { return m_hist; }
   auto iphi() { return m_iphi; }
 
+#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT  
   // only the local coord and detector index
   cms::cuda::host::unique_ptr<float[]> localCoordToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
@@ -45,6 +46,18 @@ public:
   cms::cuda::host::unique_ptr<float[]> globalCoordToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<int32_t[]> chargeToHostAsync(cudaStream_t stream) const;
   cms::cuda::host::unique_ptr<int16_t[]> sizeToHostAsync(cudaStream_t stream) const;
+#else
+
+  int device_;
+  void localCoordToHostPrefetchAsync(int device, cudaStream_t stream) const;
+  void detIndexToHostPrefetchAsync(int device, cudaStream_t stream) const;
+  void hitsModuleStartToHostPrefetchAsync(int device, cudaStream_t stream) const;
+
+  void globalCoordToHostPrefetchAsync(int device, cudaStream_t stream) const;
+  void chargeToHostPrefetchAsync(int device, cudaStream_t stream) const;
+  void sizeToHostPrefetchAsync(int device, cudaStream_t stream) const;
+
+#endif
 
 private:
   static constexpr uint32_t n16 = 4;
