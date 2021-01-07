@@ -110,6 +110,11 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   m_store32 = Traits::template make_device_unique<float[]>(nHits * n32 + 11, stream);
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
 
+#ifndef CUDAUVM_DISABLE_PREFETCH
+  cudaCheck(cudaMemPrefetchAsync(m_store32.get(), nHits * n32 + 11 , device, stream));
+  cudaCheck(cudaMemPrefetchAsync(m_store16.get(), nHits * n16  , device, stream));
+#endif
+
   auto get16 = [&](int i) { return m_store16.get() + i * nHits; };
   auto get32 = [&](int i) { return m_store32.get() + i * nHits; };
 
