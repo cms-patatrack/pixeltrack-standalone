@@ -16,10 +16,10 @@ test_nvidiagpu: $(TARGET)
 	$(TARGET) --maxEvents 2 --cuda
 	@echo "Succeeded"
 test_amdgpu: $(TARGET)
-	@echo
-	@echo "Testing $(TARGET)"
-	$(TARGET) --maxEvents 2 --hip
-	@echo "Succeeded"
+#	@echo
+#	@echo "Testing $(TARGET)"
+#	$(TARGET) --maxEvents 2 --hip
+#	@echo "Succeeded"
 test_intelgpu:
 test_auto:
 .PHONY: test_cpu test_nvidiagpu test_amdgpu test_intelgpu test_auto
@@ -174,9 +174,9 @@ endif
 ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
 $(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
 endif
-ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
-$(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
-endif
+#ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+#$(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
+#endif
 
 -include $(ALL_DEPENDS)
 
