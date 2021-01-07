@@ -11,7 +11,7 @@ namespace {
     int device;
   };
 
-  void CUDART_CB cudaScopedContextCallback(hipStream_t streamId, hipError_t status, void* data) {
+  void cudaScopedContextCallback(hipStream_t streamId, hipError_t status, void* data) {
     std::unique_ptr<CallbackData> guard{reinterpret_cast<CallbackData*>(data)};
     edm::WaitingTaskWithArenaHolder& waitingTaskHolder = guard->holder;
     int device = guard->device;
