@@ -33,19 +33,6 @@ namespace cms {
       if (result == hipSuccess)
         return true;
 
-      const char* error;
-      const char* message;
-      cuGetErrorName(result, &error);
-      cuGetErrorString(result, &message);
-      abortOnCudaError(file, line, cmd, error, message, description);
-      return false;
-    }
-
-    inline bool cudaCheck_(
-        const char* file, int line, const char* cmd, hipError_t result, const char* description = nullptr) {
-      if (result == hipSuccess)
-        return true;
-
       const char* error = hipGetErrorName(result);
       const char* message = hipGetErrorString(result);
       abortOnCudaError(file, line, cmd, error, message, description);
