@@ -69,16 +69,16 @@ namespace cms {
 
       template <typename T>
       static auto make_host_unique(cudaStream_t stream) {
-        return cms::cuda::make_host_unique<T>(stream);
-      }
-
-      template <typename T>
-      static auto make_managed_unique(cudaStream_t stream) {
         return cms::cuda::make_managed_unique<T>(stream);
       }
 
       template <typename T>
-      static auto make_managed_unique(size_t size, cudaStream_t stream) {
+      static auto make_device_unique(cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(stream);
+      }
+
+      template <typename T>
+      static auto make_device_unique(size_t size, cudaStream_t stream) {
         return cms::cuda::make_managed_unique<T>(size, stream);
       }
     };

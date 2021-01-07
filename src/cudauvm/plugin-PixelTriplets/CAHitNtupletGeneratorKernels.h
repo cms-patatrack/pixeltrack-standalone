@@ -136,7 +136,7 @@ namespace cAHitNtupletGenerator {
 
 }  // namespace cAHitNtupletGenerator
 
-template <typename TTraits>
+template <typename TTraits, typename InputTraits>
 class CAHitNtupletGeneratorKernels {
 public:
   using Traits = TTraits;
@@ -150,7 +150,7 @@ public:
 
   using HitsView = TrackingRecHit2DSOAView;
   using HitsOnGPU = TrackingRecHit2DSOAView;
-  using HitsOnCPU = TrackingRecHit2DHeterogeneous<Traits>;
+  using HitsOnCPU = TrackingRecHit2DHeterogeneous<InputTraits>;
 
   using HitToTuple = CAConstants::HitToTuple;
   using TupleMultiplicity = CAConstants::TupleMultiplicity;
@@ -201,7 +201,11 @@ private:
   Params const& m_params;
 };
 
-using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits>;
-using CAHitNtupletGeneratorKernelsCPU = CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits>;
+#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
+using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits,cms::cudacompat::GPUTraits>;
+#else
+using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits,cms::cudacompat::ManagedTraits>;
+#endif
+using CAHitNtupletGeneratorKernelsCPU = CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits,cms::cudacompat::CPUTraits>;
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
