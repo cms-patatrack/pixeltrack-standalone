@@ -55,7 +55,7 @@ export CUDA_DLINKFLAGS
 endif
 
 # ROCm
-ROCM_BASE := /usr/local/rocm-3.10
+ROCM_BASE := /usr/local/rocm-4.0.0
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=
@@ -64,7 +64,11 @@ else
 export HIP_DEPS := $(ROCM_BASE)/lib/libamdhip64.so
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
 HIPCC_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable 
-export HIPCC_FLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_CXXFLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
+# flags to be used by GCC when compiling host code that includes hip_runtime.h
+HIPCONFIG := $(ROCM_BASE)/bin/hipconfig
+export HIP_CXXFLAGS:= $(shell $(HIPCONFIG) --cpp_config)
 endif
 
 # Input data definitions
@@ -171,9 +175,9 @@ else
     KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(ROCM_HIPCC) -DCMAKE_CXX_FLAGS="--gcc-toolchain=$(GCC_TOOLCHAIN)" -DKokkos_ENABLE_HIP=On $(KOKKOS_CMAKE_HIP_ARCH) -DBUILD_SHARED_LIBS=On
     export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
     export KOKKOS_DEVICE_CXX := $(ROCM_HIPCC)
-    export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
-    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
-    export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_FLAGS)
+    export KOKKOS_DEVICE_LDFLAGS := $(HIPCC_LDFLAGS)
+    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS)
+    export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_CXXFLAGS)
     export KOKKOS_DEVICE_TEST_CXXFLAGS := 
   else
     $(error Unsupported KOKKOS_DEVICE_PARALLEL $(KOKKOS_DEVICE_PARALLEL))
