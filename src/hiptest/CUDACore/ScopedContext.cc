@@ -107,7 +107,7 @@ namespace cms::cuda {
     // Intentionally not checking the return value to avoid throwing
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
-    hipEventRecord(event_.get(), stream());
+    (void)hipEventRecord(event_.get(), stream());
   }
 
   ////////////////////

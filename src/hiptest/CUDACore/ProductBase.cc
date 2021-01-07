@@ -23,7 +23,7 @@ namespace cms::cuda {
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
     if (event_) {
-      hipEventSynchronize(event_.get());
+      (void)hipEventSynchronize(event_.get());
     }
   }
 }  // namespace cms::cuda

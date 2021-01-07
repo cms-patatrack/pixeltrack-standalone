@@ -18,7 +18,7 @@ namespace cms {
         // Intentionally don't check the return value to avoid
         // exceptions to be thrown. If this call fails, the process is
         // doomed anyway.
-        hipSetDevice(prevDevice_);
+        (void)hipSetDevice(prevDevice_);
       }
 
     private:

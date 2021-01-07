@@ -406,8 +406,8 @@ namespace notcub {
                 (long long)search_key.associated_stream,
                 (long long)search_key.device);
 
-          error = hipSuccess;  // Reset the error we will return
-          hipGetLastError();   // Reset CUDART's error
+          error = hipSuccess;       // Reset the error we will return
+          (void)hipGetLastError();  // Reset CUDART's error
 
           // Lock
           mutex_locker.lock();
@@ -636,7 +636,7 @@ namespace notcub {
      */
     ~CachingHostAllocator() {
       if (!skip_cleanup)
-        FreeAllCached();
+        (void)FreeAllCached();
     }
   };
 
