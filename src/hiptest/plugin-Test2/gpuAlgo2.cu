@@ -72,7 +72,6 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo2(hipStream_t stream) {
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
 
   auto d_c = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
-  auto current_device = cms::cuda::currentDevice();
   hipLaunchKernelGGL(
       vectorAdd, dim3(blocksPerGrid), dim3(threadsPerBlock), 0, stream, d_a.get(), d_b.get(), d_c.get(), NUM_VALUES);
 
