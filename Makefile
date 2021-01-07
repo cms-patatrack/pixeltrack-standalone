@@ -82,11 +82,6 @@ export TBB_DEPS := $(TBB_LIB)
 export TBB_CXXFLAGS := -I$(TBB_BASE)/include
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
 
-CUB_BASE := $(EXTERNAL_BASE)/cub
-export CUB_DEPS := $(CUB_BASE)
-export CUB_CXXFLAGS := -I$(CUB_BASE)
-export CUB_LDFLAGS :=
-
 EIGEN_BASE := $(EXTERNAL_BASE)/eigen
 export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
@@ -420,12 +415,6 @@ $(TBB_LIB): CXXFLAGS:=
 $(TBB_LIB): $(TBB_BASE) $(TBB_LIBDIR)
 	+$(MAKE) -C $(TBB_BASE) stdver=c++17
 	cp $$(find $(TBB_BASE)/build -name *.so*) $(TBB_LIBDIR)
-
-# CUB
-external_cub: $(CUB_BASE)
-
-$(CUB_BASE):
-	git clone --branch 1.8.0 https://github.com/NVlabs/cub.git $@
 
 # Eigen
 external_eigen: $(EIGEN_BASE)
