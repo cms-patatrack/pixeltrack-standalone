@@ -262,7 +262,7 @@ constexpr short unsafe_atan2s(float y, float x) {
   return unsafe_atan2s_impl<DEGREE>(y, x);
 }
 
-constexpr int phi2int(float x) {
+inline __host__ __device__ int phi2int(float x) {
   constexpr float p2i = ((long long)(std::numeric_limits<int>::max()) + 1LL) / M_PI;
   return std::round(x * p2i);
 }
@@ -277,7 +277,7 @@ constexpr double int2dphi(int x) {
   return x * i2p;
 }
 
-constexpr short phi2short(float x) {
+inline __host__ __device__ short phi2short(float x) {
   constexpr float p2i = ((int)(std::numeric_limits<short>::max()) + 1) / M_PI;
   return std::round(x * p2i);
 }
