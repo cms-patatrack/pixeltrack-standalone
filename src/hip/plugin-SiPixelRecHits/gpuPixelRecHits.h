@@ -8,7 +8,7 @@
 
 #include "CUDADataFormats/BeamSpotCUDA.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "DataFormats/approx_atan2.h"
+#include "CUDADataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"
 

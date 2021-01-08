@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <limits>
 
-#include "DataFormats/approx_atan2.h"
+#include "CUDADataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/VecArray.h"
 #include "CUDACore/cuda_assert.h"

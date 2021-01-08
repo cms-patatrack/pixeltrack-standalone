@@ -9,7 +9,7 @@
 #include <limits>
 
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "DataFormats/approx_atan2.h"
+#include "CUDADataFormats/approx_atan2.h"
 #include "CUDACore/VecArray.h"
 #include "CUDACore/cuda_assert.h"
 
