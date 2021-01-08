@@ -1,6 +1,6 @@
 #include <fstream>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/Product.h"
 #include "CUDACore/ScopedContext.h"
@@ -28,7 +28,7 @@ private:
 
 BeamSpotToCUDA::BeamSpotToCUDA(edm::ProductRegistry& reg)
     : bsPutToken_{reg.produces<cms::cuda::Product<BeamSpotCUDA>>()},
-      bsHost{cms::cuda::make_host_noncached_unique<BeamSpotPOD>(cudaHostAllocWriteCombined)} {}
+      bsHost{cms::cuda::make_host_noncached_unique<BeamSpotPOD>(hipHostMallocWriteCombined)} {}
 
 void BeamSpotToCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   *bsHost = iSetup.get<BeamSpotPOD>();

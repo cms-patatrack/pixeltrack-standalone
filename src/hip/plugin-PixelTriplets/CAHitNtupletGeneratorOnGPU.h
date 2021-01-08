@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
@@ -37,16 +37,16 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, hipStream_t stream) const;
 
   PixelTrackHeterogeneous makeTuples(TrackingRecHit2DCPU const& hits_d, float bfield) const;
 
 private:
-  void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream) const;
+  void buildDoublets(HitsOnCPU const& hh, hipStream_t stream) const;
 
-  void hitNtuplets(HitsOnCPU const& hh, const edm::EventSetup& es, bool useRiemannFit, cudaStream_t cudaStream);
+  void hitNtuplets(HitsOnCPU const& hh, const edm::EventSetup& es, bool useRiemannFit, hipStream_t cudaStream);
 
-  void launchKernels(HitsOnCPU const& hh, bool useRiemannFit, cudaStream_t cudaStream) const;
+  void launchKernels(HitsOnCPU const& hh, bool useRiemannFit, hipStream_t cudaStream) const;
 
   Params m_params;
 

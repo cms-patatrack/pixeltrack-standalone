@@ -1,7 +1,8 @@
+#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCoreCUDAUtilities_radixSort_H
 #define HeterogeneousCoreCUDAUtilities_radixSort_H
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 
 #include <cstdint>
 #include <type_traits>
@@ -244,7 +245,7 @@ __device__ __forceinline__ void radixSortMulti(T const* v,
                                                uint16_t* index,
                                                uint32_t const* offsets,
                                                uint16_t* workspace) {
-  extern __shared__ uint16_t ws[];
+  HIP_DYNAMIC_SHARED( uint16_t, ws)
 
   auto a = v + offsets[blockIdx.x];
   auto ind = index + offsets[blockIdx.x];
@@ -272,6 +273,6 @@ namespace cms {
   }  // namespace cuda
 }  // namespace cms
 
-#endif  // __CUDACC__
+#endif  // __HIPCC__
 
 #endif  // HeterogeneousCoreCUDAUtilities_radixSort_H

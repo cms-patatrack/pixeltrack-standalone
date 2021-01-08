@@ -96,8 +96,8 @@ void go(bool useShared) {
     auto ws_d = cms::cuda::make_device_unique<uint16_t[]>(N, nullptr);
     auto off_d = cms::cuda::make_device_unique<uint32_t[]>(blocks + 1, nullptr);
 
-    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(off_d.get(), offsets, 4 * (blocks + 1), cudaMemcpyHostToDevice));
+    cudaCheck(hipMemcpy(v_d.get(), v, N * sizeof(T), hipMemcpyHostToDevice));
+    cudaCheck(hipMemcpy(off_d.get(), offsets, 4 * (blocks + 1), hipMemcpyHostToDevice));
 
     if (i < 2)
       std::cout << "lauch for " << offsets[blocks] << std::endl;
@@ -116,7 +116,7 @@ void go(bool useShared) {
     if (i == 0)
       std::cout << "done for " << offsets[blocks] << std::endl;
 
-    cudaCheck(cudaMemcpy(ind, ind_d.get(), 2 * N, cudaMemcpyDeviceToHost));
+    cudaCheck(hipMemcpy(ind, ind_d.get(), 2 * N, hipMemcpyDeviceToHost));
 
     delta += (std::chrono::high_resolution_clock::now() - start);
 

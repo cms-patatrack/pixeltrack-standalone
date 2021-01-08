@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
 

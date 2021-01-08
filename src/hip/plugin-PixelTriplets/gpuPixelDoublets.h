@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 
@@ -90,7 +91,7 @@ namespace gpuPixelDoublets {
   constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
 
   __global__
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
 #endif
       void getDoubletsFromHisto(GPUCACell* cells,

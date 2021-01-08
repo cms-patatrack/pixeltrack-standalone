@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include "CUDADataFormats/TrajectoryStateSoA.h"
 
 using Vector5d = Eigen::Matrix<double, 5, 1>;
@@ -50,25 +51,25 @@ __global__ void testTSSoA(TS* pts, int n) {
   }
 }
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   cms::cudatest::requireDevices();
 #endif
 
   TS ts;
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   TS* ts_d;
-  cudaCheck(cudaMalloc(&ts_d, sizeof(TS)));
-  testTSSoA<<<1, 64>>>(ts_d, 128);
-  cudaCheck(cudaGetLastError());
-  cudaCheck(cudaMemcpy(&ts, ts_d, sizeof(TS), cudaMemcpyDefault));
-  cudaCheck(cudaDeviceSynchronize());
+  cudaCheck(hipMalloc(&ts_d, sizeof(TS)));
+  hipLaunchKernelGGL(testTSSoA, dim3(1), dim3(64), 0, 0, ts_d, 128);
+  cudaCheck(hipGetLastError());
+  cudaCheck(hipMemcpy(&ts, ts_d, sizeof(TS), hipMemcpyDefault));
+  cudaCheck(hipDeviceSynchronize());
 #else
   testTSSoA(&ts, 128);
 #endif

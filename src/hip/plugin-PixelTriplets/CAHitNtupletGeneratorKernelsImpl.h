@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 //
 // Original Author: Felice Pantaleo, CERN
 //
@@ -7,7 +8,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"

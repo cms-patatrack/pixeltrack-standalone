@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCore_CUDAUtilities_launch_h
 #define HeterogeneousCore_CUDAUtilities_launch_h
 
 #include <tuple>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/cudaCheck.h"
 
@@ -49,12 +50,12 @@ namespace cms {
       dim3 gridDim;
       dim3 blockDim;
       size_t sharedMem;
-      cudaStream_t stream;
+      hipStream_t stream;
 
-      LaunchParameters(dim3 gridDim, dim3 blockDim, size_t sharedMem = 0, cudaStream_t stream = nullptr)
+      LaunchParameters(dim3 gridDim, dim3 blockDim, size_t sharedMem = 0, hipStream_t stream = nullptr)
           : gridDim(gridDim), blockDim(blockDim), sharedMem(sharedMem), stream(stream) {}
 
-      LaunchParameters(int gridDim, int blockDim, size_t sharedMem = 0, cudaStream_t stream = nullptr)
+      LaunchParameters(int gridDim, int blockDim, size_t sharedMem = 0, hipStream_t stream = nullptr)
           : gridDim(gridDim), blockDim(blockDim), sharedMem(sharedMem), stream(stream) {}
     };
 
@@ -91,10 +92,10 @@ namespace cms {
 
     }  // namespace detail
 
-    // wrappers for cudaLaunchKernel
+    // wrappers for hipLaunchKernel
 
     inline void launch(void (*kernel)(), LaunchParameters config) {
-      cudaCheck(cudaLaunchKernel(
+      cudaCheck(hipLaunchKernel(
           (const void*)kernel, config.gridDim, config.blockDim, nullptr, config.sharedMem, config.stream));
     }
 
@@ -112,14 +113,14 @@ namespace cms {
       void const* pointers[size];
 
       detail::pointer_setter<size>()(pointers, args_copy);
-      cudaCheck(cudaLaunchKernel(
+      cudaCheck(hipLaunchKernel(
           (const void*)kernel, config.gridDim, config.blockDim, (void**)pointers, config.sharedMem, config.stream));
     }
 
-    // wrappers for cudaLaunchCooperativeKernel
+    // wrappers for hipLaunchCooperativeKernel
 
     inline void launch_cooperative(void (*kernel)(), LaunchParameters config) {
-      cudaCheck(cudaLaunchCooperativeKernel(
+      cudaCheck(hipLaunchCooperativeKernel(
           (const void*)kernel, config.gridDim, config.blockDim, nullptr, config.sharedMem, config.stream));
     }
 
@@ -137,7 +138,7 @@ namespace cms {
       void const* pointers[size];
 
       detail::pointer_setter<size>()(pointers, args_copy);
-      cudaCheck(cudaLaunchCooperativeKernel(
+      cudaCheck(hipLaunchCooperativeKernel(
           (const void*)kernel, config.gridDim, config.blockDim, (void**)pointers, config.sharedMem, config.stream));
     }
 

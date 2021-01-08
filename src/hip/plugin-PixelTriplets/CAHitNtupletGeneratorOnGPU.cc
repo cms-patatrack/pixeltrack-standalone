@@ -83,8 +83,8 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
 #endif
 
   if (m_params.onGPU_) {
-    cudaCheck(cudaMalloc(&m_counters, sizeof(Counters)));
-    cudaCheck(cudaMemset(m_counters, 0, sizeof(Counters)));
+    cudaCheck(hipMalloc(&m_counters, sizeof(Counters)));
+    cudaCheck(hipMemset(m_counters, 0, sizeof(Counters)));
   } else {
     m_counters = new Counters();
     memset(m_counters, 0, sizeof(Counters));
@@ -97,7 +97,7 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
       // crash on multi-gpu processes
       CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
     }
-    cudaFree(m_counters);
+    hipFree(m_counters);
   } else {
     if (m_params.doStats_) {
       CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
@@ -108,7 +108,7 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
 
 PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
                                                                     float bfield,
-                                                                    cudaStream_t stream) const {
+                                                                    hipStream_t stream) const {
   PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(stream));
 
   auto* soa = tracks.get();

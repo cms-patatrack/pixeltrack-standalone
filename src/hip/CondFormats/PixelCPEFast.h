@@ -14,8 +14,8 @@ public:
   ~PixelCPEFast() = default;
 
   // The return value can only be used safely in kernels launched on
-  // the same cudaStream, or after cudaStreamSynchronize.
-  const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
+  // the same cudaStream, or after hipStreamSynchronize.
+  const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(hipStream_t cudaStream) const;
 
   pixelCPEforGPU::ParamsOnGPU const &getCPUProduct() const { return cpuData_; }
 

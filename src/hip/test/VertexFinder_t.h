@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -22,7 +23,7 @@
 #include "plugin-PixelVertexFinding/gpuSplitVertices.h"
 
 #ifdef ONE_KERNEL
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 __global__ void vertexFinderOneKernel(gpuVertexFinder::ZVertices* pdata,
                                       gpuVertexFinder::WorkSpace* pws,
                                       int minT,      // min number of neighbours to be "seed"
@@ -111,7 +112,7 @@ __global__ void print(gpuVertexFinder::ZVertices const* pdata, gpuVertexFinder::
 }
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   cms::cudatest::requireDevices();
 
   auto onGPU_d = cms::cuda::make_device_unique<gpuVertexFinder::ZVertices[]>(1, nullptr);
@@ -133,8 +134,8 @@ int main() {
 
       gen(ev);
 
-#ifdef __CUDACC__
-      init<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
+#ifdef __HIPCC__
+      hipLaunchKernelGGL(init, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
 #else
       onGPU_d->init();
       ws_d->init();
@@ -142,11 +143,11 @@ int main() {
 
       std::cout << "v,t size " << ev.zvert.size() << ' ' << ev.ztrack.size() << std::endl;
       auto nt = ev.ztrack.size();
-#ifdef __CUDACC__
-      cudaCheck(cudaMemcpy(LOC_WS(ntrks), &nt, sizeof(uint32_t), cudaMemcpyHostToDevice));
-      cudaCheck(cudaMemcpy(LOC_WS(zt), ev.ztrack.data(), sizeof(float) * ev.ztrack.size(), cudaMemcpyHostToDevice));
-      cudaCheck(cudaMemcpy(LOC_WS(ezt2), ev.eztrack.data(), sizeof(float) * ev.eztrack.size(), cudaMemcpyHostToDevice));
-      cudaCheck(cudaMemcpy(LOC_WS(ptt2), ev.pttrack.data(), sizeof(float) * ev.eztrack.size(), cudaMemcpyHostToDevice));
+#ifdef __HIPCC__
+      cudaCheck(hipMemcpy(LOC_WS(ntrks), &nt, sizeof(uint32_t), hipMemcpyHostToDevice));
+      cudaCheck(hipMemcpy(LOC_WS(zt), ev.ztrack.data(), sizeof(float) * ev.ztrack.size(), hipMemcpyHostToDevice));
+      cudaCheck(hipMemcpy(LOC_WS(ezt2), ev.eztrack.data(), sizeof(float) * ev.eztrack.size(), hipMemcpyHostToDevice));
+      cudaCheck(hipMemcpy(LOC_WS(ptt2), ev.pttrack.data(), sizeof(float) * ev.eztrack.size(), hipMemcpyHostToDevice));
 #else
       ::memcpy(LOC_WS(ntrks), &nt, sizeof(uint32_t));
       ::memcpy(LOC_WS(zt), ev.ztrack.data(), sizeof(float) * ev.ztrack.size());
@@ -166,24 +167,24 @@ int main() {
         par = {{0.7f * eps, 0.01f, 9.0f}};
 
       uint32_t nv = 0;
-#ifdef __CUDACC__
-      print<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
-      cudaCheck(cudaGetLastError());
-      cudaDeviceSynchronize();
+#ifdef __HIPCC__
+      hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
+      cudaCheck(hipGetLastError());
+      hipDeviceSynchronize();
 
 #ifdef ONE_KERNEL
       cms::cuda::launch(vertexFinderOneKernel, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #else
       cms::cuda::launch(CLUSTERIZE, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #endif
-      print<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
+      hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
 
-      cudaCheck(cudaGetLastError());
-      cudaDeviceSynchronize();
+      cudaCheck(hipGetLastError());
+      hipDeviceSynchronize();
 
       cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
-      cudaCheck(cudaGetLastError());
-      cudaCheck(cudaMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), cudaMemcpyDeviceToHost));
+      cudaCheck(hipGetLastError());
+      cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
 
 #else
       print(onGPU_d.get(), ws_d.get());
@@ -207,7 +208,7 @@ int main() {
       // keep chi2 separated...
       float chi2[2 * nv];  // make space for splitting...
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       float hzv[2 * nv];
       float hwv[2 * nv];
       float hptv2[2 * nv];
@@ -227,9 +228,9 @@ int main() {
       ind = onGPU_d->sortInd;
 #endif
 
-#ifdef __CUDACC__
-      cudaCheck(cudaMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), cudaMemcpyDeviceToHost));
+#ifdef __HIPCC__
+      cudaCheck(hipMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), hipMemcpyDeviceToHost));
 #else
       memcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float));
 #endif
@@ -242,11 +243,11 @@ int main() {
         std::cout << "after fit nv, min max chi2 " << nv << " " << *mx.first << ' ' << *mx.second << std::endl;
       }
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
-      cudaCheck(cudaMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), cudaMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), hipMemcpyDeviceToHost));
 #else
       fitVertices(onGPU_d.get(), ws_d.get(), 50.f);
       nv = onGPU_d->nvFinal;
@@ -261,10 +262,10 @@ int main() {
         std::cout << "before splitting nv, min max chi2 " << nv << " " << *mx.first << ' ' << *mx.second << std::endl;
       }
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       // one vertex per block!!!
       cms::cuda::launch(gpuVertexFinder::splitVerticesKernel, {1024, 64}, onGPU_d.get(), ws_d.get(), 9.f);
-      cudaCheck(cudaMemcpy(&nv, LOC_WS(nvIntermediate), sizeof(uint32_t), cudaMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(&nv, LOC_WS(nvIntermediate), sizeof(uint32_t), hipMemcpyDeviceToHost));
 #else
       gridDim.x = 1;
       assert(blockIdx.x == 0);
@@ -274,13 +275,13 @@ int main() {
 #endif
       std::cout << "after split " << nv << std::endl;
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 5000.f);
-      cudaCheck(cudaGetLastError());
+      cudaCheck(hipGetLastError());
 
       cms::cuda::launch(gpuVertexFinder::sortByPt2Kernel, {1, 256}, onGPU_d.get(), ws_d.get());
-      cudaCheck(cudaGetLastError());
-      cudaCheck(cudaMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), cudaMemcpyDeviceToHost));
+      cudaCheck(hipGetLastError());
+      cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
 #else
       fitVertices(onGPU_d.get(), ws_d.get(), 5000.f);
       sortByPt2(onGPU_d.get(), ws_d.get());
@@ -293,13 +294,13 @@ int main() {
         continue;
       }
 
-#ifdef __CUDACC__
-      cudaCheck(cudaMemcpy(zv, LOC_ONGPU(zv), nv * sizeof(float), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(wv, LOC_ONGPU(wv), nv * sizeof(float), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(ptv2, LOC_ONGPU(ptv2), nv * sizeof(float), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), cudaMemcpyDeviceToHost));
-      cudaCheck(cudaMemcpy(ind, LOC_ONGPU(sortInd), nv * sizeof(uint16_t), cudaMemcpyDeviceToHost));
+#ifdef __HIPCC__
+      cudaCheck(hipMemcpy(zv, LOC_ONGPU(zv), nv * sizeof(float), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(wv, LOC_ONGPU(wv), nv * sizeof(float), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(ptv2, LOC_ONGPU(ptv2), nv * sizeof(float), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), hipMemcpyDeviceToHost));
+      cudaCheck(hipMemcpy(ind, LOC_ONGPU(sortInd), nv * sizeof(uint16_t), hipMemcpyDeviceToHost));
 #endif
       for (auto j = 0U; j < nv; ++j)
         if (nn[j] > 0)

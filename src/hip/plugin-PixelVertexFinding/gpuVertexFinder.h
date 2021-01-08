@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 
@@ -63,7 +64,7 @@ namespace gpuVertexFinder {
 
     ~Producer() = default;
 
-    ZVertexHeterogeneous makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const;
+    ZVertexHeterogeneous makeAsync(hipStream_t stream, TkSoA const* tksoa, float ptMin) const;
     ZVertexHeterogeneous make(TkSoA const* tksoa, float ptMin) const;
 
   private:

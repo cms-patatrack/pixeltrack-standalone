@@ -24,11 +24,11 @@ namespace cms {
       }
       ~ESProduct() = default;
 
-      // transferAsync should be a function of (T&, cudaStream_t)
+      // transferAsync should be a function of (T&, hipStream_t)
       // which enqueues asynchronous transfers (possibly kernels as well)
       // to the CUDA stream
       template <typename F>
-      const T& dataForCurrentDeviceAsync(cudaStream_t cudaStream, F transferAsync) const {
+      const T& dataForCurrentDeviceAsync(hipStream_t cudaStream, F transferAsync) const {
         auto device = currentDevice();
 
         auto& data = gpuDataPerDevice_[device];
@@ -60,7 +60,7 @@ namespace cms {
               // wait on the CUDA stream and return the value. Subsequent
               // work queued on the stream will wait for the event to
               // occur (i.e. transfer to finish).
-              cudaCheck(cudaStreamWaitEvent(cudaStream, data.m_event.get(), 0),
+              cudaCheck(hipStreamWaitEvent(cudaStream, data.m_event.get(), 0),
                         "Failed to make a stream to wait for an event");
             }
             // else: filling is still going on. But for the same CUDA
@@ -88,8 +88,8 @@ namespace cms {
       struct Item {
         mutable std::mutex m_mutex;
         mutable SharedEventPtr m_event;  // guarded by m_mutex
-        // non-null if some thread is already filling (cudaStream_t is just a pointer)
-        mutable cudaStream_t m_fillingStream = nullptr;  // guarded by m_mutex
+        // non-null if some thread is already filling (hipStream_t is just a pointer)
+        mutable hipStream_t m_fillingStream = nullptr;  // guarded by m_mutex
         mutable std::atomic<bool> m_filled = false;      // easy check if data has been filled already or not
         mutable T m_data;                                // guarded by m_mutex
       };

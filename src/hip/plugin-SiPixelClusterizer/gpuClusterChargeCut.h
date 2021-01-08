@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
 

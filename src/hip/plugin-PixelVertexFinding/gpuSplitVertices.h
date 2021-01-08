@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 

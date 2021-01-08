@@ -1,6 +1,7 @@
+#include "hip/hip_runtime.h"
 #include <iostream>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/AtomicPairCounter.h"
 #include "CUDACore/cudaCheck.h"
@@ -42,24 +43,24 @@ __global__ void verify(cms::cuda::AtomicPairCounter const *dc, uint32_t const *i
 
 int main() {
   cms::cuda::AtomicPairCounter *dc_d;
-  cudaCheck(cudaMalloc(&dc_d, sizeof(cms::cuda::AtomicPairCounter)));
-  cudaCheck(cudaMemset(dc_d, 0, sizeof(cms::cuda::AtomicPairCounter)));
+  cudaCheck(hipMalloc(&dc_d, sizeof(cms::cuda::AtomicPairCounter)));
+  cudaCheck(hipMemset(dc_d, 0, sizeof(cms::cuda::AtomicPairCounter)));
 
   std::cout << "size " << sizeof(cms::cuda::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
   uint32_t *n_d, *m_d;
-  cudaCheck(cudaMalloc(&n_d, N * sizeof(int)));
-  // cudaMemset(n_d, 0, N*sizeof(int));
-  cudaCheck(cudaMalloc(&m_d, M * sizeof(int)));
+  cudaCheck(hipMalloc(&n_d, N * sizeof(int)));
+  // hipMemset(n_d, 0, N*sizeof(int));
+  cudaCheck(hipMalloc(&m_d, M * sizeof(int)));
 
-  update<<<2000, 512>>>(dc_d, n_d, m_d, 10000);
-  finalize<<<1, 1>>>(dc_d, n_d, m_d, 10000);
-  verify<<<2000, 512>>>(dc_d, n_d, m_d, 10000);
+  hipLaunchKernelGGL(update, dim3(2000), dim3(512), 0, 0, dc_d, n_d, m_d, 10000);
+  hipLaunchKernelGGL(finalize, dim3(1), dim3(1), 0, 0, dc_d, n_d, m_d, 10000);
+  hipLaunchKernelGGL(verify, dim3(2000), dim3(512), 0, 0, dc_d, n_d, m_d, 10000);
 
   cms::cuda::AtomicPairCounter dc;
-  cudaCheck(cudaMemcpy(&dc, dc_d, sizeof(cms::cuda::AtomicPairCounter), cudaMemcpyDeviceToHost));
+  cudaCheck(hipMemcpy(&dc, dc_d, sizeof(cms::cuda::AtomicPairCounter), hipMemcpyDeviceToHost));
 
   std::cout << dc.get().n << ' ' << dc.get().m << std::endl;
 

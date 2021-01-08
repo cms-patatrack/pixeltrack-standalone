@@ -6,7 +6,7 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include <set>
 
@@ -19,10 +19,10 @@ public:
   bool hasQuality() const { return hasQuality_; }
 
   // returns pointer to GPU memory
-  const SiPixelFedCablingMapGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
+  const SiPixelFedCablingMapGPU *getGPUProductAsync(hipStream_t cudaStream) const;
 
   // returns pointer to GPU memory
-  const unsigned char *getModToUnpAllAsync(cudaStream_t cudaStream) const;
+  const unsigned char *getModToUnpAllAsync(hipStream_t cudaStream) const;
 
 private:
   std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;

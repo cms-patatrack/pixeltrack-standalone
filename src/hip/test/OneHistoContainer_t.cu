@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -125,7 +126,7 @@ void go() {
 
     assert(v_d.get());
     assert(v);
-    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
+    cudaCheck(hipMemcpy(v_d.get(), v, N * sizeof(T), hipMemcpyHostToDevice));
     assert(v_d.get());
     launch(mykernel<T, NBINS, S, DELTA>, {1, 256}, v_d.get(), N);
   }

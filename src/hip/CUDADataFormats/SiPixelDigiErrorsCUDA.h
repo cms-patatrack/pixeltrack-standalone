@@ -1,7 +1,7 @@
 #ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/device_unique_ptr.h"
@@ -11,7 +11,7 @@
 class SiPixelDigiErrorsCUDA {
 public:
   SiPixelDigiErrorsCUDA() = default;
-  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors, cudaStream_t stream);
+  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors, hipStream_t stream);
   ~SiPixelDigiErrorsCUDA() = default;
 
   SiPixelDigiErrorsCUDA(const SiPixelDigiErrorsCUDA&) = delete;
@@ -27,9 +27,9 @@ public:
 
   using HostDataError =
       std::pair<cms::cuda::SimpleVector<PixelErrorCompact>, cms::cuda::host::unique_ptr<PixelErrorCompact[]>>;
-  HostDataError dataErrorToHostAsync(cudaStream_t stream) const;
+  HostDataError dataErrorToHostAsync(hipStream_t stream) const;
 
-  void copyErrorToHostAsync(cudaStream_t stream);
+  void copyErrorToHostAsync(hipStream_t stream);
 
 private:
   cms::cuda::device::unique_ptr<PixelErrorCompact[]> data_d;

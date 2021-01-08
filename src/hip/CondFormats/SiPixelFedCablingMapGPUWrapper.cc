@@ -5,7 +5,7 @@
 #include <vector>
 
 // CUDA includes
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 // CMSSW includes
 #include "CUDACore/cudaCheck.h"
@@ -16,39 +16,39 @@
 SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const& cablingMap,
                                                                std::vector<unsigned char> modToUnp)
     : modToUnpDefault(modToUnp.size()), hasQuality_(true) {
-  cudaCheck(cudaMallocHost(&cablingMapHost, sizeof(SiPixelFedCablingMapGPU)));
+  cudaCheck(hipHostMalloc(&cablingMapHost, sizeof(SiPixelFedCablingMapGPU)));
   std::memcpy(cablingMapHost, &cablingMap, sizeof(SiPixelFedCablingMapGPU));
 
   std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault.begin());
 }
 
-SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() { cudaCheck(cudaFreeHost(cablingMapHost)); }
+SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() { cudaCheck(hipHostFree(cablingMapHost)); }
 
-const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsync(cudaStream_t cudaStream) const {
-  const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, cudaStream_t stream) {
+const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsync(hipStream_t cudaStream) const {
+  const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, hipStream_t stream) {
     // allocate
-    cudaCheck(cudaMalloc(&data.cablingMapDevice, sizeof(SiPixelFedCablingMapGPU)));
+    cudaCheck(hipMalloc(&data.cablingMapDevice, sizeof(SiPixelFedCablingMapGPU)));
 
     // transfer
-    cudaCheck(cudaMemcpyAsync(
-        data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU), cudaMemcpyDefault, stream));
+    cudaCheck(hipMemcpyAsync(
+        data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU), hipMemcpyDefault, stream));
   });
   return data.cablingMapDevice;
 }
 
-const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(cudaStream_t cudaStream) const {
+const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(hipStream_t cudaStream) const {
   const auto& data =
-      modToUnp_.dataForCurrentDeviceAsync(cudaStream, [this](ModulesToUnpack& data, cudaStream_t stream) {
-        cudaCheck(cudaMalloc((void**)&data.modToUnpDefault, pixelgpudetails::MAX_SIZE_BYTE_BOOL));
-        cudaCheck(cudaMemcpyAsync(data.modToUnpDefault,
+      modToUnp_.dataForCurrentDeviceAsync(cudaStream, [this](ModulesToUnpack& data, hipStream_t stream) {
+        cudaCheck(hipMalloc((void**)&data.modToUnpDefault, pixelgpudetails::MAX_SIZE_BYTE_BOOL));
+        cudaCheck(hipMemcpyAsync(data.modToUnpDefault,
                                   this->modToUnpDefault.data(),
                                   this->modToUnpDefault.size() * sizeof(unsigned char),
-                                  cudaMemcpyDefault,
+                                  hipMemcpyDefault,
                                   stream));
       });
   return data.modToUnpDefault;
 }
 
-SiPixelFedCablingMapGPUWrapper::GPUData::~GPUData() { cudaCheck(cudaFree(cablingMapDevice)); }
+SiPixelFedCablingMapGPUWrapper::GPUData::~GPUData() { cudaCheck(hipFree(cablingMapDevice)); }
 
-SiPixelFedCablingMapGPUWrapper::ModulesToUnpack::~ModulesToUnpack() { cudaCheck(cudaFree(modToUnpDefault)); }
+SiPixelFedCablingMapGPUWrapper::ModulesToUnpack::~ModulesToUnpack() { cudaCheck(hipFree(modToUnpDefault)); }

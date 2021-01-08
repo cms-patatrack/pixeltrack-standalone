@@ -7,7 +7,7 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/VecArray.h"
@@ -70,7 +70,7 @@ public:
       auto i = cellNeighbors.extend();  // maybe waisted....
       if (i > 0) {
         cellNeighbors[i].reset();
-#ifdef __CUDACC__
+#ifdef __HIPCC__
         auto zero = (ptrAsInt)(&cellNeighbors[0]);
         atomicCAS((ptrAsInt*)(&theOuterNeighbors),
                   zero,
@@ -90,7 +90,7 @@ public:
       auto i = cellTracks.extend();  // maybe waisted....
       if (i > 0) {
         cellTracks[i].reset();
-#ifdef __CUDACC__
+#ifdef __HIPCC__
         auto zero = (ptrAsInt)(&cellTracks[0]);
         atomicCAS((ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
 #else

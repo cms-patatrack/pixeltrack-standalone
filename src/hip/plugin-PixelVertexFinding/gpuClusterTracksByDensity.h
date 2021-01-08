@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 

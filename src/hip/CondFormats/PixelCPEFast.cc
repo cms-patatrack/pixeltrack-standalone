@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/cudaCheck.h"
@@ -39,37 +39,37 @@ PixelCPEFast::PixelCPEFast(std::string const &path) {
   };
 }
 
-const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(cudaStream_t cudaStream) const {
-  const auto &data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData &data, cudaStream_t stream) {
+const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(hipStream_t cudaStream) const {
+  const auto &data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData &data, hipStream_t stream) {
     // and now copy to device...
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_commonParams, sizeof(pixelCPEforGPU::CommonParams)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_detParams,
+    cudaCheck(hipMalloc((void **)&data.h_paramsOnGPU.m_commonParams, sizeof(pixelCPEforGPU::CommonParams)));
+    cudaCheck(hipMalloc((void **)&data.h_paramsOnGPU.m_detParams,
                          this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry)));
-    cudaCheck(cudaMalloc((void **)&data.h_paramsOnGPU.m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry)));
-    cudaCheck(cudaMalloc((void **)&data.d_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU)));
+    cudaCheck(hipMalloc((void **)&data.h_paramsOnGPU.m_averageGeometry, sizeof(pixelCPEforGPU::AverageGeometry)));
+    cudaCheck(hipMalloc((void **)&data.h_paramsOnGPU.m_layerGeometry, sizeof(pixelCPEforGPU::LayerGeometry)));
+    cudaCheck(hipMalloc((void **)&data.d_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU)));
 
-    cudaCheck(cudaMemcpyAsync(
-        data.d_paramsOnGPU, &data.h_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU), cudaMemcpyDefault, stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_commonParams,
+    cudaCheck(hipMemcpyAsync(
+        data.d_paramsOnGPU, &data.h_paramsOnGPU, sizeof(pixelCPEforGPU::ParamsOnGPU), hipMemcpyDefault, stream));
+    cudaCheck(hipMemcpyAsync((void *)data.h_paramsOnGPU.m_commonParams,
                               &this->m_commonParamsGPU,
                               sizeof(pixelCPEforGPU::CommonParams),
-                              cudaMemcpyDefault,
+                              hipMemcpyDefault,
                               stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_averageGeometry,
+    cudaCheck(hipMemcpyAsync((void *)data.h_paramsOnGPU.m_averageGeometry,
                               &this->m_averageGeometry,
                               sizeof(pixelCPEforGPU::AverageGeometry),
-                              cudaMemcpyDefault,
+                              hipMemcpyDefault,
                               stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_layerGeometry,
+    cudaCheck(hipMemcpyAsync((void *)data.h_paramsOnGPU.m_layerGeometry,
                               &this->m_layerGeometry,
                               sizeof(pixelCPEforGPU::LayerGeometry),
-                              cudaMemcpyDefault,
+                              hipMemcpyDefault,
                               stream));
-    cudaCheck(cudaMemcpyAsync((void *)data.h_paramsOnGPU.m_detParams,
+    cudaCheck(hipMemcpyAsync((void *)data.h_paramsOnGPU.m_detParams,
                               this->m_detParamsGPU.data(),
                               this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams),
-                              cudaMemcpyDefault,
+                              hipMemcpyDefault,
                               stream));
   });
   return data.d_paramsOnGPU;
@@ -77,9 +77,9 @@ const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(cudaStream_t
 
 PixelCPEFast::GPUData::~GPUData() {
   if (d_paramsOnGPU != nullptr) {
-    cudaFree((void *)h_paramsOnGPU.m_commonParams);
-    cudaFree((void *)h_paramsOnGPU.m_detParams);
-    cudaFree((void *)h_paramsOnGPU.m_averageGeometry);
-    cudaFree(d_paramsOnGPU);
+    hipFree((void *)h_paramsOnGPU.m_commonParams);
+    hipFree((void *)h_paramsOnGPU.m_detParams);
+    hipFree((void *)h_paramsOnGPU.m_averageGeometry);
+    hipFree(d_paramsOnGPU);
   }
 }

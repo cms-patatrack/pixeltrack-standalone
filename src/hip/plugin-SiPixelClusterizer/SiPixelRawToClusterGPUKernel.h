@@ -2,7 +2,7 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
@@ -178,7 +178,7 @@ namespace pixelgpudetails {
                            bool useQualityInfo,
                            bool includeErrors,
                            bool debug,
-                           cudaStream_t stream);
+                           hipStream_t stream);
 
     std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
       digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -6,7 +7,7 @@
 #include <array>
 #include <memory>
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
@@ -96,7 +97,7 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   cms::cudatest::requireDevices();
   auto current_device = cms::cuda::currentDevice();
 #else
@@ -164,12 +165,12 @@ int main() {
   }
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
   assert(v_d.get());
   auto a_d = cms::cuda::make_device_unique<Assoc[]>(1, nullptr);
   auto sa_d = cms::cuda::make_device_unique<SmallAssoc[]>(1, nullptr);
-  cudaCheck(cudaMemcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>), cudaMemcpyHostToDevice));
+  cudaCheck(hipMemcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>), hipMemcpyHostToDevice));
 #else
   auto a_d = std::make_unique<Assoc>();
   auto sa_d = std::make_unique<SmallAssoc>();
@@ -178,15 +179,15 @@ int main() {
 
   launchZero(a_d.get(), 0);
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   auto nThreads = 256;
   auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
-  count<<<nBlocks, nThreads>>>(v_d.get(), a_d.get(), N);
+  hipLaunchKernelGGL(count, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), a_d.get(), N);
 
   launchFinalize(a_d.get(), 0);
-  verify<<<1, 1>>>(a_d.get());
-  fill<<<nBlocks, nThreads>>>(v_d.get(), a_d.get(), N);
+  hipLaunchKernelGGL(verify, dim3(1), dim3(1), 0, 0, a_d.get());
+  hipLaunchKernelGGL(fill, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), a_d.get(), N);
 #else
   count(v_d, a_d.get(), N);
   launchFinalize(a_d.get());
@@ -196,8 +197,8 @@ int main() {
 
   Assoc la;
 
-#ifdef __CUDACC__
-  cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
+#ifdef __HIPCC__
+  cudaCheck(hipMemcpy(&la, a_d.get(), sizeof(Assoc), hipMemcpyDeviceToHost));
 #else
   memcpy(&la, a_d.get(), sizeof(Assoc));  // not required, easier
 #endif
@@ -222,21 +223,21 @@ int main() {
   AtomicPairCounter* dc_d;
   AtomicPairCounter dc(0);
 
-#ifdef __CUDACC__
-  cudaCheck(cudaMalloc(&dc_d, sizeof(AtomicPairCounter)));
-  cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
+#ifdef __HIPCC__
+  cudaCheck(hipMalloc(&dc_d, sizeof(AtomicPairCounter)));
+  cudaCheck(hipMemset(dc_d, 0, sizeof(AtomicPairCounter)));
   nBlocks = (N + nThreads - 1) / nThreads;
-  fillBulk<<<nBlocks, nThreads>>>(dc_d, v_d.get(), a_d.get(), N);
-  finalizeBulk<<<nBlocks, nThreads>>>(dc_d, a_d.get());
-  verifyBulk<<<1, 1>>>(a_d.get(), dc_d);
+  hipLaunchKernelGGL(fillBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, v_d.get(), a_d.get(), N);
+  hipLaunchKernelGGL(finalizeBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, a_d.get());
+  hipLaunchKernelGGL(verifyBulk, dim3(1), dim3(1), 0, 0, a_d.get(), dc_d);
 
-  cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
-  cudaCheck(cudaMemcpy(&dc, dc_d, sizeof(AtomicPairCounter), cudaMemcpyDeviceToHost));
+  cudaCheck(hipMemcpy(&la, a_d.get(), sizeof(Assoc), hipMemcpyDeviceToHost));
+  cudaCheck(hipMemcpy(&dc, dc_d, sizeof(AtomicPairCounter), hipMemcpyDeviceToHost));
 
-  cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
-  fillBulk<<<nBlocks, nThreads>>>(dc_d, v_d.get(), sa_d.get(), N);
-  finalizeBulk<<<nBlocks, nThreads>>>(dc_d, sa_d.get());
-  verifyBulk<<<1, 1>>>(sa_d.get(), dc_d);
+  cudaCheck(hipMemset(dc_d, 0, sizeof(AtomicPairCounter)));
+  hipLaunchKernelGGL(fillBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, v_d.get(), sa_d.get(), N);
+  hipLaunchKernelGGL(finalizeBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, sa_d.get());
+  hipLaunchKernelGGL(verifyBulk, dim3(1), dim3(1), 0, 0, sa_d.get(), dc_d);
 
 #else
   dc_d = &dc;
@@ -269,7 +270,7 @@ int main() {
   std::cout << "found with ave occupancy " << double(ave) / N << ' ' << imax << std::endl;
 
   // here verify use of block local counters
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   auto m1_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
   auto m2_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
 #else
@@ -279,18 +280,18 @@ int main() {
   launchZero(m1_d.get(), 0);
   launchZero(m2_d.get(), 0);
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   nBlocks = (4 * N + nThreads - 1) / nThreads;
-  countMulti<<<nBlocks, nThreads>>>(v_d.get(), m1_d.get(), N);
-  countMultiLocal<<<nBlocks, nThreads>>>(v_d.get(), m2_d.get(), N);
-  verifyMulti<<<1, Multiplicity::totbins()>>>(m1_d.get(), m2_d.get());
+  hipLaunchKernelGGL(countMulti, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), m1_d.get(), N);
+  hipLaunchKernelGGL(countMultiLocal, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), m2_d.get(), N);
+  hipLaunchKernelGGL(verifyMulti, dim3(1), dim3(Multiplicity::totbins()), 0, 0, m1_d.get(), m2_d.get());
 
   launchFinalize(m1_d.get(), 0);
   launchFinalize(m2_d.get(), 0);
-  verifyMulti<<<1, Multiplicity::totbins()>>>(m1_d.get(), m2_d.get());
+  hipLaunchKernelGGL(verifyMulti, dim3(1), dim3(Multiplicity::totbins()), 0, 0, m1_d.get(), m2_d.get());
 
-  cudaCheck(cudaGetLastError());
-  cudaCheck(cudaDeviceSynchronize());
+  cudaCheck(hipGetLastError());
+  cudaCheck(hipDeviceSynchronize());
 #else
   countMulti(v_d, m1_d.get(), N);
   countMultiLocal(v_d, m2_d.get(), N);

@@ -20,7 +20,7 @@ void go() {
   T v[N];
   auto v_d = make_device_unique<T[]>(N, nullptr);
 
-  cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
+  cudaCheck(hipMemcpy(v_d.get(), v, N * sizeof(T), hipMemcpyHostToDevice));
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
@@ -57,7 +57,7 @@ void go() {
       offsets[10] = 3297 + offsets[9];
     }
 
-    cudaCheck(cudaMemcpy(off_d.get(), offsets, 4 * (nParts + 1), cudaMemcpyHostToDevice));
+    cudaCheck(hipMemcpy(off_d.get(), offsets, 4 * (nParts + 1), hipMemcpyHostToDevice));
 
     for (long long j = 0; j < N; j++)
       v[j] = rgen(eng);
@@ -67,10 +67,10 @@ void go() {
         v[j] = sizeof(T) == 1 ? 22 : 3456;
     }
 
-    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
+    cudaCheck(hipMemcpy(v_d.get(), v, N * sizeof(T), hipMemcpyHostToDevice));
 
     fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256, 0);
-    cudaCheck(cudaMemcpy(&h, h_d.get(), sizeof(Hist), cudaMemcpyDeviceToHost));
+    cudaCheck(hipMemcpy(&h, h_d.get(), sizeof(Hist), hipMemcpyDeviceToHost));
     assert(0 == h.off[0]);
     assert(offsets[10] == h.size());
 

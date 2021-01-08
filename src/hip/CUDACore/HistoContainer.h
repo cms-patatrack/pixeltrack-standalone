@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
@@ -52,16 +53,16 @@ namespace cms {
 
     template <typename Histo>
     inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
-                                                          cudaStream_t stream
-#ifndef __CUDACC__
-                                                          = cudaStreamDefault
+                                                          hipStream_t stream
+#ifndef __HIPCC__
+                                                          = hipStreamDefault
 #endif
     ) {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
-#ifdef __CUDACC__
-      cudaCheck(cudaMemsetAsync(poff, 0, size, stream));
+#ifdef __HIPCC__
+      cudaCheck(hipMemsetAsync(poff, 0, size, stream));
 #else
       ::memset(poff, 0, size);
 #endif
@@ -69,19 +70,19 @@ namespace cms {
 
     template <typename Histo>
     inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
-                                                              cudaStream_t stream
-#ifndef __CUDACC__
-                                                              = cudaStreamDefault
+                                                              hipStream_t stream
+#ifndef __HIPCC__
+                                                              = hipStreamDefault
 #endif
     ) {
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks, stream>>>(
+      hipLaunchKernelGGL(multiBlockPrefixScan, dim3(nblocks), dim3(nthreads), sizeof(int32_t) * nblocks, stream, 
           poff, poff, Histo::totbins(), ppsws);
-      cudaCheck(cudaGetLastError());
+      cudaCheck(hipGetLastError());
 #else
       h->finalize();
 #endif
@@ -94,19 +95,19 @@ namespace cms {
                                                                   uint32_t const *__restrict__ offsets,
                                                                   uint32_t totSize,
                                                                   int nthreads,
-                                                                  cudaStream_t stream
-#ifndef __CUDACC__
-                                                                  = cudaStreamDefault
+                                                                  hipStream_t stream
+#ifndef __HIPCC__
+                                                                  = hipStreamDefault
 #endif
     ) {
       launchZero(h, stream);
-#ifdef __CUDACC__
+#ifdef __HIPCC__
       auto nblocks = (totSize + nthreads - 1) / nthreads;
-      countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-      cudaCheck(cudaGetLastError());
+      hipLaunchKernelGGL(countFromVector, dim3(nblocks), dim3(nthreads), 0, stream, h, nh, v, offsets);
+      cudaCheck(hipGetLastError());
       launchFinalize(h, stream);
-      fillFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-      cudaCheck(cudaGetLastError());
+      hipLaunchKernelGGL(fillFromVector, dim3(nblocks), dim3(nthreads), 0, stream, h, nh, v, offsets);
+      cudaCheck(hipGetLastError());
 #else
       countFromVector(h, nh, v, offsets);
       h->finalize();

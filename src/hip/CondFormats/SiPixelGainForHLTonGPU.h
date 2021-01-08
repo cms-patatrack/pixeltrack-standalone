@@ -5,16 +5,16 @@
 #include <cstdio>
 #include <tuple>
 
-// including <cuda_runtime.h> would pull in the dependency on all of CUDA;
+// including <hip/hip_runtime.h> would pull in the dependency on all of CUDA;
 // instead, just define away the CUDA specific attributes to keep GCC happy.
-#ifndef __CUDACC__
+#ifndef __HIPCC__
 #ifndef __host__
 #define __host__
 #endif  // __host__
 #ifndef __device__
 #define __device__
 #endif  // __device__
-#endif  // __CUDACC__
+#endif  // __HIPCC__
 
 #include "CUDACore/cuda_assert.h"
 

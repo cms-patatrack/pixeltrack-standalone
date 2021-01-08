@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDADataFormats/BeamSpotCUDA.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
@@ -26,7 +26,7 @@ namespace pixelgpudetails {
                                        SiPixelClustersCUDA const& clusters_d,
                                        BeamSpotCUDA const& bs_d,
                                        pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                       cudaStream_t stream) const;
+                                       hipStream_t stream) const;
   };
 }  // namespace pixelgpudetails
 

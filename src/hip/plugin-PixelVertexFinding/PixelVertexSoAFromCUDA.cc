@@ -1,4 +1,4 @@
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/Product.h"
 #include "CUDACore/HostProduct.h"

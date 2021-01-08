@@ -1,7 +1,7 @@
 #ifndef CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 #define CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "DataFormats/BeamSpotPOD.h"
 #include "CUDACore/device_unique_ptr.h"
@@ -12,7 +12,7 @@ public:
   BeamSpotCUDA() = default;
 
   // constructor that allocates cached device memory on the given CUDA stream
-  BeamSpotCUDA(cudaStream_t stream) { data_d_ = cms::cuda::make_device_unique<BeamSpotPOD>(stream); }
+  BeamSpotCUDA(hipStream_t stream) { data_d_ = cms::cuda::make_device_unique<BeamSpotPOD>(stream); }
 
   // movable, non-copiable
   BeamSpotCUDA(BeamSpotCUDA const&) = delete;

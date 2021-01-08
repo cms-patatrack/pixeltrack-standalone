@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <cassert>
 #include <iostream>
 

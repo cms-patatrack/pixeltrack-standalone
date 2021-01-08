@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 #define HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 
@@ -169,7 +170,7 @@ namespace cms {
       // good each block has done its work and now we are left in last block
 
       // let's get the partial sums from each block
-      extern __shared__ T psum[];
+      HIP_DYNAMIC_SHARED( T, psum)
       for (int i = threadIdx.x, ni = gridDim.x; i < ni; i += blockDim.x) {
         auto j = blockDim.x * i + blockDim.x - 1;
         psum[i] = (j < size) ? co[j] : T(0);

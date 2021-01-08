@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <iostream>
 
 #include "CUDACore/cudaCheck.h"
@@ -88,27 +89,27 @@ int main() {
 
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;
-  testWarpPrefixScan<int><<<1, 32>>>(32);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 32);
+  hipDeviceSynchronize();
   // std::cout << "warp 16" << std::endl;
-  testWarpPrefixScan<int><<<1, 32>>>(16);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 16);
+  hipDeviceSynchronize();
   // std::cout << "warp 5" << std::endl;
-  testWarpPrefixScan<int><<<1, 32>>>(5);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 5);
+  hipDeviceSynchronize();
 
   std::cout << "block level" << std::endl;
   for (int bs = 32; bs <= 1024; bs += 32) {
     // std::cout << "bs " << bs << std::endl;
     for (int j = 1; j <= 1024; ++j) {
       // std::cout << j << std::endl;
-      testPrefixScan<uint16_t><<<1, bs>>>(j);
-      cudaDeviceSynchronize();
-      testPrefixScan<float><<<1, bs>>>(j);
-      cudaDeviceSynchronize();
+      hipLaunchKernelGGL(HIP_KERNEL_NAME(testPrefixScan<uint16_t>), dim3(1), dim3(bs), 0, 0, j);
+      hipDeviceSynchronize();
+      hipLaunchKernelGGL(HIP_KERNEL_NAME(testPrefixScan<float>), dim3(1), dim3(bs), 0, 0, j);
+      hipDeviceSynchronize();
     }
   }
-  cudaDeviceSynchronize();
+  hipDeviceSynchronize();
 
   int num_items = 200;
   for (int ksize = 1; ksize < 4; ++ksize) {
@@ -120,28 +121,28 @@ int main() {
     uint32_t *d_out1;
     uint32_t *d_out2;
 
-    cudaCheck(cudaMalloc(&d_in, num_items * sizeof(uint32_t)));
-    cudaCheck(cudaMalloc(&d_out1, num_items * sizeof(uint32_t)));
-    cudaCheck(cudaMalloc(&d_out2, num_items * sizeof(uint32_t)));
+    cudaCheck(hipMalloc(&d_in, num_items * sizeof(uint32_t)));
+    cudaCheck(hipMalloc(&d_out1, num_items * sizeof(uint32_t)));
+    cudaCheck(hipMalloc(&d_out2, num_items * sizeof(uint32_t)));
 
     auto nthreads = 256;
     auto nblocks = (num_items + nthreads - 1) / nthreads;
 
-    init<<<nblocks, nthreads, 0>>>(d_in, 1, num_items);
+    hipLaunchKernelGGL(init, dim3(nblocks), dim3(nthreads), 0, 0, d_in, 1, num_items);
 
     // the block counter
     int32_t *d_pc;
-    cudaCheck(cudaMalloc(&d_pc, sizeof(int32_t)));
-    cudaCheck(cudaMemset(d_pc, 0, sizeof(int32_t)));
+    cudaCheck(hipMalloc(&d_pc, sizeof(int32_t)));
+    cudaCheck(hipMemset(d_pc, 0, sizeof(int32_t)));
 
     nthreads = 1024;
     nblocks = (num_items + nthreads - 1) / nthreads;
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nblocks << std::endl;
-    multiBlockPrefixScan<<<nblocks, nthreads, 4 * nblocks>>>(d_in, d_out1, num_items, d_pc);
-    cudaCheck(cudaGetLastError());
-    verify<<<nblocks, nthreads, 0>>>(d_out1, num_items);
-    cudaCheck(cudaGetLastError());
-    cudaDeviceSynchronize();
+    hipLaunchKernelGGL(multiBlockPrefixScan, dim3(nblocks), dim3(nthreads), 4 * nblocks, 0, d_in, d_out1, num_items, d_pc);
+    cudaCheck(hipGetLastError());
+    hipLaunchKernelGGL(verify, dim3(nblocks), dim3(nthreads), 0, 0, d_out1, num_items);
+    cudaCheck(hipGetLastError());
+    hipDeviceSynchronize();
 
   }  // ksize
   return 0;

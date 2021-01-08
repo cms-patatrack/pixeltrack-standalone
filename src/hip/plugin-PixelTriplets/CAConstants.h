@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/SimpleVector.h"

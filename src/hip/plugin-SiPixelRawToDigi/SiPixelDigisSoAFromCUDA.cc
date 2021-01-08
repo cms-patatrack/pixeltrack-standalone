@@ -59,7 +59,7 @@ void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   //     keep the CUDA stream around as long as that, or allow pinned
   //     host memory to be allocated without a CUDA stream
   // - What if a CPU algorithm would produce the same SoA? We can't
-  //   use cudaMallocHost without a GPU...
+  //   use hipHostMalloc without a GPU...
   iEvent.emplace(digiPutToken_, nDigis_, pdigi_.get(), rawIdArr_.get(), adc_.get(), clus_.get());
 
   pdigi_.reset();

@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 // C++ headers
 #include <algorithm>
 #include <numeric>
 
 // CUDA runtime
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 // CMSSW headers
 #include "CUDACore/cudaCheck.h"
@@ -37,7 +38,7 @@ namespace pixelgpudetails {
                                                            SiPixelClustersCUDA const& clusters_d,
                                                            BeamSpotCUDA const& bs_d,
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                           cudaStream_t stream) const {
+                                                           hipStream_t stream) const {
     auto nHits = clusters_d.nClusters();
     TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), stream);
 
@@ -48,28 +49,28 @@ namespace pixelgpudetails {
     std::cout << "launching getHits kernel for " << blocks << " blocks" << std::endl;
 #endif
     if (blocks)  // protect from empty events
-      gpuPixelRecHits::getHits<<<blocks, threadsPerBlock, 0, stream>>>(
+      hipLaunchKernelGGL(gpuPixelRecHits::getHits, dim3(blocks), dim3(threadsPerBlock), 0, stream, 
           cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
-    cudaCheck(cudaGetLastError());
+    cudaCheck(hipGetLastError());
 #ifdef GPU_DEBUG
-    cudaDeviceSynchronize();
-    cudaCheck(cudaGetLastError());
+    hipDeviceSynchronize();
+    cudaCheck(hipGetLastError());
 #endif
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
-      setHitsLayerStart<<<1, 32, 0, stream>>>(clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
-      cudaCheck(cudaGetLastError());
+      hipLaunchKernelGGL(setHitsLayerStart, dim3(1), dim3(32), 0, stream, clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
+      cudaCheck(hipGetLastError());
     }
 
     if (nHits) {
       cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
-      cudaCheck(cudaGetLastError());
+      cudaCheck(hipGetLastError());
     }
 
 #ifdef GPU_DEBUG
-    cudaDeviceSynchronize();
-    cudaCheck(cudaGetLastError());
+    hipDeviceSynchronize();
+    cudaCheck(hipGetLastError());
 #endif
 
     return hits_d;

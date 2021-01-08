@@ -5,12 +5,12 @@
 #include "CUDACore/host_unique_ptr.h"
 #include "CUDACore/cudaCompat.h"
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 class SiPixelClustersCUDA {
 public:
   SiPixelClustersCUDA() = default;
-  explicit SiPixelClustersCUDA(size_t maxClusters, cudaStream_t stream);
+  explicit SiPixelClustersCUDA(size_t maxClusters, hipStream_t stream);
   ~SiPixelClustersCUDA() = default;
 
   SiPixelClustersCUDA(const SiPixelClustersCUDA &) = delete;

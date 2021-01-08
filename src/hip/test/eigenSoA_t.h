@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <Eigen/Dense>
 
 #include "CUDACore/eigenSoA.h"
@@ -58,13 +59,13 @@ __global__ void testBasicSoA(float* p) {
 #include <memory>
 #include <random>
 
-#ifdef __CUDACC__
+#ifdef __HIPCC__
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   cms::cudatest::requireDevices();
 #endif
 
@@ -79,14 +80,14 @@ int main() {
     assert(p[i] > 0 && p[i] < 1.);
 
   std::cout << p[0] << std::endl;
-#ifdef __CUDACC__
+#ifdef __HIPCC__
   float* p_d;
-  cudaCheck(cudaMalloc(&p_d, 1024 * 4));
-  cudaCheck(cudaMemcpy(p_d, p, 1024 * 4, cudaMemcpyDefault));
-  testBasicSoA<<<1, 1024>>>(p_d);
-  cudaCheck(cudaGetLastError());
-  cudaCheck(cudaMemcpy(p, p_d, 1024 * 4, cudaMemcpyDefault));
-  cudaCheck(cudaDeviceSynchronize());
+  cudaCheck(hipMalloc(&p_d, 1024 * 4));
+  cudaCheck(hipMemcpy(p_d, p, 1024 * 4, hipMemcpyDefault));
+  hipLaunchKernelGGL(testBasicSoA, dim3(1), dim3(1024), 0, 0, p_d);
+  cudaCheck(hipGetLastError());
+  cudaCheck(hipMemcpy(p, p_d, 1024 * 4, hipMemcpyDefault));
+  cudaCheck(hipDeviceSynchronize());
 #else
   testBasicSoA(p);
 #endif

@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/cudaCheck.h"
 
@@ -15,7 +15,7 @@ namespace cms {
           // Additional layer of types to distinguish from host::unique_ptr
           class HostDeleter {
           public:
-            void operator()(void *ptr) { cudaCheck(cudaFreeHost(ptr)); }
+            void operator()(void *ptr) { cudaCheck(hipHostFree(ptr)); }
           };
         }  // namespace impl
 
@@ -45,22 +45,22 @@ namespace cms {
    */
     template <typename T>
     typename host::noncached::impl::make_host_unique_selector<T>::non_array make_host_noncached_unique(
-        unsigned int flags = cudaHostAllocDefault) {
+        unsigned int flags = hipHostMallocDefault) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem;
-      cudaCheck(cudaHostAlloc(&mem, sizeof(T), flags));
+      cudaCheck(hipHostMalloc(&mem, sizeof(T), flags));
       return typename host::noncached::impl::make_host_unique_selector<T>::non_array(reinterpret_cast<T *>(mem));
     }
 
     template <typename T>
     typename host::noncached::impl::make_host_unique_selector<T>::unbounded_array make_host_noncached_unique(
-        size_t n, unsigned int flags = cudaHostAllocDefault) {
+        size_t n, unsigned int flags = hipHostMallocDefault) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem;
-      cudaCheck(cudaHostAlloc(&mem, n * sizeof(element_type), flags));
+      cudaCheck(hipHostMalloc(&mem, n * sizeof(element_type), flags));
       return typename host::noncached::impl::make_host_unique_selector<T>::unbounded_array(
           reinterpret_cast<element_type *>(mem));
     }

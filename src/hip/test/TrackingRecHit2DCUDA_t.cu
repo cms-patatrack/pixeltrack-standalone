@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
@@ -26,8 +27,8 @@ namespace testTrackingRecHit2D {
 
   void runKernels(TrackingRecHit2DSOAView* hits) {
     assert(hits);
-    fill<<<1, 1024>>>(hits);
-    verify<<<1, 1024>>>(hits);
+    hipLaunchKernelGGL(fill, dim3(1), dim3(1024), 0, 0, hits);
+    hipLaunchKernelGGL(verify, dim3(1), dim3(1024), 0, 0, hits);
   }
 
 }  // namespace testTrackingRecHit2D
@@ -39,8 +40,8 @@ namespace testTrackingRecHit2D {
 }
 
 int main() {
-  cudaStream_t stream;
-  cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+  hipStream_t stream;
+  cudaCheck(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
 
   // inner scope to deallocate memory before destroying the stream
   {
@@ -50,7 +51,7 @@ int main() {
     testTrackingRecHit2D::runKernels(tkhit.view());
   }
 
-  cudaCheck(cudaStreamDestroy(stream));
+  cudaCheck(hipStreamDestroy(stream));
 
   return 0;
 }

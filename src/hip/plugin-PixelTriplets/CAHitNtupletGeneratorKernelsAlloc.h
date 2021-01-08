@@ -3,10 +3,10 @@
 #include "CUDACore/cudaCheck.h"
 
 template <>
-#ifdef __CUDACC__
-void CAHitNtupletGeneratorKernelsGPU::allocateOnGPU(cudaStream_t stream) {
+#ifdef __HIPCC__
+void CAHitNtupletGeneratorKernelsGPU::allocateOnGPU(hipStream_t stream) {
 #else
-void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
+void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(hipStream_t stream) {
 #endif
   //////////////////////////////////////////////////////////
   // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
@@ -26,11 +26,11 @@ void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
   device_nCells_ = (uint32_t*)(device_storage_.get() + 2);
 
   if
-#ifndef __CUDACC__
+#ifndef __HIPCC__
       constexpr
 #endif
       (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
-    cudaCheck(cudaMemsetAsync(device_nCells_, 0, sizeof(uint32_t), stream));
+    cudaCheck(hipMemsetAsync(device_nCells_, 0, sizeof(uint32_t), stream));
   } else {
     *device_nCells_ = 0;
   }

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCore_CUDAUtilities_interface_cudaCompat_h
 #define HeterogeneousCore_CUDAUtilities_interface_cudaCompat_h
 
@@ -5,13 +6,13 @@
  * Everything you need to run cuda code in plain sequential c++ code
  */
 
-#ifndef __CUDACC__
+#ifndef __HIPCC__
 
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 namespace cms {
   namespace cudacompat {

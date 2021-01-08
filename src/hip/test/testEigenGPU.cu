@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <iostream>
 
 #include <Eigen/Core>
@@ -245,26 +246,26 @@ void testFit() {
 
   // for timing    purposes we fit    4096 tracks
   constexpr uint32_t Ntracks = 4096;
-  cudaCheck(cudaMalloc(&hitsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::Matrix3xNd<N>)));
-  cudaCheck(cudaMalloc(&hits_geGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::Matrix6xNf<N>)));
-  cudaCheck(cudaMalloc(&fast_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Vector4d)));
-  cudaCheck(cudaMalloc(&line_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit)));
-  cudaCheck(cudaMalloc(&circle_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::circle_fit)));
+  cudaCheck(hipMalloc(&hitsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::Matrix3xNd<N>)));
+  cudaCheck(hipMalloc(&hits_geGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::Matrix6xNf<N>)));
+  cudaCheck(hipMalloc(&fast_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Vector4d)));
+  cudaCheck(hipMalloc(&line_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit)));
+  cudaCheck(hipMalloc(&circle_fit_resultsGPU, Rfit::maxNumberOfTracks() * sizeof(Rfit::circle_fit)));
 
-  cudaCheck(cudaMemset(fast_fit_resultsGPU, 0, Rfit::maxNumberOfTracks() * sizeof(Vector4d)));
-  cudaCheck(cudaMemset(line_fit_resultsGPU, 0, Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit)));
+  cudaCheck(hipMemset(fast_fit_resultsGPU, 0, Rfit::maxNumberOfTracks() * sizeof(Vector4d)));
+  cudaCheck(hipMemset(line_fit_resultsGPU, 0, Rfit::maxNumberOfTracks() * sizeof(Rfit::line_fit)));
 
-  kernelPrintSizes<N><<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU);
-  kernelFillHitsAndHitsCov<N><<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU);
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelPrintSizes<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, hits_geGPU);
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelFillHitsAndHitsCov<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, hits_geGPU);
 
   // FAST_FIT GPU
-  kernelFastFit<N><<<Ntracks / 64, 64>>>(hitsGPU, fast_fit_resultsGPU);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelFastFit<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, fast_fit_resultsGPU);
+  hipDeviceSynchronize();
 
-  cudaCheck(cudaMemcpy(fast_fit_resultsGPUret,
+  cudaCheck(hipMemcpy(fast_fit_resultsGPUret,
                        fast_fit_resultsGPU,
                        Rfit::maxNumberOfTracks() * sizeof(Vector4d),
-                       cudaMemcpyDeviceToHost));
+                       hipMemcpyDeviceToHost));
   Rfit::Map4d fast_fit(fast_fit_resultsGPUret + 10, 4);
   std::cout << "Fitted values (FastFit, [X0, Y0, R, tan(theta)]): GPU\n" << fast_fit << std::endl;
   assert(isEqualFuzzy(fast_fit_results, fast_fit));
@@ -284,9 +285,8 @@ void testFit() {
   circle_fit_results.cov = Jacob * circle_fit_results.cov * Jacob.transpose();
 
   // fit on GPU
-  kernelBrokenLineFit<N>
-      <<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU, line_fit_resultsGPU);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelBrokenLineFit<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU, line_fit_resultsGPU);
+  hipDeviceSynchronize();
 
 #else
   // CIRCLE_FIT CPU
@@ -298,27 +298,26 @@ void testFit() {
       Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
 
   // CIRCLE_FIT GPU
-  kernelCircleFit<N><<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelCircleFit<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU);
+  hipDeviceSynchronize();
 
   // LINE_FIT CPU
   Rfit::line_fit line_fit_results = Rfit::Line_fit(hits, hits_ge, circle_fit_results, fast_fit_results, B, true);
 
-  kernelLineFit<N>
-      <<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU, B, circle_fit_resultsGPU, fast_fit_resultsGPU, line_fit_resultsGPU);
-  cudaDeviceSynchronize();
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(kernelLineFit<N>), dim3(Ntracks / 64), dim3(64), 0, 0, hitsGPU, hits_geGPU, B, circle_fit_resultsGPU, fast_fit_resultsGPU, line_fit_resultsGPU);
+  hipDeviceSynchronize();
 #endif
 
   std::cout << "Fitted values (CircleFit):\n" << circle_fit_results.par << std::endl;
 
   cudaCheck(
-      cudaMemcpy(circle_fit_resultsGPUret, circle_fit_resultsGPU, sizeof(Rfit::circle_fit), cudaMemcpyDeviceToHost));
+      hipMemcpy(circle_fit_resultsGPUret, circle_fit_resultsGPU, sizeof(Rfit::circle_fit), hipMemcpyDeviceToHost));
   std::cout << "Fitted values (CircleFit) GPU:\n" << circle_fit_resultsGPUret->par << std::endl;
   assert(isEqualFuzzy(circle_fit_results.par, circle_fit_resultsGPUret->par));
 
   std::cout << "Fitted values (LineFit):\n" << line_fit_results.par << std::endl;
   // LINE_FIT GPU
-  cudaCheck(cudaMemcpy(line_fit_resultsGPUret, line_fit_resultsGPU, sizeof(Rfit::line_fit), cudaMemcpyDeviceToHost));
+  cudaCheck(hipMemcpy(line_fit_resultsGPUret, line_fit_resultsGPU, sizeof(Rfit::line_fit), hipMemcpyDeviceToHost));
   std::cout << "Fitted values (LineFit) GPU:\n" << line_fit_resultsGPUret->par << std::endl;
   assert(isEqualFuzzy(line_fit_results.par, line_fit_resultsGPUret->par, N == 5 ? 1e-4 : 1e-6));  // requires fma on CPU
 

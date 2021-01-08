@@ -4,7 +4,7 @@
 #include "CUDACore/host_unique_ptr.h"
 #include "CUDACore/copyAsync.h"
 
-SiPixelClustersCUDA::SiPixelClustersCUDA(size_t maxClusters, cudaStream_t stream) {
+SiPixelClustersCUDA::SiPixelClustersCUDA(size_t maxClusters, hipStream_t stream) {
   moduleStart_d = cms::cuda::make_device_unique<uint32_t[]>(maxClusters + 1, stream);
   clusInModule_d = cms::cuda::make_device_unique<uint32_t[]>(maxClusters, stream);
   moduleId_d = cms::cuda::make_device_unique<uint32_t[]>(maxClusters, stream);

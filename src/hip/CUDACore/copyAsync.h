@@ -14,28 +14,28 @@ namespace cms {
     // Single element
 
     template <typename T>
-    inline void copyAsync(device::unique_ptr<T>& dst, const host::unique_ptr<T>& src, cudaStream_t stream) {
+    inline void copyAsync(device::unique_ptr<T>& dst, const host::unique_ptr<T>& src, hipStream_t stream) {
       // Shouldn't compile for array types because of sizeof(T), but
       // let's add an assert with a more helpful message
       static_assert(std::is_array<T>::value == false,
                     "For array types, use the other overload with the size parameter");
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), sizeof(T), cudaMemcpyHostToDevice, stream));
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), sizeof(T), hipMemcpyHostToDevice, stream));
     }
 
     template <typename T>
-    inline void copyAsync(device::unique_ptr<T>& dst, const host::noncached::unique_ptr<T>& src, cudaStream_t stream) {
+    inline void copyAsync(device::unique_ptr<T>& dst, const host::noncached::unique_ptr<T>& src, hipStream_t stream) {
       // Shouldn't compile for array types because of sizeof(T), but
       // let's add an assert with a more helpful message
       static_assert(std::is_array<T>::value == false,
                     "For array types, use the other overload with the size parameter");
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), sizeof(T), cudaMemcpyHostToDevice, stream));
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), sizeof(T), hipMemcpyHostToDevice, stream));
     }
 
     template <typename T>
-    inline void copyAsync(host::unique_ptr<T>& dst, const device::unique_ptr<T>& src, cudaStream_t stream) {
+    inline void copyAsync(host::unique_ptr<T>& dst, const device::unique_ptr<T>& src, hipStream_t stream) {
       static_assert(std::is_array<T>::value == false,
                     "For array types, use the other overload with the size parameter");
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), sizeof(T), cudaMemcpyDeviceToHost, stream));
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), sizeof(T), hipMemcpyDeviceToHost, stream));
     }
 
     // Multiple elements
@@ -44,24 +44,24 @@ namespace cms {
     inline void copyAsync(device::unique_ptr<T[]>& dst,
                           const host::unique_ptr<T[]>& src,
                           size_t nelements,
-                          cudaStream_t stream) {
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), cudaMemcpyHostToDevice, stream));
+                          hipStream_t stream) {
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), hipMemcpyHostToDevice, stream));
     }
 
     template <typename T>
     inline void copyAsync(device::unique_ptr<T[]>& dst,
                           const host::noncached::unique_ptr<T[]>& src,
                           size_t nelements,
-                          cudaStream_t stream) {
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), cudaMemcpyHostToDevice, stream));
+                          hipStream_t stream) {
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), hipMemcpyHostToDevice, stream));
     }
 
     template <typename T>
     inline void copyAsync(host::unique_ptr<T[]>& dst,
                           const device::unique_ptr<T[]>& src,
                           size_t nelements,
-                          cudaStream_t stream) {
-      cudaCheck(cudaMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), cudaMemcpyDeviceToHost, stream));
+                          hipStream_t stream) {
+      cudaCheck(hipMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), hipMemcpyDeviceToHost, stream));
     }
   }  // namespace cuda
 }  // namespace cms

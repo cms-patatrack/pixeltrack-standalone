@@ -3,22 +3,22 @@
 
 #include <memory>
 #include <new>
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 namespace cms {
   namespace cuda {
 
     class bad_alloc : public std::bad_alloc {
     public:
-      bad_alloc(cudaError_t error) noexcept : error_(error) {}
+      bad_alloc(hipError_t error) noexcept : error_(error) {}
 
-      const char* what() const noexcept override { return cudaGetErrorString(error_); }
+      const char* what() const noexcept override { return hipGetErrorString(error_); }
 
     private:
-      cudaError_t error_;
+      hipError_t error_;
     };
 
-    template <typename T, unsigned int FLAGS = cudaHostAllocDefault>
+    template <typename T, unsigned int FLAGS = hipHostMallocDefault>
     class HostAllocator {
     public:
       using value_type = T;
@@ -31,8 +31,8 @@ namespace cms {
       T* allocate(std::size_t n) const __attribute__((warn_unused_result)) __attribute__((malloc))
       __attribute__((returns_nonnull)) {
         void* ptr = nullptr;
-        cudaError_t status = cudaMallocHost(&ptr, n * sizeof(T), FLAGS);
-        if (status != cudaSuccess) {
+        hipError_t status = hipHostMalloc(&ptr, n * sizeof(T), FLAGS);
+        if (status != hipSuccess) {
           throw bad_alloc(status);
         }
         if (ptr == nullptr) {
@@ -42,8 +42,8 @@ namespace cms {
       }
 
       void deallocate(T* p, std::size_t n) const {
-        cudaError_t status = cudaFreeHost(p);
-        if (status != cudaSuccess) {
+        hipError_t status = hipHostFree(p);
+        if (status != hipSuccess) {
           throw bad_alloc(status);
         }
       }

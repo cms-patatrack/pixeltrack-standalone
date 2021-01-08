@@ -1,15 +1,15 @@
 #include <cstdlib>
 #include <iostream>
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/requireDevices.h"
 
 namespace cms::cudatest {
   bool testDevices() {
     int devices = 0;
-    auto status = cudaGetDeviceCount(&devices);
-    if (status != cudaSuccess) {
+    auto status = hipGetDeviceCount(&devices);
+    if (status != hipSuccess) {
       std::cerr << "Failed to initialise the CUDA runtime, the test will be skipped."
                 << "\n";
       return false;
