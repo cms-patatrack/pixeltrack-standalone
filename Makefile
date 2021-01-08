@@ -12,7 +12,7 @@ export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
 
 GCC_TOOLCHAIN := $(abspath $(dir $(shell which $(CXX)))/..)
 
-CLANG_FORMAT := clang-format-8
+CLANG_FORMAT := clang-format-10
 CMAKE := cmake
 
 # Source code

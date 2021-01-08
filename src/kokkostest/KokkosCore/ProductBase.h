@@ -113,8 +113,7 @@ namespace cms {
       impl::ExecSpaceSpecific<ExecSpace> const& execSpaceSpecific() const {
         auto const& sp = *execSpaceSpecific_;
         if (typeid(sp) != typeid(impl::ExecSpaceSpecific<ExecSpace>)) {
-          throw std::runtime_error(std::string("Incompatible Execution space: has ") +
-                                   typeid(sp).name() + ", but " +
+          throw std::runtime_error(std::string("Incompatible Execution space: has ") + typeid(sp).name() + ", but " +
                                    typeid(impl::ExecSpaceSpecific<ExecSpace>).name() + " was asked for");
         }
         return static_cast<impl::ExecSpaceSpecific<ExecSpace> const&>(sp);
