@@ -301,3 +301,5 @@ tests (`make test`). Programs to have build errors should primarily be
 filtered out from `$(TARGETS)`, and failing tests should primarily be
 removed from the set of tests run by default. Breakages can, however,
 be accepted for short periods of time with a good justification.
+
+The code is formatted with `clang-format` version 10.
