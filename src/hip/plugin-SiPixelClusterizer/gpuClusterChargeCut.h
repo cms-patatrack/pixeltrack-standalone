@@ -35,7 +35,7 @@ namespace gpuClustering {
     if (threadIdx.x == 0 && nclus > MaxNumClustersPerModules)
       printf("Warning too many clusters in module %d in block %d: %d > %d\n",
              thisModuleId,
-             blockIdx.x,
+             static_cast<int>(blockIdx.x),
              nclus,
              MaxNumClustersPerModules);
 
@@ -43,7 +43,7 @@ namespace gpuClustering {
 
     if (nclus > MaxNumClustersPerModules) {
       // remove excess  FIXME find a way to cut charge first....
-      for (auto i = first; i < numElements; i += blockDim.x) {
+      for (uint32_t i = first; i < numElements; i += static_cast<uint32_t>(blockDim.x)) {
         if (id[i] == InvId)
           continue;  // not valid
         if (id[i] != thisModuleId)
@@ -59,7 +59,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
     if (thisModuleId % 100 == 1)
       if (threadIdx.x == 0)
-        printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx.x);
+        printf("start clusterizer for module %d in block %d\n", thisModuleId, static_cast<int>(blockIdx.x));
 #endif
 
     __shared__ int32_t charge[MaxNumClustersPerModules];
@@ -67,12 +67,12 @@ namespace gpuClustering {
     __shared__ uint16_t newclusId[MaxNumClustersPerModules];
 
     assert(nclus <= MaxNumClustersPerModules);
-    for (auto i = threadIdx.x; i < nclus; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < nclus; i += static_cast<uint32_t>(blockDim.x)) {
       charge[i] = 0;
     }
     __syncthreads();
 
-    for (auto i = first; i < numElements; i += blockDim.x) {
+    for (uint32_t i = first; i < numElements; i += static_cast<uint32_t>(blockDim.x)) {
       if (id[i] == InvId)
         continue;  // not valid
       if (id[i] != thisModuleId)
@@ -82,7 +82,7 @@ namespace gpuClustering {
     __syncthreads();
 
     auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
-    for (auto i = threadIdx.x; i < nclus; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < nclus; i += static_cast<uint32_t>(blockDim.x)) {
       newclusId[i] = ok[i] = charge[i] > chargeCut ? 1 : 0;
     }
 
@@ -101,14 +101,14 @@ namespace gpuClustering {
     __syncthreads();
 
     // mark bad cluster again
-    for (auto i = threadIdx.x; i < nclus; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < nclus; i += static_cast<uint32_t>(blockDim.x)) {
       if (0 == ok[i])
         newclusId[i] = InvId + 1;
     }
     __syncthreads();
 
     // reassign id
-    for (auto i = first; i < numElements; i += blockDim.x) {
+    for (uint32_t i = first; i < numElements; i += static_cast<uint32_t>(blockDim.x)) {
       if (id[i] == InvId)
         continue;  // not valid
       if (id[i] != thisModuleId)

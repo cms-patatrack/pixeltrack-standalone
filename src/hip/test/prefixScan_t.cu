@@ -25,8 +25,8 @@ __global__ void testPrefixScan(uint32_t size) {
   __shared__ T c[1024];
   __shared__ T co[1024];
 
-  auto first = threadIdx.x;
-  for (auto i = first; i < size; i += blockDim.x)
+  int first = threadIdx.x;
+  for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x))
     c[i] = 1;
   __syncthreads();
 
@@ -35,9 +35,9 @@ __global__ void testPrefixScan(uint32_t size) {
 
   assert(1 == c[0]);
   assert(1 == co[0]);
-  for (auto i = first + 1; i < size; i += blockDim.x) {
+  for (uint32_t i = first + 1; i < size; i += static_cast<uint32_t>(blockDim.x)) {
     if (c[i] != c[i - 1] + 1)
-      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, static_cast<int>(blockDim.x), c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);
@@ -49,7 +49,7 @@ __global__ void testWarpPrefixScan(uint32_t size) {
   assert(size <= 32);
   __shared__ T c[1024];
   __shared__ T co[1024];
-  auto i = threadIdx.x;
+  int i = threadIdx.x;
   c[i] = 1;
   __syncthreads();
 
@@ -61,7 +61,7 @@ __global__ void testWarpPrefixScan(uint32_t size) {
   assert(1 == co[0]);
   if (i != 0) {
     if (c[i] != c[i - 1] + 1)
-      printf(format_traits<T>::failed_msg, size, i, blockDim.x, c[i], c[i - 1]);
+      printf(format_traits<T>::failed_msg, size, i, static_cast<int>(blockDim.x), c[i], c[i - 1]);
     assert(c[i] == c[i - 1] + 1);
     assert(c[i] == i + 1);
     assert(c[i] = co[i]);

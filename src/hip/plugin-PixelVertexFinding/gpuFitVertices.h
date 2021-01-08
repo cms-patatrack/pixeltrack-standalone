@@ -41,7 +41,7 @@ namespace gpuVertexFinder {
     auto foundClusters = nvFinal;
 
     // zero
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < foundClusters; i += static_cast<uint32_t>(blockDim.x)) {
       zv[i] = 0;
       wv[i] = 0;
       chi2[i] = 0;
@@ -55,7 +55,7 @@ namespace gpuVertexFinder {
     __syncthreads();
 
     // compute cluster location
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < nt; i += static_cast<uint32_t>(blockDim.x)) {
       if (iv[i] > 9990) {
         if (verbose)
           atomicAdd(&noise, 1);
@@ -70,7 +70,7 @@ namespace gpuVertexFinder {
 
     __syncthreads();
     // reuse nn
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < foundClusters; i += static_cast<uint32_t>(blockDim.x)) {
       assert(wv[i] > 0.f);
       zv[i] /= wv[i];
       nn[i] = -1;  // ndof
@@ -78,7 +78,7 @@ namespace gpuVertexFinder {
     __syncthreads();
 
     // compute chi2
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = threadIdx.x; i < nt; i += static_cast<uint32_t>(blockDim.x)) {
       if (iv[i] > 9990)
         continue;
 
@@ -92,7 +92,7 @@ namespace gpuVertexFinder {
       atomicAdd(&nn[iv[i]], 1);
     }
     __syncthreads();
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x)
+    for (uint32_t i = threadIdx.x; i < foundClusters; i += static_cast<uint32_t>(blockDim.x))
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
 

@@ -18,7 +18,7 @@ __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __re
 #pragma unroll
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
-    if (laneId >= offset)
+    if (static_cast<int>(laneId) >= offset)
       x += y;
   }
   co[i] = x;
@@ -31,7 +31,7 @@ __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i, uint32_t mask) 
 #pragma unroll
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
-    if (laneId >= offset)
+    if (static_cast<int>(laneId) >= offset)
       x += y;
   }
   c[i] = x;
@@ -56,10 +56,10 @@ namespace cms {
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
-      auto first = threadIdx.x;
+      uint32_t first = threadIdx.x;
       auto mask = __ballot_sync(0xffffffff, first < size);
 
-      for (auto i = first; i < size; i += blockDim.x) {
+      for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         warpPrefixScan(ci, co, i, mask);
         auto laneId = threadIdx.x & 0x1f;
         auto warpId = i / 32;
@@ -74,7 +74,7 @@ namespace cms {
       if (threadIdx.x < 32)
         warpPrefixScan(ws, threadIdx.x, 0xffffffff);
       __syncthreads();
-      for (auto i = first + 32; i < size; i += blockDim.x) {
+      for (auto i = first + 32; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         auto warpId = i / 32;
         co[i] += ws[warpId - 1];
       }
@@ -100,10 +100,10 @@ namespace cms {
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
-      auto first = threadIdx.x;
+      uint32_t first = threadIdx.x;
       auto mask = __ballot_sync(0xffffffff, first < size);
 
-      for (auto i = first; i < size; i += blockDim.x) {
+      for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         warpPrefixScan(c, i, mask);
         auto laneId = threadIdx.x & 0x1f;
         auto warpId = i / 32;
@@ -118,7 +118,7 @@ namespace cms {
       if (threadIdx.x < 32)
         warpPrefixScan(ws, threadIdx.x, 0xffffffff);
       __syncthreads();
-      for (auto i = first + 32; i < size; i += blockDim.x) {
+      for (auto i = first + 32; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         auto warpId = i / 32;
         c[i] += ws[warpId - 1];
       }
@@ -129,6 +129,7 @@ namespace cms {
 #endif
     }
 
+#ifdef TODO
 #ifdef __HIP_DEVICE_COMPILE__
     // see https://stackoverflow.com/questions/40021086/can-i-obtain-the-amount-of-allocated-dynamic-shared-memory-from-within-a-kernel/40021087#40021087
     __device__ __forceinline__ unsigned dynamic_smem_size() {
@@ -137,6 +138,7 @@ namespace cms {
       return ret;
     }
 #endif
+#endif
 
     // in principle not limited....
     template <typename T>
@@ -144,10 +146,12 @@ namespace cms {
       volatile T const* ci = ici;
       volatile T* co = ico;
       __shared__ T ws[32];
+#ifdef TODO
 #ifdef __HIP_DEVICE_COMPILE__
       assert(sizeof(T) * gridDim.x <= dynamic_smem_size());  // size of psum below
 #endif
-      assert(blockDim.x * gridDim.x >= size);
+#endif
+      assert(static_cast<int32_t>(blockDim.x * gridDim.x) >= size);
       // first each block does a scan
       int off = blockDim.x * blockIdx.x;
       if (size - off > 0)
@@ -173,7 +177,7 @@ namespace cms {
       // let's get the partial sums from each block
       HIP_DYNAMIC_SHARED( T, psum)
       for (int i = threadIdx.x, ni = gridDim.x; i < ni; i += blockDim.x) {
-        auto j = blockDim.x * i + blockDim.x - 1;
+        int32_t j = blockDim.x * i + blockDim.x - 1;
         psum[i] = (j < size) ? co[j] : T(0);
       }
       __syncthreads();

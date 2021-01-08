@@ -36,7 +36,7 @@ namespace gpuCalibPixel {
     // zero for next kernels...
     if (0 == first)
       clusModuleStart[0] = moduleStart[0] = 0;
-    for (int i = first; i < gpuClustering::MaxNumModules; i += gridDim.x * blockDim.x) {
+    for (uint32_t i = first; i < gpuClustering::MaxNumModules; i += static_cast<uint32_t>(gridDim.x * blockDim.x)) {
       nClustersInModule[i] = 0;
     }
 

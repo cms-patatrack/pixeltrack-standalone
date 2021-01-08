@@ -17,7 +17,7 @@ __global__ void update(cms::hip::AtomicPairCounter *dc, uint32_t *ind, uint32_t 
   auto c = dc->add(m);
   assert(c.m < n);
   ind[c.m] = c.n;
-  for (int j = c.n; j < c.n + m; ++j)
+  for (int j = c.n; j < static_cast<int>(c.n + m); ++j)
     cont[j] = i;
 };
 

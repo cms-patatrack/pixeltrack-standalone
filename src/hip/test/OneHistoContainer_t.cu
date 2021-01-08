@@ -26,12 +26,12 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
   __shared__ Hist hist;
   __shared__ typename Hist::Counter ws[32];
 
-  for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
+  for (uint32_t j = threadIdx.x; j < Hist::totbins(); j += static_cast<uint32_t>(blockDim.x)) {
     hist.off[j] = 0;
   }
   __syncthreads();
 
-  for (auto j = threadIdx.x; j < N; j += blockDim.x)
+  for (uint32_t j = threadIdx.x; j < N; j += static_cast<uint32_t>(blockDim.x))
     hist.count(v[j]);
   __syncthreads();
 
@@ -42,7 +42,7 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
   __syncthreads();
 
   assert(N == hist.size());
-  for (auto j = threadIdx.x; j < Hist::nbins(); j += blockDim.x)
+  for (uint32_t j = threadIdx.x; j < Hist::nbins(); j += static_cast<uint32_t>(blockDim.x))
     assert(hist.off[j] <= hist.off[j + 1]);
   __syncthreads();
 
@@ -50,13 +50,13 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
     ws[threadIdx.x] = 0;  // used by prefix scan...
   __syncthreads();
 
-  for (auto j = threadIdx.x; j < N; j += blockDim.x)
+  for (uint32_t j = threadIdx.x; j < N; j += static_cast<uint32_t>(blockDim.x))
     hist.fill(v[j], j);
   __syncthreads();
   assert(0 == hist.off[0]);
   assert(N == hist.size());
 
-  for (auto j = threadIdx.x; j < hist.size() - 1; j += blockDim.x) {
+  for (uint32_t j = threadIdx.x; j < hist.size() - 1; j += static_cast<uint32_t>(blockDim.x)) {
     auto p = hist.begin() + j;
     assert((*p) < N);
     auto k1 = Hist::bin(v[*p]);
@@ -64,12 +64,12 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
     assert(k2 >= k1);
   }
 
-  for (auto i = threadIdx.x; i < hist.size(); i += blockDim.x) {
+  for (uint32_t i = threadIdx.x; i < hist.size(); i += static_cast<uint32_t>(blockDim.x)) {
     auto p = hist.begin() + i;
     auto j = *p;
     auto b0 = Hist::bin(v[j]);
     int tot = 0;
-    auto ftest = [&](int k) {
+    auto ftest = [&](uint32_t k) {
       assert(k >= 0 && k < N);
       ++tot;
     };

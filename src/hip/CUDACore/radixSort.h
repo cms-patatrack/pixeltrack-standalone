@@ -22,7 +22,7 @@ __device__ inline void reorderSigned(T const* a, uint16_t* ind, uint16_t* ind2, 
   __syncthreads();
 
   // find first negative
-  for (auto i = first; i < size - 1; i += blockDim.x) {
+  for (uint32_t i = first; i < size - 1; i += static_cast<uint32_t>(blockDim.x)) {
     if ((a[ind[i]] ^ a[ind[i + 1]]) < 0)
       firstNeg = i + 1;
   }
@@ -30,19 +30,19 @@ __device__ inline void reorderSigned(T const* a, uint16_t* ind, uint16_t* ind2, 
   __syncthreads();
 
   auto ii = first;
-  for (auto i = firstNeg + threadIdx.x; i < size; i += blockDim.x) {
+  for (uint32_t i = firstNeg + threadIdx.x; i < size; i += static_cast<uint32_t>(blockDim.x)) {
     ind2[ii] = ind[i];
     ii += blockDim.x;
   }
   __syncthreads();
   ii = size - firstNeg + threadIdx.x;
   assert(ii >= 0);
-  for (auto i = first; i < firstNeg; i += blockDim.x) {
+  for (uint32_t i = first; i < firstNeg; i += static_cast<uint32_t>(blockDim.x)) {
     ind2[ii] = ind[i];
     ii += blockDim.x;
   }
   __syncthreads();
-  for (auto i = first; i < size; i += blockDim.x)
+  for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x))
     ind[i] = ind2[i];
 }
 
@@ -56,7 +56,7 @@ __device__ inline void reorderFloat(T const* a, uint16_t* ind, uint16_t* ind2, u
   __syncthreads();
 
   // find first negative
-  for (auto i = first; i < size - 1; i += blockDim.x) {
+  for (uint32_t i = first; i < size - 1; i += static_cast<uint32_t>(blockDim.x)) {
     if ((a[ind[i]] ^ a[ind[i + 1]]) < 0)
       firstNeg = i + 1;
   }
@@ -64,19 +64,19 @@ __device__ inline void reorderFloat(T const* a, uint16_t* ind, uint16_t* ind2, u
   __syncthreads();
 
   int ii = size - firstNeg - threadIdx.x - 1;
-  for (auto i = firstNeg + threadIdx.x; i < size; i += blockDim.x) {
+  for (uint32_t i = firstNeg + threadIdx.x; i < size; i += static_cast<uint32_t>(blockDim.x)) {
     ind2[ii] = ind[i];
     ii -= blockDim.x;
   }
   __syncthreads();
   ii = size - firstNeg + threadIdx.x;
   assert(ii >= 0);
-  for (auto i = first; i < firstNeg; i += blockDim.x) {
+  for (uint32_t i = first; i < firstNeg; i += static_cast<uint32_t>(blockDim.x)) {
     ind2[ii] = ind[i];
     ii += blockDim.x;
   }
   __syncthreads();
-  for (auto i = first; i < size; i += blockDim.x)
+  for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x))
     ind[i] = ind2[i];
 }
 
@@ -105,7 +105,7 @@ __device__ __forceinline__ void radixSortImpl(
   auto k = ind2;
 
   int32_t first = threadIdx.x;
-  for (auto i = first; i < size; i += blockDim.x)
+  for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x))
     j[i] = i;
   __syncthreads();
 
@@ -115,7 +115,7 @@ __device__ __forceinline__ void radixSortImpl(
     __syncthreads();
 
     // fill bins
-    for (auto i = first; i < size; i += blockDim.x) {
+    for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
       auto bin = (a[j[i]] >> d * p) & (sb - 1);
       atomicAdd(&c[bin], 1);
     }
@@ -128,7 +128,7 @@ __device__ __forceinline__ void radixSortImpl(
 #pragma unroll
       for (int offset = 1; offset < 32; offset <<= 1) {
         auto y = __shfl_up_sync(0xffffffff, x, offset);
-        if (laneId >= offset)
+        if (static_cast<int>(laneId) >= offset)
           x += y;
       }
       ct[threadIdx.x] = x;
@@ -209,7 +209,7 @@ __device__ __forceinline__ void radixSortImpl(
     assert(j == ind);  // w/d is even so ind is correct
 
   if (j != ind)  // odd...
-    for (auto i = first; i < size; i += blockDim.x)
+    for (uint32_t i = first; i < size; i += static_cast<uint32_t>(blockDim.x))
       ind[i] = ind2[i];
 
   __syncthreads();
