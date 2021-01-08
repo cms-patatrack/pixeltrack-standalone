@@ -135,7 +135,7 @@ int main() {
       gen(ev);
 
 #ifdef __HIPCC__
-      hipLaunchKernelGGL(init, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
+      hipLaunchKernelGGL(gpuVertexFinder::init, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
 #else
       onGPU_d->init();
       ws_d->init();
