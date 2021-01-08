@@ -1,7 +1,7 @@
 // The omission of #include guards is on purpose: it does make sense to #include
 // this file multiple times, setting a different value of GPU_DEBUG beforehand.
 
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
 #ifndef GPU_DEBUG
 // disable asserts
 #ifndef NDEBUG
@@ -13,6 +13,6 @@
 #undef NDEBUG
 #endif
 #endif
-#endif  // __CUDA_ARCH__
+#endif  // __HIP_DEVICE_COMPILE__
 
 #include <cassert>

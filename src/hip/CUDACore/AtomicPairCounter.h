@@ -39,7 +39,7 @@ namespace cms {
         c_type c = i;
         c += incr;
         Atomic2 ret;
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
         ret.ac = atomicAdd(&counter.ac, c);
 #else
         ret.ac = counter.ac;

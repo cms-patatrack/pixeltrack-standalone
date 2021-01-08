@@ -97,14 +97,14 @@ namespace cms {
 #endif
 
 // make sure function are inlined to avoid multiple definition
-#ifndef __CUDA_ARCH__
+#ifndef __HIP_DEVICE_COMPILE__
 #undef __global__
 #define __global__ inline __attribute__((always_inline))
 #undef __forceinline__
 #define __forceinline__ inline __attribute__((always_inline))
 #endif
 
-#ifndef __CUDA_ARCH__
+#ifndef __HIP_DEVICE_COMPILE__
 using namespace cms::cudacompat;
 #endif
 

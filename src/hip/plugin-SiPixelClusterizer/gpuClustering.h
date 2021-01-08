@@ -135,7 +135,7 @@ namespace gpuClustering {
       hist.fill(y[i], i - firstPixel);
     }
 
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
     // assume that we can cover the whole module with up to 16 blockDim.x-wide iterations
     constexpr int maxiter = 16;
 #else

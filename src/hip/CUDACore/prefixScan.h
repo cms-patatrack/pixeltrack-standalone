@@ -7,7 +7,7 @@
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/cuda_assert.h"
 
-#ifdef __CUDA_ARCH__
+#ifdef __HIPCC__
 
 template <typename T>
 __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {
@@ -36,7 +36,7 @@ __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i, uint32_t mask) 
   c[i] = x;
 }
 
-#endif
+#endif // __HIPCC__
 
 namespace cms {
   namespace cuda {
@@ -47,11 +47,11 @@ namespace cms {
                                                              VT* co,
                                                              uint32_t size,
                                                              T* ws
-#ifndef __CUDA_ARCH__
+#ifndef __HIP_DEVICE_COMPILE__
                                                              = nullptr
 #endif
     ) {
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
@@ -91,11 +91,11 @@ namespace cms {
     __host__ __device__ __forceinline__ void blockPrefixScan(T* c,
                                                              uint32_t size,
                                                              T* ws
-#ifndef __CUDA_ARCH__
+#ifndef __HIP_DEVICE_COMPILE__
                                                              = nullptr
 #endif
     ) {
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
@@ -128,7 +128,7 @@ namespace cms {
 #endif
     }
 
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
     // see https://stackoverflow.com/questions/40021086/can-i-obtain-the-amount-of-allocated-dynamic-shared-memory-from-within-a-kernel/40021087#40021087
     __device__ __forceinline__ unsigned dynamic_smem_size() {
       unsigned ret;
@@ -143,7 +143,7 @@ namespace cms {
       volatile T const* ci = ici;
       volatile T* co = ico;
       __shared__ T ws[32];
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
       assert(sizeof(T) * gridDim.x <= dynamic_smem_size());  // size of psum below
 #endif
       assert(blockDim.x * gridDim.x >= size);

@@ -8,7 +8,7 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
 #include "CUDACore/radixSort.h"
 #endif
 
@@ -56,7 +56,7 @@ namespace gpuVertexFinder {
         sortInd[0] = 0;
       return;
     }
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
     __shared__ uint16_t sws[1024];
     // sort using only 16 bits
     radixSort<float, 2>(ptv2, sortInd, sws, nvFinal);

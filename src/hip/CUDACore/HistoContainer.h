@@ -3,9 +3,9 @@
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
 #include <algorithm>
-#ifndef __CUDA_ARCH__
+#ifndef __HIP_DEVICE_COMPILE__
 #include <atomic>
-#endif  // __CUDA_ARCH__
+#endif  // __HIP_DEVICE_COMPILE__
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -194,7 +194,7 @@ namespace cms {
 
       __host__ __device__ __forceinline__ void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
           atomicAdd(off + i, co.off[i]);
 #else
           auto &a = (std::atomic<Counter> &)(off[i]);
@@ -204,7 +204,7 @@ namespace cms {
       }
 
       static __host__ __device__ __forceinline__ uint32_t atomicIncrement(Counter &x) {
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
         return atomicAdd(&x, 1);
 #else
         auto &a = (std::atomic<Counter> &)(x);
@@ -213,7 +213,7 @@ namespace cms {
       }
 
       static __host__ __device__ __forceinline__ uint32_t atomicDecrement(Counter &x) {
-#ifdef __CUDA_ARCH__
+#ifdef __HIP_DEVICE_COMPILE__
         return atomicSub(&x, 1);
 #else
         auto &a = (std::atomic<Counter> &)(x);
