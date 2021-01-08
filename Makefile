@@ -55,7 +55,7 @@ export CUDA_DLINKFLAGS
 endif
 
 # ROCm
-ROCM_BASE := /usr/local/rocm-3.10
+ROCM_BASE := /usr/local/rocm-4.0.0
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=
@@ -64,7 +64,11 @@ else
 export HIP_DEPS := $(ROCM_BASE)/lib/libamdhip64.so
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
 HIPCC_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable 
-export HIPCC_FLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_CXXFLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
+# flags to be used by GCC when compiling host code that includes hip_runtime.h
+HIPCONFIG := $(ROCM_BASE)/bin/hipconfig
+export HIP_CXXFLAGS:= $(shell $(HIPCONFIG) --cpp_config)
 endif
 
 # Input data definitions
@@ -171,9 +175,9 @@ else
     KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(ROCM_HIPCC) -DCMAKE_CXX_FLAGS="--gcc-toolchain=$(GCC_TOOLCHAIN)" -DKokkos_ENABLE_HIP=On $(KOKKOS_CMAKE_HIP_ARCH) -DBUILD_SHARED_LIBS=On
     export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
     export KOKKOS_DEVICE_CXX := $(ROCM_HIPCC)
-    export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
-    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
-    export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_FLAGS)
+    export KOKKOS_DEVICE_LDFLAGS := $(HIPCC_LDFLAGS)
+    export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS)
+    export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_CXXFLAGS)
     export KOKKOS_DEVICE_TEST_CXXFLAGS := 
   else
     $(error Unsupported KOKKOS_DEVICE_PARALLEL $(KOKKOS_DEVICE_PARALLEL))
@@ -223,20 +227,32 @@ endif
 
 # Targets and their dependencies on externals
 TARGETS_ALL := $(notdir $(wildcard $(SRC_DIR)/*))
+define TARGET_ALL_DEPS_template
+include src/$(1)/Makefile.deps
+endef
+$(foreach target,$(TARGETS_ALL),$(eval $(call TARGET_ALL_DEPS_template,$(target))))
 
 # Split targets by required toolchain
-TARGETS_GCC := fwtest
-TARGETS_SYCL := sycltest
-TARGETS_NVCC := $(filter-out $(TARGETS_GCC) $(TARGETS_SYCL),$(TARGETS_ALL))
-TARGETS_HIPCC := kokkostest kokkos
+TARGETS_CUDA :=
+TARGETS_HIP :=
+TARGETS_SYCL :=
+define SPLIT_TARGETS_template
+ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
+  TARGETS_$(1) += $(2)
+endif
+endef
+TOOLCHAINS := CUDA HIP SYCL
+$(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
+
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_HIP) $(TARGETS_SYCL),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
 ifdef CUDA_BASE
-TARGETS += $(TARGETS_NVCC)
+TARGETS += $(TARGETS_CUDA)
 endif
 ifdef ROCM_BASE
-TARGETS += $(TARGETS_HIPCC)
+TARGETS += $(TARGETS_HIP)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
@@ -319,7 +335,6 @@ ifneq ($(wildcard $(ONEAPI_ENV)),)
 endif
 
 define TARGET_template
-include src/$(1)/Makefile.deps
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
 	+$(MAKE) -C src/$(1)
 
