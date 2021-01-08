@@ -7,11 +7,11 @@
 
 namespace {
   const size_t maxAllocationSize =
-      notcub::CachingDeviceAllocator::IntPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
+      notcub::CachingDeviceAllocator::IntPow(cms::hip::allocator::binGrowth, cms::hip::allocator::maxBin);
 }
 
-namespace cms::cuda {
-  void *allocate_host(size_t nbytes, cudaStream_t stream) {
+namespace cms::hip {
+  void *allocate_host(size_t nbytes, hipStream_t stream) {
     void *ptr = nullptr;
     if constexpr (allocator::useCaching) {
       if (nbytes > maxAllocationSize) {
@@ -20,7 +20,7 @@ namespace cms::cuda {
       }
       cudaCheck(allocator::getCachingHostAllocator().HostAllocate(&ptr, nbytes, stream));
     } else {
-      cudaCheck(cudaMallocHost(&ptr, nbytes));
+      cudaCheck(hipHostMalloc(&ptr, nbytes));
     }
     return ptr;
   }
@@ -29,8 +29,8 @@ namespace cms::cuda {
     if constexpr (allocator::useCaching) {
       cudaCheck(allocator::getCachingHostAllocator().HostFree(ptr));
     } else {
-      cudaCheck(cudaFreeHost(ptr));
+      cudaCheck(hipHostFree(ptr));
     }
   }
 
-}  // namespace cms::cuda
+}  // namespace cms::hip

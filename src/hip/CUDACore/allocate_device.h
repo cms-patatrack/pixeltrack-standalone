@@ -1,16 +1,16 @@
 #ifndef HeterogeneousCore_CUDAUtilities_allocate_device_h
 #define HeterogeneousCore_CUDAUtilities_allocate_device_h
 
-#include <cuda_runtime.h>
+#include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     // Allocate device memory
-    void *allocate_device(int dev, size_t nbytes, cudaStream_t stream);
+    void *allocate_device(int dev, size_t nbytes, hipStream_t stream);
 
     // Free device memory (to be called from unique_ptr)
     void free_device(int device, void *ptr);
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

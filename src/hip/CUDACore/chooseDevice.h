@@ -3,7 +3,7 @@
 
 #include "Framework/Event.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   int chooseDevice(edm::StreamID id);
 }
 

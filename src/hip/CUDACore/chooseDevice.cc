@@ -1,7 +1,7 @@
 #include "chooseDevice.h"
 #include "deviceCount.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   int chooseDevice(edm::StreamID id) {
     // For startes we "statically" assign the device based on
     // edm::Stream number. This is suboptimal if the number of
@@ -11,4 +11,4 @@ namespace cms::cuda {
     // TODO: improve the "assignment" logic
     return id % deviceCount();
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

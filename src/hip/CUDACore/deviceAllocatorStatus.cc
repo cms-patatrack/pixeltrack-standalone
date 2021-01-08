@@ -2,6 +2,6 @@
 
 #include "getCachingDeviceAllocator.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   allocator::GpuCachedBytes deviceAllocatorStatus() { return allocator::getCachingDeviceAllocator().CacheStatus(); }
-}  // namespace cms::cuda
+}  // namespace cms::hip

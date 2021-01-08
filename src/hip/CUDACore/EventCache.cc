@@ -5,11 +5,11 @@
 #include "CUDACore/eventWorkHasCompleted.h"
 #include "CUDACore/ScopedSetDevice.h"
 
-namespace cms::cuda {
-  void EventCache::Deleter::operator()(cudaEvent_t event) const {
+namespace cms::hip {
+  void EventCache::Deleter::operator()(hipEvent_t event) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
-      cudaCheck(cudaEventDestroy(event));
+      cudaCheck(hipEventDestroy(event));
     }
   }
 
@@ -43,9 +43,9 @@ namespace cms::cuda {
 
   SharedEventPtr EventCache::makeOrGet(int dev) {
     return cache_[dev].makeOrGet([dev]() {
-      cudaEvent_t event;
+      hipEvent_t event;
       // it should be a bit faster to ignore timings
-      cudaCheck(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
+      cudaCheck(hipEventCreateWithFlags(&event, hipEventDisableTiming));
       return std::unique_ptr<BareEvent, Deleter>(event, Deleter{dev});
     });
   }
@@ -65,4 +65,4 @@ namespace cms::cuda {
     static EventCache cache;
     return cache;
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

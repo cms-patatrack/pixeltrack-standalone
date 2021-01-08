@@ -1,4 +1,4 @@
-hip_EXTERNAL_DEPENDS := TBB CUDA EIGEN
+hip_EXTERNAL_DEPENDS := TBB HIP EIGEN
 BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats

@@ -1,7 +1,7 @@
 #include "CUDACore/ProductBase.h"
 #include "CUDACore/eventWorkHasCompleted.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   bool ProductBase::isAvailable() const {
     // if default-constructed, the product is not available
     if (not event_) {
@@ -23,7 +23,7 @@ namespace cms::cuda {
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
     if (event_) {
-      cudaEventSynchronize(event_.get());
+      (void)hipEventSynchronize(event_.get());
     }
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

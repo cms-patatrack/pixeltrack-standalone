@@ -9,10 +9,10 @@
 
 #include "getCachingDeviceAllocator.h"
 
-namespace cms::cuda::allocator {
+namespace cms::hip::allocator {
   inline notcub::CachingHostAllocator& getCachingHostAllocator() {
     if (debug) {
-      std::cout << "cub::CachingHostAllocator settings\n"
+      std::cout << "hipcub::CachingHostAllocator settings\n"
                 << "  bin growth " << binGrowth << "\n"
                 << "  min bin    " << minBin << "\n"
                 << "  max bin    " << maxBin << "\n"
@@ -41,6 +41,6 @@ namespace cms::cuda::allocator {
                                                   debug};
     return allocator;
   }
-}  // namespace cms::cuda::allocator
+}  // namespace cms::hip::allocator
 
 #endif
