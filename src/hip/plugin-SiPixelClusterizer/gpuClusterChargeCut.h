@@ -89,7 +89,7 @@ namespace gpuClustering {
     __syncthreads();
 
     // renumber
-    __shared__ uint16_t ws[32];
+    __shared__ uint16_t ws[warpSize];
     cms::hip::blockPrefixScan(newclusId, nclus, ws);
 
     assert(nclus >= newclusId[nclus - 1]);

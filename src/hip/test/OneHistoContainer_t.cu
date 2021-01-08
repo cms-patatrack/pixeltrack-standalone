@@ -24,7 +24,7 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
   using Hist = HistoContainer<T, NBINS, 12000, S, uint16_t>;
 
   __shared__ Hist hist;
-  __shared__ typename Hist::Counter ws[32];
+  __shared__ typename Hist::Counter ws[warpSize];
 
   for (uint32_t j = threadIdx.x; j < Hist::totbins(); j += static_cast<uint32_t>(blockDim.x)) {
     hist.off[j] = 0;
@@ -46,7 +46,7 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
     assert(hist.off[j] <= hist.off[j + 1]);
   __syncthreads();
 
-  if (threadIdx.x < 32)
+  if (threadIdx.x < warpSize)
     ws[threadIdx.x] = 0;  // used by prefix scan...
   __syncthreads();
 

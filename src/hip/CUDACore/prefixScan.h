@@ -11,13 +11,13 @@
 #ifdef __HIPCC__
 
 template <typename T>
-__device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {
+__device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __restrict__ co, uint32_t i) {
   // ci and co may be the same
   auto x = ci[i];
-  auto laneId = threadIdx.x & 0x1f;
+  auto laneId = threadIdx.x & (warpSize-1);
 #pragma unroll
-  for (int offset = 1; offset < 32; offset <<= 1) {
-    auto y = __shfl_up_sync(mask, x, offset);
+  for (int offset = 1; offset < warpSize; offset <<= 1) {
+    auto y = __shfl_up(x, offset);
     if (static_cast<int>(laneId) >= offset)
       x += y;
   }
@@ -25,12 +25,12 @@ __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __re
 }
 
 template <typename T>
-__device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i, uint32_t mask) {
+__device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i) {
   auto x = c[i];
-  auto laneId = threadIdx.x & 0x1f;
+  auto laneId = threadIdx.x & (warpSize-1);
 #pragma unroll
-  for (int offset = 1; offset < 32; offset <<= 1) {
-    auto y = __shfl_up_sync(mask, x, offset);
+  for (int offset = 1; offset < warpSize; offset <<= 1) {
+    auto y = __shfl_up(x, offset);
     if (static_cast<int>(laneId) >= offset)
       x += y;
   }
@@ -55,27 +55,25 @@ namespace cms {
 #ifdef __HIP_DEVICE_COMPILE__
       assert(ws);
       assert(size <= 1024);
-      assert(0 == blockDim.x % 32);
+      assert(0 == blockDim.x % warpSize);
       uint32_t first = threadIdx.x;
-      auto mask = __ballot_sync(0xffffffff, first < size);
 
       for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
-        warpPrefixScan(ci, co, i, mask);
-        auto laneId = threadIdx.x & 0x1f;
-        auto warpId = i / 32;
-        assert(warpId < 32);
-        if (31 == laneId)
+        warpPrefixScan(ci, co, i);
+        auto laneId = threadIdx.x & (warpSize-1);
+        auto warpId = i / warpSize;
+        assert(warpId < warpSize);
+        if ((warpSize-1) == laneId)
           ws[warpId] = co[i];
-        mask = __ballot_sync(mask, i + blockDim.x < size);
       }
       __syncthreads();
-      if (size <= 32)
+      if (size <= warpSize)
         return;
-      if (threadIdx.x < 32)
-        warpPrefixScan(ws, threadIdx.x, 0xffffffff);
+      if (threadIdx.x < warpSize)
+        warpPrefixScan(ws, threadIdx.x);
       __syncthreads();
-      for (auto i = first + 32; i < size; i += static_cast<uint32_t>(blockDim.x)) {
-        auto warpId = i / 32;
+      for (auto i = first + warpSize; i < size; i += static_cast<uint32_t>(blockDim.x)) {
+        auto warpId = i / warpSize;
         co[i] += ws[warpId - 1];
       }
       __syncthreads();
@@ -99,27 +97,25 @@ namespace cms {
 #ifdef __HIP_DEVICE_COMPILE__
       assert(ws);
       assert(size <= 1024);
-      assert(0 == blockDim.x % 32);
+      assert(0 == blockDim.x % warpSize);
       uint32_t first = threadIdx.x;
-      auto mask = __ballot_sync(0xffffffff, first < size);
 
       for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
-        warpPrefixScan(c, i, mask);
-        auto laneId = threadIdx.x & 0x1f;
-        auto warpId = i / 32;
-        assert(warpId < 32);
-        if (31 == laneId)
+        warpPrefixScan(c, i);
+        auto laneId = threadIdx.x & (warpSize-1);
+        auto warpId = i / warpSize;
+        assert(warpId < warpSize);
+        if (warpSize-1 == laneId)
           ws[warpId] = c[i];
-        mask = __ballot_sync(mask, i + blockDim.x < size);
       }
       __syncthreads();
-      if (size <= 32)
+      if (size <= warpSize)
         return;
-      if (threadIdx.x < 32)
-        warpPrefixScan(ws, threadIdx.x, 0xffffffff);
+      if (threadIdx.x < warpSize)
+        warpPrefixScan(ws, threadIdx.x);
       __syncthreads();
-      for (auto i = first + 32; i < size; i += static_cast<uint32_t>(blockDim.x)) {
-        auto warpId = i / 32;
+      for (auto i = first + warpSize; i < size; i += static_cast<uint32_t>(blockDim.x)) {
+        auto warpId = i / warpSize;
         c[i] += ws[warpId - 1];
       }
       __syncthreads();
@@ -145,7 +141,7 @@ namespace cms {
     __global__ void multiBlockPrefixScan(T const* ici, T* ico, int32_t size, int32_t* pc) {
       volatile T const* ci = ici;
       volatile T* co = ico;
-      __shared__ T ws[32];
+      __shared__ T ws[warpSize];
 #ifdef TODO
 #ifdef __HIP_DEVICE_COMPILE__
       assert(sizeof(T) * gridDim.x <= dynamic_smem_size());  // size of psum below

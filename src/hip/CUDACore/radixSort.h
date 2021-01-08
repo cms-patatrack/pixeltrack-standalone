@@ -124,10 +124,10 @@ __device__ __forceinline__ void radixSortImpl(
     // prefix scan "optimized"???...
     if (threadIdx.x < sb) {
       auto x = c[threadIdx.x];
-      auto laneId = threadIdx.x & 0x1f;
+      auto laneId = threadIdx.x & (warpSize-1);
 #pragma unroll
-      for (int offset = 1; offset < 32; offset <<= 1) {
-        auto y = __shfl_up_sync(0xffffffff, x, offset);
+      for (int offset = 1; offset < warpSize; offset <<= 1) {
+        auto y = __shfl_up(x, offset);
         if (static_cast<int>(laneId) >= offset)
           x += y;
       }
@@ -135,9 +135,9 @@ __device__ __forceinline__ void radixSortImpl(
     }
     __syncthreads();
     if (threadIdx.x < sb) {
-      auto ss = (threadIdx.x / 32) * 32 - 1;
+      auto ss = (threadIdx.x / warpSize) * warpSize - 1;
       c[threadIdx.x] = ct[threadIdx.x];
-      for (int i = ss; i > 0; i -= 32)
+      for (int i = ss; i > 0; i -= warpSize)
         c[threadIdx.x] += ct[i];
     }
     /* 

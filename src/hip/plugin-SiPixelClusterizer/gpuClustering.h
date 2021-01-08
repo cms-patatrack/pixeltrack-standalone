@@ -83,7 +83,7 @@ namespace gpuClustering {
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
     using Hist = cms::hip::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
     __shared__ Hist hist;
-    __shared__ typename Hist::Counter ws[32];
+    __shared__ typename Hist::Counter ws[warpSize];
     for (uint32_t j = threadIdx.x; j < Hist::totbins(); j += static_cast<uint32_t>(blockDim.x)) {
       hist.off[j] = 0;
     }
@@ -118,7 +118,7 @@ namespace gpuClustering {
 #endif
     }
     __syncthreads();
-    if (threadIdx.x < 32)
+    if (threadIdx.x < warpSize)
       ws[threadIdx.x] = 0;  // used by prefix scan...
     __syncthreads();
     hist.finalize(ws);

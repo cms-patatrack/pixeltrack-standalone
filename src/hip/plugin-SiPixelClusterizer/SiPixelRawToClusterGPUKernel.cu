@@ -484,7 +484,7 @@ namespace pixelgpudetails {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
     }
 
-    __shared__ uint32_t ws[32];
+    __shared__ uint32_t ws[warpSize];
     cms::hip::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
     cms::hip::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 

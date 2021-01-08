@@ -25,6 +25,8 @@ namespace cms {
     const dim3 threadIdx = {0, 0, 0};
     const dim3 blockDim = {1, 1, 1};
 
+    constexpr int warpSize = 32;
+
     extern thread_local dim3 blockIdx;
     extern thread_local dim3 gridDim;
 

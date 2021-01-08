@@ -47,7 +47,7 @@ namespace gpuVertexFinder {
 
     using Hist = cms::hip::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     __shared__ Hist hist;
-    __shared__ typename Hist::Counter hws[32];
+    __shared__ typename Hist::Counter hws[warpSize];
     for (uint32_t j = threadIdx.x; j < Hist::totbins(); j += static_cast<uint32_t>(blockDim.x)) {
       hist.off[j] = 0;
     }
@@ -72,7 +72,7 @@ namespace gpuVertexFinder {
       nn[i] = 0;
     }
     __syncthreads();
-    if (threadIdx.x < 32)
+    if (threadIdx.x < warpSize)
       hws[threadIdx.x] = 0;  // used by prefix scan...
     __syncthreads();
     hist.finalize(hws);

@@ -21,7 +21,7 @@ public:
 
 template <typename T>
 __global__ void testPrefixScan(uint32_t size) {
-  __shared__ T ws[32];
+  __shared__ T ws[warpSize];
   __shared__ T c[1024];
   __shared__ T co[1024];
 
@@ -46,15 +46,15 @@ __global__ void testPrefixScan(uint32_t size) {
 
 template <typename T>
 __global__ void testWarpPrefixScan(uint32_t size) {
-  assert(size <= 32);
+  assert(size <= warpSize);
   __shared__ T c[1024];
   __shared__ T co[1024];
   int i = threadIdx.x;
   c[i] = 1;
   __syncthreads();
 
-  warpPrefixScan(c, co, i, 0xffffffff);
-  warpPrefixScan(c, i, 0xffffffff);
+  warpPrefixScan(c, co, i);
+  warpPrefixScan(c, i);
   __syncthreads();
 
   assert(1 == c[0]);
@@ -88,18 +88,23 @@ int main() {
   cms::hiptest::requireDevices();
 
   std::cout << "warp level" << std::endl;
+  if (warpSize > 32) {
+    // std::cout << "warp 64" << std::endl;
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 64);
+    hipDeviceSynchronize();
+  }
   // std::cout << "warp 32" << std::endl;
-  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 32);
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 32);
   hipDeviceSynchronize();
   // std::cout << "warp 16" << std::endl;
-  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 16);
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 16);
   hipDeviceSynchronize();
   // std::cout << "warp 5" << std::endl;
-  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(32), 0, 0, 5);
+  hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 5);
   hipDeviceSynchronize();
 
   std::cout << "block level" << std::endl;
-  for (int bs = 32; bs <= 1024; bs += 32) {
+  for (int bs = warpSize; bs <= 1024; bs += warpSize) {
     // std::cout << "bs " << bs << std::endl;
     for (int j = 1; j <= 1024; ++j) {
       // std::cout << j << std::endl;
