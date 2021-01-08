@@ -88,12 +88,16 @@ namespace cms {
 }  // namespace cms
 
 // some  not needed as done by cuda runtime...
-#ifndef __CUDA_RUNTIME_H__
+#if !defined(__CUDA_RUNTIME_H__) and !defined(__host__)
 #define __host__
 #define __device__
 #define __global__
 #define __shared__
 #define __forceinline__
+#endif
+
+#ifndef HIP_DYNAMIC_SHARED
+#define HIP_DYNAMIC_SHARED(type, var) extern type var[];
 #endif
 
 // make sure function are inlined to avoid multiple definition

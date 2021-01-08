@@ -1,8 +1,9 @@
-#include "hip/hip_runtime.h"
 #ifndef HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 #define HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 
 #include <cstdint>
+
+#include "hip/hip_runtime.h"
 
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/cuda_assert.h"
