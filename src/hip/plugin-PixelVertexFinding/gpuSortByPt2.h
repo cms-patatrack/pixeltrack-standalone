@@ -16,7 +16,7 @@
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
+  __host__ __device__ __forceinline__ void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
     auto& __restrict__ data = *pdata;
     auto& __restrict__ ws = *pws;
     auto nt = ws.ntrks;
