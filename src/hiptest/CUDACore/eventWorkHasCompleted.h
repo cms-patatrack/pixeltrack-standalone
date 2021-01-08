@@ -6,7 +6,7 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     /**
    * Returns true if the work captured by the event (=queued to the
    * CUDA stream at the point of hipEventRecord()) has completed.
@@ -26,7 +26,7 @@ namespace cms {
       cudaCheck(ret);
       return false;  // to keep compiler happy
     }
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

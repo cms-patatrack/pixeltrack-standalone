@@ -4,7 +4,7 @@
 #include <map>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     namespace allocator {
       struct TotalBytes {
         size_t free;
@@ -17,7 +17,7 @@ namespace cms {
     }  // namespace allocator
 
     allocator::GpuCachedBytes deviceAllocatorStatus();
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

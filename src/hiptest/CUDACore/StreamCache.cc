@@ -4,7 +4,7 @@
 #include "CUDACore/deviceCount.h"
 #include "CUDACore/ScopedSetDevice.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   void StreamCache::Deleter::operator()(hipStream_t stream) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
@@ -40,4 +40,4 @@ namespace cms::cuda {
     static StreamCache cache;
     return cache;
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

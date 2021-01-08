@@ -5,7 +5,7 @@
 #include "CUDACore/eventWorkHasCompleted.h"
 #include "CUDACore/ScopedSetDevice.h"
 
-namespace cms::cuda {
+namespace cms::hip {
   void EventCache::Deleter::operator()(hipEvent_t event) const {
     if (device_ != -1) {
       ScopedSetDevice deviceGuard{device_};
@@ -65,4 +65,4 @@ namespace cms::cuda {
     static EventCache cache;
     return cache;
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

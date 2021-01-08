@@ -179,7 +179,7 @@ namespace notcub {
 
     /// Map type of device ordinals to the number of cached bytes cached by each device
     // CMS: Moved definition to deviceAllocatorStatus.h
-    using GpuCachedBytes = cms::cuda::allocator::GpuCachedBytes;
+    using GpuCachedBytes = cms::hip::allocator::GpuCachedBytes;
 
     //---------------------------------------------------------------------
     // Utility functions

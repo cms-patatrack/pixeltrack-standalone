@@ -53,17 +53,17 @@ namespace {
   }
 }  // namespace
 
-cms::cuda::device::unique_ptr<float[]> gpuAlgo1(hipStream_t stream) {
-  auto h_a = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
-  auto h_b = cms::cuda::make_host_unique<float[]>(NUM_VALUES, stream);
+cms::hip::device::unique_ptr<float[]> gpuAlgo1(hipStream_t stream) {
+  auto h_a = cms::hip::make_host_unique<float[]>(NUM_VALUES, stream);
+  auto h_b = cms::hip::make_host_unique<float[]>(NUM_VALUES, stream);
 
   for (auto i = 0; i < NUM_VALUES; i++) {
     h_a[i] = i;
     h_b[i] = i * i;
   }
 
-  auto d_a = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
-  auto d_b = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_a = cms::hip::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_b = cms::hip::make_device_unique<float[]>(NUM_VALUES, stream);
 
   cudaCheck(hipMemcpyAsync(d_a.get(), h_a.get(), NUM_VALUES * sizeof(float), hipMemcpyHostToDevice, stream));
   cudaCheck(hipMemcpyAsync(d_b.get(), h_b.get(), NUM_VALUES * sizeof(float), hipMemcpyHostToDevice, stream));
@@ -71,13 +71,13 @@ cms::cuda::device::unique_ptr<float[]> gpuAlgo1(hipStream_t stream) {
   int threadsPerBlock{32};
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
 
-  auto d_c = cms::cuda::make_device_unique<float[]>(NUM_VALUES, stream);
+  auto d_c = cms::hip::make_device_unique<float[]>(NUM_VALUES, stream);
   hipLaunchKernelGGL(
       vectorAdd, dim3(blocksPerGrid), dim3(threadsPerBlock), 0, stream, d_a.get(), d_b.get(), d_c.get(), NUM_VALUES);
 
-  auto d_ma = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
-  auto d_mb = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
-  auto d_mc = cms::cuda::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_ma = cms::hip::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_mb = cms::hip::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
+  auto d_mc = cms::hip::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
   dim3 threadsPerBlock3{NUM_VALUES, NUM_VALUES};
   dim3 blocksPerGrid3{1, 1};
   if (NUM_VALUES * NUM_VALUES > 32) {

@@ -11,7 +11,7 @@
 class CUDAService;
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     class EventCache {
     public:
       using BareEvent = SharedEventPtr::element_type;
@@ -51,7 +51,7 @@ namespace cms {
     // Gets the global instance of a EventCache
     // This function is thread safe
     EventCache& getEventCache();
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

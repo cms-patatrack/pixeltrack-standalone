@@ -5,6 +5,6 @@
 
 #include "CUDACore/device_unique_ptr.h"
 
-cms::cuda::device::unique_ptr<float[]> gpuAlgo2(hipStream_t stream);
+cms::hip::device::unique_ptr<float[]> gpuAlgo2(hipStream_t stream);
 
 #endif

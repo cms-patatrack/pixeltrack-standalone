@@ -17,15 +17,15 @@ public:
 private:
   void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
+  edm::EDGetTokenT<cms::hip::Product<cms::hip::device::unique_ptr<float[]>>> getToken_;
 };
 
 TestProducer3::TestProducer3(edm::ProductRegistry& reg)
-    : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>()) {}
+    : getToken_(reg.consumes<cms::hip::Product<cms::hip::device::unique_ptr<float[]>>>()) {}
 
 void TestProducer3::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   auto const& tmp = event.get(getToken_);
-  cms::cuda::ScopedContextProduce ctx(tmp);
+  cms::hip::ScopedContextProduce ctx(tmp);
   std::cout << "TestProducer3 Event " << event.eventID() << " stream " << event.streamID() << std::endl;
 }
 

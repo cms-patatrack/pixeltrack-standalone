@@ -6,7 +6,7 @@
 #include <memory>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     /**
      * The purpose of this class is to deliver the device and CUDA stream
      * information from ExternalWork's acquire() to producer() via a
@@ -55,7 +55,7 @@ namespace cms {
       SharedStreamPtr stream_;
       int device_;
     };
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

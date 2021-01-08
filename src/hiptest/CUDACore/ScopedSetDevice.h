@@ -6,7 +6,7 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     class ScopedSetDevice {
     public:
       explicit ScopedSetDevice(int newDevice) {
@@ -24,7 +24,7 @@ namespace cms {
     private:
       int prevDevice_;
     };
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

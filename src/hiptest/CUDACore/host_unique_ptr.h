@@ -7,13 +7,13 @@
 #include "CUDACore/allocate_host.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     namespace host {
       namespace impl {
         // Additional layer of types to distinguish from host::unique_ptr
         class HostDeleter {
         public:
-          void operator()(void *ptr) { cms::cuda::free_host(ptr); }
+          void operator()(void *ptr) { cms::hip::free_host(ptr); }
         };
       }  // namespace impl
 
@@ -23,11 +23,11 @@ namespace cms {
       namespace impl {
         template <typename T>
         struct make_host_unique_selector {
-          using non_array = cms::cuda::host::unique_ptr<T>;
+          using non_array = cms::hip::host::unique_ptr<T>;
         };
         template <typename T>
         struct make_host_unique_selector<T[]> {
-          using unbounded_array = cms::cuda::host::unique_ptr<T[]>;
+          using unbounded_array = cms::hip::host::unique_ptr<T[]>;
         };
         template <typename T, size_t N>
         struct make_host_unique_selector<T[N]> {
@@ -74,7 +74,7 @@ namespace cms {
 
     template <typename T, typename... Args>
     typename host::impl::make_host_unique_selector<T>::bounded_array make_host_unique_uninitialized(Args &&...) = delete;
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

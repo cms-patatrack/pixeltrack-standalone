@@ -8,7 +8,7 @@
 #include "CUDACore/deviceCount.h"
 #include "CachingDeviceAllocator.h"
 
-namespace cms::cuda::allocator {
+namespace cms::hip::allocator {
   // Use caching or not
   constexpr bool useCaching = true;
   // Growth factor (bin_growth in hipcub::CachingDeviceAllocator
@@ -72,6 +72,6 @@ namespace cms::cuda::allocator {
                                                     debug};
     return allocator;
   }
-}  // namespace cms::cuda::allocator
+}  // namespace cms::hip::allocator
 
 #endif

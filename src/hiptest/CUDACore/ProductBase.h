@@ -8,7 +8,7 @@
 #include "CUDACore/SharedEventPtr.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     namespace impl {
       class ScopedContextBase;
     }
@@ -43,13 +43,13 @@ namespace cms {
       int device() const { return device_; }
 
       // hipStream_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
+      // mutable access is needed even if the cms::hip::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
       hipStream_t stream() const { return stream_.get(); }
 
       // hipEvent_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
+      // mutable access is needed even if the cms::hip::ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
       hipEvent_t event() const { return event_.get(); }
@@ -76,7 +76,7 @@ namespace cms {
       // The hipStream_t is really shared among edm::Event products, so
       // using shared_ptr also here
       SharedStreamPtr stream_;  //!
-      // shared_ptr because of caching in cms::cuda::EventCache
+      // shared_ptr because of caching in cms::hip::EventCache
       SharedEventPtr event_;  //!
 
       // This flag tells whether the CUDA stream may be reused by a
@@ -87,7 +87,7 @@ namespace cms {
       // The CUDA device associated with this product
       int device_ = -1;  //!
     };
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

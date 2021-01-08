@@ -34,7 +34,7 @@ namespace {
   }
 }  // namespace
 
-namespace cms::cuda {
+namespace cms::hip {
   namespace impl {
     ScopedContextBase::ScopedContextBase(edm::StreamID streamID) : currentDevice_(chooseDevice(streamID)) {
       cudaCheck(hipSetDevice(currentDevice_));
@@ -113,4 +113,4 @@ namespace cms::cuda {
   ////////////////////
 
   ScopedContextTask::~ScopedContextTask() { holderHelper_.enqueueCallback(device(), stream()); }
-}  // namespace cms::cuda
+}  // namespace cms::hip

@@ -10,7 +10,7 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     [[noreturn]] inline void abortOnCudaError(const char* file,
                                               int line,
@@ -39,9 +39,9 @@ namespace cms {
       return false;
     }
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
-#define cudaCheck(ARG, ...) (cms::cuda::cudaCheck_(__FILE__, __LINE__, #ARG, (ARG), ##__VA_ARGS__))
+#define cudaCheck(ARG, ...) (cms::hip::cudaCheck_(__FILE__, __LINE__, #ARG, (ARG), ##__VA_ARGS__))
 
 #endif  // HeterogeneousCore_CUDAUtilities_cudaCheck_h

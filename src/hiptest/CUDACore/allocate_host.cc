@@ -7,10 +7,10 @@
 
 namespace {
   const size_t maxAllocationSize =
-      notcub::CachingDeviceAllocator::IntPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
+      notcub::CachingDeviceAllocator::IntPow(cms::hip::allocator::binGrowth, cms::hip::allocator::maxBin);
 }
 
-namespace cms::cuda {
+namespace cms::hip {
   void *allocate_host(size_t nbytes, hipStream_t stream) {
     void *ptr = nullptr;
     if constexpr (allocator::useCaching) {
@@ -33,4 +33,4 @@ namespace cms::cuda {
     }
   }
 
-}  // namespace cms::cuda
+}  // namespace cms::hip

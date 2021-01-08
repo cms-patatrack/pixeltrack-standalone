@@ -6,13 +6,13 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     inline int deviceCount() {
       int ndevices;
       cudaCheck(hipGetDeviceCount(&ndevices));
       return ndevices;
     }
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

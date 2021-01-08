@@ -26,18 +26,18 @@ private:
   void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
   void endJob() override;
 
-  edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
+  edm::EDGetTokenT<cms::hip::Product<cms::hip::device::unique_ptr<float[]>>> getToken_;
 };
 
 TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-    : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>()) {}
+    : getToken_(reg.consumes<cms::hip::Product<cms::hip::device::unique_ptr<float[]>>>()) {}
 
 void TestProducer2::acquire(edm::Event const& event,
                             edm::EventSetup const& eventSetup,
                             edm::WaitingTaskWithArenaHolder holder) {
   auto const& tmp = event.get(getToken_);
 
-  cms::cuda::ScopedContextAcquire ctx(tmp, std::move(holder));
+  cms::hip::ScopedContextAcquire ctx(tmp, std::move(holder));
 
   auto const& array = ctx.get(tmp);
   gpuAlgo2(ctx.stream());

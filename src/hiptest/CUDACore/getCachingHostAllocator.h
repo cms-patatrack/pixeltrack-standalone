@@ -9,7 +9,7 @@
 
 #include "getCachingDeviceAllocator.h"
 
-namespace cms::cuda::allocator {
+namespace cms::hip::allocator {
   inline notcub::CachingHostAllocator& getCachingHostAllocator() {
     if (debug) {
       std::cout << "hipcub::CachingHostAllocator settings\n"
@@ -41,6 +41,6 @@ namespace cms::cuda::allocator {
                                                   debug};
     return allocator;
   }
-}  // namespace cms::cuda::allocator
+}  // namespace cms::hip::allocator
 
 #endif

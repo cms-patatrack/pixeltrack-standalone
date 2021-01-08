@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace cms::cuda {
+namespace cms::hip {
   void ContextState::throwIfStream() const {
     if (stream_) {
       throw std::runtime_error("Trying to set ContextState, but it already had a valid state");
@@ -14,4 +14,4 @@ namespace cms::cuda {
       throw std::runtime_error("Trying to get ContextState, but it did not have a valid state");
     }
   }
-}  // namespace cms::cuda
+}  // namespace cms::hip

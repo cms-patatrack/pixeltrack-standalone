@@ -8,7 +8,7 @@
 #include "CUDACore/currentDevice.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     namespace device {
       namespace impl {
         // Additional layer of types to distinguish from host::unique_ptr
@@ -34,11 +34,11 @@ namespace cms {
       namespace impl {
         template <typename T>
         struct make_device_unique_selector {
-          using non_array = cms::cuda::device::unique_ptr<T>;
+          using non_array = cms::hip::device::unique_ptr<T>;
         };
         template <typename T>
         struct make_device_unique_selector<T[]> {
-          using unbounded_array = cms::cuda::device::unique_ptr<T[]>;
+          using unbounded_array = cms::hip::device::unique_ptr<T[]>;
         };
         template <typename T, size_t N>
         struct make_device_unique_selector<T[N]> {
@@ -95,7 +95,7 @@ namespace cms {
     template <typename T, typename... Args>
     typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique_uninitialized(Args &&...) =
         delete;
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

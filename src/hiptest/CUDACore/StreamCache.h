@@ -11,7 +11,7 @@
 class CUDAService;
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     class StreamCache {
     public:
       using BareStream = SharedStreamPtr::element_type;
@@ -44,7 +44,7 @@ namespace cms {
     // Gets the global instance of a StreamCache
     // This function is thread safe
     StreamCache& getStreamCache();
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

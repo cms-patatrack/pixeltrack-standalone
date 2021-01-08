@@ -14,11 +14,11 @@
 #include "CUDACore/SharedStreamPtr.h"
 
 namespace cms {
-  namespace cudatest {
+  namespace hiptest {
     class TestScopedContext;
   }
 
-  namespace cuda {
+  namespace hip {
 
     namespace impl {
       // This class is intended to be derived by other ScopedContext*, not for general use
@@ -172,7 +172,7 @@ namespace cms {
       }
 
     private:
-      friend class cudatest::TestScopedContext;
+      friend class hiptest::TestScopedContext;
 
       // This construcor is only meant for testing
       explicit ScopedContextProduce(int device, SharedStreamPtr stream, SharedEventPtr event)
@@ -235,7 +235,7 @@ namespace cms {
                                                })});
       }
     }  // namespace impl
-  }    // namespace cuda
+  }    // namespace hip
 }  // namespace cms
 
 #endif
