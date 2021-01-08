@@ -274,7 +274,7 @@ int main(void) {
                       d_moduleId.get(),
                       d_clus.get(),
                       n);
-    hipDeviceSynchronize();
+    cudaCheck(hipDeviceSynchronize());
     cudaCheck(hipMemcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t), hipMemcpyDeviceToHost));
 
     uint32_t nclus[MaxNumModules], moduleId[nModules];
@@ -300,7 +300,7 @@ int main(void) {
                       d_clus.get(),
                       n);
 
-    hipDeviceSynchronize();
+    cudaCheck(hipDeviceSynchronize());
 #else
     h_moduleStart[0] = nModules;
     countModules(h_id.get(), h_moduleStart.get(), h_clus.get(), n);

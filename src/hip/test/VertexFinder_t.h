@@ -170,7 +170,7 @@ int main() {
 #ifdef __HIPCC__
       hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
       cudaCheck(hipGetLastError());
-      hipDeviceSynchronize();
+      cudaCheck(hipDeviceSynchronize());
 
 #ifdef ONE_KERNEL
       cms::hip::launch(vertexFinderOneKernel, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
@@ -180,7 +180,7 @@ int main() {
       hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
 
       cudaCheck(hipGetLastError());
-      hipDeviceSynchronize();
+      cudaCheck(hipDeviceSynchronize());
 
       cms::hip::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
       cudaCheck(hipGetLastError());

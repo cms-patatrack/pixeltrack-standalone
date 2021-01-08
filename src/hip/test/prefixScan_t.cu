@@ -91,17 +91,17 @@ int main() {
   if (warpSize > 32) {
     // std::cout << "warp 64" << std::endl;
     hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 64);
-    hipDeviceSynchronize();
+    cudaCheck(hipDeviceSynchronize());
   }
   // std::cout << "warp 32" << std::endl;
   hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 32);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
   // std::cout << "warp 16" << std::endl;
   hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 16);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
   // std::cout << "warp 5" << std::endl;
   hipLaunchKernelGGL(HIP_KERNEL_NAME(testWarpPrefixScan<int>), dim3(1), dim3(warpSize), 0, 0, 5);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   std::cout << "block level" << std::endl;
   for (int bs = warpSize; bs <= 1024; bs += warpSize) {
@@ -109,12 +109,12 @@ int main() {
     for (int j = 1; j <= 1024; ++j) {
       // std::cout << j << std::endl;
       hipLaunchKernelGGL(HIP_KERNEL_NAME(testPrefixScan<uint16_t>), dim3(1), dim3(bs), 0, 0, j);
-      hipDeviceSynchronize();
+      cudaCheck(hipDeviceSynchronize());
       hipLaunchKernelGGL(HIP_KERNEL_NAME(testPrefixScan<float>), dim3(1), dim3(bs), 0, 0, j);
-      hipDeviceSynchronize();
+      cudaCheck(hipDeviceSynchronize());
     }
   }
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   int num_items = 200;
   for (int ksize = 1; ksize < 4; ++ksize) {
@@ -147,7 +147,7 @@ int main() {
     cudaCheck(hipGetLastError());
     hipLaunchKernelGGL(verify, dim3(nblocks), dim3(nthreads), 0, 0, d_out1, num_items);
     cudaCheck(hipGetLastError());
-    hipDeviceSynchronize();
+    cudaCheck(hipDeviceSynchronize());
 
   }  // ksize
   return 0;

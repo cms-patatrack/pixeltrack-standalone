@@ -83,7 +83,7 @@ void testMultiply() {
       multiply_resultGPU, &multiply_result, sizeof(Eigen::Matrix<double, row1, col2>), hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(kernelMultiply, dim3(1), dim3(1), 0, 0, JGPU, CGPU, multiply_resultGPU);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(
       multiply_resultGPUret, multiply_resultGPU, sizeof(Eigen::Matrix<double, row1, col2>), hipMemcpyDeviceToHost));
@@ -111,7 +111,7 @@ void testInverse3x3() {
   cudaCheck(hipMemcpy(mGPU, &m, sizeof(Matrix3d), hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(kernelInverse3x3, dim3(1), dim3(1), 0, 0, mGPU, mGPUret);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mCPUret, mGPUret, sizeof(Matrix3d), hipMemcpyDeviceToHost));
 #if TEST_DEBUG
@@ -140,7 +140,7 @@ void testInverse4x4() {
   cudaCheck(hipMemcpy(mGPU, &m, sizeof(Matrix4d), hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(kernelInverse4x4, dim3(1), dim3(1), 0, 0, mGPU, mGPUret);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mCPUret, mGPUret, sizeof(Matrix4d), hipMemcpyDeviceToHost));
 #if TEST_DEBUG
@@ -202,7 +202,7 @@ void testEigenvalues() {
   cudaCheck(hipMemcpy(m_gpu, &m, sizeof(Matrix3d), hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(kernel, dim3(1), dim3(1), 0, 0, m_gpu, ret_gpu);
-  hipDeviceSynchronize();
+  cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mgpudebug, m_gpu, sizeof(Matrix3d), hipMemcpyDeviceToHost));
   cudaCheck(hipMemcpy(
