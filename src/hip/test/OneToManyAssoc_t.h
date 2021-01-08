@@ -99,7 +99,6 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 int main() {
 #ifdef __HIPCC__
   cms::hiptest::requireDevices();
-  auto current_device = cms::hip::currentDevice();
 #else
   // make sure cuda emulation is working
   std::cout << "cuda x's " << threadIdx.x << ' ' << blockIdx.x << ' ' << blockDim.x << ' ' << gridDim.x << std::endl;
