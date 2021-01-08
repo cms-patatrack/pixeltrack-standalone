@@ -20,22 +20,22 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DGPU>> tokenHitGPU_;
-  edm::EDPutTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenTrackGPU_;
+  edm::EDGetTokenT<cms::hip::Product<TrackingRecHit2DGPU>> tokenHitGPU_;
+  edm::EDPutTokenT<cms::hip::Product<PixelTrackHeterogeneous>> tokenTrackGPU_;
 
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
 };
 
 CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
-    : tokenHitGPU_{reg.consumes<cms::cuda::Product<TrackingRecHit2DGPU>>()},
-      tokenTrackGPU_{reg.produces<cms::cuda::Product<PixelTrackHeterogeneous>>()},
+    : tokenHitGPU_{reg.consumes<cms::hip::Product<TrackingRecHit2DGPU>>()},
+      tokenTrackGPU_{reg.produces<cms::hip::Product<PixelTrackHeterogeneous>>()},
       gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto bf = 0.0114256972711507;  // 1/fieldInGeV
 
   auto const& phits = iEvent.get(tokenHitGPU_);
-  cms::cuda::ScopedContextProduce ctx{phits};
+  cms::hip::ScopedContextProduce ctx{phits};
   auto const& hits = ctx.get(phits);
 
   ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));

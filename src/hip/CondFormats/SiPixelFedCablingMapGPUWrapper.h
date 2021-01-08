@@ -25,7 +25,7 @@ public:
   const unsigned char *getModToUnpAllAsync(hipStream_t cudaStream) const;
 
 private:
-  std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;
+  std::vector<unsigned char, cms::hip::HostAllocator<unsigned char>> modToUnpDefault;
   bool hasQuality_;
 
   SiPixelFedCablingMapGPU *cablingMapHost = nullptr;  // pointer to struct in CPU
@@ -34,13 +34,13 @@ private:
     ~GPUData();
     SiPixelFedCablingMapGPU *cablingMapDevice = nullptr;  // pointer to struct in GPU
   };
-  cms::cuda::ESProduct<GPUData> gpuData_;
+  cms::hip::ESProduct<GPUData> gpuData_;
 
   struct ModulesToUnpack {
     ~ModulesToUnpack();
     unsigned char *modToUnpDefault = nullptr;  // pointer to GPU
   };
-  cms::cuda::ESProduct<ModulesToUnpack> modToUnp_;
+  cms::hip::ESProduct<ModulesToUnpack> modToUnp_;
 };
 
 #endif

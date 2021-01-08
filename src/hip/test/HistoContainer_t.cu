@@ -9,7 +9,7 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/requireDevices.h"
 
-using namespace cms::cuda;
+using namespace cms::hip;
 
 template <typename T>
 void go() {
@@ -146,7 +146,7 @@ void go() {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
   go<int16_t>();
   go<int8_t>();

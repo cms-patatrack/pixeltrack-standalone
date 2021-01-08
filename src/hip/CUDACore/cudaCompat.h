@@ -15,7 +15,7 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cudacompat {
+  namespace hipcompat {
 
 #ifndef __CUDA_RUNTIME_H__
     struct dim3 {
@@ -84,7 +84,7 @@ namespace cms {
       gridDim = {1, 1, 1};
     }
 
-  }  // namespace cudacompat
+  }  // namespace hipcompat
 }  // namespace cms
 
 // some  not needed as done by cuda runtime...
@@ -105,7 +105,7 @@ namespace cms {
 #endif
 
 #ifndef __HIP_DEVICE_COMPILE__
-using namespace cms::cudacompat;
+using namespace cms::hipcompat;
 #endif
 
 #endif

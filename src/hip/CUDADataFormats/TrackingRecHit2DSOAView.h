@@ -18,7 +18,7 @@ public:
   using hindex_type = uint16_t;  // if above is <=2^16
 
   using Hist =
-      cms::cuda::HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
+      cms::hip::HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
 
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
 

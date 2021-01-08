@@ -21,21 +21,21 @@ private:
                edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<ZVertexHeterogeneous>> tokenCUDA_;
+  edm::EDGetTokenT<cms::hip::Product<ZVertexHeterogeneous>> tokenCUDA_;
   edm::EDPutTokenT<ZVertexHeterogeneous> tokenSOA_;
 
-  cms::cuda::host::unique_ptr<ZVertexSoA> m_soa;
+  cms::hip::host::unique_ptr<ZVertexSoA> m_soa;
 };
 
 PixelVertexSoAFromCUDA::PixelVertexSoAFromCUDA(edm::ProductRegistry& reg)
-    : tokenCUDA_(reg.consumes<cms::cuda::Product<ZVertexHeterogeneous>>()),
+    : tokenCUDA_(reg.consumes<cms::hip::Product<ZVertexHeterogeneous>>()),
       tokenSOA_(reg.produces<ZVertexHeterogeneous>()) {}
 
 void PixelVertexSoAFromCUDA::acquire(edm::Event const& iEvent,
                                      edm::EventSetup const& iSetup,
                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
   auto const& inputDataWrapped = iEvent.get(tokenCUDA_);
-  cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
+  cms::hip::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
   auto const& inputData = ctx.get(inputDataWrapped);
 
   m_soa = inputData.toHostAsync(ctx.stream());

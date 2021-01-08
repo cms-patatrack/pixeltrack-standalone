@@ -190,18 +190,18 @@ private:
   uint32_t* device_nCells_ = nullptr;
 
   unique_ptr<HitToTuple> device_hitToTuple_;
-  cms::cuda::AtomicPairCounter* device_hitToTuple_apc_ = nullptr;
+  cms::hip::AtomicPairCounter* device_hitToTuple_apc_ = nullptr;
 
-  cms::cuda::AtomicPairCounter* device_hitTuple_apc_ = nullptr;
+  cms::hip::AtomicPairCounter* device_hitTuple_apc_ = nullptr;
 
   unique_ptr<TupleMultiplicity> device_tupleMultiplicity_;
 
-  unique_ptr<cms::cuda::AtomicPairCounter::c_type[]> device_storage_;
+  unique_ptr<cms::hip::AtomicPairCounter::c_type[]> device_storage_;
   // params
   Params const& m_params;
 };
 
-using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits>;
-using CAHitNtupletGeneratorKernelsCPU = CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits>;
+using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::hipcompat::GPUTraits>;
+using CAHitNtupletGeneratorKernelsCPU = CAHitNtupletGeneratorKernels<cms::hipcompat::CPUTraits>;
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h

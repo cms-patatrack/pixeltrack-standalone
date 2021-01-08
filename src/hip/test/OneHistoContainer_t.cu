@@ -11,7 +11,7 @@
 #include "CUDACore/launch.h"
 #include "CUDACore/requireDevices.h"
 
-using namespace cms::cuda;
+using namespace cms::hip;
 
 template <typename T, int NBINS, int S, int DELTA>
 __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
@@ -133,7 +133,7 @@ void go() {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
   go<int16_t>();
   go<uint8_t, 128, 8, 4>();

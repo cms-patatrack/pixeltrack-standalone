@@ -5,7 +5,7 @@
 #include "CUDACore/prefixScan.h"
 #include "CUDACore/requireDevices.h"
 
-using namespace cms::cuda;
+using namespace cms::hip;
 
 template <typename T>
 struct format_traits {
@@ -85,7 +85,7 @@ __global__ void verify(uint32_t const *v, uint32_t n) {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;

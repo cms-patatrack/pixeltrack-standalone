@@ -26,9 +26,9 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
   void endJob() override;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterToken_;
-  edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> hitToken_;
+  edm::EDGetTokenT<cms::hip::Product<SiPixelDigisCUDA>> digiToken_;
+  edm::EDGetTokenT<cms::hip::Product<SiPixelClustersCUDA>> clusterToken_;
+  edm::EDGetTokenT<cms::hip::Product<TrackingRecHit2DCUDA>> hitToken_;
   edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
   edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
 
@@ -36,12 +36,12 @@ private:
   uint32_t nModules;
   uint32_t nClusters;
   uint32_t nHits;
-  cms::cuda::host::unique_ptr<uint16_t[]> h_adc;
-  cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
-  cms::cuda::host::unique_ptr<float[]> h_localCoord;
-  cms::cuda::host::unique_ptr<float[]> h_globalCoord;
-  cms::cuda::host::unique_ptr<int32_t[]> h_charge;
-  cms::cuda::host::unique_ptr<int16_t[]> h_size;
+  cms::hip::host::unique_ptr<uint16_t[]> h_adc;
+  cms::hip::host::unique_ptr<uint32_t[]> h_clusInModule;
+  cms::hip::host::unique_ptr<float[]> h_localCoord;
+  cms::hip::host::unique_ptr<float[]> h_globalCoord;
+  cms::hip::host::unique_ptr<int32_t[]> h_charge;
+  cms::hip::host::unique_ptr<int16_t[]> h_size;
 
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
@@ -82,9 +82,9 @@ std::map<std::string, SimpleAtomicHisto> HistoValidator::histos = {
     {"vertex_pt2", SimpleAtomicHisto(100, 0, 4000)}};
 
 HistoValidator::HistoValidator(edm::ProductRegistry& reg)
-    : digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
-      hitToken_(reg.consumes<cms::cuda::Product<TrackingRecHit2DCUDA>>()),
+    : digiToken_(reg.consumes<cms::hip::Product<SiPixelDigisCUDA>>()),
+      clusterToken_(reg.consumes<cms::hip::Product<SiPixelClustersCUDA>>()),
+      hitToken_(reg.consumes<cms::hip::Product<TrackingRecHit2DCUDA>>()),
       trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
       vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
 
@@ -92,7 +92,7 @@ void HistoValidator::acquire(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,
                              edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
   auto const& pdigis = iEvent.get(digiToken_);
-  cms::cuda::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
+  cms::hip::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
   auto const& digis = ctx.get(iEvent, digiToken_);
   auto const& clusters = ctx.get(iEvent, clusterToken_);
   auto const& hits = ctx.get(iEvent, hitToken_);
@@ -102,7 +102,7 @@ void HistoValidator::acquire(const edm::Event& iEvent,
   h_adc = digis.adcToHostAsync(ctx.stream());
 
   nClusters = clusters.nClusters();
-  h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx.stream());
+  h_clusInModule = cms::hip::make_host_unique<uint32_t[]>(nModules, ctx.stream());
   cudaCheck(hipMemcpyAsync(
       h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, hipMemcpyDefault, ctx.stream()));
 

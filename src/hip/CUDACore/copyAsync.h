@@ -9,7 +9,7 @@
 #include <type_traits>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     // Single element
 
@@ -63,7 +63,7 @@ namespace cms {
                           hipStream_t stream) {
       cudaCheck(hipMemcpyAsync(dst.get(), src.get(), nelements * sizeof(T), hipMemcpyDeviceToHost, stream));
     }
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

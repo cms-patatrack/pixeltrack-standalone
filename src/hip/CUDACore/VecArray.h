@@ -8,7 +8,7 @@
 #include "CUDACore/cudaCompat.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     template <class T, int maxSize>
     class VecArray {
@@ -100,7 +100,7 @@ namespace cms {
       int m_size;
     };
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_VecArray_h

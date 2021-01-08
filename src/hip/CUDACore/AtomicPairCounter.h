@@ -6,7 +6,7 @@
 #include "CUDACore/cudaCompat.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     class AtomicPairCounter {
     public:
@@ -52,7 +52,7 @@ namespace cms {
       Atomic2 counter;
     };
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h

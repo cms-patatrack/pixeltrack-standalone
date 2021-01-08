@@ -15,15 +15,15 @@
 #endif
 
 #include "CUDACore/HistoContainer.h"
-using cms::cuda::AtomicPairCounter;
+using cms::hip::AtomicPairCounter;
 
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
 constexpr uint32_t MaxAssocs = 4 * MaxTk;
 
-using Assoc = cms::cuda::OneToManyAssoc<uint16_t, MaxElem, MaxAssocs>;
-using SmallAssoc = cms::cuda::OneToManyAssoc<uint16_t, 128, MaxAssocs>;
-using Multiplicity = cms::cuda::OneToManyAssoc<uint16_t, 8, MaxTk>;
+using Assoc = cms::hip::OneToManyAssoc<uint16_t, MaxElem, MaxAssocs>;
+using SmallAssoc = cms::hip::OneToManyAssoc<uint16_t, 128, MaxAssocs>;
+using Multiplicity = cms::hip::OneToManyAssoc<uint16_t, 8, MaxTk>;
 using TK = std::array<uint16_t, 4>;
 
 __global__ void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
@@ -98,8 +98,8 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 
 int main() {
 #ifdef __HIPCC__
-  cms::cudatest::requireDevices();
-  auto current_device = cms::cuda::currentDevice();
+  cms::hiptest::requireDevices();
+  auto current_device = cms::hip::currentDevice();
 #else
   // make sure cuda emulation is working
   std::cout << "cuda x's " << threadIdx.x << ' ' << blockIdx.x << ' ' << blockDim.x << ' ' << gridDim.x << std::endl;
@@ -166,10 +166,10 @@ int main() {
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
 #ifdef __HIPCC__
-  auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
+  auto v_d = cms::hip::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
   assert(v_d.get());
-  auto a_d = cms::cuda::make_device_unique<Assoc[]>(1, nullptr);
-  auto sa_d = cms::cuda::make_device_unique<SmallAssoc[]>(1, nullptr);
+  auto a_d = cms::hip::make_device_unique<Assoc[]>(1, nullptr);
+  auto sa_d = cms::hip::make_device_unique<SmallAssoc[]>(1, nullptr);
   cudaCheck(hipMemcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>), hipMemcpyHostToDevice));
 #else
   auto a_d = std::make_unique<Assoc>();
@@ -271,8 +271,8 @@ int main() {
 
   // here verify use of block local counters
 #ifdef __HIPCC__
-  auto m1_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
-  auto m2_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
+  auto m1_d = cms::hip::make_device_unique<Multiplicity[]>(1, nullptr);
+  auto m2_d = cms::hip::make_device_unique<Multiplicity[]>(1, nullptr);
 #else
   auto m1_d = std::make_unique<Multiplicity>();
   auto m2_d = std::make_unique<Multiplicity>();

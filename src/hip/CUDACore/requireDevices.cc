@@ -5,7 +5,7 @@
 
 #include "CUDACore/requireDevices.h"
 
-namespace cms::cudatest {
+namespace cms::hiptest {
   bool testDevices() {
     int devices = 0;
     auto status = hipGetDeviceCount(&devices);
@@ -27,4 +27,4 @@ namespace cms::cudatest {
       exit(EXIT_SUCCESS);
     }
   }
-}  // namespace cms::cudatest
+}  // namespace cms::hiptest

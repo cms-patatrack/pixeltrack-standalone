@@ -87,7 +87,7 @@ namespace gpuVertexFinder {
 #ifdef __HIPCC__
   ZVertexHeterogeneous Producer::makeAsync(hipStream_t stream, TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on GPU" << std::endl;
-    ZVertexHeterogeneous vertices(cms::cuda::make_device_unique<ZVertexSoA>(stream));
+    ZVertexHeterogeneous vertices(cms::hip::make_device_unique<ZVertexSoA>(stream));
 #else
   ZVertexHeterogeneous Producer::make(TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on  CPU" <<    std::endl;
@@ -98,7 +98,7 @@ namespace gpuVertexFinder {
     assert(soa);
 
 #ifdef __HIPCC__
-    auto ws_d = cms::cuda::make_device_unique<WorkSpace>(stream);
+    auto ws_d = cms::hip::make_device_unique<WorkSpace>(stream);
 #else
     auto ws_d = std::make_unique<WorkSpace>();
 #endif
@@ -110,7 +110,7 @@ namespace gpuVertexFinder {
     hipLaunchKernelGGL(loadTracks, dim3(numberOfBlocks), dim3(blockSize), 0, stream, tksoa, soa, ws_d.get(), ptMin);
     cudaCheck(hipGetLastError());
 #else
-    cms::cudacompat::resetGrid();
+    cms::hipcompat::resetGrid();
     init(soa, ws_d.get());
     loadTracks(tksoa, soa, ws_d.get(), ptMin);
 #endif

@@ -113,10 +113,10 @@ __global__ void print(gpuVertexFinder::ZVertices const* pdata, gpuVertexFinder::
 
 int main() {
 #ifdef __HIPCC__
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
-  auto onGPU_d = cms::cuda::make_device_unique<gpuVertexFinder::ZVertices[]>(1, nullptr);
-  auto ws_d = cms::cuda::make_device_unique<gpuVertexFinder::WorkSpace[]>(1, nullptr);
+  auto onGPU_d = cms::hip::make_device_unique<gpuVertexFinder::ZVertices[]>(1, nullptr);
+  auto ws_d = cms::hip::make_device_unique<gpuVertexFinder::WorkSpace[]>(1, nullptr);
 #else
   auto onGPU_d = std::make_unique<gpuVertexFinder::ZVertices>();
   auto ws_d = std::make_unique<gpuVertexFinder::WorkSpace>();
@@ -173,16 +173,16 @@ int main() {
       hipDeviceSynchronize();
 
 #ifdef ONE_KERNEL
-      cms::cuda::launch(vertexFinderOneKernel, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
+      cms::hip::launch(vertexFinderOneKernel, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #else
-      cms::cuda::launch(CLUSTERIZE, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
+      cms::hip::launch(CLUSTERIZE, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #endif
       hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
 
       cudaCheck(hipGetLastError());
       hipDeviceSynchronize();
 
-      cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
+      cms::hip::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
       cudaCheck(hipGetLastError());
       cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
 
@@ -244,7 +244,7 @@ int main() {
       }
 
 #ifdef __HIPCC__
-      cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
+      cms::hip::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 50.f);
       cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
       cudaCheck(hipMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), hipMemcpyDeviceToHost));
       cudaCheck(hipMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), hipMemcpyDeviceToHost));
@@ -264,7 +264,7 @@ int main() {
 
 #ifdef __HIPCC__
       // one vertex per block!!!
-      cms::cuda::launch(gpuVertexFinder::splitVerticesKernel, {1024, 64}, onGPU_d.get(), ws_d.get(), 9.f);
+      cms::hip::launch(gpuVertexFinder::splitVerticesKernel, {1024, 64}, onGPU_d.get(), ws_d.get(), 9.f);
       cudaCheck(hipMemcpy(&nv, LOC_WS(nvIntermediate), sizeof(uint32_t), hipMemcpyDeviceToHost));
 #else
       gridDim.x = 1;
@@ -276,10 +276,10 @@ int main() {
       std::cout << "after split " << nv << std::endl;
 
 #ifdef __HIPCC__
-      cms::cuda::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 5000.f);
+      cms::hip::launch(gpuVertexFinder::fitVerticesKernel, {1, 1024 - 256}, onGPU_d.get(), ws_d.get(), 5000.f);
       cudaCheck(hipGetLastError());
 
-      cms::cuda::launch(gpuVertexFinder::sortByPt2Kernel, {1, 256}, onGPU_d.get(), ws_d.get());
+      cms::hip::launch(gpuVertexFinder::sortByPt2Kernel, {1, 256}, onGPU_d.get(), ws_d.get());
       cudaCheck(hipGetLastError());
       cudaCheck(hipMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), hipMemcpyDeviceToHost));
 #else

@@ -41,8 +41,8 @@ namespace pixelgpudetails {
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
-    word_ = cms::cuda::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, hipHostMallocWriteCombined);
-    fedId_ = cms::cuda::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, hipHostMallocWriteCombined);
+    word_ = cms::hip::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, hipHostMallocWriteCombined);
+    fedId_ = cms::hip::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, hipHostMallocWriteCombined);
   }
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
@@ -359,7 +359,7 @@ namespace pixelgpudetails {
                                    uint32_t *pdigi,
                                    uint32_t *rawIdArr,
                                    uint16_t *moduleId,
-                                   cms::cuda::SimpleVector<PixelErrorCompact> *err,
+                                   cms::hip::SimpleVector<PixelErrorCompact> *err,
                                    bool useQualityInfo,
                                    bool includeErrors,
                                    bool debug) {
@@ -485,8 +485,8 @@ namespace pixelgpudetails {
     }
 
     __shared__ uint32_t ws[32];
-    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    cms::hip::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
+    cms::hip::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
     for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
       moduleStart[i] += moduleStart[1024];
@@ -544,7 +544,7 @@ namespace pixelgpudetails {
     }
     clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules, stream);
 
-    nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
+    nModules_Clusters_h = cms::hip::make_host_unique<uint32_t[]>(2, stream);
 
     if (wordCounter)  // protect in case of empty event....
     {
@@ -553,8 +553,8 @@ namespace pixelgpudetails {
 
       assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
-      auto word_d = cms::cuda::make_device_unique<uint32_t[]>(wordCounter, stream);
-      auto fedId_d = cms::cuda::make_device_unique<uint8_t[]>(wordCounter, stream);
+      auto word_d = cms::hip::make_device_unique<uint32_t[]>(wordCounter, stream);
+      auto fedId_d = cms::hip::make_device_unique<uint8_t[]>(wordCounter, stream);
 
       cudaCheck(
           hipMemcpyAsync(word_d.get(), wordFed.word(), wordCounter * sizeof(uint32_t), hipMemcpyDefault, stream));

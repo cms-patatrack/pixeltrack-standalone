@@ -17,7 +17,7 @@
 #include "CUDACore/prefixScan.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     template <typename Histo, typename T>
     __global__ void countFromVector(Histo *__restrict__ h,
@@ -26,7 +26,7 @@ namespace cms {
                                     uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = hip_std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
@@ -42,7 +42,7 @@ namespace cms {
                                    uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = hip_std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
@@ -318,7 +318,7 @@ namespace cms {
               >
     using OneToManyAssoc = HistoContainer<uint32_t, MAXONES, MAXMANYS, sizeof(uint32_t) * 8, I, 1>;
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h

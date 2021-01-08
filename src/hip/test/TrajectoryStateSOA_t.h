@@ -58,7 +58,7 @@ __global__ void testTSSoA(TS* pts, int n) {
 
 int main() {
 #ifdef __HIPCC__
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 #endif
 
   TS ts;

@@ -58,14 +58,14 @@ public:
   DeviceConstView *view() const { return view_d.get(); }
 
 private:
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleStart_d;   // index of the first pixel of each module
-  cms::cuda::device::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
+  cms::hip::device::unique_ptr<uint32_t[]> moduleStart_d;   // index of the first pixel of each module
+  cms::hip::device::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
+  cms::hip::device::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
 
   // originally from rechits
-  cms::cuda::device::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
+  cms::hip::device::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
 
-  cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
+  cms::hip::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
 
   uint32_t nClusters_h;
 };

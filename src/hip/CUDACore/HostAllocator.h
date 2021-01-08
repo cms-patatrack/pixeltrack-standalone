@@ -6,7 +6,7 @@
 #include <hip/hip_runtime.h>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     class bad_alloc : public std::bad_alloc {
     public:
@@ -49,7 +49,7 @@ namespace cms {
       }
     };
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_HostAllocator_h

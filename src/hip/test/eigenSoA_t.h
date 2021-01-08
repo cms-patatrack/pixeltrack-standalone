@@ -66,7 +66,7 @@ __global__ void testBasicSoA(float* p) {
 
 int main() {
 #ifdef __HIPCC__
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 #endif
 
   float p[1024];

@@ -328,7 +328,7 @@ void testFit() {
 }
 
 int main(int argc, char* argv[]) {
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
   testFit<4>();
   testFit<3>();

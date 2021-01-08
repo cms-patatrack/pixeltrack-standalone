@@ -22,7 +22,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   auto *quality_d = (Quality *)(&tracks_d->m_quality);
 
   // zero tuples
-  cms::cuda::launchZero(tuples_d, cudaStream);
+  cms::hip::launchZero(tuples_d, cudaStream);
 
   auto nhits = hh.nHits();
   assert(nhits <= pixelGPUConstants::maxNumberOfHits);
@@ -97,7 +97,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   blockSize = 128;
   numberOfBlocks = (HitContainer::totbins() + blockSize - 1) / blockSize;
-  hipLaunchKernelGGL(cms::cuda::finalizeBulk, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, device_hitTuple_apc_, tuples_d);
+  hipLaunchKernelGGL(cms::hip::finalizeBulk, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, device_hitTuple_apc_, tuples_d);
 
   // remove duplicates (tracks that share a doublet)
   numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
@@ -109,7 +109,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   numberOfBlocks = (3 * CAConstants::maxTuples() / 4 + blockSize - 1) / blockSize;
   hipLaunchKernelGGL(kernel_countMultiplicity, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, 
       tuples_d, quality_d, device_tupleMultiplicity_.get());
-  cms::cuda::launchFinalize(device_tupleMultiplicity_.get(), cudaStream);
+  cms::hip::launchFinalize(device_tupleMultiplicity_.get(), cudaStream);
   hipLaunchKernelGGL(kernel_fillMultiplicity, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, 
       tuples_d, quality_d, device_tupleMultiplicity_.get());
   cudaCheck(hipGetLastError());
@@ -164,10 +164,10 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, hipStre
 #endif
 
   // in principle we can use "nhits" to heuristically dimension the workspace...
-  device_isOuterHitOfCell_ = cms::cuda::make_device_unique<GPUCACell::OuterHitOfCell[]>(std::max(1U, nhits), stream);
+  device_isOuterHitOfCell_ = cms::hip::make_device_unique<GPUCACell::OuterHitOfCell[]>(std::max(1U, nhits), stream);
   assert(device_isOuterHitOfCell_.get());
 
-  cellStorage_ = cms::cuda::make_device_unique<unsigned char[]>(
+  cellStorage_ = cms::hip::make_device_unique<unsigned char[]>(
       CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
           CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks),
       stream);
@@ -189,7 +189,7 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, hipStre
     cudaCheck(hipGetLastError());
   }
 
-  device_theCells_ = cms::cuda::make_device_unique<GPUCACell[]>(m_params.maxNumberOfDoublets_, stream);
+  device_theCells_ = cms::hip::make_device_unique<GPUCACell[]>(m_params.maxNumberOfDoublets_, stream);
 
 #ifdef GPU_DEBUG
   hipDeviceSynchronize();
@@ -266,7 +266,7 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
     hipLaunchKernelGGL(kernel_countHitInTracks, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, 
         tuples_d, quality_d, device_hitToTuple_.get());
     cudaCheck(hipGetLastError());
-    cms::cuda::launchFinalize(device_hitToTuple_.get(), cudaStream);
+    cms::hip::launchFinalize(device_hitToTuple_.get(), cudaStream);
     cudaCheck(hipGetLastError());
     hipLaunchKernelGGL(kernel_fillHitInTracks, dim3(numberOfBlocks), dim3(blockSize), 0, cudaStream, tuples_d, quality_d, device_hitToTuple_.get());
     cudaCheck(hipGetLastError());

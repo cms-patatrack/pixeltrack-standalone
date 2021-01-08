@@ -9,7 +9,7 @@
 #include "CUDACore/cudaCheck.h"
 
 /*
- * `cms::cuda::launch` and `cms::cuda::launch_cooperative` are wrappers around
+ * `cms::hip::launch` and `cms::hip::launch_cooperative` are wrappers around
  * the CUDA Runtime API calls to setup and call a CUDA kernel from the host.
  *
  * `kernel` should be a pointer to a __global__ void(...) function.
@@ -24,8 +24,8 @@
  *  the exact type.
  *
  *  Unlike the `kernel<<<...>>>(...)` syntax and the `cuda::launch(...)` 
- *  implementation from the CUDA API Wrappers, `cms::cuda::launch(...)` and 
- *  `cms::cuda::launch_cooperative` can be called from standard C++ host code.
+ *  implementation from the CUDA API Wrappers, `cms::hip::launch(...)` and 
+ *  `cms::hip::launch_cooperative` can be called from standard C++ host code.
  *
  *  Possible optimisations
  *
@@ -44,7 +44,7 @@
  */
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     struct LaunchParameters {
       dim3 gridDim;
@@ -142,7 +142,7 @@ namespace cms {
           (const void*)kernel, config.gridDim, config.blockDim, (void**)pointers, config.sharedMem, config.stream));
     }
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_launch_h

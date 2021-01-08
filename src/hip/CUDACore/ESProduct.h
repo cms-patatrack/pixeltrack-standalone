@@ -13,7 +13,7 @@
 #include "CUDACore/eventWorkHasCompleted.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     template <typename T>
     class ESProduct {
     public:
@@ -96,7 +96,7 @@ namespace cms {
 
       std::vector<Item> gpuDataPerDevice_;
     };
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

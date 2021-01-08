@@ -64,7 +64,7 @@ namespace pixelgpudetails {
     }
 
     if (nHits) {
-      cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
+      cms::hip::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
       cudaCheck(hipGetLastError());
     }
 

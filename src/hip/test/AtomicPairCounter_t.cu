@@ -7,7 +7,7 @@
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 
-__global__ void update(cms::cuda::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
+__global__ void update(cms::hip::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
   auto i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n)
     return;
@@ -21,12 +21,12 @@ __global__ void update(cms::cuda::AtomicPairCounter *dc, uint32_t *ind, uint32_t
     cont[j] = i;
 };
 
-__global__ void finalize(cms::cuda::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
+__global__ void finalize(cms::hip::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) {
   assert(dc->get().m == n);
   ind[n] = dc->get().n;
 }
 
-__global__ void verify(cms::cuda::AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) {
+__global__ void verify(cms::hip::AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) {
   auto i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n)
     return;
@@ -42,11 +42,11 @@ __global__ void verify(cms::cuda::AtomicPairCounter const *dc, uint32_t const *i
 }
 
 int main() {
-  cms::cuda::AtomicPairCounter *dc_d;
-  cudaCheck(hipMalloc(&dc_d, sizeof(cms::cuda::AtomicPairCounter)));
-  cudaCheck(hipMemset(dc_d, 0, sizeof(cms::cuda::AtomicPairCounter)));
+  cms::hip::AtomicPairCounter *dc_d;
+  cudaCheck(hipMalloc(&dc_d, sizeof(cms::hip::AtomicPairCounter)));
+  cudaCheck(hipMemset(dc_d, 0, sizeof(cms::hip::AtomicPairCounter)));
 
-  std::cout << "size " << sizeof(cms::cuda::AtomicPairCounter) << std::endl;
+  std::cout << "size " << sizeof(cms::hip::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
@@ -59,8 +59,8 @@ int main() {
   hipLaunchKernelGGL(finalize, dim3(1), dim3(1), 0, 0, dc_d, n_d, m_d, 10000);
   hipLaunchKernelGGL(verify, dim3(2000), dim3(512), 0, 0, dc_d, n_d, m_d, 10000);
 
-  cms::cuda::AtomicPairCounter dc;
-  cudaCheck(hipMemcpy(&dc, dc_d, sizeof(cms::cuda::AtomicPairCounter), hipMemcpyDeviceToHost));
+  cms::hip::AtomicPairCounter dc;
+  cudaCheck(hipMemcpy(&dc, dc_d, sizeof(cms::hip::AtomicPairCounter), hipMemcpyDeviceToHost));
 
   std::cout << dc.get().n << ' ' << dc.get().m << std::endl;
 

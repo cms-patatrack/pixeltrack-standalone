@@ -216,7 +216,7 @@ void testEigenvalues() {
 }
 
 int main(int argc, char *argv[]) {
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 
   testEigenvalues();
   testInverse3x3();

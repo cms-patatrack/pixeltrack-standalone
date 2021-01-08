@@ -23,7 +23,7 @@
 
 int main(void) {
 #ifdef __HIPCC__
-  cms::cudatest::requireDevices();
+  cms::hiptest::requireDevices();
 #endif
 
   using namespace gpuClustering;
@@ -38,14 +38,14 @@ int main(void) {
   auto h_clus = std::make_unique<int[]>(numElements);
 
 #ifdef __HIPCC__
-  auto d_id = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_x = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_adc = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_clus = cms::cuda::make_device_unique<int[]>(numElements, nullptr);
-  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules + 1, nullptr);
-  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
-  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
+  auto d_id = cms::hip::make_device_unique<uint16_t[]>(numElements, nullptr);
+  auto d_x = cms::hip::make_device_unique<uint16_t[]>(numElements, nullptr);
+  auto d_y = cms::hip::make_device_unique<uint16_t[]>(numElements, nullptr);
+  auto d_adc = cms::hip::make_device_unique<uint16_t[]>(numElements, nullptr);
+  auto d_clus = cms::hip::make_device_unique<int[]>(numElements, nullptr);
+  auto d_moduleStart = cms::hip::make_device_unique<uint32_t[]>(MaxNumModules + 1, nullptr);
+  auto d_clusInModule = cms::hip::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
+  auto d_moduleId = cms::hip::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
 #else
 
   auto h_moduleStart = std::make_unique<uint32_t[]>(MaxNumModules + 1);
@@ -256,7 +256,7 @@ int main(void) {
     std::cout << "CUDA countModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
               << " threads\n";
 
-    cms::cuda::launch(countModules, {blocksPerGrid, threadsPerBlock}, d_id.get(), d_moduleStart.get(), d_clus.get(), n);
+    cms::hip::launch(countModules, {blocksPerGrid, threadsPerBlock}, d_id.get(), d_moduleStart.get(), d_clus.get(), n);
 
     blocksPerGrid = MaxNumModules;  //nModules;
 
@@ -264,7 +264,7 @@ int main(void) {
               << " threads\n";
     cudaCheck(hipMemset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)));
 
-    cms::cuda::launch(findClus,
+    cms::hip::launch(findClus,
                       {blocksPerGrid, threadsPerBlock},
                       d_id.get(),
                       d_x.get(),
@@ -290,7 +290,7 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    cms::cuda::launch(clusterChargeCut,
+    cms::hip::launch(clusterChargeCut,
                       {blocksPerGrid, threadsPerBlock},
                       d_id.get(),
                       d_adc.get(),

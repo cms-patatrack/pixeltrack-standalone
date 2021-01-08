@@ -22,7 +22,7 @@ public:
 private:
   // allocate it with posix malloc to be ocmpatible with cpu wf
   std::vector<pixelCPEforGPU::DetParams> m_detParamsGPU;
-  // std::vector<pixelCPEforGPU::DetParams, cms::cuda::HostAllocator<pixelCPEforGPU::DetParams>> m_detParamsGPU;
+  // std::vector<pixelCPEforGPU::DetParams, cms::hip::HostAllocator<pixelCPEforGPU::DetParams>> m_detParamsGPU;
   pixelCPEforGPU::CommonParams m_commonParamsGPU;
   pixelCPEforGPU::LayerGeometry m_layerGeometry;
   pixelCPEforGPU::AverageGeometry m_averageGeometry;
@@ -35,7 +35,7 @@ private:
     pixelCPEforGPU::ParamsOnGPU h_paramsOnGPU;
     pixelCPEforGPU::ParamsOnGPU *d_paramsOnGPU = nullptr;  // copy of the above on the Device
   };
-  cms::cuda::ESProduct<GPUData> gpuData_;
+  cms::hip::ESProduct<GPUData> gpuData_;
 
   void fillParamsForGpu();
 };

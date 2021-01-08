@@ -8,7 +8,7 @@
 #include "CUDACore/cudaCheck.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     namespace host {
       namespace noncached {
         namespace impl {
@@ -25,11 +25,11 @@ namespace cms {
         namespace impl {
           template <typename T>
           struct make_host_unique_selector {
-            using non_array = cms::cuda::host::noncached::unique_ptr<T>;
+            using non_array = cms::hip::host::noncached::unique_ptr<T>;
           };
           template <typename T>
           struct make_host_unique_selector<T[]> {
-            using unbounded_array = cms::cuda::host::noncached::unique_ptr<T[]>;
+            using unbounded_array = cms::hip::host::noncached::unique_ptr<T[]>;
           };
           template <typename T, size_t N>
           struct make_host_unique_selector<T[N]> {
@@ -68,7 +68,7 @@ namespace cms {
     template <typename T, typename... Args>
     typename host::noncached::impl::make_host_unique_selector<T>::bounded_array make_host_noncached_unique(Args &&...) =
         delete;
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

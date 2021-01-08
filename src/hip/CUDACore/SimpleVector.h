@@ -9,7 +9,7 @@
 #include "CUDACore/cudaCompat.h"
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     template <class T>
     struct SimpleVector {
@@ -135,7 +135,7 @@ namespace cms {
       return ret;
     }
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_SimpleVector_h

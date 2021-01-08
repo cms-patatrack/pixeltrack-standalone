@@ -39,7 +39,7 @@ __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i, uint32_t mask) 
 #endif // __HIPCC__
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     // limited to 32*32 elements....
     template <typename VT, typename T>
@@ -183,7 +183,7 @@ namespace cms {
         co[i] += psum[k];
       }
     }
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_prefixScan_h

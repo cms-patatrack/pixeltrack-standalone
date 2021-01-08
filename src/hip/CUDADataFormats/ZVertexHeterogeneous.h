@@ -8,7 +8,7 @@
 using ZVertexHeterogeneous = HeterogeneousSoA<ZVertexSoA>;
 #ifndef __HIPCC__
 #include "CUDACore/Product.h"
-using ZVertexCUDAProduct = cms::cuda::Product<ZVertexHeterogeneous>;
+using ZVertexCUDAProduct = cms::hip::Product<ZVertexHeterogeneous>;
 #endif
 
 #endif

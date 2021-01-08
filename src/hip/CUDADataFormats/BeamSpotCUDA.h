@@ -8,11 +8,11 @@
 
 class BeamSpotCUDA {
 public:
-  // default constructor, required by cms::cuda::Product<BeamSpotCUDA>
+  // default constructor, required by cms::hip::Product<BeamSpotCUDA>
   BeamSpotCUDA() = default;
 
   // constructor that allocates cached device memory on the given CUDA stream
-  BeamSpotCUDA(hipStream_t stream) { data_d_ = cms::cuda::make_device_unique<BeamSpotPOD>(stream); }
+  BeamSpotCUDA(hipStream_t stream) { data_d_ = cms::hip::make_device_unique<BeamSpotPOD>(stream); }
 
   // movable, non-copiable
   BeamSpotCUDA(BeamSpotCUDA const&) = delete;
@@ -23,11 +23,11 @@ public:
   BeamSpotPOD* data() { return data_d_.get(); }
   BeamSpotPOD const* data() const { return data_d_.get(); }
 
-  cms::cuda::device::unique_ptr<BeamSpotPOD>& ptr() { return data_d_; }
-  cms::cuda::device::unique_ptr<BeamSpotPOD> const& ptr() const { return data_d_; }
+  cms::hip::device::unique_ptr<BeamSpotPOD>& ptr() { return data_d_; }
+  cms::hip::device::unique_ptr<BeamSpotPOD> const& ptr() const { return data_d_; }
 
 private:
-  cms::cuda::device::unique_ptr<BeamSpotPOD> data_d_;
+  cms::hip::device::unique_ptr<BeamSpotPOD> data_d_;
 };
 
 #endif  // CUDADataFormats_BeamSpot_interface_BeamSpotCUDA_h

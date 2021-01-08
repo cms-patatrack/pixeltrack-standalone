@@ -7,7 +7,7 @@
 #include <type_traits>
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
     template <typename T>
     inline void memsetAsync(device::unique_ptr<T>& ptr, T value, hipStream_t stream) {
       // Shouldn't compile for array types because of sizeof(T), but
@@ -27,7 +27,7 @@ namespace cms {
     inline void memsetAsync(device::unique_ptr<T[]>& ptr, int value, size_t nelements, hipStream_t stream) {
       cudaCheck(hipMemsetAsync(ptr.get(), value, nelements * sizeof(T), stream));
     }
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif

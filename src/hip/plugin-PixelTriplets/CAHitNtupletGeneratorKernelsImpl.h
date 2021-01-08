@@ -32,7 +32,7 @@ using HitContainer = pixelTrack::HitContainer;
 
 __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
                                       CAConstants::TupleMultiplicity *tupleMultiplicity,
-                                      cms::cuda::AtomicPairCounter *apc,
+                                      cms::hip::AtomicPairCounter *apc,
                                       GPUCACell const *__restrict__ cells,
                                       uint32_t const *__restrict__ nCells,
                                       gpuPixelDoublets::CellNeighborsVector const *cellNeighbors,
@@ -193,8 +193,8 @@ __global__ void kernel_fastDuplicateRemover(GPUCACell const *__restrict__ cells,
   }
 }
 
-__global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
-                               cms::cuda::AtomicPairCounter *apc2,  // just to zero them,
+__global__ void kernel_connect(cms::hip::AtomicPairCounter *apc1,
+                               cms::hip::AtomicPairCounter *apc2,  // just to zero them,
                                GPUCACell::Hits const *__restrict__ hhp,
                                GPUCACell *cells,
                                uint32_t const *__restrict__ nCells,
@@ -271,7 +271,7 @@ __global__ void kernel_find_ntuplets(GPUCACell::Hits const *__restrict__ hhp,
                                      uint32_t const *nCells,
                                      gpuPixelDoublets::CellTracksVector *cellTracks,
                                      HitContainer *foundNtuplets,
-                                     cms::cuda::AtomicPairCounter *apc,
+                                     cms::hip::AtomicPairCounter *apc,
                                      Quality *__restrict__ quality,
                                      unsigned int minHitsPerNtuplet) {
   // recursive: not obvious to widen

@@ -8,7 +8,7 @@
 // reimplementation of std algorithms able to compile with CUDA and run on GPUs,
 // mostly by declaringthem constexpr
 
-namespace cuda_std {
+namespace hip_std {
 
   template <typename T = void>
   struct less {
@@ -59,12 +59,12 @@ namespace cuda_std {
     return first;
   }
 
-  template <typename RandomIt, typename T, typename Compare = cuda_std::less<T>>
+  template <typename RandomIt, typename T, typename Compare = hip_std::less<T>>
   __host__ __device__ constexpr RandomIt binary_find(RandomIt first, RandomIt last, const T &value, Compare comp = {}) {
-    first = cuda_std::lower_bound(first, last, value, comp);
+    first = hip_std::lower_bound(first, last, value, comp);
     return first != last && !comp(value, *first) ? first : last;
   }
 
-}  // namespace cuda_std
+}  // namespace hip_std
 
 #endif  // HeterogeneousCore_CUDAUtilities_cudastdAlgorithm_h

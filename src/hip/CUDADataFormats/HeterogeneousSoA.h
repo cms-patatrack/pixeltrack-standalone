@@ -19,8 +19,8 @@ public:
   HeterogeneousSoA(HeterogeneousSoA &&) = default;
   HeterogeneousSoA &operator=(HeterogeneousSoA &&) = default;
 
-  explicit HeterogeneousSoA(cms::cuda::device::unique_ptr<T> &&p) : dm_ptr(std::move(p)) {}
-  explicit HeterogeneousSoA(cms::cuda::host::unique_ptr<T> &&p) : hm_ptr(std::move(p)) {}
+  explicit HeterogeneousSoA(cms::hip::device::unique_ptr<T> &&p) : dm_ptr(std::move(p)) {}
+  explicit HeterogeneousSoA(cms::hip::host::unique_ptr<T> &&p) : hm_ptr(std::move(p)) {}
   explicit HeterogeneousSoA(std::unique_ptr<T> &&p) : std_ptr(std::move(p)) {}
 
   auto const *get() const { return dm_ptr ? dm_ptr.get() : (hm_ptr ? hm_ptr.get() : std_ptr.get()); }
@@ -36,75 +36,75 @@ public:
   auto *operator->() { return get(); }
 
   // in reality valid only for GPU version...
-  cms::cuda::host::unique_ptr<T> toHostAsync(hipStream_t stream) const {
+  cms::hip::host::unique_ptr<T> toHostAsync(hipStream_t stream) const {
     assert(dm_ptr);
-    auto ret = cms::cuda::make_host_unique<T>(stream);
+    auto ret = cms::hip::make_host_unique<T>(stream);
     cudaCheck(hipMemcpyAsync(ret.get(), dm_ptr.get(), sizeof(T), hipMemcpyDefault, stream));
     return ret;
   }
 
 private:
   // a union wan't do it, a variant will not be more efficienct
-  cms::cuda::device::unique_ptr<T> dm_ptr;  //!
-  cms::cuda::host::unique_ptr<T> hm_ptr;    //!
+  cms::hip::device::unique_ptr<T> dm_ptr;  //!
+  cms::hip::host::unique_ptr<T> hm_ptr;    //!
   std::unique_ptr<T> std_ptr;               //!
 };
 
 namespace cms {
-  namespace cudacompat {
+  namespace hipcompat {
 
     struct GPUTraits {
       template <typename T>
-      using unique_ptr = cms::cuda::device::unique_ptr<T>;
+      using unique_ptr = cms::hip::device::unique_ptr<T>;
 
       template <typename T>
       static auto make_unique(hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(stream);
+        return cms::hip::make_device_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_unique(size_t size, hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(size, stream);
+        return cms::hip::make_device_unique<T>(size, stream);
       }
 
       template <typename T>
       static auto make_host_unique(hipStream_t stream) {
-        return cms::cuda::make_host_unique<T>(stream);
+        return cms::hip::make_host_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_device_unique(hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(stream);
+        return cms::hip::make_device_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_device_unique(size_t size, hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(size, stream);
+        return cms::hip::make_device_unique<T>(size, stream);
       }
     };
 
     struct HostTraits {
       template <typename T>
-      using unique_ptr = cms::cuda::host::unique_ptr<T>;
+      using unique_ptr = cms::hip::host::unique_ptr<T>;
 
       template <typename T>
       static auto make_unique(hipStream_t stream) {
-        return cms::cuda::make_host_unique<T>(stream);
+        return cms::hip::make_host_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_host_unique(hipStream_t stream) {
-        return cms::cuda::make_host_unique<T>(stream);
+        return cms::hip::make_host_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_device_unique(hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(stream);
+        return cms::hip::make_device_unique<T>(stream);
       }
 
       template <typename T>
       static auto make_device_unique(size_t size, hipStream_t stream) {
-        return cms::cuda::make_device_unique<T>(size, stream);
+        return cms::hip::make_device_unique<T>(size, stream);
       }
     };
 
@@ -138,7 +138,7 @@ namespace cms {
       }
     };
 
-  }  // namespace cudacompat
+  }  // namespace hipcompat
 }  // namespace cms
 
 // a heterogeneous unique pointer (of a different sort) ...
@@ -160,7 +160,7 @@ public:
 
   T *get() { return m_ptr.get(); }
 
-  cms::cuda::host::unique_ptr<T> toHostAsync(hipStream_t stream) const;
+  cms::hip::host::unique_ptr<T> toHostAsync(hipStream_t stream) const;
 
 private:
   unique_ptr<T> m_ptr;  //!
@@ -173,17 +173,17 @@ HeterogeneousSoAImpl<T, Traits>::HeterogeneousSoAImpl(hipStream_t stream) {
 
 // in reality valid only for GPU version...
 template <typename T, typename Traits>
-cms::cuda::host::unique_ptr<T> HeterogeneousSoAImpl<T, Traits>::toHostAsync(hipStream_t stream) const {
-  auto ret = cms::cuda::make_host_unique<T>(stream);
+cms::hip::host::unique_ptr<T> HeterogeneousSoAImpl<T, Traits>::toHostAsync(hipStream_t stream) const {
+  auto ret = cms::hip::make_host_unique<T>(stream);
   cudaCheck(hipMemcpyAsync(ret.get(), get(), sizeof(T), hipMemcpyDefault, stream));
   return ret;
 }
 
 template <typename T>
-using HeterogeneousSoAGPU = HeterogeneousSoAImpl<T, cms::cudacompat::GPUTraits>;
+using HeterogeneousSoAGPU = HeterogeneousSoAImpl<T, cms::hipcompat::GPUTraits>;
 template <typename T>
-using HeterogeneousSoACPU = HeterogeneousSoAImpl<T, cms::cudacompat::CPUTraits>;
+using HeterogeneousSoACPU = HeterogeneousSoAImpl<T, cms::hipcompat::CPUTraits>;
 template <typename T>
-using HeterogeneousSoAHost = HeterogeneousSoAImpl<T, cms::cudacompat::HostTraits>;
+using HeterogeneousSoAHost = HeterogeneousSoAImpl<T, cms::hipcompat::HostTraits>;
 
 #endif

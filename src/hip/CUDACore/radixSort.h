@@ -257,7 +257,7 @@ __device__ __forceinline__ void radixSortMulti(T const* v,
 }
 
 namespace cms {
-  namespace cuda {
+  namespace hip {
 
     template <typename T, int NS = sizeof(T)>
     __global__ void __launch_bounds__(256, 4)
@@ -270,7 +270,7 @@ namespace cms {
       radixSortMulti<T, NS>(v, index, offsets, workspace);
     }
 
-  }  // namespace cuda
+  }  // namespace hip
 }  // namespace cms
 
 #endif  // __HIPCC__
