@@ -8,7 +8,8 @@ $(TARGET):
 test_cpu: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
-	$(TARGET) --maxEvents 2 --serial --tbb
+	$(TARGET) --maxEvents 2 --serial
+	$(TARGET) --maxEvents 2 --tbb
 	@echo "Succeeded"
 test_nvidiagpu: $(TARGET)
 	@echo
