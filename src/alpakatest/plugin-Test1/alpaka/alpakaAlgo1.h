@@ -9,10 +9,7 @@
 // of build rules for files to be compiled by accelerator, and
 // different set for files to be compiled by architecture?
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  //alpaka::mem::buf::Buf<Acc2, float, std::integral_constant<long unsigned int, 1>, unsigned int> alpakaAlgo1();
-  alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx> alpakaAlgo1();
-  //float* alpakaAlgo1();
-
+  AlpakaAccBuf2<float> alpakaAlgo1();
 }
 
 #endif

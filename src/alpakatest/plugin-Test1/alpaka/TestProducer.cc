@@ -21,20 +21,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    /*#ifdef TODO
-    edm::EDPutTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> putToken_;
-    #endif*/
-    edm::EDPutTokenT<alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx>> putToken_;
-    //edm::EDPutTokenT<float*> putToken_;
+    edm::EDPutTokenT<AlpakaAccBuf2<float>> putToken_;
   };
 
     TestProducer::TestProducer(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-	/*#ifdef TODO
-	  putToken_(reg.produces<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
-	  #endif*/
-        putToken_(reg.produces<alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx>>())
-	//putToken_(reg.produces<float*>())
+        putToken_(reg.produces<AlpakaAccBuf2<float>>())
   {
   }
 
@@ -43,15 +35,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "TestProducer  Event " << event.eventID() << " stream " << event.streamID() << " ES int "
               << eventSetup.get<int>() << " FED 1200 size " << value << std::endl;
 
-    /*#ifdef TODO
-      cms::cuda::ScopedContextProduce ctx(event.streamID());
-
-      ctx.emplace(event, putToken_, gpuAlgo1(ctx.stream()));
-      #endif*/
-    //alpakaAlgo1();
-
-    //alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx> result = alpakaAlgo1();
-    //std::cout << alpaka::mem::view::getPtrNative(result) << std::endl;
+#ifdef SCOPEDCONTEXT
+    cms::cuda::ScopedContextProduce ctx(event.streamID());
+    ctx.emplace(event, putToken_, gpuAlgo1(ctx.stream()));
+#endif
 
     event.emplace(putToken_, alpakaAlgo1());
 
