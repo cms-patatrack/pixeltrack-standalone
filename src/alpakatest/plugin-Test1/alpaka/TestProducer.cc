@@ -23,10 +23,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   TestProducer::TestProducer(edm::ProductRegistry& reg)
-    : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-      putToken_(reg.produces<AlpakaAccBuf2<float>>())
-  {
-  }
+      : rawGetToken_(reg.consumes<FEDRawDataCollection>()), putToken_(reg.produces<AlpakaAccBuf2<float>>()) {}
 
   void TestProducer::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     auto const value = event.get(rawGetToken_).FEDData(1200).size();

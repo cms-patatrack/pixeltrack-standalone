@@ -29,16 +29,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
   };
 
-  TestProducer2::TestProducer2(edm::ProductRegistry& reg) :
-    getToken_(reg.consumes<AlpakaAccBuf2<float>>())
-  {
+  TestProducer2::TestProducer2(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {
     nevents = 0;
   }
 
   void TestProducer2::acquire(edm::Event const& event,
                               edm::EventSetup const& eventSetup,
                               edm::WaitingTaskWithArenaHolder holder) {
-
 #ifdef SCOPEDCONTEXT
     auto const& tmp = event.get(getToken_);
     cms::cuda::ScopedContextAcquire ctx(tmp, std::move(holder));
