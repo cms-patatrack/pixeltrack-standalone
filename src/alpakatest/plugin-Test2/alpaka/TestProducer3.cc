@@ -8,7 +8,6 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class TestProducer3 : public edm::EDProducer {
   public:
@@ -34,6 +33,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     std::cout << "TestProducer3 Event " << event.eventID() << " stream " << event.streamID() << std::endl;
   }
-  }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 DEFINE_FWK_ALPAKA_MODULE(TestProducer3);

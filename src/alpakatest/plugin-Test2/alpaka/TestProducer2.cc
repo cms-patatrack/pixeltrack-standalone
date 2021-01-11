@@ -46,7 +46,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
     alpakaAlgo2();
 
-
     std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID()
 #ifdef SCOPEDCONTEXT
               << " array " << array.get()
@@ -55,9 +54,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
-  std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
-  ++nevents;
-}
+    std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
+    ++nevents;
+  }
 
   void TestProducer2::endJob() {
     std::cout << "TestProducer2::endJob processed " << nevents.load() << " events" << std::endl;

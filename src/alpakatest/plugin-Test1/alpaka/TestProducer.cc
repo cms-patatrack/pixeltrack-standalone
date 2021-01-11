@@ -10,8 +10,6 @@
 
 #include "alpakaAlgo1.h"
 
-
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class TestProducer : public edm::EDProducer {
   public:
@@ -24,9 +22,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDPutTokenT<AlpakaAccBuf2<float>> putToken_;
   };
 
-    TestProducer::TestProducer(edm::ProductRegistry& reg)
-      : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        putToken_(reg.produces<AlpakaAccBuf2<float>>())
+  TestProducer::TestProducer(edm::ProductRegistry& reg)
+    : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
+      putToken_(reg.produces<AlpakaAccBuf2<float>>())
   {
   }
 
@@ -41,7 +39,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
     event.emplace(putToken_, alpakaAlgo1());
-
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

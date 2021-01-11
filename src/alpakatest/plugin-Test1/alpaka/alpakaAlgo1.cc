@@ -243,7 +243,6 @@ namespace {
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   AlpakaAccBuf2<float> alpakaAlgo1() {
-    //float* alpakaAlgo1() {
     const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     const DevAcc2 device(alpaka::pltf::getDevByIdx<PltfAcc2>(0u));
     const Vec size(NUM_VALUES);
