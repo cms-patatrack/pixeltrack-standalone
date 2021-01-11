@@ -242,7 +242,7 @@ namespace {
 }  // namespace
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  void alpakaAlgo2() {
+  alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx> alpakaAlgo2() {
     const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     const DevAcc2 device(alpaka::pltf::getDevByIdx<PltfAcc2>(0u));
     const Vec size(NUM_VALUES);
@@ -342,5 +342,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                  NUM_VALUES));
 
     alpaka::wait::wait(queue);
+    return d_mc_buf;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

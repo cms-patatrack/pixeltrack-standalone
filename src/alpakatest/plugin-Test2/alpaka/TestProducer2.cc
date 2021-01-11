@@ -26,18 +26,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
-#ifdef TODO
-    edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
-#endif
+    /*
+      #ifdef TODO
+      edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
+      #endif
+    */
+    //edm::EDPutTokenT<alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx>> putToken_;
   };
 
-  TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-#ifdef TODO
-      : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
-#endif
+  TestProducer2::TestProducer2(edm::ProductRegistry& reg) 
+  //:
+    /*
+      #ifdef TODO
+      getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
+      #endif*/
+    //putToken_(reg.produces<alpaka::mem::buf::Buf<Acc2, float, Dim2, Idx>>())
   {
-    nevents = 0;
-  }
+  nevents = 0;
+}
 
   void TestProducer2::acquire(edm::Event const& event,
                               edm::EventSetup const& eventSetup,
@@ -49,7 +55,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto const& array = ctx.get(tmp);
 #endif
-    alpakaAlgo2();
+  //alpakaAlgo2()
+
 
     std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID()
 #ifdef TODO
@@ -59,9 +66,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
-    std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
-    ++nevents;
-  }
+  std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << std::endl;
+  //event.emplace(putToken_, alpakaAlgo2());
+  ++nevents;
+}
 
   void TestProducer2::endJob() {
     std::cout << "TestProducer2::endJob processed " << nevents.load() << " events" << std::endl;
