@@ -127,10 +127,18 @@ void HistoValidator::acquire(const edm::Event& iEvent,
 #endif
 
   nHits = hits.nHits();
+#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
   h_localCoord = hits.localCoordToHostAsync(ctx.stream());
   h_globalCoord = hits.globalCoordToHostAsync(ctx.stream());
   h_charge = hits.chargeToHostAsync(ctx.stream());
   h_size = hits.sizeToHostAsync(ctx.stream());
+#else
+  hits.localCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
+  hits.globalCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
+  hits.chargeToHostPrefetchAsync(ctx.device(), ctx.stream());
+  hits.sizeToHostPrefetchAsync(ctx.device(), ctx.stream());
+
+#endif
 }
 
 void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {

@@ -5,6 +5,7 @@
 
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/managed_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
 

@@ -202,10 +202,13 @@ private:
 };
 
 #ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits,cms::cudacompat::GPUTraits>;
+using CAHitNtupletGeneratorKernelsGPU =
+    CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits, cms::cudacompat::GPUTraits>;
 #else
-using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits,cms::cudacompat::ManagedTraits>;
+using CAHitNtupletGeneratorKernelsGPU =
+    CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits, cms::cudacompat::ManagedTraits>;
 #endif
-using CAHitNtupletGeneratorKernelsCPU = CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits,cms::cudacompat::CPUTraits>;
+using CAHitNtupletGeneratorKernelsCPU =
+    CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits, cms::cudacompat::CPUTraits>;
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
