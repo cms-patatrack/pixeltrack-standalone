@@ -26,33 +26,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
-#ifdef TODO
-    edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
-#endif
+    edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
   };
 
-  TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-#ifdef TODO
-      : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
-#endif
-  {
+  TestProducer2::TestProducer2(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {
     nevents = 0;
   }
 
   void TestProducer2::acquire(edm::Event const& event,
                               edm::EventSetup const& eventSetup,
                               edm::WaitingTaskWithArenaHolder holder) {
-#ifdef TODO
+#ifdef SCOPEDCONTEXT
     auto const& tmp = event.get(getToken_);
-
     cms::cuda::ScopedContextAcquire ctx(tmp, std::move(holder));
-
     auto const& array = ctx.get(tmp);
 #endif
     alpakaAlgo2();
 
     std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID()
-#ifdef TODO
+#ifdef SCOPEDCONTEXT
               << " array " << array.get()
 #endif
               << std::endl;
