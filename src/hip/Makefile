@@ -59,8 +59,6 @@ TESTS_SRC := $(wildcard $(TARGET_DIR)/test/*.cc)
 TESTS_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_SRC:%=%.o))
 TESTS_DEP := $(TESTS_OBJ:$.o=$.d)
 TESTS_CUSRC := $(wildcard $(TARGET_DIR)/test/*.cu)
-# This one doesn't build
-TESTS_CUSRC := $(filter-out $(TARGET_DIR)/test/OneToManyAssoc_t.cu $(TARGET_DIR)/test/HistoContainer_t.cu $(TARGET_DIR)/test/prefixScan_t.cu,$(TESTS_CUSRC))
 TESTS_CUOBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_CUSRC:%=%.o))
 TESTS_CUDEP := $(TESTS_CUOBJ:$.o=$.d)
 TESTS_EXE_CPU := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_SRC))

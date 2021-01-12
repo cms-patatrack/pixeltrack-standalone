@@ -62,7 +62,9 @@ namespace cms {
         warpPrefixScan(ci, co, i);
         auto laneId = threadIdx.x & (warpSize-1);
         auto warpId = i / warpSize;
+#ifdef THIS_FAILS_TO_BUILD_IN_UNIT_TESTS
         assert(warpId < warpSize);
+#endif
         if ((warpSize-1) == laneId)
           ws[warpId] = co[i];
       }
