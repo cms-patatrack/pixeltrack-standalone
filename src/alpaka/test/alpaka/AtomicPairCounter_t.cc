@@ -1,7 +1,7 @@
-#include "AlpakaCore/alpakaConfig.h"
-
 #include <cassert>
 #include <iostream>
+
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/AtomicPairCounter.h"
 
 
@@ -19,28 +19,26 @@ struct update {
     const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
     const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, n);
 
-    for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
-      auto m = i % 11;
-      m = m % 6 + 1;  // max 6, no 0
-      auto c = dc->add(acc, m);
-      assert(c.m < n);
-      ind[c.m] = c.n;
-      for (uint32_t j = c.n; j < c.n + m; ++j)
-	cont[j] = i;
+for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
+  auto m = i % 11;
+  m = m % 6 + 1;  // max 6, no 0
+  auto c = dc->add(acc, m);
+  assert(c.m < n);
+  ind[c.m] = c.n;
+  for (uint32_t j = c.n; j < c.n + m; ++j)
+    cont[j] = i;
 
-    }
+ }
   }
 };
 
-
 struct finalize {
-  template <typename T_Acc>  // T_Acc needed ????
+  template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, cms::Alpaka::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     assert(dc->get().m == n);
     ind[n] = dc->get().n;
   }
 };
-
 
 struct verify {
   template <typename T_Acc>
@@ -55,7 +53,6 @@ struct verify {
     const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, n);
 
     for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
-    
       assert(0 == ind[0]);
       assert(dc->get().m == n);
       assert(ind[n] == dc->get().n);
@@ -69,18 +66,17 @@ struct verify {
   }
 };
 
-
-
 int main() {
   const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
   const DevAcc device(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
   Queue queue(device);
-  const Vec size((uint32_t)1);
 
-  auto c_dbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(device, size);
-  alpaka::mem::view::set(queue, c_dbuf, 0, size);
+  constexpr uint32_t C = 1;
+  const Vec sizeC(C);
+  auto c_dbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(device, sizeC);
+  alpaka::mem::view::set(queue, c_dbuf, 0, sizeC);
 
-  std::cout << "size " << size << std::endl;
+  std::cout << "size " << C * sizeof(cms::Alpaka::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
@@ -111,11 +107,10 @@ int main() {
 							       alpaka::mem::view::getPtrNative(m_dbuf),
 							       NUM_VALUES));
 
-  const Vec elementsPerThreadworkDivFinalize(Vec::all(1));
-  const Vec threadsPerBlockworkDivFinalize(Vec::all(1));
-  const Vec blocksPerGridworkDivFinalize(Vec::all(1));
-  const WorkDiv workDivFinalize(blocksPerGridworkDivFinalize, threadsPerBlockworkDivFinalize, elementsPerThreadworkDivFinalize);
-
+  const Vec elementsPerThreadFinalize(Vec::all(1));
+  const Vec threadsPerBlockFinalize(Vec::all(1));
+  const Vec blocksPerGridFinalize(Vec::all(1));
+  const WorkDiv workDivFinalize(blocksPerGridFinalize, threadsPerBlockFinalize, elementsPerThreadFinalize);
   alpaka::queue::enqueue(queue,
 			 alpaka::kernel::createTaskKernel<Acc>(workDivFinalize,
 							       finalize(),
@@ -131,16 +126,13 @@ int main() {
 							       alpaka::mem::view::getPtrNative(n_dbuf),
 							       alpaka::mem::view::getPtrNative(m_dbuf),
 							       NUM_VALUES));
-
     
-  auto c_hbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(host, size);
-  alpaka::mem::view::copy(queue, c_hbuf, c_dbuf, size);
-  alpaka::wait::wait(queue);  //  needed?
+  auto c_hbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(host, sizeC);
+  alpaka::mem::view::copy(queue, c_hbuf, c_dbuf, sizeC);
+  alpaka::wait::wait(queue);  
 
   auto c_h = alpaka::mem::view::getPtrNative(c_hbuf);
   std::cout << c_h->get().n << ' ' << c_h->get().m << std::endl;
 
-  alpaka::wait::wait(queue);
   return 0;
-  
 }

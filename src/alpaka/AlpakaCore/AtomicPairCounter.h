@@ -3,8 +3,6 @@
 
 #include <cstdint>
 
-#include "AlpakaCore/alpakaConfig.h"   // needed?
-
 namespace cms {
   namespace Alpaka {
 
@@ -12,8 +10,8 @@ namespace cms {
     public:
       using c_type = unsigned long long int;
 
-      ALPAKA_FN_HOST_ACC AtomicPairCounter() {}  //  needed?
-      ALPAKA_FN_HOST_ACC AtomicPairCounter(c_type i) { counter.ac = i; } //  needed?
+      ALPAKA_FN_HOST_ACC AtomicPairCounter() {}
+      ALPAKA_FN_HOST_ACC AtomicPairCounter(c_type i) { counter.ac = i; }
 
       ALPAKA_FN_HOST_ACC AtomicPairCounter& operator=(c_type i) {
 	counter.ac = i;
@@ -36,9 +34,10 @@ namespace cms {
 
       // increment n by 1 and m by i.  return previous value
       template<typename T_Acc>
-	ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(T_Acc const & acc, uint32_t i) {  // not ALPAKA_FN_HOST_ACC ?
+	ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const T_Acc& acc, uint32_t i) {
 	c_type c = i;
 	c += incr;
+	
 	Atomic2 ret;
 	ret.ac = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &counter.ac, c);
 	return ret.counters;
