@@ -10,15 +10,8 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 struct update {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, cms::Alpaka::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
-    // Global thread index in grid
-    const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
-    const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-
-    // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-    const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
-    const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
-    const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, n);
+				const T_Acc &acc, cms::Alpaka::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+    const auto& [firstElementIdxGlobal, endElementIdxGlobal] = cms::Alpaka::element_global_index_range(acc, n);
 
     for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
       auto m = i % 11;
@@ -34,8 +27,7 @@ struct update {
 
 struct finalize {
   template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, cms::Alpaka::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+  ALPAKA_FN_ACC void operator()(const T_Acc &acc, cms::Alpaka::AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     assert(dc->get().m == n);
     ind[n] = dc->get().n;
   }
@@ -48,14 +40,7 @@ struct verify {
                                 uint32_t const *ind,
                                 uint32_t const *cont,
                                 uint32_t n) const {
-    // Global thread index in grid
-    const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
-    const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-
-    // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-    const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
-    const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
-    const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, n);
+    const auto& [firstElementIdxGlobal, endElementIdxGlobal] = cms::Alpaka::element_global_index_range(acc, n);
 
     for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
       assert(0 == ind[0]);

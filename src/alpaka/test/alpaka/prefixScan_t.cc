@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/prefixScan.h"
 
 using namespace cms::Alpaka;
@@ -82,14 +83,10 @@ struct testWarpPrefixScan {
 struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
-    uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-    uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
+    const auto& [firstElementIdxGlobal, endElementIdxGlobal] = cms::Alpaka::element_global_index_range(acc, n);
 
-    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
-      int index = threadIdxInGrid * threadDimension + i;
-      if (index < static_cast<int>(n)) {
-        v[index] = val;
-      }
+    for (uint32_t index = firstElementIdxGlobal; index < endElementIdxGlobal; ++index) {
+      v[index] = val;
 
       if (index == 0)
         printf("init\n");
@@ -100,13 +97,10 @@ struct init {
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
-    uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-    uint32_t const threadIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
+    const auto& [firstElementIdxGlobal, endElementIdxGlobal] = cms::Alpaka::element_global_index_range(acc, n);
 
-    for (int i = 0; i < static_cast<int>(threadDimension); ++i) {
-      int index = threadIdxInGrid * threadDimension + i;
-      if (index < static_cast<int>(n))
-        assert(static_cast<int>(v[index]) == index + 1);
+    for (uint32_t index = firstElementIdxGlobal; index < endElementIdxGlobal; ++index) {
+      assert(v[index] == index + 1);
       if (index == 0)
         printf("verify\n");
     }
