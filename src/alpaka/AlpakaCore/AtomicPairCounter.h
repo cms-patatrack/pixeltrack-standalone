@@ -14,8 +14,8 @@ namespace cms {
       ALPAKA_FN_HOST_ACC AtomicPairCounter(c_type i) { counter.ac = i; }
 
       ALPAKA_FN_HOST_ACC AtomicPairCounter& operator=(c_type i) {
-	counter.ac = i;
-	return *this;
+        counter.ac = i;
+        return *this;
       }
 
       struct Counters {
@@ -33,14 +33,14 @@ namespace cms {
       ALPAKA_FN_HOST_ACC Counters get() const { return counter.counters; }
 
       // increment n by 1 and m by i.  return previous value
-      template<typename T_Acc>
-	ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const T_Acc& acc, uint32_t i) {
-	c_type c = i;
-	c += incr;
-	
-	Atomic2 ret;
-	ret.ac = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &counter.ac, c);
-	return ret.counters;
+      template <typename T_Acc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const T_Acc& acc, uint32_t i) {
+        c_type c = i;
+        c += incr;
+
+        Atomic2 ret;
+        ret.ac = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &counter.ac, c);
+        return ret.counters;
       }
 
     private:
