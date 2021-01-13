@@ -210,29 +210,29 @@ int main() {
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nblocks << std::endl;
     alpaka::queue::enqueue(
-			   queue,
-			   alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(nblocks), Vec1::all(nthreads), Vec1::all(nelements)},
-								  multiBlockPrefixScanFirstStep<uint32_t>(),
-								  input_d,
-								  output1_d,
-								  psum_d,
-								  num_items));
+        queue,
+        alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(nblocks), Vec1::all(nthreads), Vec1::all(nelements)},
+                                               multiBlockPrefixScanFirstStep<uint32_t>(),
+                                               input_d,
+                                               output1_d,
+                                               psum_d,
+                                               num_items));
     alpaka::wait::wait(queue);
     alpaka::queue::enqueue(
-			   queue,
-			   alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(1), Vec1::all(nthreads), Vec1::all(nelements)},
-								  multiBlockPrefixScanSecondStep<uint32_t>(),
-								  input_d,
-								  output1_d,
-								  psum_d,
-								  num_items,
-								  nblocks));
+        queue,
+        alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(1), Vec1::all(nthreads), Vec1::all(nelements)},
+                                               multiBlockPrefixScanSecondStep<uint32_t>(),
+                                               input_d,
+                                               output1_d,
+                                               psum_d,
+                                               num_items,
+                                               nblocks));
     alpaka::wait::wait(queue);
 
     alpaka::queue::enqueue(
-			   queue,
-			   alpaka::kernel::createTaskKernel<Acc1>(
-								  WorkDiv1{Vec1::all(nblocks), Vec1::all(nthreads), Vec1::all(nelements)}, verify(), output1_d, num_items));
+        queue,
+        alpaka::kernel::createTaskKernel<Acc1>(
+            WorkDiv1{Vec1::all(nblocks), Vec1::all(nthreads), Vec1::all(nelements)}, verify(), output1_d, num_items));
     alpaka::wait::wait(queue);
 
   }  // ksize

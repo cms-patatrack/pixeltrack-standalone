@@ -8,15 +8,14 @@
 using namespace alpaka_common;
 
 namespace cms {
-  namespace Alpaka { 
+  namespace Alpaka {
 
     /*
      * Creates the accelerator-dependent workdiv.
      */
     template <typename T_Dim>
-      WorkDiv<T_Dim> make_workdiv(const Vec<T_Dim>& blocksPerGrid, const Vec<T_Dim>& threadsPerBlockOrElementsPerThread) {
-
-      // On the GPU: 
+    WorkDiv<T_Dim> make_workdiv(const Vec<T_Dim>& blocksPerGrid, const Vec<T_Dim>& threadsPerBlockOrElementsPerThread) {
+      // On the GPU:
       // threadsPerBlockOrElementsPerThread is the number of threads per block.
       // Each thread is looking at a single element: elementsPerThread is always 1.
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -31,11 +30,12 @@ namespace cms {
 #endif
     }
 
-      /*
+    /*
        * Computes the range of the element(s) global index(es) in grid.
        */
-      template <typename T_Acc>
-	ALPAKA_FN_ACC std::pair<uint32_t, uint32_t> element_global_index_range(const T_Acc& acc, const uint32_t maxNumberOfElements) {
+    template <typename T_Acc>
+    ALPAKA_FN_ACC std::pair<uint32_t, uint32_t> element_global_index_range(const T_Acc& acc,
+                                                                           const uint32_t maxNumberOfElements) {
       // Global thread index in grid
       const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
       const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
@@ -50,7 +50,7 @@ namespace cms {
       return {firstElementIdxGlobal, endElementIdxGlobal};
     }
 
-    } // namespace Alpaka
-    }  // namespace cms
+  }  // namespace Alpaka
+}  // namespace cms
 
 #endif  // ALPAKAWORKDIVHELPER_H
