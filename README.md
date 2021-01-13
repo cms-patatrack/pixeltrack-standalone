@@ -32,13 +32,14 @@ The application is designed to require minimal dependencies on the system. All p
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | ROCm 3.10              | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
 |--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudadev`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudauvm`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudacompat` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `hiptest`    |                    |                             | :heavy_check_mark:     |                                                                                                                  |
 | `kokkostest` | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
 | `kokkos`     | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
 | `alpakatest` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
@@ -61,6 +62,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | `cudadev`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `cudauvm`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `cudacompat` | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
+| `hiptest`    | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |
 | `kokkostest` | :heavy_check_mark:                  |                                      | :heavy_check_mark:                         |                                     |                                                  |
 | `kokkos`     | :heavy_check_mark:                  | :heavy_check_mark:                   | :heavy_check_mark:                         |                                     |                                                  |
 | `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |
@@ -87,6 +89,7 @@ downloaded automatically during the build process.
 | `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudacompat` | CPU version (with `cudaCompat`)  | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `hiptest`    | HIP FW test                      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
@@ -301,3 +304,5 @@ tests (`make test`). Programs to have build errors should primarily be
 filtered out from `$(TARGETS)`, and failing tests should primarily be
 removed from the set of tests run by default. Breakages can, however,
 be accepted for short periods of time with a good justification.
+
+The code is formatted with `clang-format` version 10.

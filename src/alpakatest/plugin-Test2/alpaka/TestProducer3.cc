@@ -16,23 +16,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
-#ifdef TODO
-    edm::EDGetTokenT<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>> getToken_;
-#endif
+    edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
   };
 
-  TestProducer3::TestProducer3(edm::ProductRegistry& reg)
-#ifdef TODO
-      : getToken_(reg.consumes<cms::cuda::Product<cms::cuda::device::unique_ptr<float[]>>>())
-#endif
-  {
-  }
+  TestProducer3::TestProducer3(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {}
 
   void TestProducer3::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
-#ifdef TODO
-    auto const& tmp = event.get(getToken_);
-    cms::cuda::ScopedContextProduce ctx(tmp);
+    const auto& result = event.get(getToken_);
+
+#ifdef SCOPEDCONTEXT
+    cms::cuda::ScopedContextProduce ctx(result);
 #endif
+
     std::cout << "TestProducer3 Event " << event.eventID() << " stream " << event.streamID() << std::endl;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

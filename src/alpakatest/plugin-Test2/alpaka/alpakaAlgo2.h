@@ -9,7 +9,7 @@
 // of build rules for files to be compiled by accelerator, and
 // different set for files to be compiled by architecture?
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  void alpakaAlgo2();
+  AlpakaAccBuf2<float> alpakaAlgo2();
 }
 
 #endif

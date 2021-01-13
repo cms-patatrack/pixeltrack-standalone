@@ -11,6 +11,7 @@ test_cpu: $(TARGET)
 	$(TARGET) --maxEvents 2
 	@echo "Succeeded"
 test_nvidiagpu:
+test_amdgpu:
 test_intelagpu:
 test_auto:
 .PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
