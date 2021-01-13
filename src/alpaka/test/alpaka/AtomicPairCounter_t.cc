@@ -73,7 +73,7 @@ struct verify {
 
 int main() {
   const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
-  const DevAcc device(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
+  const DevAcc1 device(alpaka::pltf::getDevByIdx<PltfAcc1>(0u));
   Queue queue(device);
 
   constexpr uint32_t C = 1;
@@ -97,33 +97,33 @@ int main() {
   const Vec1& threadsPerBlockOrElementsPerThread(Vec1(512u));
   const WorkDiv1& workDiv = cms::Alpaka::make_workdiv<Dim1>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::queue::enqueue(queue,
-                         alpaka::kernel::createTaskKernel<Acc>(workDiv,
-                                                               update(),
-                                                               alpaka::mem::view::getPtrNative(c_dbuf),
-                                                               alpaka::mem::view::getPtrNative(n_dbuf),
-                                                               alpaka::mem::view::getPtrNative(m_dbuf),
-                                                               NUM_VALUES));
+                         alpaka::kernel::createTaskKernel<Acc1>(workDiv,
+								update(),
+								alpaka::mem::view::getPtrNative(c_dbuf),
+								alpaka::mem::view::getPtrNative(n_dbuf),
+								alpaka::mem::view::getPtrNative(m_dbuf),
+								NUM_VALUES));
 
   // Finalize
   const Vec1& blocksPerGridFinalize(Vec1(1u));
   const Vec1& threadsPerBlockOrElementsPerThreadFinalize(Vec1(1u));
   const WorkDiv1& workDivFinalize = cms::Alpaka::make_workdiv<Dim1>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::queue::enqueue(queue,
-                         alpaka::kernel::createTaskKernel<Acc>(workDivFinalize,
-                                                               finalize(),
-                                                               alpaka::mem::view::getPtrNative(c_dbuf),
-                                                               alpaka::mem::view::getPtrNative(n_dbuf),
-                                                               alpaka::mem::view::getPtrNative(m_dbuf),
-                                                               NUM_VALUES));
+                         alpaka::kernel::createTaskKernel<Acc1>(workDivFinalize,
+								finalize(),
+								alpaka::mem::view::getPtrNative(c_dbuf),
+								alpaka::mem::view::getPtrNative(n_dbuf),
+								alpaka::mem::view::getPtrNative(m_dbuf),
+								NUM_VALUES));
 
   // Verify
   alpaka::queue::enqueue(queue,
-                         alpaka::kernel::createTaskKernel<Acc>(workDiv,
-                                                               verify(),
-                                                               alpaka::mem::view::getPtrNative(c_dbuf),
-                                                               alpaka::mem::view::getPtrNative(n_dbuf),
-                                                               alpaka::mem::view::getPtrNative(m_dbuf),
-                                                               NUM_VALUES));
+                         alpaka::kernel::createTaskKernel<Acc1>(workDiv,
+								verify(),
+								alpaka::mem::view::getPtrNative(c_dbuf),
+								alpaka::mem::view::getPtrNative(n_dbuf),
+								alpaka::mem::view::getPtrNative(m_dbuf),
+								NUM_VALUES));
 
   auto c_hbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(host, sizeC);
   alpaka::mem::view::copy(queue, c_hbuf, c_dbuf, sizeC);
