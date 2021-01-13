@@ -6,7 +6,7 @@
 using namespace alpaka_common;
 
 namespace cms {
-  namespace Alpaka {
+  namespace alpaka_helpers {
 
     /*
      * Creates the accelerator-dependent workdiv.
@@ -29,8 +29,8 @@ namespace cms {
     }
 
     /*
-       * Computes the range of the element(s) global index(es) in grid.
-       */
+     * Computes the range of the element(s) global index(es) in grid.
+     */
     template <typename T_Acc>
     ALPAKA_FN_ACC std::pair<uint32_t, uint32_t> element_global_index_range(const T_Acc& acc,
                                                                            const uint32_t maxNumberOfElements) {
@@ -48,7 +48,7 @@ namespace cms {
       return {firstElementIdxGlobal, endElementIdxGlobal};
     }
 
-  }  // namespace Alpaka
+  }  // namespace alpaka_helpers
 }  // namespace cms
 
 #endif  // ALPAKAWORKDIVHELPER_H
