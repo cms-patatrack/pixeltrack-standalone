@@ -4,23 +4,30 @@
 #include <alpaka/alpaka.hpp>
 
 namespace alpaka_common {
-  using Dim = alpaka::dim::DimInt<1u>;
-  using Dim2 = alpaka::dim::DimInt<2u>;
   using Idx = uint32_t;
   using Extent = uint32_t;
   using DevHost = alpaka::dev::DevCpu;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
-  using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
-  using WorkDiv2 = alpaka::workdiv::WorkDivMembers<Dim2, Idx>;
-  using Vec = alpaka::vec::Vec<Dim, Idx>;
-  using Vec2 = alpaka::vec::Vec<Dim2, Idx>;
+
+  using Dim1 = alpaka::dim::DimInt<1u>;
+  using Dim2 = alpaka::dim::DimInt<2u>;
+
+  template <typename T_Dim>
+    using Vec = alpaka::vec::Vec<T_Dim, Idx>;
+  using Vec1 = Vec<Dim1>;
+  using Vec2 = Vec<Dim2>;
+
+  template <typename T_Dim>
+    using WorkDiv = alpaka::workdiv::WorkDivMembers<T_Dim, Idx>;
+  using WorkDiv1 = WorkDiv<Dim1>;
+  using WorkDiv2 = WorkDiv<Dim2>;
 }  // namespace alpaka_common
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #define ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
-  using Acc = alpaka::acc::AccGpuCudaRt<Dim, Extent>;
+  using Acc = alpaka::acc::AccGpuCudaRt<Dim1, Extent>;
   using Acc2 = alpaka::acc::AccGpuCudaRt<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
   using DevAcc2 = alpaka::dev::Dev<Acc2>;
@@ -44,7 +51,7 @@ namespace alpaka_cuda_async {
 #define ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
-  using Acc = alpaka::acc::AccCpuSerial<Dim, Extent>;
+  using Acc = alpaka::acc::AccCpuSerial<Dim1, Extent>;
   using Acc2 = alpaka::acc::AccCpuSerial<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
   using DevAcc2 = alpaka::dev::Dev<Acc2>;
@@ -68,7 +75,7 @@ namespace alpaka_serial_sync {
 #define ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
-  using Acc = alpaka::acc::AccCpuTbbBlocks<Dim, Extent>;
+  using Acc = alpaka::acc::AccCpuTbbBlocks<Dim1, Extent>;
   using Acc2 = alpaka::acc::AccCpuTbbBlocks<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
   using DevAcc2 = alpaka::dev::Dev<Acc2>;
@@ -92,7 +99,7 @@ namespace alpaka_tbb_async {
 #define ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 namespace alpaka_omp2_async {
   using namespace alpaka_common;
-  using Acc = alpaka::acc::AccCpuOmp2Blocks<Dim, Extent>;
+  using Acc = alpaka::acc::AccCpuOmp2Blocks<Dim1, Extent>;
   using Acc2 = alpaka::acc::AccCpuOmp2Blocks<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
   using DevAcc2 = alpaka::dev::Dev<Acc2>;
@@ -116,7 +123,7 @@ namespace alpaka_omp2_async {
 #define ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 namespace alpaka_omp4_async {
   using namespace alpaka_common;
-  using Acc = alpaka::acc::AccCpuOmp4<Dim, Extent>;
+  using Acc = alpaka::acc::AccCpuOmp4<Dim1, Extent>;
   using Acc2 = alpaka::acc::AccCpuOmp4<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
   using DevAcc2 = alpaka::dev::Dev<Acc2>;

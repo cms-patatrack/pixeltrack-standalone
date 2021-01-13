@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/AtomicPairCounter.h"
 
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
@@ -76,7 +77,7 @@ int main() {
   Queue queue(device);
 
   constexpr uint32_t C = 1;
-  const Vec sizeC(C);
+  const Vec1 sizeC(C);
   auto c_dbuf = alpaka::mem::buf::alloc<cms::Alpaka::AtomicPairCounter, Idx>(device, sizeC);
   alpaka::mem::view::set(queue, c_dbuf, 0, sizeC);
 
@@ -84,25 +85,17 @@ int main() {
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
-  const Vec sizeN(N);
-  const Vec sizeM(M);
+  const Vec1 sizeN(N);
+  const Vec1 sizeM(M);
   auto n_dbuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, sizeN);
   auto m_dbuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, sizeM);
 
   constexpr uint32_t NUM_VALUES = 10000;
 
-  // Prepare 1D workDiv
-  Vec elementsPerThread(Vec::all(1));
-  Vec threadsPerBlock(Vec::all(512));
-  const Vec blocksPerGrid(Vec::all(2000));
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || \
-    ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-  // on the GPU, run with 32 threads in parallel per block, each looking at a single element
-  // on the CPU, run serially with a single thread per block, over 32 elements
-  std::swap(threadsPerBlock, elementsPerThread);
-#endif
-  const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
-
+  // Update
+  const Vec1& blocksPerGrid(Vec1(2000u));
+  const Vec1& threadsPerBlockOrElementsPerThread(Vec1(512u));
+  const WorkDiv1& workDiv = cms::Alpaka::make_workdiv<Dim1>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc>(workDiv,
                                                                update(),
@@ -111,10 +104,10 @@ int main() {
                                                                alpaka::mem::view::getPtrNative(m_dbuf),
                                                                NUM_VALUES));
 
-  const Vec elementsPerThreadFinalize(Vec::all(1));
-  const Vec threadsPerBlockFinalize(Vec::all(1));
-  const Vec blocksPerGridFinalize(Vec::all(1));
-  const WorkDiv workDivFinalize(blocksPerGridFinalize, threadsPerBlockFinalize, elementsPerThreadFinalize);
+  // Finalize
+  const Vec1& blocksPerGridFinalize(Vec1(1u));
+  const Vec1& threadsPerBlockOrElementsPerThreadFinalize(Vec1(1u));
+  const WorkDiv1& workDivFinalize = cms::Alpaka::make_workdiv<Dim1>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc>(workDivFinalize,
                                                                finalize(),
@@ -123,6 +116,7 @@ int main() {
                                                                alpaka::mem::view::getPtrNative(m_dbuf),
                                                                NUM_VALUES));
 
+  // Verify
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc>(workDiv,
                                                                verify(),
