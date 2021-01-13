@@ -5,12 +5,15 @@
 
 namespace alpaka_common {
   using Dim = alpaka::dim::DimInt<1u>;
+  using Dim2 = alpaka::dim::DimInt<2u>;
   using Idx = uint32_t;
   using Extent = uint32_t;
   using DevHost = alpaka::dev::DevCpu;
   using PltfHost = alpaka::pltf::Pltf<DevHost>;
   using WorkDiv = alpaka::workdiv::WorkDivMembers<Dim, Idx>;
+  using WorkDiv2 = alpaka::workdiv::WorkDivMembers<Dim2, Idx>;
   using Vec = alpaka::vec::Vec<Dim, Idx>;
+  using Vec2 = alpaka::vec::Vec<Dim2, Idx>;
 }  // namespace alpaka_common
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -18,8 +21,15 @@ namespace alpaka_common {
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
   using Acc = alpaka::acc::AccGpuCudaRt<Dim, Extent>;
+  using Acc2 = alpaka::acc::AccGpuCudaRt<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
+  using DevAcc2 = alpaka::dev::Dev<Acc2>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using PltfAcc2 = alpaka::pltf::Pltf<DevAcc2>;
+
+  template <class T_Data>
+  using AlpakaAccBuf2 = alpaka::mem::buf::Buf<Acc2, T_Data, Dim2, Idx>;
+
   using Queue = alpaka::queue::QueueCudaRtNonBlocking;
 }  // namespace alpaka_cuda_async
 
@@ -35,8 +45,15 @@ namespace alpaka_cuda_async {
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuSerial<Dim, Extent>;
+  using Acc2 = alpaka::acc::AccCpuSerial<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
+  using DevAcc2 = alpaka::dev::Dev<Acc2>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using PltfAcc2 = alpaka::pltf::Pltf<DevAcc2>;
+
+  template <class T_Data>
+  using AlpakaAccBuf2 = alpaka::mem::buf::Buf<Acc2, T_Data, Dim2, Idx>;
+
   using Queue = alpaka::queue::QueueCpuBlocking;
 }  // namespace alpaka_serial_sync
 
@@ -52,8 +69,15 @@ namespace alpaka_serial_sync {
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuTbbBlocks<Dim, Extent>;
+  using Acc2 = alpaka::acc::AccCpuTbbBlocks<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
+  using DevAcc2 = alpaka::dev::Dev<Acc2>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using PltfAcc2 = alpaka::pltf::Pltf<DevAcc2>;
+
+  template <class T_Data>
+  using AlpakaAccBuf2 = alpaka::mem::buf::Buf<Acc2, T_Data, Dim2, Idx>;
+
   using Queue = alpaka::queue::QueueCpuNonBlocking;
 }  // namespace alpaka_tbb_async
 
@@ -69,8 +93,15 @@ namespace alpaka_tbb_async {
 namespace alpaka_omp2_async {
   using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuOmp2Blocks<Dim, Extent>;
+  using Acc2 = alpaka::acc::AccCpuOmp2Blocks<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
+  using DevAcc2 = alpaka::dev::Dev<Acc2>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using PltfAcc2 = alpaka::pltf::Pltf<DevAcc2>;
+
+  template <class T_Data>
+  using AlpakaAccBuf2 = alpaka::mem::buf::Buf<Acc2, T_Data, Dim2, Idx>;
+
   using Queue = alpaka::queue::QueueCpuNonBlocking;
 }  // namespace alpaka_omp2_async
 
@@ -86,8 +117,15 @@ namespace alpaka_omp2_async {
 namespace alpaka_omp4_async {
   using namespace alpaka_common;
   using Acc = alpaka::acc::AccCpuOmp4<Dim, Extent>;
+  using Acc2 = alpaka::acc::AccCpuOmp4<Dim2, Extent>;
   using DevAcc = alpaka::dev::Dev<Acc>;
+  using DevAcc2 = alpaka::dev::Dev<Acc2>;
   using PltfAcc = alpaka::pltf::Pltf<DevAcc>;
+  using PltfAcc2 = alpaka::pltf::Pltf<DevAcc2>;
+
+  template <class T_Data>
+  using AlpakaAccBuf2 = alpaka::mem::buf::Buf<Acc2, T_Data, Dim2, Idx>;
+
   using Queue = alpaka::queue::QueueCpuNonBlocking;
 }  // namespace alpaka_omp4_async
 
