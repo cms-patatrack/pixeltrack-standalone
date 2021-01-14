@@ -69,6 +69,7 @@ export HIPCC_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
 HIPCONFIG := $(ROCM_BASE)/bin/hipconfig
 export HIP_CXXFLAGS:= $(shell $(HIPCONFIG) --cpp_config)
+export HIP_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # Input data definitions
