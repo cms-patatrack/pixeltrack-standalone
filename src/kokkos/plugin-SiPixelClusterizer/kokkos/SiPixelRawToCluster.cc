@@ -17,24 +17,31 @@
 #include "SiPixelRawToClusterGPUKernel.h"
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/Product.h"
+#include "KokkosCore/ScopedContext.h"
 
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace KOKKOS_NAMESPACE {
-  class SiPixelRawToCluster : public edm::EDProducer {
+  class SiPixelRawToCluster : public edm::EDProducerExternalWork {
   public:
     explicit SiPixelRawToCluster(edm::ProductRegistry& reg);
     ~SiPixelRawToCluster() override = default;
 
   private:
+    void acquire(edm::Event const& iEvent,
+                 const edm::EventSetup& iSetup,
+                 edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
+    cms::kokkos::ContextState<KokkosExecSpace> ctxState_;
+
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<SiPixelDigisKokkos<KokkosExecSpace>> digiPutToken_;
-    edm::EDPutTokenT<SiPixelDigiErrorsKokkos<KokkosExecSpace>> digiErrorPutToken_;
-    edm::EDPutTokenT<SiPixelClustersKokkos<KokkosExecSpace>> clusterPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosExecSpace>>> digiErrorPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterPutToken_;
 
     pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -47,19 +54,23 @@ namespace KOKKOS_NAMESPACE {
 
   SiPixelRawToCluster::SiPixelRawToCluster(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        digiPutToken_(reg.produces<SiPixelDigisKokkos<KokkosExecSpace>>()),
-        clusterPutToken_(reg.produces<SiPixelClustersKokkos<KokkosExecSpace>>()),
+        digiPutToken_(reg.produces<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
+        clusterPutToken_(reg.produces<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
         isRun2_(true),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
-      digiErrorPutToken_ = reg.produces<SiPixelDigiErrorsKokkos<KokkosExecSpace>>();
+      digiErrorPutToken_ = reg.produces<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosExecSpace>>>();
     }
 
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
   }
 
-  void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  void SiPixelRawToCluster::acquire(edm::Event const& iEvent,
+                                    const edm::EventSetup& iSetup,
+                                    edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+    cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx(std::move(waitingTaskHolder), ctxState_);
+
     auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper<KokkosExecSpace>>();
     if (hgpuMap.hasQuality() != useQuality_) {
       throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
@@ -146,16 +157,17 @@ namespace KOKKOS_NAMESPACE {
                                useQuality_,
                                includeErrors_,
                                false,  // debug
-                               KokkosExecSpace());
+                               ctx.execSpace());
+  }
 
-    // TODO: synchronize explicitly for now
-    KokkosExecSpace().fence();
+  void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+    cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{ctxState_};
 
     auto tmp = gpuAlgo_.getResults();
-    iEvent.emplace(digiPutToken_, std::move(tmp.first));
-    iEvent.emplace(clusterPutToken_, std::move(tmp.second));
+    ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
+    ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
     if (includeErrors_) {
-      iEvent.emplace(digiErrorPutToken_, gpuAlgo_.getErrors());
+      ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
     }
   }
 }  // namespace KOKKOS_NAMESPACE

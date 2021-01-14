@@ -2,6 +2,7 @@
 #define KokkosCore_ScopedContext_h
 
 #include "KokkosCore/Product.h"
+#include "KokkosCore/ContextState.h"
 #include "Framework/Event.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
@@ -31,7 +32,14 @@ namespace cms {
         explicit ScopedContextGetterBase(const ProductBase& data)
             : execSpaceSpecific_(data.execSpaceSpecific<ExecSpace>().cloneShareStream()) {}
 
+        explicit ScopedContextGetterBase(std::unique_ptr<ExecSpaceSpecific<ExecSpace>> specific)
+            : execSpaceSpecific_(std::move(specific)) {}
+
         ExecSpaceSpecific<ExecSpace>& execSpaceSpecific() { return *execSpaceSpecific_; }
+
+        std::unique_ptr<ExecSpaceSpecific<ExecSpace>> releaseExecSpaceSpecific() {
+          return std::move(execSpaceSpecific_);
+        }
 
       private:
         std::unique_ptr<ExecSpaceSpecific<ExecSpace>> execSpaceSpecific_;
@@ -42,13 +50,28 @@ namespace cms {
     class ScopedContextAcquire : public impl::ScopedContextGetterBase<ExecSpace> {
     public:
       explicit ScopedContextAcquire(edm::WaitingTaskWithArenaHolder holder) : waitingTaskHolder_(std::move(holder)) {}
+      explicit ScopedContextAcquire(edm::WaitingTaskWithArenaHolder holder, ContextState<ExecSpace>& contextState)
+          : waitingTaskHolder_(std::move(holder)), contextState_(&contextState) {}
+
       explicit ScopedContextAcquire(const ProductBase& data, edm::WaitingTaskWithArenaHolder holder)
           : impl::ScopedContextGetterBase<ExecSpace>(data), waitingTaskHolder_(std::move(holder)) {}
+      explicit ScopedContextAcquire(const ProductBase& data,
+                                    edm::WaitingTaskWithArenaHolder holder,
+                                    ContextState<ExecSpace>& contextState)
+          : impl::ScopedContextGetterBase<ExecSpace>(data),
+            waitingTaskHolder_(std::move(holder)),
+            contextState_(&contextState) {}
 
-      ~ScopedContextAcquire() { this->execSpaceSpecific().enqueueCallback(std::move(waitingTaskHolder_)); }
+      ~ScopedContextAcquire() {
+        this->execSpaceSpecific().enqueueCallback(std::move(waitingTaskHolder_));
+        if (contextState_) {
+          contextState_->set(this->releaseExecSpaceSpecific());
+        }
+      }
 
     private:
       edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
+      ContextState<ExecSpace>* contextState_ = nullptr;
     };
 
     template <typename ExecSpace>
@@ -56,6 +79,8 @@ namespace cms {
     public:
       ScopedContextProduce() = default;
       explicit ScopedContextProduce(const ProductBase& data) : impl::ScopedContextGetterBase<ExecSpace>(data) {}
+      explicit ScopedContextProduce(ContextState<ExecSpace>& contextState)
+          : impl::ScopedContextGetterBase<ExecSpace>(contextState.release()) {}
 
       ~ScopedContextProduce() { this->execSpaceSpecific().recordEvent(); }
 
