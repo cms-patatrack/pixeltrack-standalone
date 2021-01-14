@@ -56,6 +56,11 @@ public:
   void chargeToHostPrefetchAsync(int device, cudaStream_t stream) const;
   void sizeToHostPrefetchAsync(int device, cudaStream_t stream) const;
 
+  cms::cuda::managed::unique_ptr<float[]> localCoord;
+  cms::cuda::managed::unique_ptr<float[]> globalCoord;
+  cms::cuda::managed::unique_ptr<int32_t[]> charge;
+  cms::cuda::managed::unique_ptr<int16_t[]> size;
+
 #endif
 
 private:
@@ -141,8 +146,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   } else {
     if constexpr (std::is_same<Traits, cms::cudacompat::ManagedTraits>::value) {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-      cudaCheck(
-          cudaMemPrefetchAsync(m_view.get(), sizeof(TrackingRecHit2DSOAView), cms::cuda::currentDevice(), stream));
+      cudaCheck(cudaMemPrefetchAsync(view.get(), sizeof(TrackingRecHit2DSOAView), cms::cuda::currentDevice(), stream));
 #endif
     }
     m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version

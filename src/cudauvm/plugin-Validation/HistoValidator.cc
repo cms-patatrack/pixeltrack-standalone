@@ -48,11 +48,17 @@ private:
   cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
 #endif
 
+#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
   cms::cuda::host::unique_ptr<float[]> h_localCoord;
   cms::cuda::host::unique_ptr<float[]> h_globalCoord;
   cms::cuda::host::unique_ptr<int32_t[]> h_charge;
   cms::cuda::host::unique_ptr<int16_t[]> h_size;
-
+#else
+  float const* h_localCoord;
+  float const* h_globalCoord;
+  int32_t const* h_charge;
+  int16_t const* h_size;
+#endif
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
 
@@ -137,7 +143,10 @@ void HistoValidator::acquire(const edm::Event& iEvent,
   hits.globalCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
   hits.chargeToHostPrefetchAsync(ctx.device(), ctx.stream());
   hits.sizeToHostPrefetchAsync(ctx.device(), ctx.stream());
-
+  h_localCoord = hits.localCoord.get();
+  h_globalCoord = hits.globalCoord.get();
+  h_charge = hits.charge.get();
+  h_size = hits.size.get();
 #endif
 }
 
@@ -173,10 +182,12 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     histos["hit_sizex"].fill(h_size[i]);
     histos["hit_sizey"].fill(h_size[i + nHits]);
   }
+#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
   h_localCoord.reset();
   h_globalCoord.reset();
   h_charge.reset();
   h_size.reset();
+#endif
 
   {
     auto const& tracks = iEvent.get(trackToken_);
