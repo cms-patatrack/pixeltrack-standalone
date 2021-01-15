@@ -46,7 +46,7 @@ cms::cuda::host::unique_ptr<int16_t[]> TrackingRecHit2DCUDA::sizeToHostAsync(cud
 template <>
 void TrackingRecHit2DCUDA::localCoordToHostPrefetchAsync(int device, cudaStream_t stream) const {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(localCoord.get(), 4 * nHits(), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(m_store32.get(), 4 * nHits(), device, stream));
 #endif
 }
 template <>
@@ -58,19 +58,19 @@ void TrackingRecHit2DCUDA::hitsModuleStartToHostPrefetchAsync(int device, cudaSt
 template <>
 void TrackingRecHit2DCUDA::globalCoordToHostPrefetchAsync(int device, cudaStream_t stream) const {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(globalCoord.get(), 4 * nHits() * sizeof(float), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(m_store32.get() + 4 * nHits(), 4 * nHits() * sizeof(float), device, stream));
 #endif
 }
 template <>
 void TrackingRecHit2DCUDA::chargeToHostPrefetchAsync(int device, cudaStream_t stream) const {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(charge.get(), nHits() * sizeof(int32_t), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(m_store32.get() + 8 * nHits(), nHits() * sizeof(int32_t), device, stream));
 #endif
 }
 template <>
 void TrackingRecHit2DCUDA::sizeToHostPrefetchAsync(int device, cudaStream_t stream) const {
 #ifndef CUDAUVM_DISABLE_PREFETCH
-  cudaCheck(cudaMemPrefetchAsync(size.get(), 2 * nHits() * sizeof(int16_t), device, stream));
+  cudaCheck(cudaMemPrefetchAsync(m_store16.get() + 2 * nHits(), 2 * nHits() * sizeof(int16_t), device, stream));
 #endif
 }
 

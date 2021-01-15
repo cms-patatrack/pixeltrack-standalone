@@ -143,10 +143,10 @@ void HistoValidator::acquire(const edm::Event& iEvent,
   hits.globalCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
   hits.chargeToHostPrefetchAsync(ctx.device(), ctx.stream());
   hits.sizeToHostPrefetchAsync(ctx.device(), ctx.stream());
-  h_localCoord = hits.localCoord.get();
-  h_globalCoord = hits.globalCoord.get();
-  h_charge = hits.charge.get();
-  h_size = hits.size.get();
+  h_localCoord = hits.localCoord();
+  h_globalCoord = hits.globalCoord();
+  h_charge = hits.charge();
+  h_size = hits.size();
 #endif
 }
 

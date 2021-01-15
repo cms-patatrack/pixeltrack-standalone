@@ -56,10 +56,10 @@ public:
   void chargeToHostPrefetchAsync(int device, cudaStream_t stream) const;
   void sizeToHostPrefetchAsync(int device, cudaStream_t stream) const;
 
-  cms::cuda::managed::unique_ptr<float[]> localCoord;
-  cms::cuda::managed::unique_ptr<float[]> globalCoord;
-  cms::cuda::managed::unique_ptr<int32_t[]> charge;
-  cms::cuda::managed::unique_ptr<int16_t[]> size;
+  const float* localCoord() const { return m_store32.get(); }
+  const float* globalCoord() const { return m_store32.get() + 4 * nHits(); }
+  const int32_t* charge() const { return reinterpret_cast<int32_t*>(m_store32.get() + 8 * nHits()); }
+  const int16_t* size() const { return reinterpret_cast<int16_t*>(m_store16.get() + 2 * nHits()); }
 
 #endif
 
