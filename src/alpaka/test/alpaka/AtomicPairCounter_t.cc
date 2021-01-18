@@ -11,7 +11,8 @@ struct update {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(
       const T_Acc &acc, cms::alpakatools::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] =
+        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
 
     for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
       auto m = i % 11;
@@ -44,7 +45,8 @@ struct verify {
                                 uint32_t const *ind,
                                 uint32_t const *cont,
                                 uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] =
+        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
 
     for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
       assert(0 == ind[0]);

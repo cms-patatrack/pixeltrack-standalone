@@ -23,8 +23,8 @@ int main() {
 
   // Prepare 1D workDiv
   const Vec1& blocksPerGrid(Vec1::all(1u));
-  const Vec1 &threadsPerBlockOrElementsPerThread(Vec1(4u));
-  const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const Vec1& threadsPerBlockOrElementsPerThread(Vec1(4u));
+  const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDiv, Print()));
   alpaka::wait::wait(queue);
