@@ -74,7 +74,7 @@ namespace {
                                   T_Data* __restrict__ c,
                                   unsigned int numElements) const {
       // Global element index in 1D grid.
-      // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+      // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
           cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
 
