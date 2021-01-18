@@ -11,9 +11,9 @@ struct update {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(
       const T_Acc &acc, cms::alpakatools::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, n);
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
 
-    for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
+    for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
       auto m = i % 11;
       m = m % 6 + 1;  // max 6, no 0
       auto c = dc->add(acc, m);
@@ -44,9 +44,9 @@ struct verify {
                                 uint32_t const *ind,
                                 uint32_t const *cont,
                                 uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, n);
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
 
-    for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
+    for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
       assert(0 == ind[0]);
       assert(dc->get().m == n);
       assert(ind[n] == dc->get().n);
@@ -84,7 +84,7 @@ int main() {
   // Update
   const Vec1 &blocksPerGrid(Vec1(2000u));
   const Vec1 &threadsPerBlockOrElementsPerThread(Vec1(512u));
-  const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv<Dim1>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc1>(workDiv,
                                                                 update(),
@@ -97,7 +97,7 @@ int main() {
   const Vec1 &blocksPerGridFinalize(Vec1(1u));
   const Vec1 &threadsPerBlockOrElementsPerThreadFinalize(Vec1(1u));
   const WorkDiv1 &workDivFinalize =
-      cms::alpakatools::make_workdiv<Dim1>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
+      cms::alpakatools::make_workdiv(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc1>(workDivFinalize,
                                                                 finalize(),
