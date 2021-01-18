@@ -17,13 +17,13 @@ namespace cms {
       // threadsPerBlockOrElementsPerThread is the number of threads per block.
       // Each thread is looking at a single element: elementsPerThread is always 1.
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      const Vec<T_Dim> elementsPerThread = Vec<T_Dim>::ones();
+      const Vec<T_Dim>& elementsPerThread = Vec<T_Dim>::ones();
       return WorkDiv<T_Dim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
 #else
       // On the CPU:
       // Run serially with a single thread per block: threadsPerBlock is always 1.
       // threadsPerBlockOrElementsPerThread is the number of elements per thread.
-      const Vec<T_Dim> threadsPerBlock = Vec<T_Dim>::ones();
+      const Vec<T_Dim>& threadsPerBlock = Vec<T_Dim>::ones();
       return WorkDiv<T_Dim>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
 #endif
     }
