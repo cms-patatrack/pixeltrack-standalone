@@ -6,7 +6,7 @@
 using namespace alpaka_common;
 
 namespace cms {
-  namespace alpaka_helpers {
+  namespace alpakatools {
 
     /*
      * Creates the accelerator-dependent workdiv.
@@ -48,7 +48,7 @@ namespace cms {
       return {firstElementIdxGlobal, endElementIdxGlobal};
     }
 
-  }  // namespace alpaka_helpers
+  }  // namespace alpakatools
 }  // namespace cms
 
 #endif  // ALPAKAWORKDIVHELPER_H

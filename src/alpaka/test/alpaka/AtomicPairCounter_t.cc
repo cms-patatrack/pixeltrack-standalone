@@ -10,8 +10,8 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 struct update {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, cms::alpaka_helpers::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpaka_helpers::element_global_index_range(acc, n);
+      const T_Acc &acc, cms::alpakatools::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, n);
 
     for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
       auto m = i % 11;
@@ -28,7 +28,7 @@ struct update {
 struct finalize {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                cms::alpaka_helpers::AtomicPairCounter const *dc,
+                                cms::alpakatools::AtomicPairCounter const *dc,
                                 uint32_t *ind,
                                 uint32_t *cont,
                                 uint32_t n) const {
@@ -40,11 +40,11 @@ struct finalize {
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                cms::alpaka_helpers::AtomicPairCounter const *dc,
+                                cms::alpakatools::AtomicPairCounter const *dc,
                                 uint32_t const *ind,
                                 uint32_t const *cont,
                                 uint32_t n) const {
-    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpaka_helpers::element_global_index_range(acc, n);
+    const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, n);
 
     for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
       assert(0 == ind[0]);
@@ -67,10 +67,10 @@ int main() {
 
   constexpr uint32_t C = 1;
   const Vec1 sizeC(C);
-  auto c_dbuf = alpaka::mem::buf::alloc<cms::alpaka_helpers::AtomicPairCounter, Idx>(device, sizeC);
+  auto c_dbuf = alpaka::mem::buf::alloc<cms::alpakatools::AtomicPairCounter, Idx>(device, sizeC);
   alpaka::mem::view::set(queue, c_dbuf, 0, sizeC);
 
-  std::cout << "size " << C * sizeof(cms::alpaka_helpers::AtomicPairCounter) << std::endl;
+  std::cout << "size " << C * sizeof(cms::alpakatools::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
@@ -84,7 +84,7 @@ int main() {
   // Update
   const Vec1 &blocksPerGrid(Vec1(2000u));
   const Vec1 &threadsPerBlockOrElementsPerThread(Vec1(512u));
-  const WorkDiv1 &workDiv = cms::alpaka_helpers::make_workdiv<Dim1>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv<Dim1>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc1>(workDiv,
                                                                 update(),
@@ -97,7 +97,7 @@ int main() {
   const Vec1 &blocksPerGridFinalize(Vec1(1u));
   const Vec1 &threadsPerBlockOrElementsPerThreadFinalize(Vec1(1u));
   const WorkDiv1 &workDivFinalize =
-      cms::alpaka_helpers::make_workdiv<Dim1>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
+      cms::alpakatools::make_workdiv<Dim1>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::queue::enqueue(queue,
                          alpaka::kernel::createTaskKernel<Acc1>(workDivFinalize,
                                                                 finalize(),
@@ -115,7 +115,7 @@ int main() {
                                                                 alpaka::mem::view::getPtrNative(m_dbuf),
                                                                 NUM_VALUES));
 
-  auto c_hbuf = alpaka::mem::buf::alloc<cms::alpaka_helpers::AtomicPairCounter, Idx>(host, sizeC);
+  auto c_hbuf = alpaka::mem::buf::alloc<cms::alpakatools::AtomicPairCounter, Idx>(host, sizeC);
   alpaka::mem::view::copy(queue, c_hbuf, c_dbuf, sizeC);
   alpaka::wait::wait(queue);
 

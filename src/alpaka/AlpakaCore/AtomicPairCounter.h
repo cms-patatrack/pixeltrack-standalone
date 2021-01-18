@@ -4,7 +4,7 @@
 #include <cstdint>
 
 namespace cms {
-  namespace alpaka_helpers {
+  namespace alpakatools {
 
     class AtomicPairCounter {
     public:
@@ -47,7 +47,7 @@ namespace cms {
       Atomic2 counter;
     };
 
-  }  // namespace alpaka_helpers
+  }  // namespace alpakatools
 }  // namespace cms
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
