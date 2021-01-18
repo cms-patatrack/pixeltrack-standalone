@@ -56,26 +56,6 @@ namespace cms {
       return {firstElementIdxGlobalVec, endElementIdxGlobalVec};
     }
 
-    /*
-    // Global thread index in Dim2 grid
-    const auto& threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc));
-    const uint32_t threadIdxGlobalX(threadIdxGlobal[0u]);
-    const uint32_t threadIdxGlobalY(threadIdxGlobal[1u]);
-
-    // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-    const auto& threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc));
-    const uint32_t threadDimensionX(threadDimension[0u]);
-    const uint32_t firstElementIdxGlobalX = threadIdxGlobalX * threadDimensionX;
-    const uint32_t endElementIdxGlobalXUncut = firstElementIdxGlobalX + threadDimensionX;
-    const uint32_t endElementIdxGlobalX = std::min(endElementIdxGlobalXUncut, numElements);
-
-    const uint32_t threadDimensionY(threadDimension[1u]);
-    const uint32_t firstElementIdxGlobalY = threadIdxGlobalY * threadDimensionY;
-    const uint32_t endElementIdxGlobalYUncut = firstElementIdxGlobalY + threadDimensionY;
-    const uint32_t endElementIdxGlobalY = std::min(endElementIdxGlobalYUncut, numElements);
-
-    */
-
   }  // namespace alpakatools
 }  // namespace cms
 
