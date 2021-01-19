@@ -174,9 +174,12 @@ endif
 ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
 $(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
 endif
-#ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
-#$(foreach test,$(TESTS_DEVICE_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
-#endif
+ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
+# Many tests fail on HIP
+KNOWN_HIP_FAILING_TESTS=testEigenGPU clustering AtomicPairCounter_t
+TESTS_DEVICE_EXE_RUN := $(filter-out $(patsubst %,$(TEST_DIR)/$(TARGET_NAME)/%.device,$(KNOWN_HIP_FAILING_TESTS)),$(TESTS_DEVICE_EXE))
+$(foreach test,$(TESTS_DEVICE_EXE_RUN),$(eval $(call RUNTEST_template,$(test),amdgpu)))
+endif
 
 -include $(ALL_DEPENDS)
 
