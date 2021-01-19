@@ -195,6 +195,7 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 | `-DCUDAUVM_MANAGED_TEMPORARY`          | Use managed memory also for temporary data structures |
 | `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT`   | Disable managed memory in `BeamSpotToCUDA`            |
 | `-DCUDAUVM_DISABLE_MANAGED_CLUSTERING` | Disable managed memory in `SiPixelRawToClusterCUDA`   |
+| `-DCUDAUVM_DISABLE_MANAGED_RECHIT`     | Disable managed memory in `SiPixelRecHitCUDA`         |
 
 To use managed memory also for temporary device-only allocations, compile with
 ```
