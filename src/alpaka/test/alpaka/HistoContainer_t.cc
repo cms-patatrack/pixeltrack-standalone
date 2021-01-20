@@ -28,7 +28,6 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
-
   
   auto offsets_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, nParts + 1);
   auto offsets = alpaka::mem::view::getPtrNative(offsets_buf);
@@ -37,7 +36,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
   auto h_buf = alpaka::mem::buf::alloc<Hist, Idx>(host, 1u);
   auto h = alpaka::mem::view::getPtrNative(h_buf);
   auto h_d = alpaka::mem::buf::alloc<Hist, Idx>(device, 1u);
-  alpaka::mem::view::set(queue, h_d, 0, Vec1::all(1u)); // TO DO: this was added!!!!
+  //alpaka::mem::view::set(queue, h_d, Hist(), Vec1::all(1u)); // TO DO: this was added!!!!
 
   for (int it = 0; it < 5; ++it) {
 

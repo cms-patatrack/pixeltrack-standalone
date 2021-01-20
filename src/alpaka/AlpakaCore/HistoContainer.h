@@ -24,20 +24,21 @@ namespace cms {
 				      Histo *__restrict__ h,
 				      uint32_t nh,
 				      T const *__restrict__ v,
-				      uint32_t const *__restrict__ offsets) {
-	int nt = offsets[nh];
-	const uint32_t gridDimensionGlobal(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-	const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
-	for (int threadIdxGlobal = firstElementIdxGlobal[0u]; threadIdxGlobal < nt; threadIdxGlobal += gridDimensionGlobal) {
-	  for (int i = threadIdxGlobal; i < endElementIdxGlobal[0u]; ++i) {
+				      uint32_t const *__restrict__ offsets) const {
+	const uint32_t nt = offsets[nh];
+	const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
+	const auto& [firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+	uint32_t endElementIdxStrided = endElementIdx[0u];
+	for (uint32_t threadIndexStrided = firstElementIdx[0u]; threadIndexStrided < nt; threadIndexStrided += gridDimension) {
+	  for (uint32_t i = threadIndexStrided; i < endElementIdxStrided; ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
 	    assert(ih >= 0);
 	    assert(ih < int(nh));
-	    (*h).count(v[i], ih);
+	    (*h).count(acc, v[i], ih);
 	  }
-	  endElementIdxGlobal[0u] += gridDimensionGlobal;
+	  endElementIdxStrided += gridDimension;
 	}
       }
     };
@@ -48,20 +49,22 @@ namespace cms {
 				      Histo *__restrict__ h,
 				      uint32_t nh,
 				      T const *__restrict__ v,
-				      uint32_t const *__restrict__ offsets) {
-	int nt = offsets[nh];
-	const uint32_t gridDimensionGlobal(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-	const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
-	for (int threadIdxGlobal = firstElementIdxGlobal[0u]; threadIdxGlobal < nt; threadIdxGlobal += gridDimensionGlobal) {
-	  for (int i = threadIdxGlobal; i < endElementIdxGlobal[0u]; ++i) {
+				      uint32_t const *__restrict__ offsets) const {
+	const uint32_t nt = offsets[nh];
+	const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
+	const auto &[firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+
+	uint32_t endElementIdxStrided = endElementIdx[0u];
+	for (uint32_t threadIdxStrided = firstElementIdx[0u]; threadIdxStrided < nt; threadIdxStrided += gridDimension) {
+	  for (uint32_t i = threadIdxStrided; i < endElementIdxStrided; ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
 	    assert(ih >= 0);
 	    assert(ih < int(nh));
-	    (*h).fill(v[i], i, ih);
+	    (*h).fill(acc, v[i], i, ih);
 	  }
-	  endElementIdxGlobal[0u] += gridDimensionGlobal;
+	  endElementIdxStrided += gridDimension;
 	}
       }
     };
@@ -146,7 +149,7 @@ namespace cms {
 
     struct finalizeBulk {
       template <typename T_Acc, typename Assoc>
-	ALPAKA_FN_ACC void operator()(const T_Acc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) {
+	ALPAKA_FN_ACC void operator()(const T_Acc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) const {
 	assoc->bulkFinalizeFill(acc, *apc);
       }
     };
@@ -173,6 +176,8 @@ namespace cms {
         func(*pj);
       }
     }
+
+
 
     template <typename T,                  // the type of the discretized input values
               uint32_t NBINS,              // number of bins
@@ -238,21 +243,14 @@ namespace cms {
       }
     }
 
-    /*
-    static ALPAKA_FN_HOST ALPAKA_FN_INLINE uint32_t atomicIncrement(Counter &x) {
-      auto &a = (std::atomic<Counter> &)(x);
-      return a++;
-    }
-    */
-
     template <typename T_Acc>
     static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const T_Acc& acc, Counter &x) {
-      return alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &x, 1);
+      return alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &x, 1u);
     }
 
     template <typename T_Acc>
     static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const T_Acc& acc, Counter &x) {
-      return alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &x, 1);
+      return alpaka::atomic::atomicOp<alpaka::atomic::op::Sub>(acc, &x, 1u);
     }
 
     template <typename T_Acc>
@@ -289,21 +287,21 @@ namespace cms {
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalizeFill(const T_Acc &acc, AtomicPairCounter const &apc) {
       auto m = apc.get().m;
       auto n = apc.get().n;
+
       if (m >= nbins()) {  // overflow!
 	off[nbins()] = uint32_t(off[nbins() - 1]);
 	return;
       }
 
-      const uint32_t gridDimensionGlobal(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-      const auto &[firstElementIdxGlobal, endElementIdxGlobal] = cms::alpakatools::element_global_index_range(acc, Vec1::all(totbins()));
-      firstElementIdxGlobal[0u] += m;
-      endElementIdxGlobal[0u] += m;
+      const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
+      const auto &[firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(totbins()));
 
-      for (int threadIdxGlobal = firstElementIdxGlobal[0u]; threadIdxGlobal < totbins(); threadIdxGlobal += gridDimensionGlobal) {
-	for (int i = threadIdxGlobal; i < endElementIdxGlobal[0u]; ++i) {
+      uint32_t endElementIdxStrided = m + endElementIdx[0u];
+      for (uint32_t threadIdxStrided = m + firstElementIdx[0u]; threadIdxStrided < totbins(); threadIdxStrided += gridDimension) {
+	for (uint32_t i = threadIdxStrided; i < endElementIdxStrided; ++i) {
 	  off[i] = n;
 	}
-	endElementIdxGlobal[0u] += gridDimensionGlobal;
+	endElementIdxStrided += gridDimension;
       }
     }
 
