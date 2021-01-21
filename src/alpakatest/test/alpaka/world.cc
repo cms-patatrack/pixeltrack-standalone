@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 
 namespace {
   struct Print {
@@ -17,21 +18,15 @@ int main() {
   std::cout << "World" << std::endl;
 
   using namespace ALPAKA_ACCELERATOR_NAMESPACE;
-  const DevAcc device(alpaka::pltf::getDevByIdx<PltfAcc>(0u));
+  const DevAcc1 device(alpaka::pltf::getDevByIdx<PltfAcc1>(0u));
   Queue queue(device);
 
-  Vec elementsPerThread(Vec::all(1));
-  Vec threadsPerBlock(Vec::all(4));
-  Vec blocksPerGrid(Vec::all(1));
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || \
-    ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-  // on the GPU, run with 32 threads in parallel per block, each looking at a single element
-  // on the CPU, run serially with a single thread per block, over 32 elements
-  std::swap(threadsPerBlock, elementsPerThread);
-#endif
-  const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+  // Prepare 1D workDiv
+  const Vec1& blocksPerGrid(Vec1::all(1u));
+  const Vec1& threadsPerBlockOrElementsPerThread(Vec1(4u));
+  const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-  alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc>(workDiv, Print()));
+  alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDiv, Print()));
   alpaka::wait::wait(queue);
   return 0;
 }

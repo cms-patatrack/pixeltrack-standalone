@@ -35,7 +35,7 @@ ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, u
 #endif
 
 namespace cms {
-  namespace Alpaka {
+  namespace alpakatools {
     // limited to 32*32 elements....
     template <typename T_Acc, typename T>
     ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
@@ -192,7 +192,7 @@ namespace cms {
         }
       }
     };
-  }  // namespace Alpaka
+  }  // namespace alpakatools
 }  // namespace cms
 
 #endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h

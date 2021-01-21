@@ -1,4 +1,5 @@
 #include "alpakaAlgo1.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 
 namespace {
   constexpr unsigned int NUM_VALUES = 1000;
@@ -10,16 +11,12 @@ namespace {
                                   const T_Data* __restrict__ b,
                                   T_Data* __restrict__ c,
                                   unsigned int numElements) const {
-      // Global thread index in grid
-      const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
-      const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      // Global element index in 1D grid.
+      // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
+          cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
 
-      // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-      const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
-      const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
-      const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, numElements);
-
-      for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
+      for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
         c[i] = a[i] + b[i];
       }
     }
@@ -32,25 +29,13 @@ namespace {
                                   const T_Data* __restrict__ b,
                                   T_Data* __restrict__ c,
                                   unsigned int numElements) const {
-      // Global thread index in Dim2 grid
-      const auto& threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc));
-      const uint32_t threadIdxGlobalX(threadIdxGlobal[0u]);
-      const uint32_t threadIdxGlobalY(threadIdxGlobal[1u]);
+      // Global element index in 2D grid.
+      // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
+          cms::alpakatools::element_global_index_range(acc, Vec2::all(numElements));
 
-      // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-      const auto& threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc));
-      const uint32_t threadDimensionX(threadDimension[0u]);
-      const uint32_t firstElementIdxGlobalX = threadIdxGlobalX * threadDimensionX;
-      const uint32_t endElementIdxGlobalXUncut = firstElementIdxGlobalX + threadDimensionX;
-      const uint32_t endElementIdxGlobalX = std::min(endElementIdxGlobalXUncut, numElements);
-
-      const uint32_t threadDimensionY(threadDimension[1u]);
-      const uint32_t firstElementIdxGlobalY = threadIdxGlobalY * threadDimensionY;
-      const uint32_t endElementIdxGlobalYUncut = firstElementIdxGlobalY + threadDimensionY;
-      const uint32_t endElementIdxGlobalY = std::min(endElementIdxGlobalYUncut, numElements);
-
-      for (uint32_t col = firstElementIdxGlobalX; col < endElementIdxGlobalX; ++col) {
-        for (uint32_t row = firstElementIdxGlobalY; row < endElementIdxGlobalY; ++row) {
+      for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
+        for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
           c[row + numElements * col] = a[row] * b[col];
         }
       }
@@ -64,25 +49,13 @@ namespace {
                                   const T_Data* __restrict__ b,
                                   T_Data* __restrict__ c,
                                   unsigned int numElements) const {
-      // Global thread index in Dim2 grid
-      const auto& threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc));
-      const uint32_t threadIdxGlobalX(threadIdxGlobal[0u]);
-      const uint32_t threadIdxGlobalY(threadIdxGlobal[1u]);
+      // Global element index in 2D grid.
+      // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
+          cms::alpakatools::element_global_index_range(acc, Vec2::all(numElements));
 
-      // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-      const auto& threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc));
-      const uint32_t threadDimensionX(threadDimension[0u]);
-      const uint32_t firstElementIdxGlobalX = threadIdxGlobalX * threadDimensionX;
-      const uint32_t endElementIdxGlobalXUncut = firstElementIdxGlobalX + threadDimensionX;
-      const uint32_t endElementIdxGlobalX = std::min(endElementIdxGlobalXUncut, numElements);
-
-      const uint32_t threadDimensionY(threadDimension[1u]);
-      const uint32_t firstElementIdxGlobalY = threadIdxGlobalY * threadDimensionY;
-      const uint32_t endElementIdxGlobalYUncut = firstElementIdxGlobalY + threadDimensionY;
-      const uint32_t endElementIdxGlobalY = std::min(endElementIdxGlobalYUncut, numElements);
-
-      for (uint32_t col = firstElementIdxGlobalX; col < endElementIdxGlobalX; ++col) {
-        for (uint32_t row = firstElementIdxGlobalY; row < endElementIdxGlobalY; ++row) {
+      for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
+        for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
           T_Data tmp = 0;
           for (unsigned int i = 0; i < numElements; ++i) {
             tmp += a[row + numElements * i] * b[i + numElements * col];
@@ -100,16 +73,12 @@ namespace {
                                   const T_Data* __restrict__ b,
                                   T_Data* __restrict__ c,
                                   unsigned int numElements) const {
-      // Global thread index in grid
-      const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
-      const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      // Global element index in 1D grid.
+      // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
+          cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
 
-      // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-      const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
-      const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
-      const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, numElements);
-
-      for (uint32_t row = firstElementIdxGlobal; row < endElementIdxGlobal; ++row) {
+      for (uint32_t row = firstElementIdxGlobal[0u]; row < endElementIdxGlobal[0u]; ++row) {
         T_Data tmp = 0;
         for (unsigned int i = 0; i < numElements; ++i) {
           tmp += a[row * numElements + i] * b[i];
@@ -129,16 +98,12 @@ namespace {
     struct verifyVectorAdd {
       template <typename T_Acc, typename T_Data>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
-        // Global thread index in grid
-        const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
-        const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+        // Global element index in 1D grid.
+        // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
+        const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
+            cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
 
-        // Global element index (obviously relevant for CPU only, for GPU, i = threadIndexGlobal only)
-        const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
-        const uint32_t endElementIdxGlobalUncut = firstElementIdxGlobal + threadDimension;
-        const uint32_t endElementIdxGlobal = std::min(endElementIdxGlobalUncut, numElements);
-
-        for (uint32_t i = firstElementIdxGlobal; i < endElementIdxGlobal; ++i) {
+        for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
           // theoreticalResult = i+i^2 = i*(i+1)
           if (result[i] != i * (i + 1)) {
             printf("Wrong vectorAdd results, i = %u, c[i] = %f.\n", i, result[i]);
@@ -245,7 +210,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   AlpakaAccBuf2<float> alpakaAlgo1() {
     const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
     const DevAcc2 device(alpaka::pltf::getDevByIdx<PltfAcc2>(0u));
-    const Vec size(NUM_VALUES);
+    const Vec1 size(NUM_VALUES);
     Queue queue(device);
 
     // Host data
@@ -266,39 +231,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto d_c_buf = alpaka::mem::buf::alloc<float, Idx>(device, size);
 
     // Prepare 1D workDiv
-    Vec elementsPerThread(Vec::all(1));
-    Vec threadsPerBlock(Vec::all(32));
-    const Vec blocksPerGrid(Vec::all((NUM_VALUES + 32 - 1) / 32));
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || \
-    ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-    // on the GPU, run with 32 threads in parallel per block, each looking at a single element
-    // on the CPU, run serially with a single thread per block, over 32 elements
-    std::swap(threadsPerBlock, elementsPerThread);
-#endif
-    const WorkDiv workDiv(blocksPerGrid, threadsPerBlock, elementsPerThread);
+    const Vec1& blocksPerGrid1(Vec1::all((NUM_VALUES + 32 - 1) / 32));
+    const Vec1& threadsPerBlockOrElementsPerThread1(Vec1(32u));
+    const WorkDiv1& workDiv1 = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
     // VECTOR ADDITION
     alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc>(workDiv,
-                                                                 vectorAdd(),
-                                                                 alpaka::mem::view::getPtrNative(d_a_buf),
-                                                                 alpaka::mem::view::getPtrNative(d_b_buf),
-                                                                 alpaka::mem::view::getPtrNative(d_c_buf),
-                                                                 NUM_VALUES));
+                           alpaka::kernel::createTaskKernel<Acc1>(workDiv1,
+                                                                  vectorAdd(),
+                                                                  alpaka::mem::view::getPtrNative(d_a_buf),
+                                                                  alpaka::mem::view::getPtrNative(d_b_buf),
+                                                                  alpaka::mem::view::getPtrNative(d_c_buf),
+                                                                  NUM_VALUES));
 
     // Prepare 2D workDiv
-    Vec2 elementsPerThread2(1u, 1u);
-    const unsigned int threadsPerBlockSide = (NUM_VALUES < 32 ? NUM_VALUES : 32u);
-    Vec2 threadsPerBlock2(threadsPerBlockSide, threadsPerBlockSide);
-#if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || \
-    ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED || ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-    // on the GPU, run with 32 threads in parallel per block, each looking at a single element
-    // on the CPU, run serially with a single thread per block, over 32 elements
-    std::swap(threadsPerBlock2, elementsPerThread2);
-#endif
     const unsigned int blocksPerGridSide = (NUM_VALUES <= 32 ? 1 : std::ceil(NUM_VALUES / 32.));
-    const Vec2 blocksPerGrid2(blocksPerGridSide, blocksPerGridSide);
-    const WorkDiv2 workDiv2(blocksPerGrid2, threadsPerBlock2, elementsPerThread2);
+    const Vec2& blocksPerGrid2(Vec2::all(blocksPerGridSide));
+    const unsigned int threadsPerBlockOrElementsPerThreadSide = (NUM_VALUES < 32 ? NUM_VALUES : 32u);
+    const Vec2& threadsPerBlockOrElementsPerThread2(Vec2::all(threadsPerBlockOrElementsPerThreadSide));
+    const WorkDiv2& workDiv2 = cms::alpakatools::make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
 
     // Device data
     const Vec2 sizeSquare(NUM_VALUES, NUM_VALUES);
@@ -334,12 +285,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // MATRIX - VECTOR MULTIPLICATION
     alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc>(workDiv,
-                                                                 matrixMulVector(),
-                                                                 alpaka::mem::view::getPtrNative(d_mc_buf),
-                                                                 alpaka::mem::view::getPtrNative(d_b_buf),
-                                                                 alpaka::mem::view::getPtrNative(d_c_buf),
-                                                                 NUM_VALUES));
+                           alpaka::kernel::createTaskKernel<Acc1>(workDiv1,
+                                                                  matrixMulVector(),
+                                                                  alpaka::mem::view::getPtrNative(d_mc_buf),
+                                                                  alpaka::mem::view::getPtrNative(d_b_buf),
+                                                                  alpaka::mem::view::getPtrNative(d_c_buf),
+                                                                  NUM_VALUES));
 
     alpaka::wait::wait(queue);
     return d_mc_buf;
