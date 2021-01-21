@@ -34,9 +34,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
   auto off_d = alpaka::mem::buf::alloc<uint32_t, Idx>(device, nParts + 1);
 
   auto h_buf = alpaka::mem::buf::alloc<Hist, Idx>(host, 1u);
-  auto h = alpaka::mem::view::getPtrNative(h_buf);
   auto h_d = alpaka::mem::buf::alloc<Hist, Idx>(device, 1u);
-  //alpaka::mem::view::set(queue, h_d, Hist(), Vec1::all(1u)); // TO DO: this was added!!!!
 
   for (int it = 0; it < 5; ++it) {
 
@@ -71,6 +69,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     }
 
     alpaka::mem::view::copy(queue, v_d, v_buf, N);
+    std::cout << "Calling fillManyFromVector" << std::endl;
 
     fillManyFromVector(alpaka::mem::view::getPtrNative(h_d), 
 		       nParts, 
@@ -80,8 +79,13 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
 		       256, 
 		       device, 
 		       queue);
+    alpaka::wait::wait(queue);
+    std::cout << "Prepare to copy results" << std::endl;
     alpaka::mem::view::copy(queue, h_buf, h_d, 1u);
     alpaka::wait::wait(queue);
+    std::cout << "Copied results" << std::endl;
+
+    auto h = alpaka::mem::view::getPtrNative(h_buf);
     assert(0 == h->off[0]);
     assert(offsets[10] == h->size());
 

@@ -36,7 +36,7 @@ namespace cms {
 	    int32_t ih = off - offsets - 1;
 	    assert(ih >= 0);
 	    assert(ih < int(nh));
-	    (*h).count(acc, v[i], ih);
+	    h->count(acc, v[i], ih);
 	  }
 	  endElementIdxStrided += gridDimension;
 	}
@@ -62,72 +62,97 @@ namespace cms {
 	    int32_t ih = off - offsets - 1;
 	    assert(ih >= 0);
 	    assert(ih < int(nh));
-	    (*h).fill(acc, v[i], i, ih);
+	    h->fill(acc, v[i], i, ih);
 	  }
 	  endElementIdxStrided += gridDimension;
 	}
       }
     };
 
-    template <typename Histo>
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
-											 Queue& queue) {
-      uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
-      int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
-      assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
+    struct launchZero {
+      template <typename T_Acc, typename Histo>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void operator()(const T_Acc &acc,
+										    Histo *__restrict__ h) const {
+	//uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
+	//int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
+	//assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
 
-      //auto c_dbuf = alpaka::mem::buf::alloc<cms::alpakatools::AtomicPairCounter, Idx>(device, sizeC);
-      //alpaka::mem::view::set(queue, poff, 0, Vec1::all(size));  // TO DOOOOOOO: this was removed!!!
-    }
+	// TO DO: USE A WORKDIV??????????????
+	for (uint32_t i = 0; i < Histo::totbins(); ++i) {
+	  h->off[i] = 0;
+	}
+      }
+    };
 
-    template <typename Histo>
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE  __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
-											      const DevAcc1& device,
-											      Queue& queue) {
+    /*
+    struct multiBlockPrefixScanFirstStepHisto {
+      template <typename T_Acc, typename T>
+	ALPAKA_FN_ACC void operator()(const T_Acc& acc, Histo *__restrict__ h, T* psum_d, int32_t size) const {
+	multiBlockPrefixScanFirstStepHisto<uint32_t>(
+	  h->sum, // TO DO: GetPointerNative??
+	  h->sum, // TO DO: ppws??
+	  psum_d,
+	  size));
+	  };*/
 
-      uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
-      // NB: Why are we not interested in poff on device memory (cuda version as well, different from test). ??
+
+  template <typename Histo>
+      ALPAKA_FN_HOST ALPAKA_FN_INLINE  __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
+											  const DevAcc1& device,
+											  Queue& queue) {
+
+    uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
+    // NB: Why are we not interested in poff on device memory (cuda version as well, different from test). ??
+      
       //int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws)); // now unused???
-      const int num_items = Histo::totbins();
+      // ppsws ?????????????????????????????????????????????????????????????????????????????????
 
-      auto psum_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
-      uint32_t* psum_d = alpaka::mem::view::getPtrNative(psum_dBuf);
 
-      const unsigned int nthreads = 1024;
-      const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
-      const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
-      const Vec1 &threadsPerBlockOrElementsPerThread(Vec1::all(nthreads));
+      
+    const int num_items = Histo::totbins();
 
-      const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
-      alpaka::queue::enqueue(queue,
-			     alpaka::kernel::createTaskKernel<Acc1>(workDiv,
-								    multiBlockPrefixScanFirstStep<uint32_t>(),
-								    poff,
-								    poff,
-								    psum_d,
-								    num_items));
+    auto psum_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
+    uint32_t* psum_d = alpaka::mem::view::getPtrNative(psum_dBuf);
 
-      const WorkDiv1 &workDivWith1Block = cms::alpakatools::make_workdiv(Vec1::all(1), threadsPerBlockOrElementsPerThread);
-      alpaka::queue::enqueue(queue,
-			     alpaka::kernel::createTaskKernel<Acc1>(workDivWith1Block,
-								    multiBlockPrefixScanSecondStep<uint32_t>(),
-								    poff,
-								    poff,
-								    psum_d,
-								    num_items,
-								    nblocks));
+    const unsigned int nthreads = 1024;
+    const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
+    const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
+    const Vec1 &threadsPerBlockOrElementsPerThread(Vec1::all(nthreads));
+
+    const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    alpaka::queue::enqueue(queue,
+			   alpaka::kernel::createTaskKernel<Acc1>(workDiv,
+								  multiBlockPrefixScanFirstStep<uint32_t>(),
+								  poff, // TO DO: GetPointerNative??
+								  poff, // TO DO: ppws??
+								  psum_d,
+								  num_items));
+
+    const WorkDiv1 &workDivWith1Block = cms::alpakatools::make_workdiv(Vec1::all(1), threadsPerBlockOrElementsPerThread);
+    alpaka::queue::enqueue(queue,
+			   alpaka::kernel::createTaskKernel<Acc1>(workDivWith1Block,
+								  multiBlockPrefixScanSecondStep<uint32_t>(),
+								  poff,
+								  poff,
+								  psum_d,
+								  num_items,
+								  nblocks));
     }
 
     template <typename Histo, typename T>
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE  __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
+      ALPAKA_FN_HOST ALPAKA_FN_INLINE  __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
 												  uint32_t nh,
 												  T const *__restrict__ v,
 												  uint32_t const *__restrict__ offsets,
 												  uint32_t totSize,
 												  unsigned int nthreads,
 												  const DevAcc1& device,
-												  Queue& queue) {
-      launchZero(h, queue);
+											      Queue& queue) {
+      std::cout << "Start within fillManyFromVector" << std::endl;
+      alpaka::queue::enqueue(queue,
+			     alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)},
+								    launchZero(),
+								    h));
 
       unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
       const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
@@ -168,7 +193,7 @@ namespace cms {
 
     // iteratate over bins containing all values in window wmin, wmax
     template <typename Hist, typename V, typename Func>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
+    ALPAKA_FN_HOST ALPAKA_FN_INLINE void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
       auto bs = Hist::bin(wmin);
       auto be = Hist::bin(wmax);
       assert(be >= bs);
@@ -187,7 +212,9 @@ namespace cms {
               uint32_t NHISTS = 1     // number of histos stored
               >
     class HistoContainer {
+      ALPAKA_FN_HOST_ACC HistoContainer() {}; // TO DO: not neeeded??????????
     public:
+
       using Counter = uint32_t;
 
       using CountersOnly = HistoContainer<T, NBINS, 0, S, I, NHISTS>;
