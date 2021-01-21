@@ -100,6 +100,7 @@ namespace cms {
       ALPAKA_FN_HOST ALPAKA_FN_INLINE  __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
 											  const DevAcc1& device,
 											  Queue& queue) {
+    //alpaka::wait::wait(queue);
 
     uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
     // NB: Why are we not interested in poff on device memory (cuda version as well, different from test). ??
@@ -137,6 +138,7 @@ namespace cms {
 								  psum_d,
 								  num_items,
 								  nblocks));
+    //alpaka::wait::wait(queue);
     }
 
     template <typename Histo, typename T>
@@ -149,6 +151,7 @@ namespace cms {
 												  const DevAcc1& device,
 											      Queue& queue) {
       std::cout << "Start within fillManyFromVector" << std::endl;
+      //alpaka::wait::wait(queue);
       alpaka::queue::enqueue(queue,
 			     alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)},
 								    launchZero(),
@@ -164,12 +167,15 @@ namespace cms {
 								    h, nh, v, offsets));
      
 
-
+      alpaka::wait::wait(queue);
       launchFinalize(h, device, queue);
+      alpaka::wait::wait(queue);
+
       alpaka::queue::enqueue(queue,
 			     alpaka::kernel::createTaskKernel<Acc1>(workDiv,
 								    fillFromVector(),
 								    h, nh, v, offsets));
+      //alpaka::wait::wait(queue);
     }
 
     struct finalizeBulk {

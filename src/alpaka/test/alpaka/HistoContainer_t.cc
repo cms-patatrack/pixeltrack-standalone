@@ -71,6 +71,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     alpaka::mem::view::copy(queue, v_d, v_buf, N);
     std::cout << "Calling fillManyFromVector" << std::endl;
 
+    alpaka::wait::wait(queue);
     fillManyFromVector(alpaka::mem::view::getPtrNative(h_d), 
 		       nParts, 
 		       alpaka::mem::view::getPtrNative(v_d), 
