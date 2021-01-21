@@ -84,18 +84,6 @@ namespace cms {
       }
     };
 
-    /*
-    struct multiBlockPrefixScanFirstStepHisto {
-      template <typename T_Acc, typename T>
-	ALPAKA_FN_ACC void operator()(const T_Acc& acc, Histo *__restrict__ h, T* psum_d, int32_t size) const {
-	multiBlockPrefixScanFirstStepHisto<uint32_t>(
-	  h->sum, // TO DO: GetPointerNative??
-	  h->sum, // TO DO: ppws??
-	  psum_d,
-	  size));
-	  };*/
-
-
   template <typename Histo>
       ALPAKA_FN_HOST ALPAKA_FN_INLINE  __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
 											  const DevAcc1& device,
@@ -103,12 +91,6 @@ namespace cms {
     alpaka::wait::wait(queue);
 
     uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
-    // NB: Why are we not interested in poff on device memory (cuda version as well, different from test). ??
-      
-      //int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws)); // now unused???
-      // ppsws ?????????????????????????????????????????????????????????????????????????????????
-
-
       
     const int num_items = Histo::totbins();
 
@@ -165,11 +147,7 @@ namespace cms {
 			     alpaka::kernel::createTaskKernel<Acc1>(workDiv,
 								    countFromVector(),
 								    h, nh, v, offsets));
-     
-
-      //alpaka::wait::wait(queue);
       launchFinalize(h, device, queue);
-      //alpaka::wait::wait(queue);
 
       alpaka::queue::enqueue(queue,
 			     alpaka::kernel::createTaskKernel<Acc1>(workDiv,
