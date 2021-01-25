@@ -142,9 +142,7 @@ namespace cms {
 												  unsigned int nthreads,
 												  const DevAcc1& device,
 											      Queue& queue) {
-      std::cout << "Start within fillManyFromVector" << std::endl;
-
-      unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
+      const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
       const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
       const Vec1 &threadsPerBlockOrElementsPerThread(Vec1::all(nthreads));
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
@@ -207,7 +205,6 @@ namespace cms {
               uint32_t NHISTS = 1     // number of histos stored
               >
     class HistoContainer {
-      ALPAKA_FN_HOST_ACC HistoContainer() {}; // TO DO: not neeeded??????????
     public:
 
       using Counter = uint32_t;
@@ -245,18 +242,10 @@ namespace cms {
         return (t >> shift) & mask;
       }
 
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE void zero() {
+    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void zero() {
       for (auto &i : off)
 	i = 0;
     }
-
-    /*
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE void add(CountersOnly const &co) {
-      for (uint32_t i = 0; i < totbins(); ++i) {
-	auto &a = (std::atomic<Counter> &)(off[i]);
-	a += co.off[i];
-      }
-      }*/
 
     template <typename T_Acc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void add(const T_Acc& acc, CountersOnly const &co) {
