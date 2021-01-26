@@ -10,7 +10,11 @@
 
 namespace cms::cuda::allocator {
   // Use caching or not
+#ifdef CUDA_DISABLE_CACHING_ALLOCATOR
+  constexpr bool useCaching = false;
+#else
   constexpr bool useCaching = true;
+#endif
   // Growth factor (bin_growth in cub::CachingDeviceAllocator
   constexpr unsigned int binGrowth = 2;
   // Smallest bin, corresponds to binGrowth^minBin bytes (min_bin in cub::CacingDeviceAllocator

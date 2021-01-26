@@ -171,6 +171,11 @@ This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
 The location of CUDA 11 libraries can be set with `CUDA_BASE` variable.
 
+The use of caching allocator can be disabled at compile time with
+```
+make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR"
+```
+
 #### `cudadev`
 
 This program is currently equivalent to `cuda`.
