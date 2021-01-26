@@ -180,6 +180,11 @@ make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR"
 
 This program is currently equivalent to `cuda`.
 
+The use of caching allocator can be disabled at compile time with
+```
+make cudadev ... USER_CXXFLAGS="-DCUDADEV_DISABLE_CACHING_ALLOCATOR"
+```
+
 #### `cudauvm`
 
 The purpose of this program is to test the performance of the CUDA
