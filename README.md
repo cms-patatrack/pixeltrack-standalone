@@ -164,7 +164,10 @@ are filtered based on the availability of compilers/toolchains. Essentially
 
 #### `fwtest`
 
-The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... USER_CXXFLAGS="-DFWTEST_SILENT"`).
+The printouts can be disabled at compile with with
+```
+make fwtest ... USER_CXXFLAGS="-DFWTEST_SILENT"
+```
 
 #### `cudatest`
 
