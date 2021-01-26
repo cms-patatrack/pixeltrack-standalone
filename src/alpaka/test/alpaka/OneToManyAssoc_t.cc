@@ -209,6 +209,7 @@ int main() {
   alpaka::mem::view::copy(queue, v_dbuf, tr_hbuf, N);
 
   auto a_dbuf = alpaka::mem::buf::alloc<Assoc, Idx>(device, 1u);
+  alpaka::mem::view::set(queue, a_dbuf, 0, 1u);
   
   const unsigned int nThreads = 256;
   const Vec1 threadsPerBlockOrElementsPerThread(nThreads);
@@ -309,6 +310,7 @@ int main() {
   
   alpaka::mem::view::set(queue, dc_dbuf, 0, 1u);
   auto sa_dbuf = alpaka::mem::buf::alloc<SmallAssoc, Idx>(device, 1u);
+  alpaka::mem::view::set(queue, sa_dbuf, 0, 1u);
 
   alpaka::queue::enqueue(queue,
 			 alpaka::kernel::createTaskKernel<Acc1>(workDiv,
@@ -352,7 +354,9 @@ int main() {
 
   // here verify use of block local counters
   auto m1_dbuf = alpaka::mem::buf::alloc<Multiplicity, Idx>(device, 1u);
+  alpaka::mem::view::set(queue, m1_dbuf, 0, 1u);
   auto m2_dbuf = alpaka::mem::buf::alloc<Multiplicity, Idx>(device, 1u);
+  alpaka::mem::view::set(queue, m2_dbuf, 0, 1u);
 
   alpaka::queue::enqueue(queue,
     alpaka::kernel::createTaskKernel<Acc1>(workDiv4N,

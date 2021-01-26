@@ -235,7 +235,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     printf("hist->size() = %u.\n", hist->size());
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
     alpaka::wait::wait(queue);
-					     //assert(N == hist->size());
+    //assert(N == hist->size());
 
     alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDiv,
