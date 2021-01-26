@@ -8,6 +8,7 @@
   * [Additional make targets](#additional-make-targets)
   * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
     * [`fwtest`](#fwtest)
+    * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
     * [`cudauvm`](#cudauvm)
@@ -164,6 +165,13 @@ are filtered based on the availability of compilers/toolchains. Essentially
 #### `fwtest`
 
 The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... USER_CXXFLAGS="-DFWTEST_SILENT"`).
+
+#### `cudatest`
+
+The use of caching allocator can be disabled at compile time with
+```
+make cudatest ... USER_CXXFLAGS="-DCUDATEST_DISABLE_CACHING_ALLOCATOR"
+```
 
 #### `cuda`
 
