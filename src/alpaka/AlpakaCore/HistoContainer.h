@@ -27,10 +27,10 @@ namespace cms {
 				      uint32_t const *__restrict__ offsets) const {
 	const uint32_t nt = offsets[nh];
 	const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-	const auto& [firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
-	uint32_t endElementIdxStrided = endElementIdx[0u];
-	for (uint32_t threadIndexStrided = firstElementIdx[0u]; threadIndexStrided < nt; threadIndexStrided += gridDimension) {
-	  for (uint32_t i = threadIndexStrided; i < endElementIdxStrided; ++i) {
+	const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+	uint32_t endElementIdx = endElementIdxNoStride[0u];
+	for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < nt; threadIdx += gridDimension) {
+	  for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
@@ -38,7 +38,7 @@ namespace cms {
 	    assert(ih < int(nh));
 	    h->count(acc, v[i], ih);
 	  }
-	  endElementIdxStrided += gridDimension;
+	  endElementIdx += gridDimension;
 	}
       }
     };
@@ -52,11 +52,11 @@ namespace cms {
 				      uint32_t const *__restrict__ offsets) const {
 	const uint32_t nt = offsets[nh];
 	const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-	const auto &[firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+	const auto &[firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
 
-	uint32_t endElementIdxStrided = endElementIdx[0u];
-	for (uint32_t threadIdxStrided = firstElementIdx[0u]; threadIdxStrided < nt; threadIdxStrided += gridDimension) {
-	  for (uint32_t i = threadIdxStrided; i < endElementIdxStrided; ++i) {
+	uint32_t endElementIdx = endElementIdxNoStride[0u];
+	for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < nt; threadIdx += gridDimension) {
+	  for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
@@ -64,7 +64,7 @@ namespace cms {
 	    assert(ih < int(nh));
 	    h->fill(acc, v[i], i, ih);
 	  }
-	  endElementIdxStrided += gridDimension;
+	  endElementIdx += gridDimension;
 	}
       }
     };
@@ -305,14 +305,14 @@ namespace cms {
       }
 
       const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-      const auto &[firstElementIdx, endElementIdx] = cms::alpakatools::element_global_index_range(acc, Vec1::all(totbins()));
+      const auto &[firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc, Vec1::all(totbins()));
 
-      uint32_t endElementIdxStrided = m + endElementIdx[0u];
-      for (uint32_t threadIdxStrided = m + firstElementIdx[0u]; threadIdxStrided < totbins(); threadIdxStrided += gridDimension) {
-	for (uint32_t i = threadIdxStrided; i < endElementIdxStrided; ++i) {
+      uint32_t endElementIdx = m + endElementIdxNoStride[0u];
+      for (uint32_t threadIdx = m + firstElementIdxNoStride[0u]; threadIdx < totbins(); threadIdx += gridDimension) {
+	for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
 	  off[i] = n;
 	}
-	endElementIdxStrided += gridDimension;
+	endElementIdx += gridDimension;
       }
     }
 
