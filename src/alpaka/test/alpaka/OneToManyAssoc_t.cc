@@ -27,7 +27,7 @@ struct countMultiLocal {
     for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
 	auto&& local = alpaka::block::shared::st::allocVar<Multiplicity::CountersOnly, __COUNTER__>(acc);
-	if (threadIdxLocal == 0) {  // TO DO: use launchZero?????
+	if (threadIdxLocal == 0) {
 	  local.zero();
 	}
 	alpaka::block::sync::syncBlockThreads(acc);
@@ -168,8 +168,8 @@ int main() {
 
   constexpr uint32_t N = 4000;
 
-  auto tr_buf = alpaka::mem::buf::alloc<std::array<uint16_t, 4>, Idx>(host, N);
-  auto tr = alpaka::mem::view::getPtrNative(tr_buf);
+  auto tr_hbuf = alpaka::mem::buf::alloc<std::array<uint16_t, 4>, Idx>(host, N);
+  auto tr = alpaka::mem::view::getPtrNative(tr_hbuf);
   // fill with "index" to element
   long long ave = 0;
   int imax = 0;
@@ -206,7 +206,7 @@ int main() {
 
 
   auto v_dbuf = alpaka::mem::buf::alloc<std::array<uint16_t, 4>, Idx>(device, N);
-  alpaka::mem::view::copy(queue, v_dbuf, tr_buf, N);
+  alpaka::mem::view::copy(queue, v_dbuf, tr_hbuf, N);
 
   auto a_dbuf = alpaka::mem::buf::alloc<Assoc, Idx>(device, 1u);
   
@@ -300,7 +300,6 @@ int main() {
 								));
 
   alpaka::mem::view::copy(queue, la_hbuf, a_dbuf, 1u);
-  alpaka::wait::wait(queue); // TO DO:  Needed???
 
   auto dc_hbuf = alpaka::mem::buf::alloc<cms::alpakatools::AtomicPairCounter, Idx>(host, 1u);
   alpaka::mem::view::copy(queue, dc_hbuf, dc_dbuf, 1u);
