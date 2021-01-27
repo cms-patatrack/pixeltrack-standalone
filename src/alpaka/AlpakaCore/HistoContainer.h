@@ -30,7 +30,7 @@ namespace cms {
 	const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
 	uint32_t endElementIdx = endElementIdxNoStride[0u];
 	for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < nt; threadIdx += gridDimension) {
-	  for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
+	  for (uint32_t i = threadIdx; i < std::min(endElementIdx, nt); ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
@@ -56,7 +56,7 @@ namespace cms {
 
 	uint32_t endElementIdx = endElementIdxNoStride[0u];
 	for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < nt; threadIdx += gridDimension) {
-	  for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
+	  for (uint32_t i = threadIdx; i < std::min(endElementIdx, nt); ++i) {
 	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
 	    assert((*off) > 0);
 	    int32_t ih = off - offsets - 1;
@@ -309,7 +309,7 @@ namespace cms {
 
       uint32_t endElementIdx = m + endElementIdxNoStride[0u];
       for (uint32_t threadIdx = m + firstElementIdxNoStride[0u]; threadIdx < totbins(); threadIdx += gridDimension) {
-	for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
+	for (uint32_t i = threadIdx; i < std::min(endElementIdx, totbins());; ++i) {
 	  off[i] = n;
 	}
 	endElementIdx += gridDimension;

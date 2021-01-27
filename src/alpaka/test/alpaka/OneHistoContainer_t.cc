@@ -16,7 +16,7 @@ struct setZero {
       cms::alpakatools::element_global_index_range(acc, Vec1::all(Histo::totbins()));
     uint32_t endElementIdx = endElementIdxNoStride[0u];
     for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Histo::totbins(); threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(Histo::totbins(), endElementIdx); ++j) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Histo::totbins()); ++j) {
 	hist->off[j] = 0;
       }
       endElementIdx += blockDimension;
