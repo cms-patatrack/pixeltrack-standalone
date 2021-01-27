@@ -23,12 +23,12 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
- 
+
   using Hist = cms::alpakatools::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
-  
+
   auto offsets_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, nParts + 1);
   auto offsets = alpaka::mem::view::getPtrNative(offsets_buf);
   auto off_d = alpaka::mem::buf::alloc<uint32_t, Idx>(device, nParts + 1);
@@ -37,7 +37,6 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
   auto h_d = alpaka::mem::buf::alloc<Hist, Idx>(device, 1u);
 
   for (int it = 0; it < 5; ++it) {
-
     offsets[0] = 0;
     for (uint32_t j = 1; j < nParts + 1; ++j) {
       offsets[j] = offsets[j - 1] + partSize - 3 * j;
@@ -73,14 +72,14 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     alpaka::mem::view::set(queue, h_d, 0, 1u);
 
     std::cout << "Calling fillManyFromVector" << std::endl;
-    fillManyFromVector(alpaka::mem::view::getPtrNative(h_d), 
-		       nParts, 
-		       alpaka::mem::view::getPtrNative(v_d), 
-		       alpaka::mem::view::getPtrNative(off_d), 
-		       offsets[10], 
-		       256, 
-		       device, 
-		       queue);
+    fillManyFromVector(alpaka::mem::view::getPtrNative(h_d),
+                       nParts,
+                       alpaka::mem::view::getPtrNative(v_d),
+                       alpaka::mem::view::getPtrNative(off_d),
+                       offsets[10],
+                       256,
+                       device,
+                       queue);
 
     alpaka::mem::view::copy(queue, h_buf, h_d, 1u);
     alpaka::wait::wait(queue);
