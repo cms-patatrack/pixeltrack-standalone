@@ -12,10 +12,14 @@ struct setZero {
 						 Histo *__restrict__ hist) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(Histo::totbins()));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      hist->off[j] = 0;
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Histo::totbins(); threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(Histo::totbins(), endElementIdx); ++j) {
+	hist->off[j] = 0;
+      }
+      endElementIdx += blockDimension;
     }
   }
 };
@@ -26,10 +30,14 @@ struct setZeroBins {
 						 Histo *__restrict__ hist) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(Histo::capacity()));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      hist->bins[j] = 0;
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Histo::capacity(); threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Histo::capacity()); ++j) {
+	hist->bins[j] = 0;
+      }
+      endElementIdx += blockDimension;
     }
   }
 };
@@ -42,10 +50,14 @@ struct count {
 						 uint32_t N) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(N));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      hist->count(acc, v[j]);
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
+	hist->count(acc, v[j]);
+      }
+      endElementIdx += blockDimension;
     }
   }
 };
@@ -65,11 +77,15 @@ struct verify {
 						 Histo *__restrict__ hist) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(Histo::nbins()));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      assert(hist->off[j] <= hist->off[j + 1]);
-    }  
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Histo::nbins(); threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Histo::nbins()); ++j) {
+	assert(hist->off[j] <= hist->off[j + 1]);
+      }
+      endElementIdx += blockDimension;
+    }
   }
 };
 
@@ -81,10 +97,14 @@ struct fill {
 						 uint32_t N) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(N));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      hist->fill(acc, v[j], j);
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
+	hist->fill(acc, v[j], j);
+      }
+      endElementIdx += blockDimension;
     }
   }
 };
@@ -97,14 +117,18 @@ struct bin {
 						 uint32_t N) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(hist->size() - 1));
-    for (uint32_t j = firstElementIdx[0u]; j < endElementIdx[0u]; j += blockDimension) {
-      auto p = hist->begin() + j;
-      assert((*p) < N);
-      auto k1 = Histo::bin(v[*p]);
-      auto k2 = Histo::bin(v[*(p + 1)]);
-      assert(k2 >= k1);
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < hist->size() - 1; threadIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, hist->size() - 1); ++j) {
+	auto p = hist->begin() + j;
+	assert((*p) < N);
+	auto k1 = Histo::bin(v[*p]);
+	auto k2 = Histo::bin(v[*(p + 1)]);
+	assert(k2 >= k1);
+      }
+      endElementIdx += blockDimension;
     }
   }
 };
@@ -119,35 +143,39 @@ struct forEachInWindow {
 						 const int DELTA) const {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdx, endElementIdx] =
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc, Vec1::all(hist->size()));
-    for (uint32_t i = firstElementIdx[0u]; i < endElementIdx[0u]; i += blockDimension) {
-      auto p = hist->begin() + i;
-      auto j = *p;
-      auto b0 = Histo::bin(v[j]);
-      int tot = 0;
-      auto ftest = [&](unsigned int k) {
-	assert(k < N);
-	++tot;
-      };
-      cms::alpakatools::forEachInWindow(*hist, v[j], v[j], ftest);
-      int rtot = hist->size(b0);
-      assert(tot == rtot);
-      tot = 0;
-      auto vm = int(v[j]) - DELTA;
-      auto vp = int(v[j]) + DELTA;
-      const int vmax = NBINS != 128 ? NBINS * 2 - 1 : std::numeric_limits<T>::max();
-      vm = std::max(vm, 0);
-      vm = std::min(vm, vmax);
-      vp = std::min(vp, vmax);
-      vp = std::max(vp, 0);
-      assert(vp >= vm);
-      cms::alpakatools::forEachInWindow(*hist, vm, vp, ftest);
-      int bp = Histo::bin(vp);
-      int bm = Histo::bin(vm);
-      rtot = hist->end(bp) - hist->begin(bm);
-      assert(tot == rtot);
-    } 
+    uint32_t endElementIdx = endElementIdxNoStride[0u];
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < hist->size(); threadIdx += blockDimension) {
+      for (uint32_t i = threadIdx; i < std::min(endElementIdx, hist->size()); ++i) {
+	auto p = hist->begin() + i;
+	auto j = *p;
+	auto b0 = Histo::bin(v[j]);
+	int tot = 0;
+	auto ftest = [&](unsigned int k) {
+	  assert(k < N);
+	  ++tot;
+	};
+	cms::alpakatools::forEachInWindow(*hist, v[j], v[j], ftest);
+	int rtot = hist->size(b0);
+	assert(tot == rtot);
+	tot = 0;
+	auto vm = int(v[j]) - DELTA;
+	auto vp = int(v[j]) + DELTA;
+	const int vmax = NBINS != 128 ? NBINS * 2 - 1 : std::numeric_limits<T>::max();
+	vm = std::max(vm, 0);
+	vm = std::min(vm, vmax);
+	vp = std::min(vp, vmax);
+	vp = std::max(vp, 0);
+	assert(vp >= vm);
+	cms::alpakatools::forEachInWindow(*hist, vm, vp, ftest);
+	int bp = Histo::bin(vp);
+	int bm = Histo::bin(vm);
+	rtot = hist->end(bp) - hist->begin(bm);
+	assert(tot == rtot);
+      }
+      endElementIdx += blockDimension;
+    }
   }
 };
 
@@ -232,10 +260,9 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
 								  alpaka::mem::view::getPtrNative(hist_dbuf)
 								  ));
 
-    printf("hist->size() = %u.\n", hist->size());
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
     alpaka::wait::wait(queue);
-    //assert(N == hist->size());
+    assert(N == hist->size());
 
     alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDiv,
@@ -254,7 +281,7 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
     alpaka::wait::wait(queue);
     assert(0 == hist->off[0]);
-    //assert(N == hist->size());
+    assert(N == hist->size());
 
     alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDiv,
