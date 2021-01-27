@@ -386,10 +386,8 @@ int main() {
     N
     ));
 
-  const unsigned int nBlocksTotBins = 1;
-  const Vec1 blocksPerGridTotBins(nBlocksTotBins);
-  const unsigned int nThreadsTotBins = Multiplicity::totbins();
-  const Vec1 threadsPerBlockOrElementsPerThreadTotBins(nThreadsTotBins);
+  const Vec1 blocksPerGridTotBins(1u);
+  const Vec1 threadsPerBlockOrElementsPerThreadTotBins(Multiplicity::totbins());
   const WorkDiv1 &workDivTotBins = cms::alpakatools::make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
 
   alpaka::queue::enqueue(queue,

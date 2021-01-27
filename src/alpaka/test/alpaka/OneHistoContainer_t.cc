@@ -226,8 +226,8 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
     auto hist_dbuf = alpaka::mem::buf::alloc<HistTeam, Idx>(device, 1u);
     alpaka::mem::view::set(queue, hist_dbuf, 0, 1u);
 
-    const Vec1& threadsPerBlockOrElementsPerThread(Vec1::all(256));
-    const Vec1& blocksPerGrid(Vec1::all(1));
+    const Vec1 threadsPerBlockOrElementsPerThread(256u);
+    const Vec1 blocksPerGrid(1u);
     const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
     alpaka::queue::enqueue(queue,

@@ -102,9 +102,9 @@ namespace cms {
     uint32_t* psum_d = alpaka::mem::view::getPtrNative(psum_dBuf);
 
     const unsigned int nthreads = 1024;
+    const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
     const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
-    const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
-    const Vec1 &threadsPerBlockOrElementsPerThread(Vec1::all(nthreads));
+    const Vec1 blocksPerGrid(nblocks);
 
     alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)},
@@ -143,8 +143,8 @@ namespace cms {
 												  const DevAcc1& device,
 											      Queue& queue) {
       const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
-      const Vec1 &blocksPerGrid(Vec1::all(nblocks));  
-      const Vec1 &threadsPerBlockOrElementsPerThread(Vec1::all(nthreads));
+      const Vec1 blocksPerGrid(nblocks);  
+      const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::queue::enqueue(queue,
@@ -309,7 +309,7 @@ namespace cms {
 
       uint32_t endElementIdx = m + endElementIdxNoStride[0u];
       for (uint32_t threadIdx = m + firstElementIdxNoStride[0u]; threadIdx < totbins(); threadIdx += gridDimension) {
-	for (uint32_t i = threadIdx; i < std::min(endElementIdx, totbins());; ++i) {
+	for (uint32_t i = threadIdx; i < std::min(endElementIdx, totbins()); ++i) {
 	  off[i] = n;
 	}
 	endElementIdx += gridDimension;
