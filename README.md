@@ -8,6 +8,7 @@
   * [Additional make targets](#additional-make-targets)
   * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
     * [`fwtest`](#fwtest)
+    * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
     * [`cudauvm`](#cudauvm)
@@ -163,7 +164,17 @@ are filtered based on the availability of compilers/toolchains. Essentially
 
 #### `fwtest`
 
-The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... USER_CXXFLAGS="-DFWTEST_SILENT"`).
+The printouts can be disabled at compile with with
+```
+make fwtest ... USER_CXXFLAGS="-DFWTEST_SILENT"
+```
+
+#### `cudatest`
+
+The use of caching allocator can be disabled at compile time with
+```
+make cudatest ... USER_CXXFLAGS="-DCUDATEST_DISABLE_CACHING_ALLOCATOR"
+```
 
 #### `cuda`
 
@@ -171,9 +182,19 @@ This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
 The location of CUDA 11 libraries can be set with `CUDA_BASE` variable.
 
+The use of caching allocator can be disabled at compile time with
+```
+make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR"
+```
+
 #### `cudadev`
 
 This program is currently equivalent to `cuda`.
+
+The use of caching allocator can be disabled at compile time with
+```
+make cudadev ... USER_CXXFLAGS="-DCUDADEV_DISABLE_CACHING_ALLOCATOR"
+```
 
 #### `cudauvm`
 
@@ -192,6 +213,7 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 |----------------------------------------|-------------------------------------------------------|
 | `-DCUDAUVM_DISABLE_ADVISE`             | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`   |
 | `-DCUDAUVM_DISABLE_PREFETCH`           | Disable `cudaMemPrefetchAsync`                        |
+| `-DCUDAUVM_DISABLE_CACHING_ALLOCATOR`  | Disable caching allocator                             |
 | `-DCUDAUVM_MANAGED_TEMPORARY`          | Use managed memory also for temporary data structures |
 | `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT`   | Disable managed memory in `BeamSpotToCUDA`            |
 | `-DCUDAUVM_DISABLE_MANAGED_CLUSTERING` | Disable managed memory in `SiPixelRawToClusterCUDA`   |
