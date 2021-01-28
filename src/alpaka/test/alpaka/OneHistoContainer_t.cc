@@ -156,7 +156,9 @@ struct forEachInWindow {
 };
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
-void go(const DevHost &host, const DevAcc1 &device, Queue &queue) {
+void go(const DevHost &host,
+        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 &device,
+        ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
   std::mt19937 eng;
 
   int rmin = std::numeric_limits<T>::min();
@@ -202,35 +204,38 @@ void go(const DevHost &host, const DevAcc1 &device, Queue &queue) {
     const Vec1 blocksPerGrid(1u);
     const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-    alpaka::queue::enqueue(
-        queue, alpaka::kernel::createTaskKernel<Acc1>(workDiv, setZero(), alpaka::mem::view::getPtrNative(hist_dbuf)));
+    alpaka::queue::enqueue(queue,
+                           alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                               workDiv, setZero(), alpaka::mem::view::getPtrNative(hist_dbuf)));
+
+    alpaka::queue::enqueue(queue,
+                           alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                               workDiv, setZeroBins(), alpaka::mem::view::getPtrNative(hist_dbuf)));
 
     alpaka::queue::enqueue(
         queue,
-        alpaka::kernel::createTaskKernel<Acc1>(workDiv, setZeroBins(), alpaka::mem::view::getPtrNative(hist_dbuf)));
-
-    alpaka::queue::enqueue(
-        queue,
-        alpaka::kernel::createTaskKernel<Acc1>(
+        alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
             workDiv, count(), alpaka::mem::view::getPtrNative(hist_dbuf), alpaka::mem::view::getPtrNative(v_dbuf), N));
 
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
     alpaka::wait::wait(queue);
     assert(0 == hist->size());
 
-    alpaka::queue::enqueue(
-        queue, alpaka::kernel::createTaskKernel<Acc1>(workDiv, finalize(), alpaka::mem::view::getPtrNative(hist_dbuf)));
+    alpaka::queue::enqueue(queue,
+                           alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                               workDiv, finalize(), alpaka::mem::view::getPtrNative(hist_dbuf)));
 
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
     alpaka::wait::wait(queue);
     assert(N == hist->size());
 
-    alpaka::queue::enqueue(
-        queue, alpaka::kernel::createTaskKernel<Acc1>(workDiv, verify(), alpaka::mem::view::getPtrNative(hist_dbuf)));
+    alpaka::queue::enqueue(queue,
+                           alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                               workDiv, verify(), alpaka::mem::view::getPtrNative(hist_dbuf)));
 
     alpaka::queue::enqueue(
         queue,
-        alpaka::kernel::createTaskKernel<Acc1>(
+        alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
             workDiv, fill(), alpaka::mem::view::getPtrNative(hist_dbuf), alpaka::mem::view::getPtrNative(v_dbuf), N));
 
     alpaka::mem::view::copy(queue, hist_hbuf, hist_dbuf, 1u);
@@ -240,17 +245,18 @@ void go(const DevHost &host, const DevAcc1 &device, Queue &queue) {
 
     alpaka::queue::enqueue(
         queue,
-        alpaka::kernel::createTaskKernel<Acc1>(
+        alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
             workDiv, bin(), alpaka::mem::view::getPtrNative(hist_dbuf), alpaka::mem::view::getPtrNative(v_dbuf), N));
 
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc1>(workDiv,
-                                                                  forEachInWindow(),
-                                                                  alpaka::mem::view::getPtrNative(hist_dbuf),
-                                                                  alpaka::mem::view::getPtrNative(v_dbuf),
-                                                                  N,
-                                                                  NBINS,
-                                                                  DELTA));
+    alpaka::queue::enqueue(
+        queue,
+        alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDiv,
+                                                                             forEachInWindow(),
+                                                                             alpaka::mem::view::getPtrNative(hist_dbuf),
+                                                                             alpaka::mem::view::getPtrNative(v_dbuf),
+                                                                             N,
+                                                                             NBINS,
+                                                                             DELTA));
 
     alpaka::wait::wait(queue);
   }
@@ -258,8 +264,9 @@ void go(const DevHost &host, const DevAcc1 &device, Queue &queue) {
 
 int main() {
   const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
-  const DevAcc1 device(alpaka::pltf::getDevByIdx<PltfAcc1>(0u));
-  Queue queue(device);
+  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(
+      alpaka::pltf::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);
   go<uint8_t, 128, 8, 4>(host, device, queue);

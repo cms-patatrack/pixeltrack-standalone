@@ -8,10 +8,10 @@
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/HistoContainer.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
-
 template <typename T>
-void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
+void go(const DevHost& host,
+        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1& device,
+        ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
   std::mt19937 eng;
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
@@ -162,8 +162,9 @@ void go(const DevHost& host, const DevAcc1& device, Queue& queue) {
 
 int main() {
   const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
-  const DevAcc1 device(alpaka::pltf::getDevByIdx<PltfAcc1>(0u));
-  Queue queue(device);
+  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(
+      alpaka::pltf::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);
   go<int8_t>(host, device, queue);
