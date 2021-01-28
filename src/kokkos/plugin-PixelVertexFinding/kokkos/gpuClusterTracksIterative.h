@@ -205,8 +205,6 @@ namespace KOKKOS_NAMESPACE {
             clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
 
-      Hist::finalize(vhist, leagueSize, execSpace);
-
       Kokkos::parallel_for(
           "clusterTracksIterative", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
             clusterTracksIterative(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);

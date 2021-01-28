@@ -341,6 +341,21 @@ namespace cms {
 
 #pragma hd_warning_disable
       template <typename Histo, typename ExecSpace>
+      static KOKKOS_INLINE_FUNCTION void finalize(
+          Kokkos::View<Histo, ExecSpace> histo,
+          const int32_t loop_count,
+          const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
+        Kokkos::parallel_scan(Kokkos::TeamThreadRange(teamMember, loop_count),
+                              [&](int i, uint32_t& update, const bool final) {
+                                const auto leagueRank = teamMember.league_rank();
+                                update += histo(leagueRank).off[i];
+                                if (final)
+                                  histo(leagueRank).off[i] = update;
+                              });
+      }
+
+#pragma hd_warning_disable
+      template <typename Histo, typename ExecSpace>
       static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo, ExecSpace> histo, ExecSpace const& execSpace) {
         // assert(off[totbins() - 1] == 0);
         // for(uint32_t i=0;i<totbins();++i)
