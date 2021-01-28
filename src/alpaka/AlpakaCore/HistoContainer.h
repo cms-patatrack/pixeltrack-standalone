@@ -122,7 +122,6 @@ namespace cms {
           queue,
           alpaka::kernel::createTaskKernel<Acc1>(
               workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, psum_d, num_items, nblocks));
-      alpaka::wait::wait(queue);
     }
 
     template <typename Histo, typename T>
@@ -148,7 +147,6 @@ namespace cms {
 
       alpaka::queue::enqueue(queue,
                              alpaka::kernel::createTaskKernel<Acc1>(workDiv, fillFromVector(), h, nh, v, offsets));
-      alpaka::wait::wait(queue);
     }
 
     struct finalizeBulk {
