@@ -24,9 +24,8 @@ struct mykernel {
     auto&& ws = alpaka::block::shared::st::allocVar<typename Hist::Counter[32], __COUNTER__>(acc);
     
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-      cms::alpakatools::element_global_index_range_uncut(acc, Vec1::all(Hist::totbins()));
+      cms::alpakatools::element_global_index_range_uncut(acc);
 
     // set off zero
     uint32_t endElementIdx0 = endElementIdxNoStride[0u];
