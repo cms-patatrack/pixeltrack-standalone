@@ -81,13 +81,6 @@ namespace cms {
       }
     };
 
-    struct storePrefixScanWorkingSpace {
-      template <typename T_Acc, typename Histo>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc, Histo *__restrict__ h, const unsigned int nblocks) const {
-        h->psws = nblocks;
-      }
-    };
-
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
         Histo *__restrict__ h,
@@ -104,11 +97,6 @@ namespace cms {
       const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1 blocksPerGrid(nblocks);
-
-      alpaka::queue::enqueue(
-          queue,
-          alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-              WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)}, storePrefixScanWorkingSpace(), h, nblocks));
 
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::queue::enqueue(queue,
@@ -354,7 +342,6 @@ namespace cms {
       constexpr index_type const *end(uint32_t b) const { return bins + off[b + 1]; }
 
       Counter off[totbins()];
-      int32_t psws;  // prefix-scan working space
       index_type bins[capacity()];
     };
 
