@@ -171,8 +171,14 @@ void test() {
       vertexFinderOneKernel(onGPU_d, ws_d, onGPU_h, kk, par[0], par[1], par[2], policy);
       Kokkos::deep_copy(KokkosExecSpace(), onGPU_d, onGPU_h);
 #else
+// XXX CLUSTERIZE requires power-of-two blockDim
+#if defined KOKKOS_BACKEND_CUDA || defined KOKKOS_BACKEND_HIP
+      team_policy policy = team_policy(KokkosExecSpace(), 1, 64).set_scratch_size(0, Kokkos::PerTeam(1024));
+#else
       team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
+#endif
       CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], KokkosExecSpace(), policy);
+
 #endif
       Kokkos::parallel_for(
           "print", team_policy(KokkosExecSpace(), 1, 1), KOKKOS_LAMBDA(const member_type& team_member) {

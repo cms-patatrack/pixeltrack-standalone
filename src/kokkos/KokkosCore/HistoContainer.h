@@ -165,14 +165,11 @@ namespace cms {
 
     // iteratate over bins containing all values in window wmin, wmax
     template <typename Histo, typename V, typename Func, typename ExecSpace>
-    KOKKOS_INLINE_FUNCTION void forEachInWindow(Kokkos::View<Histo[1], ExecSpace> hist,
-                                                V wmin,
-                                                V wmax,
-                                                Func const& func) {
+    KOKKOS_INLINE_FUNCTION void forEachInWindow(Kokkos::View<Histo*, ExecSpace> hist, V wmin, V wmax, Func const& func) {
       auto bs = Histo::bin(wmin);
       auto be = Histo::bin(wmax);
       assert(be >= bs);
-      for (auto pj = hist().begin(bs); pj < hist().end(be); ++pj) {
+      for (auto pj = hist(0).begin(bs); pj < hist(0).end(be); ++pj) {
         func(*pj);
       }
     }
