@@ -56,6 +56,35 @@ namespace cms {
       return {firstElementIdxGlobalVec, endElementIdxGlobalVec};
     }
 
+
+
+    /*
+     * Computes the range of the element(s) global index(es) in grid.
+     */
+    template <typename T_Acc, typename T_Dim>
+      ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_global_index_range_uncut(const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements) {
+      Vec<T_Dim> firstElementIdxGlobalVec = Vec<T_Dim>::zeros();
+      Vec<T_Dim> endElementIdxGlobalVec = Vec<T_Dim>::zeros();
+
+      for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
+        // Global thread index in grid (along dimension dimIndex).
+        const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[dimIndex]);
+        const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[dimIndex]);
+
+        // Global element index in grid (along dimension dimIndex).
+        // Obviously relevant for CPU only.
+        // For GPU, threadDimension = 1, and firstElementIdxGlobal = endElementIdxGlobal = threadIndexGlobal.
+        const uint32_t firstElementIdxGlobal = threadIdxGlobal * threadDimension;
+        const uint32_t endElementIdxGlobal = firstElementIdxGlobal + threadDimension;
+
+        firstElementIdxGlobalVec[dimIndex] = firstElementIdxGlobal;
+        endElementIdxGlobalVec[dimIndex] = endElementIdxGlobal;
+      }
+
+      return {firstElementIdxGlobalVec, endElementIdxGlobalVec};
+    }
+
+
   }  // namespace alpakatools
 }  // namespace cms
 
