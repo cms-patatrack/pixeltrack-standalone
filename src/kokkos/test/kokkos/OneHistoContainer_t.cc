@@ -61,7 +61,6 @@ void go() {
 
     Kokkos::parallel_for(
         "count",
-
 // XXX Team prefix scan used in Hist::finalize() requires power-of-two blockDim
 // Kokkos::AUTO() in CUDA backend will somehow use blockDim = 96 thus fail the execution
 #ifdef KOKKOS_BACKEND_CUDA
