@@ -28,32 +28,26 @@ struct mykernel {
       cms::alpakatools::element_global_index_range_uncut(acc);
 
     // set off zero
-    uint32_t endElementIdx0 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Hist::totbins(); threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx0, Hist::totbins()); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < Hist::totbins(); threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::totbins()); ++j) {
 	hist.off[j] = 0;
       }
-      endElementIdx0 += blockDimension;
     }
     alpaka::block::sync::syncBlockThreads(acc);
 
     // set bins zero
-    uint32_t endElementIdx1 = endElementIdxNoStride[0u];    
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Hist::capacity(); threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx1, Hist::totbins()); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < Hist::capacity(); threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::totbins()); ++j) {
 	hist.bins[j] = 0;
       }
-      endElementIdx1 += blockDimension;
     }
     alpaka::block::sync::syncBlockThreads(acc);
 
     // count
-    uint32_t endElementIdx2 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx2, N); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
         hist.count(acc, v[j]);
       }
-      endElementIdx2 += blockDimension;
     }
     alpaka::block::sync::syncBlockThreads(acc);
 
@@ -70,12 +64,10 @@ struct mykernel {
     assert(N == hist.size());
 
     // verify
-    uint32_t endElementIdx8 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < Hist::nbins(); threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx8, Hist::nbins()); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < Hist::nbins(); threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::nbins()); ++j) {
         assert(hist.off[j] <= hist.off[j + 1]);
       }
-      endElementIdx8 += blockDimension;
     }
     alpaka::block::sync::syncBlockThreads(acc);
 
@@ -85,12 +77,10 @@ struct mykernel {
     alpaka::block::sync::syncBlockThreads(acc);
 
     // fill
-    uint32_t endElementIdx3 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx3, N); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < N; threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
         hist.fill(acc, v[j], j);
       }
-      endElementIdx3 += blockDimension;
     }
     alpaka::block::sync::syncBlockThreads(acc);
 
@@ -98,28 +88,25 @@ struct mykernel {
     assert(N == hist.size());
 
     // bin
-    uint32_t endElementIdx4 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < hist.size() - 1; threadIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx4, hist.size() - 1); ++j) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < hist.size() - 1; threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t j = threadIdx; j < std::min(endElementIdx, hist.size() - 1); ++j) {
         auto p = hist.begin() + j;
         assert((*p) < N);
         auto k1 = Hist::bin(v[*p]);
         auto k2 = Hist::bin(v[*(p + 1)]);
         assert(k2 >= k1);
       }
-      endElementIdx4 += blockDimension;
     }
 
     // forEachInWindow
-    uint32_t endElementIdx5 = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < hist.size(); threadIdx += blockDimension) {
-      for (uint32_t i = threadIdx; i < std::min(endElementIdx5, hist.size()); ++i) {
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < hist.size(); threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t i = threadIdx; i < std::min(endElementIdx, hist.size()); ++i) {
 	auto p = hist.begin() + i;
 	auto j = *p;
 	auto b0 = Hist::bin(v[j]);
 	int tot = 0;
 	auto ftest = [&](unsigned int k) {
-	  assert(k >= 0 && k < N);
+	  assert(k < N);
 	  ++tot;
 	};
 	cms::alpakatools::forEachInWindow(hist, v[j], v[j], ftest);
@@ -140,7 +127,6 @@ struct mykernel {
 	rtot = hist.end(bp) - hist.begin(bm);
         assert(tot == rtot);
       }
-      endElementIdx5 += blockDimension;
     }
 
   }
