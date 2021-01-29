@@ -26,9 +26,8 @@ struct countMultiLocal {
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const uint32_t threadIdxLocal(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < std::min(endElementIdx, n); ++i) {
         auto&& local = alpaka::block::shared::st::allocVar<Multiplicity::CountersOnly, __COUNTER__>(acc);
         if (threadIdxLocal == 0) {
@@ -41,7 +40,6 @@ struct countMultiLocal {
           assoc->add(acc, local);
         }
       }
-      endElementIdx += gridDimension;
     }
   }
 };
@@ -54,13 +52,11 @@ struct countMulti {
                                 uint32_t n) const {
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < std::min(endElementIdx, n); ++i) {
         assoc->countDirect(acc, 2 + i % 4);
       }
-      endElementIdx += gridDimension;
     }
   }
 };
@@ -71,14 +67,12 @@ struct verifyMulti {
     const uint32_t maxNumberOfElements = Multiplicity::totbins();
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
-         threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
+         threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
         assert(m1->off[i] == m2->off[i]);
       }
-      endElementIdx += gridDimension;
     }
   }
 };
@@ -92,10 +86,9 @@ struct count {
     const uint32_t maxNumberOfElements = 4 * n;
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
-         threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
+         threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
         auto k = i / 4;
         auto j = i - 4 * k;
@@ -107,7 +100,6 @@ struct count {
           assoc->countDirect(acc, tk[k][j]);
         }
       }
-      endElementIdx += gridDimension;
     }
   }
 };
@@ -121,10 +113,9 @@ struct fill {
     const uint32_t maxNumberOfElements = 4 * n;
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
-         threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(maxNumberOfElements));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < maxNumberOfElements;
+         threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
         auto k = i / 4;
         auto j = i - 4 * k;
@@ -136,7 +127,6 @@ struct fill {
           assoc->fillDirect(acc, tk[k][j], k);
         }
       }
-      endElementIdx += gridDimension;
     }
   }
 };
@@ -157,14 +147,12 @@ struct fillBulk {
                                 uint32_t n) const {
     const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
-    uint32_t endElementIdx = endElementIdxNoStride[0u];
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension) {
+      cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < n; threadIdx += gridDimension, endElementIdx += gridDimension) {
       for (uint32_t k = threadIdx; k < std::min(endElementIdx, n); ++k) {
         auto m = tk[k][3] < MaxElem ? 4 : 3;
         assoc->bulkFill(acc, *apc, &tk[k][0], m);
       }
-      endElementIdx += gridDimension;
     }
   }
 };
