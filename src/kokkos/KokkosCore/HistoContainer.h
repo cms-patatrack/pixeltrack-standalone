@@ -165,7 +165,10 @@ namespace cms {
 
     // iteratate over bins containing all values in window wmin, wmax
     template <typename Histo, typename V, typename Func, typename ExecSpace>
-    KOKKOS_INLINE_FUNCTION void forEachInWindow(Kokkos::View<Histo, ExecSpace> hist, V wmin, V wmax, Func const& func) {
+    KOKKOS_INLINE_FUNCTION void forEachInWindow(Kokkos::View<Histo[1], ExecSpace> hist,
+                                                V wmin,
+                                                V wmax,
+                                                Func const& func) {
       auto bs = Histo::bin(wmin);
       auto be = Histo::bin(wmax);
       assert(be >= bs);
@@ -340,75 +343,19 @@ namespace cms {
       }
 
 #pragma hd_warning_disable
+      // The team size must be power-of-two
       template <typename Histo, typename ExecSpace>
       static KOKKOS_INLINE_FUNCTION void finalize(
           Kokkos::View<Histo, ExecSpace> histo,
-          const int32_t loop_count,
+          const uint32_t loop_count,
           const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
         Kokkos::parallel_scan(Kokkos::TeamThreadRange(teamMember, loop_count),
                               [&](int i, uint32_t& update, const bool final) {
-                                const auto leagueRank = teamMember.league_rank();
+                                auto leagueRank = teamMember.league_rank();
                                 update += histo(leagueRank).off[i];
                                 if (final)
                                   histo(leagueRank).off[i] = update;
                               });
-      }
-
-#pragma hd_warning_disable
-      template <typename Histo, typename ExecSpace>
-      static KOKKOS_INLINE_FUNCTION void finalize(Kokkos::View<Histo, ExecSpace> histo, ExecSpace const& execSpace) {
-        // assert(off[totbins() - 1] == 0);
-        // for(uint32_t i=0;i<totbins();++i)
-        //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
-        Kokkos::parallel_scan(
-            "finalize",
-            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
-            KOKKOS_LAMBDA(const int i, uint32_t& update, const bool final) {
-              update += histo().off[i];
-              if (final)
-                histo().off[i] = update;
-            });
-        // for(uint32_t i=0;i<totbins();++i)
-        //   printf("1 %04i off[%04i] = %04i\n",teamMember.team_rank(),i,off[i]);
-        // assert(off[totbins() - 1] == off[totbins() - 2]);
-      }
-
-// This host function performs prefix scan over a grid-wide histogram container on device (no data transfer
-// involved). N represents the number of blocks in one grid. It's a temporary solution since Kokkos doesn't
-// support team-level parallel_scan for now. As a result, the original clusterize kernels in CUDA have to be
-// splitted into three host function calls: clusterFillHist + finalize + clusterTracks*
-#pragma hd_warning_disable
-      template <typename Histo, typename ExecSpace>
-      static void finalize(Kokkos::View<Histo*, ExecSpace> histo, const int32_t N, ExecSpace const& execSpace) {
-        // Temporary array to hold the offsets of the first element of each block
-        Kokkos::View<uint32_t*, ExecSpace> firstOffset(Kokkos::ViewAllocateWithoutInitializing("firstoffSet"), N);
-
-        // First do a prefix scan over the all the blocks
-        Kokkos::parallel_scan(
-            "nFinalize",
-            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N * Histo::totbins())),
-            KOKKOS_LAMBDA(const int ind, uint32_t& update, const bool final) {
-              const int k = ind / Histo::totbins();
-              const int i = ind % Histo::totbins();
-              update += histo(k).off[i];
-              if (final)
-                histo(k).off[i] = update;
-            });
-        // Then record the offset of the last element of each block
-        Kokkos::parallel_for(
-            "collectOffset",
-            hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, N)),
-            KOKKOS_LAMBDA(const int k) { firstOffset[k] = (k == 0) ? 0 : histo(k - 1).off[Histo::totbins() - 1]; });
-        // Finally subtract the offset of last element of the "previous block" from the values of the current block
-        Kokkos::parallel_for(
-            "subtractOffset",
-            hintLightWeight(Kokkos::TeamPolicy<ExecSpace>(execSpace, N, Kokkos::AUTO())),
-            KOKKOS_LAMBDA(typename Kokkos::TeamPolicy<ExecSpace>::member_type const& teamMember) {
-              const int k = teamMember.league_rank();
-              const auto first = firstOffset(k);
-              Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, Histo::totbins()),
-                                   [=](const int i) { histo(k).off[i] -= first; });
-            });
       }
 
       constexpr auto size() const { return uint32_t(off[totbins() - 1]); }

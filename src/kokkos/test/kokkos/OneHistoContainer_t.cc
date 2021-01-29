@@ -46,7 +46,7 @@ void go() {
 
     using TeamHist = cms::kokkos::HistoContainer<T, NBINS, N, S, uint16_t>;
 
-    Kokkos::View<TeamHist, KokkosExecSpace> histo_d("histo_d");
+    Kokkos::View<TeamHist[1], KokkosExecSpace> histo_d("histo_d");
     auto histo_h = Kokkos::create_mirror_view(histo_d);
 
     Kokkos::parallel_for(
@@ -60,18 +60,28 @@ void go() {
         KOKKOS_LAMBDA(const int& i) { histo_d().bins[i] = 0; });
 
     Kokkos::parallel_for(
-        "count", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, N), KOKKOS_LAMBDA(const int& i) {
-          histo_d().count(v_d(i));
+        "count",
+
+// XXX Team prefix scan used in Hist::finalize() requires power-of-two blockDim
+// Kokkos::AUTO() in CUDA backend will somehow use blockDim = 96 thus fail the execution
+#ifdef KOKKOS_BACKEND_CUDA
+        team_policy(KokkosExecSpace(), 1, 64),
+#else
+        team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()),
+#endif
+        KOKKOS_LAMBDA(const member_type& teamMember) {
+          for (uint32_t i = teamMember.team_rank(); i < N; i += teamMember.team_size())
+            histo_d().count(v_d(i));
+          teamMember.team_barrier();
+
+          assert(0 == histo_d().size());
+          teamMember.team_barrier();
+
+          TeamHist::finalize(histo_d, TeamHist::totbins(), teamMember);
+          teamMember.team_barrier();
+
+          assert(N == histo_d().size());
         });
-
-    Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
-    assert(0 == histo_h().size());
-
-    TeamHist::finalize(histo_d, KokkosExecSpace());
-
-    Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
-
-    assert(N == histo_h().size());
 
     Kokkos::parallel_for(
         "assert_check",
