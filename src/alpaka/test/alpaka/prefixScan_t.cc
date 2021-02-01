@@ -27,7 +27,7 @@ struct testPrefixScan {
     auto&& c = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
     auto&& co = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
 
-    uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+    const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
       cms::alpakatools::element_global_index_range(acc);
 
@@ -56,6 +56,9 @@ struct testPrefixScan {
 };
 
 
+/*
+ * NB: GPU-only, so do not care about elements here.
+ */
 template <typename T>
 struct testWarpPrefixScan {
   template <typename T_Acc>
@@ -147,7 +150,8 @@ int main() {
   // PORTABLE BLOCK PREFIXSCAN
   std::cout << "block level" << std::endl;
 
-  // running kernel with 1 block, and bs threads per block or elements per thread
+  // Running kernel with 1 block, and bs threads per block or elements per thread.
+  // NB: obviously for tests only, for perf would need to use bs = 1024 in GPU version.
   for (int bs = 32; bs <= 1024; bs += 32) {
   
   const Vec1 threadsPerBlockOrElementsPerThread2(Vec1::all(bs));
@@ -158,7 +162,7 @@ int main() {
 	    << ", threads per block or elements per thread: " << threadsPerBlockOrElementsPerThread2
             << std::endl;
 
-  // problem size
+  // Problem size
   for (int j = 1; j <= 1024; ++j) {
 
   alpaka::queue::enqueue(queue,
@@ -181,14 +185,14 @@ int main() {
     auto output1_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
     uint32_t* output1_d = alpaka::mem::view::getPtrNative(output1_dBuf);
 
-    const auto nThreadsInit = 256;
+    const auto nThreadsInit = 256; // NB: 1024 would be better
+    // Just kept here to be identical to CUDA test
     const Vec1 threadsPerBlockOrElementsPerThread3(Vec1::all(nThreadsInit));
     const auto nBlocksInit = (num_items + nThreadsInit - 1) / nThreadsInit;
     const Vec1 blocksPerGrid3(Vec1::all(nBlocksInit));
     const WorkDiv1 &workDivMultiBlockInit = cms::alpakatools::make_workdiv(blocksPerGrid3, threadsPerBlockOrElementsPerThread3);
 
-    alpaka::queue::enqueue(
-        queue,
+    alpaka::queue::enqueue(queue,
         alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlockInit, init(), input_d, 1, num_items));
 
 
@@ -199,8 +203,7 @@ int main() {
     const WorkDiv1 &workDivMultiBlock = cms::alpakatools::make_workdiv(blocksPerGrid4, threadsPerBlockOrElementsPerThread4);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
-    alpaka::queue::enqueue(
-			   queue,
+    alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlock,
 								  cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(),
 								  input_d,
@@ -209,8 +212,7 @@ int main() {
     
     const Vec1 blocksPerGridSecondStep(Vec1::all(1));
     const WorkDiv1 &workDivMultiBlockSecondStep = cms::alpakatools::make_workdiv(blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
-    alpaka::queue::enqueue(
-			   queue,
+    alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlockSecondStep,
 								  cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
 								  input_d,
@@ -219,8 +221,7 @@ int main() {
 								  nBlocks));
     
 
-    alpaka::queue::enqueue(
-			   queue,
+    alpaka::queue::enqueue(queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlock, 
 								  verify(), output1_d, num_items));
 
