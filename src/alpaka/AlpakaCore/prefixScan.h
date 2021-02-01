@@ -164,9 +164,7 @@ namespace cms {
         uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
-        auto* psum(alpaka::block::shared::dyn::getMem<T>(acc));
-
-        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        auto* const psum(alpaka::block::shared::dyn::getMem<T>(acc));
 
         // first each block does a scan of size 1024; (better be enough blocks....)
         assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
@@ -183,6 +181,7 @@ namespace cms {
 
         alpaka::block::sync::syncBlockThreads(acc);
 
+        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
@@ -201,6 +200,7 @@ namespace cms {
 namespace alpaka {
   namespace kernel {
     namespace traits {
+
       //#############################################################################
       //! The trait for getting the size of the block shared dynamic memory for a kernel.
       template <typename T, typename TAcc>
@@ -223,10 +223,10 @@ namespace alpaka {
           alpaka::ignore_unused(co);
           alpaka::ignore_unused(size);
 
-          // Reserve the buffer for the two blocks of A and B.
           return static_cast<size_t>(numBlocks) * sizeof(T);
         }
       };
+
     }  // namespace traits
   }    // namespace kernel
 }  // namespace alpaka
