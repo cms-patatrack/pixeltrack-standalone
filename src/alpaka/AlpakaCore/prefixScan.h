@@ -4,12 +4,10 @@
 #include <cstdint>
 #include "AlpakaCore/alpakaConfig.h"
 
-
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
 template <typename T>
-ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(
-    uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
+ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
   // ci and co may be the same
   auto x = ci[i];
   for (int offset = 1; offset < 32; offset <<= 1) {
@@ -32,7 +30,6 @@ ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, u
 }
 
 #endif
-
 
 namespace cms {
   namespace alpakatools {
