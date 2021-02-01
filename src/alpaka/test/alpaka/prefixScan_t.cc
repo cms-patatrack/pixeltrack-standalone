@@ -84,7 +84,7 @@ struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
     const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+        cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(n));
 
     for (uint32_t index = firstElementIdxGlobal[0u]; index < endElementIdxGlobal[0u]; ++index) {
       v[index] = val;
@@ -99,7 +99,7 @@ struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
     const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-        cms::alpakatools::element_global_index_range(acc, Vec1::all(n));
+        cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(n));
 
     for (uint32_t index = firstElementIdxGlobal[0u]; index < endElementIdxGlobal[0u]; ++index) {
       assert(v[index] == index + 1);

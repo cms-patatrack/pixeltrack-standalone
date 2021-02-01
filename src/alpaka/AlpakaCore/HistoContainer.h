@@ -25,7 +25,7 @@ namespace cms {
         const uint32_t nt = offsets[nh];
         const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
         const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(nt));
         for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
              threadIdx < nt;
              threadIdx += gridDimension, endElementIdx += gridDimension) {
@@ -51,7 +51,7 @@ namespace cms {
         const uint32_t nt = offsets[nh];
         const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
         const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range(acc, Vec1::all(nt));
+            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(nt));
 
         for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
              threadIdx < nt;
@@ -73,7 +73,7 @@ namespace cms {
       ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void operator()(const T_Acc &acc,
                                                                                     Histo *__restrict__ h) const {
         const auto &[firstElementIdxGlobal, endElementIdxGlobal] =
-            cms::alpakatools::element_global_index_range(acc, Vec1::all(Histo::totbins()));
+            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(Histo::totbins()));
 
         for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
           h->off[i] = 0;
@@ -275,7 +275,7 @@ namespace cms {
 
         const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
         const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range(acc, Vec1::all(totbins()));
+            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(totbins()));
 
         for (uint32_t threadIdx = m + firstElementIdxNoStride[0u], endElementIdx = m + endElementIdxNoStride[0u];
              threadIdx < totbins();

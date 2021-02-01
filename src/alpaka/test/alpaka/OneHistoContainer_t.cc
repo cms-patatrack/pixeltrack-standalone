@@ -25,7 +25,7 @@ struct mykernel {
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        cms::alpakatools::element_global_index_range_uncut(acc);
+        cms::alpakatools::element_global_index_range(acc);
 
     // set off zero
     for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];

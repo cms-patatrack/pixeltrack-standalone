@@ -32,7 +32,7 @@ namespace cms {
      * Computes the range of the element(s) global index(es) in grid.
      */
     template <typename T_Acc, typename T_Dim>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_global_index_range(const T_Acc& acc,
+    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_global_index_range_truncated(const T_Acc& acc,
                                                                                const Vec<T_Dim>& maxNumberOfElements) {
       Vec<T_Dim> firstElementIdxGlobalVec = Vec<T_Dim>::zeros();
       Vec<T_Dim> endElementIdxGlobalVec = Vec<T_Dim>::zeros();

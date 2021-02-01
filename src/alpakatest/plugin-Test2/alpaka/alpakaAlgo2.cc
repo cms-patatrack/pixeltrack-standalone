@@ -14,7 +14,7 @@ namespace {
       // Global element index in 1D grid.
       // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
+          cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(numElements));
 
       for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
         c[i] = a[i] + b[i];
@@ -32,7 +32,7 @@ namespace {
       // Global element index in 2D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_global_index_range(acc, Vec2::all(numElements));
+          cms::alpakatools::element_global_index_range_truncated(acc, Vec2::all(numElements));
 
       for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
         for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
@@ -52,7 +52,7 @@ namespace {
       // Global element index in 2D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_global_index_range(acc, Vec2::all(numElements));
+          cms::alpakatools::element_global_index_range_truncated(acc, Vec2::all(numElements));
 
       for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
         for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
@@ -76,7 +76,7 @@ namespace {
       // Global element index in 1D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
+          cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(numElements));
 
       for (uint32_t row = firstElementIdxGlobal[0u]; row < endElementIdxGlobal[0u]; ++row) {
         T_Data tmp = 0;
@@ -101,7 +101,7 @@ namespace {
         // Global element index in 1D grid.
         // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
         const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-            cms::alpakatools::element_global_index_range(acc, Vec1::all(numElements));
+            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(numElements));
 
         for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
           // theoreticalResult = i+i^2 = i*(i+1)
