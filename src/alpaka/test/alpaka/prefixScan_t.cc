@@ -4,7 +4,6 @@
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/prefixScan.h"
 
-using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
@@ -35,8 +34,8 @@ struct testPrefixScan {
       c[i] = 1;
     alpaka::block::sync::syncBlockThreads(acc);
 
-    blockPrefixScan(acc, c, co, size, ws);
-    blockPrefixScan(acc, c, size, ws);
+    cms::alpakatools::blockPrefixScan(acc, c, co, size, ws);
+    cms::alpakatools::blockPrefixScan(acc, c, size, ws);
 
     assert(1 == c[0]);
     assert(1 == co[0]);
@@ -196,7 +195,7 @@ int main() {
     alpaka::queue::enqueue(
 			   queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlock,
-								  multiBlockPrefixScanFirstStep<uint32_t>(),
+								  cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(),
 								  input_d,
 								  output1_d,
 								  num_items));
@@ -207,7 +206,7 @@ int main() {
     alpaka::queue::enqueue(
 			   queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlockSecondStep,
-								  multiBlockPrefixScanSecondStep<uint32_t>(),
+								  cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
 								  input_d,
 								  output1_d,
 								  num_items,
