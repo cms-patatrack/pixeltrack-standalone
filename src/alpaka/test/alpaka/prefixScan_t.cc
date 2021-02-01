@@ -138,13 +138,10 @@ int main() {
   const WorkDiv1 &workDivWarp = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
   alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDivWarp, testWarpPrefixScan<int>(), 32));
-  alpaka::wait::wait(queue);
 
   alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDivWarp, testWarpPrefixScan<int>(), 16));
-  alpaka::wait::wait(queue);
 
   alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDivWarp, testWarpPrefixScan<int>(), 5));
-  alpaka::wait::wait(queue);
 #endif
 
   // PORTABLE BLOCK PREFIXSCAN
@@ -166,14 +163,11 @@ int main() {
 
   alpaka::queue::enqueue(queue,
     alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
-  alpaka::wait::wait(queue);
   alpaka::queue::enqueue(queue,
     alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
-  alpaka::wait::wait(queue);
 }
 }
 
-  //alpaka::wait::wait(queue);
 
   // PORTABLE MULTI-BLOCK PREFIXSCAN
   int num_items = 200;
@@ -196,7 +190,6 @@ int main() {
     alpaka::queue::enqueue(
         queue,
         alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlockInit, init(), input_d, 1, num_items));
-    alpaka::wait::wait(queue);
 
 
     const auto nThreads = 1024;
@@ -213,7 +206,6 @@ int main() {
 								  input_d,
 								  output1_d,
 								  num_items));
-    alpaka::wait::wait(queue);
     
     const Vec1 blocksPerGridSecondStep(Vec1::all(1));
     const WorkDiv1 &workDivMultiBlockSecondStep = cms::alpakatools::make_workdiv(blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
@@ -225,14 +217,14 @@ int main() {
 								  output1_d,
 								  num_items,
 								  nBlocks));
-    alpaka::wait::wait(queue);
+    
 
     alpaka::queue::enqueue(
 			   queue,
 			   alpaka::kernel::createTaskKernel<Acc1>(workDivMultiBlock, 
 								  verify(), output1_d, num_items));
-    alpaka::wait::wait(queue);
 
+    alpaka::wait::wait(queue);  // input_dBuf and output1_dBuf end of scope
   }  // ksize
 
   return 0;
