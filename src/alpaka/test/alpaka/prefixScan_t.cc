@@ -116,16 +116,14 @@ int main() {
 
   Queue queue(device);
 
-  const Vec1 threadsPerBlockOrElementsPerThread1(Vec1::all(32));
-  const Vec1 blocksPerGrid1(Vec1::all(1));
-  const WorkDiv1 &workDivWarp = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
-  std::cout << "blocks per grid: " << blocksPerGrid1 
-	    << ", threads per block or elements per thread: " << threadsPerBlockOrElementsPerThread1
-            << std::endl;
 
   // WARP PREFIXSCAN (OBVIOUSLY GPU-ONLY)
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
   std::cout << "warp level" << std::endl;
+
+  const Vec1 threadsPerBlockOrElementsPerThread1(Vec1::all(32));
+  const Vec1 blocksPerGrid1(Vec1::all(1));
+  const WorkDiv1 &workDivWarp = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
   alpaka::queue::enqueue(queue, alpaka::kernel::createTaskKernel<Acc1>(workDivWarp, testWarpPrefixScan<int>(), 32));
   alpaka::wait::wait(queue);
@@ -143,10 +141,15 @@ int main() {
 
   int bs = 1;
   for (bs = 32; bs <= 1024; bs += 32) {
-    std::cout << "bs " << bs << std::endl;
-    const Vec1 threadsPerBlockOrElementsPerThread2(Vec1::all(bs));
-    const Vec1 blocksPerGrid2(Vec1::all(1));
-    const WorkDiv1 &workDivSingleBlock = cms::alpakatools::make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
+  
+  const Vec1 threadsPerBlockOrElementsPerThread2(Vec1::all(bs));
+  const Vec1 blocksPerGrid2(Vec1::all(1));
+  const WorkDiv1 &workDivSingleBlock = cms::alpakatools::make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
+
+  std::cout << "blocks per grid: " << blocksPerGrid2 
+	    << ", threads per block or elements per thread: " << threadsPerBlockOrElementsPerThread2
+            << std::endl;
+
     for (int j = 1; j <= 1024; ++j) {
       alpaka::queue::enqueue(queue,
                              alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
