@@ -195,11 +195,6 @@ int main() {
             WorkDiv1{Vec1::all(nblocks), Vec1::all(nthreads), Vec1::all(1)}, init(), input_d, 1, num_items));
     alpaka::wait::wait(queue);
 
-    auto psum_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items * sizeof(uint32_t)));
-    uint32_t* psum_d = alpaka::mem::view::getPtrNative(psum_dBuf);
-
-    alpaka::mem::view::set(queue, psum_dBuf, 0u, Vec1::all(num_items * sizeof(uint32_t)));
-
 #if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
     nthreads = 1;
     auto nelements = 768;
@@ -217,7 +212,6 @@ int main() {
                                                multiBlockPrefixScanFirstStep<uint32_t>(),
                                                input_d,
                                                output1_d,
-                                               psum_d,
                                                num_items));
     alpaka::wait::wait(queue);
     alpaka::queue::enqueue(
@@ -226,7 +220,6 @@ int main() {
                                                multiBlockPrefixScanSecondStep<uint32_t>(),
                                                input_d,
                                                output1_d,
-                                               psum_d,
                                                num_items,
                                                nblocks));
     alpaka::wait::wait(queue);

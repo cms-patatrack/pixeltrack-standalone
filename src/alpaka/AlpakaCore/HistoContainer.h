@@ -90,9 +90,6 @@ namespace cms {
 
       const int num_items = Histo::totbins();
 
-      auto psum_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
-      uint32_t *psum_d = alpaka::mem::view::getPtrNative(psum_dBuf);
-
       const unsigned int nthreads = 1024;
       const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
@@ -101,14 +98,14 @@ namespace cms {
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::queue::enqueue(queue,
                              alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                                 workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, psum_d, num_items));
+                                 workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
       const WorkDiv1 &workDivWith1Block =
           cms::alpakatools::make_workdiv(Vec1::all(1), threadsPerBlockOrElementsPerThread);
       alpaka::queue::enqueue(
           queue,
           alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, psum_d, num_items, nblocks));
+              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
     }
 
     template <typename Histo, typename T>
