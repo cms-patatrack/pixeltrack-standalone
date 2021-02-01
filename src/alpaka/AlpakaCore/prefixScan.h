@@ -4,6 +4,7 @@
 #include <cstdint>
 #include "AlpakaCore/alpakaConfig.h"
 
+
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
 template <typename T>
@@ -32,6 +33,7 @@ ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, u
 
 #endif
 
+
 namespace cms {
   namespace alpakatools {
     // limited to 32*32 elements....
@@ -46,7 +48,6 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-
       uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
@@ -77,6 +78,7 @@ namespace cms {
         co[i] += ws[warpId - 1];
       }
       alpaka::block::sync::syncBlockThreads(acc);
+
 #else
       co[0] = ci[0];
       for (uint32_t i = 1; i < size; ++i)

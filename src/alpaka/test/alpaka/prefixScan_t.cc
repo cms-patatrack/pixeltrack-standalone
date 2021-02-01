@@ -18,6 +18,7 @@ public:
   static const constexpr char* failed_msg = "failed %d %d %d: %f %f\n";
 };
 
+
 template <typename T>
 struct testPrefixScan {
   template <typename T_Acc>
@@ -26,12 +27,16 @@ struct testPrefixScan {
     auto&& c = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
     auto&& co = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
 
-    uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-    uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
+      cms::alpakatools::element_global_index_range(acc);
 
-    auto first = blockThreadIdx;
-    for (auto i = first; i < size; i += blockDimension)
-      c[i] = 1;
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < size; threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t i = threadIdx; i < std::min(endElementIdx, size); ++i) {
+	c[i] = 1;
+      }
+    }
+    
     alpaka::block::sync::syncBlockThreads(acc);
 
     cms::alpakatools::blockPrefixScan(acc, c, co, size, ws);
@@ -39,13 +44,17 @@ struct testPrefixScan {
 
     assert(1 == c[0]);
     assert(1 == co[0]);
-    for (auto i = first + 1; i < size; i += blockDimension) {
-      assert(c[i] == c[i - 1] + 1);
-      assert(c[i] == i + 1);
-      assert(c[i] = co[i]);
+    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < size; threadIdx += blockDimension, endElementIdx += blockDimension) {
+      for (uint32_t i = threadIdx + 1; i < std::min(endElementIdx, size); ++i) {
+	assert(c[i] == c[i - 1] + 1);
+	assert(c[i] == i + 1);
+	assert(c[i] = co[i]);
+      }
     }
+
   }
 };
+
 
 template <typename T>
 struct testWarpPrefixScan {
@@ -73,11 +82,12 @@ struct testWarpPrefixScan {
       if (c[i] != c[i - 1] + 1)
         printf(format_traits<T>::failed_msg, size, i, blockDimension, c[i], c[i - 1]);
       assert(c[i] == c[i - 1] + 1);
-      assert(c[i] == i + 1);
+       assert(c[i] == i + 1);
       assert(c[i] = co[i]);
     }
   }
 };
+
 
 struct init {
   template <typename T_Acc>
@@ -94,6 +104,7 @@ struct init {
   }
 };
 
+
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
@@ -102,11 +113,13 @@ struct verify {
 
     for (uint32_t index = firstElementIdxGlobal[0u]; index < endElementIdxGlobal[0u]; ++index) {
       assert(v[index] == index + 1);
+
       if (index == 0)
-        printf("verify\n");
+	printf("verify\n");
     }
   }
 };
+
 
 int main() {
   const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
@@ -136,10 +149,9 @@ int main() {
 
   // PORTABLE BLOCK PREFIXSCAN
   std::cout << "block level" << std::endl;
-  // running kernel with 1 block, and bs threads per block or elements per thread
 
-  int bs = 1;
-  for (bs = 32; bs <= 1024; bs += 32) {
+  // running kernel with 1 block, and bs threads per block or elements per thread
+  for (int bs = 32; bs <= 1024; bs += 32) {
   
   const Vec1 threadsPerBlockOrElementsPerThread2(Vec1::all(bs));
   const Vec1 blocksPerGrid2(Vec1::all(1));
@@ -149,17 +161,19 @@ int main() {
 	    << ", threads per block or elements per thread: " << threadsPerBlockOrElementsPerThread2
             << std::endl;
 
-    for (int j = 1; j <= 1024; ++j) {
-      alpaka::queue::enqueue(queue,
-                             alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
-      alpaka::wait::wait(queue);
-      alpaka::queue::enqueue(queue,
-                             alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
-      alpaka::wait::wait(queue);
-    }
-  }
+  // problem size
+  for (int j = 1; j <= 1024; ++j) {
 
+  alpaka::queue::enqueue(queue,
+    alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
   alpaka::wait::wait(queue);
+  alpaka::queue::enqueue(queue,
+    alpaka::kernel::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
+  alpaka::wait::wait(queue);
+}
+}
+
+  //alpaka::wait::wait(queue);
 
   // PORTABLE MULTI-BLOCK PREFIXSCAN
   int num_items = 200;
@@ -167,10 +181,10 @@ int main() {
     std::cout << "multiblock" << std::endl;
     num_items *= 10;
 
-    auto input_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items * sizeof(uint32_t)));
+    auto input_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
     uint32_t* input_d = alpaka::mem::view::getPtrNative(input_dBuf);
 
-    auto output1_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items * sizeof(uint32_t)));
+    auto output1_dBuf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, Vec1::all(num_items));
     uint32_t* output1_d = alpaka::mem::view::getPtrNative(output1_dBuf);
 
     const auto nThreadsInit = 256;
@@ -200,7 +214,7 @@ int main() {
 								  output1_d,
 								  num_items));
     alpaka::wait::wait(queue);
-
+    
     const Vec1 blocksPerGridSecondStep(Vec1::all(1));
     const WorkDiv1 &workDivMultiBlockSecondStep = cms::alpakatools::make_workdiv(blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
     alpaka::queue::enqueue(
@@ -220,5 +234,6 @@ int main() {
     alpaka::wait::wait(queue);
 
   }  // ksize
+
   return 0;
 }
