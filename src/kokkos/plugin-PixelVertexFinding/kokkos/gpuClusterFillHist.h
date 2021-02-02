@@ -64,7 +64,9 @@ namespace KOKKOS_NAMESPACE {
         iv[i] = i;
         nn[i] = 0;
       });
+
       team_member.team_barrier();
+      Histo::finalize(vhist, Histo::totbins(), team_member);
     }
   }  // namespace gpuVertexFinder
 }  // namespace KOKKOS_NAMESPACE

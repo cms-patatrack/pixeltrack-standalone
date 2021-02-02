@@ -117,9 +117,11 @@ namespace gpuClustering {
               continue;
             d_hist(teamMember.league_rank()).count(y(i));
           }
+
+          teamMember.team_barrier();
+          Hist::finalize(d_hist, loop_count, teamMember);
         });
 
-    Hist::finalize(d_hist, teamPolicy.league_size(), execSpace);
     int shared_view_level = 0;
     Kokkos::parallel_for(
         "findClus_msize",
