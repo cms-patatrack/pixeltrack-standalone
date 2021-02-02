@@ -247,7 +247,7 @@ int main() {
       alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
           workDiv4N, count(), alpaka::mem::view::getPtrNative(v_dbuf), alpaka::mem::view::getPtrNative(a_dbuf), N));
 
-  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(a_dbuf), device, queue);
+  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(a_dbuf), queue);
 
   alpaka::queue::enqueue(
       queue,
@@ -405,8 +405,8 @@ int main() {
                                                                            alpaka::mem::view::getPtrNative(m1_dbuf),
                                                                            alpaka::mem::view::getPtrNative(m2_dbuf)));
 
-  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(m1_dbuf), device, queue);
-  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(m2_dbuf), device, queue);
+  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(m1_dbuf), queue);
+  cms::alpakatools::launchFinalize(alpaka::mem::view::getPtrNative(m2_dbuf), queue);
 
   alpaka::queue::enqueue(
       queue,

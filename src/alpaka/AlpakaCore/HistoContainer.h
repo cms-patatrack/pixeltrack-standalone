@@ -83,9 +83,7 @@ namespace cms {
 
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
-        Histo *__restrict__ h,
-        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 &device,
-        ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+        Histo *__restrict__ h, ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
 
       const int num_items = Histo::totbins();
@@ -116,7 +114,6 @@ namespace cms {
         uint32_t const *__restrict__ offsets,
         uint32_t totSize,
         unsigned int nthreads,
-        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 &device,
         ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
       const Vec1 blocksPerGrid(nblocks);
@@ -129,7 +126,7 @@ namespace cms {
       alpaka::queue::enqueue(queue,
                              alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
                                  workDiv, countFromVector(), h, nh, v, offsets));
-      launchFinalize(h, device, queue);
+      launchFinalize(h, queue);
 
       alpaka::queue::enqueue(queue,
                              alpaka::kernel::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
