@@ -136,7 +136,7 @@ namespace cms {
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
       template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, T* psum, int32_t size) const {
+      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size) const {
         uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
@@ -157,15 +157,15 @@ namespace cms {
     template <typename T>
     struct multiBlockPrefixScanSecondStep {
       template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(
-          const T_Acc& acc, T const* ci, T* co, T* psum, int32_t size, int32_t numBlocks) const {
+      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
         uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
         uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
-        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        auto* const psum(alpaka::block::shared::dyn::getMem<T>(acc));
+
         // first each block does a scan of size 1024; (better be enough blocks....)
         assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
@@ -181,6 +181,7 @@ namespace cms {
 
         alpaka::block::sync::syncBlockThreads(acc);
 
+        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
@@ -192,7 +193,42 @@ namespace cms {
         }
       }
     };
+
   }  // namespace alpakatools
 }  // namespace cms
+
+namespace alpaka {
+  namespace kernel {
+    namespace traits {
+
+      //#############################################################################
+      //! The trait for getting the size of the block shared dynamic memory for a kernel.
+      template <typename T, typename TAcc>
+      struct BlockSharedMemDynSizeBytes<cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
+        //-----------------------------------------------------------------------------
+        //! \return The size of the shared memory allocated for a block.
+        template <typename TVec>
+        ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
+            cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
+            TVec const& blockThreadExtent,
+            TVec const& threadElemExtent,
+            T const* ci,
+            T* co,
+            int32_t size,
+            int32_t numBlocks) -> T {
+          alpaka::ignore_unused(myKernel);
+          alpaka::ignore_unused(blockThreadExtent);
+          alpaka::ignore_unused(threadElemExtent);
+          alpaka::ignore_unused(ci);
+          alpaka::ignore_unused(co);
+          alpaka::ignore_unused(size);
+
+          return static_cast<size_t>(numBlocks) * sizeof(T);
+        }
+      };
+
+    }  // namespace traits
+  }    // namespace kernel
+}  // namespace alpaka
 
 #endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
