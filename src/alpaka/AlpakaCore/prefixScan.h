@@ -2,6 +2,7 @@
 #define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 
 #include <cstdint>
+#include "CUDACore/CMSUnrollLoop.h"
 #include "AlpakaCore/alpakaConfig.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -10,6 +11,7 @@ template <typename T>
 ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
   // ci and co may be the same
   auto x = ci[i];
+CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)
@@ -21,6 +23,7 @@ ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const
 template <typename T>
 ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, uint32_t i, uint32_t mask) {
   auto x = c[i];
+CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)
