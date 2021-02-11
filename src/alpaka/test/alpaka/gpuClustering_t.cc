@@ -283,9 +283,9 @@ int main(void) {
     alpaka::wait::wait(queue);                                                                                     // TO DO: remove this wait??                                                                                    
 
     auto h_nclus_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, MaxNumModules);
-    auto nclus = alpaka::mem::view::getPtrNative(h_nclus_buf);
     alpaka::mem::view::copy(queue, h_nclus_buf, d_clusInModule_buf, MaxNumModules);
     alpaka::wait::wait(queue);
+    auto nclus = alpaka::mem::view::getPtrNative(h_nclus_buf);
 
     auto h_moduleId_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, *nModules);
     //auto moduleId = alpaka::mem::view::getPtrNative(h_moduleId_buf);

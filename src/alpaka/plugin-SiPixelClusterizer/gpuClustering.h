@@ -10,6 +10,8 @@
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"
 
+#define GPU_DEBUG true
+
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
@@ -289,7 +291,7 @@ namespace gpuClustering {
 	  n0 = nloops;
 	alpaka::block::sync::syncBlockThreads(acc);
 	auto ok = n0 == nloops;
-	assert(__syncthreads_and(ok));
+	assert(alpaka::block::sync::syncBlockThreadsPredicate<alpaka::block::sync::op::LogicalAnd>(acc, ok));
 	if (thisModuleId % 100 == 1)
 	  if (firstElementIdxNoStride[0] == 0)
 	    printf("# loops %d\n", nloops);
