@@ -27,7 +27,7 @@ struct testPrefixScan {
     auto&& co = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
 
     const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc);
+    const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_local_index_range(acc);
 
     for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < size;
          threadIdx += blockDimension, endElementIdx += blockDimension) {
