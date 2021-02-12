@@ -119,8 +119,8 @@ namespace cms {
     }
 
 
-    template <typename T_Acc, typename Func, typename T_Dim = alpaka::dim::Dim<T_Acc>>
-      void for_each_element_in_thread_global_index(const T_Acc& acc, Func func, const Vec<T_Dim>& problemSize) {
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_in_thread_global_index(const T_Acc& acc, const Vec<T_Dim>& problemSize, Func func) {
 
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
       cms::alpakatools::element_global_index_range_truncated(acc, problemSize);
@@ -134,8 +134,8 @@ namespace cms {
 
     }
 
-    template <typename T_Acc, typename Func, typename T, typename T_Dim = alpaka::dim::Dim<T_Acc>>
-      void for_each_element_in_thread_local_index(const T_Acc& acc, Func func, const Vec<T_Dim>& problemSize) {
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_in_thread_local_index(const T_Acc& acc, const Vec<T_Dim>& problemSize, Func func) {
 
       const auto& [firstElementIdxLocal, endElementIdxLocal] =
       cms::alpakatools::element_local_index_range_truncated(acc, problemSize);
@@ -150,8 +150,8 @@ namespace cms {
     }
 
 
-    template <typename T_Acc, typename Func, typename T_Dim = alpaka::dim::Dim<T_Acc>>
-      void for_each_element_grid_stride(const T_Acc& acc, Func func, const Vec<T_Dim>& problemSize) {
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_grid_stride(const T_Acc& acc, const Vec<T_Dim>& problemSize, Func func) {
 
       
       const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
@@ -172,8 +172,8 @@ namespace cms {
       
     }
 
-    template <typename T_Acc, typename Func, typename T_Dim = alpaka::dim::Dim<T_Acc>>
-      void for_each_element_block_stride(const T_Acc& acc, Func func, const Vec<T_Dim>& problemSize) {
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_block_stride(const T_Acc& acc, const Vec<T_Dim>& problemSize, Func func) {
 
       
       const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
@@ -195,25 +195,34 @@ namespace cms {
     }
 
 
-    template <typename T_Acc, typename Func, typename T>
-      void for_each_element_in_thread_1D_global_index(const T_Acc& acc, Func func, const T problemSize) {     
-      cms::alpakatools::for_each_element_in_thread_global_index(acc, func, Vec1::all(problemSize));
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_in_thread_1D_global_index(const T_Acc& acc, const T_Dim problemSize, Func func) {     
+      cms::alpakatools::for_each_element_in_thread_global_index(acc, Vec1::all(problemSize), func);
     }
 
-    template <typename T_Acc, typename Func, typename T>
-      void for_each_element_in_thread_1D_local_index(const T_Acc& acc, Func func, const T problemSize) {     
-      cms::alpakatools::for_each_element_in_thread_local_index(acc, func, Vec1::all(problemSize));
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_in_thread_1D_local_index(const T_Acc& acc, const T_Dim problemSize, Func func) {     
+      cms::alpakatools::for_each_element_in_thread_local_index(acc, Vec1::all(problemSize), func);
     }
 
-    template <typename T_Acc, typename Func, typename T>
-      void for_each_element_1D_grid_stride(const T_Acc& acc, Func func, const T problemSize) {     
-      cms::alpakatools::for_each_element_grid_stride(acc, func, Vec1::all(problemSize));
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const T_Acc& acc, const T_Dim problemSize, Func func) {     
+      cms::alpakatools::for_each_element_grid_stride(acc, Vec1::all(problemSize), func);
     }
 
-    template <typename T_Acc, typename Func, typename T>
-      void for_each_element_1D_block_stride(const T_Acc& acc, Func func, const T problemSize) {     
-      cms::alpakatools::for_each_element_block_stride(acc, func, Vec1::all(problemSize));
+    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>, typename Func>
+      ALPAKA_FN_ACC void for_each_element_1D_block_stride(const T_Acc& acc, const T_Dim problemSize, Func func) {     
+      cms::alpakatools::for_each_element_block_stride(acc, Vec1::all(problemSize), func);
     }
+
+
+    template <typename T_Acc>
+      ALPAKA_FN_ACC bool once_per_block_1D(const T_Acc& acc, uint32_t i) {
+      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      return (i % blockDimension == 0);
+    }
+
+    
 
 
   }  // namespace alpakatools
