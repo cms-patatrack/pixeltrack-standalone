@@ -26,15 +26,9 @@ struct testPrefixScan {
     auto&& c = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
     auto&& co = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
 
-    const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_local_index_range(acc);
-
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < size;
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t i = threadIdx; i < std::min(endElementIdx, size); ++i) {
+    cms::alpakatools::for_each_element_1D_block_stride(acc, size, [&](uint32_t i) {
         c[i] = 1;
-      }
-    }
+      });
 
     alpaka::block::sync::syncBlockThreads(acc);
 
@@ -43,14 +37,13 @@ struct testPrefixScan {
 
     assert(1 == c[0]);
     assert(1 == co[0]);
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < size;
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t i = threadIdx + 1; i < std::min(endElementIdx, size); ++i) {
-        assert(c[i] == c[i - 1] + 1);
-        assert(c[i] == i + 1);
-        assert(c[i] = co[i]);
-      }
-    }
+
+    cms::alpakatools::for_each_element_1D_block_stride(acc, size, 1u, [&](uint32_t i) {
+	assert(c[i] == c[i - 1] + 1);
+	assert(c[i] == i + 1);
+	assert(c[i] = co[i]);
+      });
+
   }
 };
 
@@ -92,30 +85,26 @@ struct testWarpPrefixScan {
 struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
-    const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-        cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(n));
 
-    for (uint32_t index = firstElementIdxGlobal[0u]; index < endElementIdxGlobal[0u]; ++index) {
-      v[index] = val;
+    cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, n, [&](uint32_t index) {
+	v[index] = val;
 
-      if (index == 0)
-        printf("init\n");
-    }
+	if (index == 0)
+	  printf("init\n");
+      });
   }
 };
 
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
-    const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-        cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(n));
 
-    for (uint32_t index = firstElementIdxGlobal[0u]; index < endElementIdxGlobal[0u]; ++index) {
-      assert(v[index] == index + 1);
+    cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, n, [&](uint32_t index) {
+	assert(v[index] == index + 1);
 
-      if (index == 0)
-        printf("verify\n");
-    }
+	if (index == 0)
+	  printf("verify\n");
+      });
   }
 };
 

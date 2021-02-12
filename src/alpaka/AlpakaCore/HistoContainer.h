@@ -17,67 +17,49 @@ namespace cms {
 
     struct countFromVector {
       template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                    Histo *__restrict__ h,
-                                    uint32_t nh,
-                                    T const *__restrict__ v,
-                                    uint32_t const *__restrict__ offsets) const {
+	ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+				      Histo *__restrict__ h,
+				      uint32_t nh,
+				      T const *__restrict__ v,
+				      uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-        const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(nt));
-        for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-             threadIdx < nt;
-             threadIdx += gridDimension, endElementIdx += gridDimension) {
-          for (uint32_t i = threadIdx; i < std::min(endElementIdx, nt); ++i) {
+	cms::alpakatools::for_each_element_1D_grid_stride(acc, nt, [&](uint32_t i) {
             auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
             assert((*off) > 0);
             int32_t ih = off - offsets - 1;
             assert(ih >= 0);
             assert(ih < int(nh));
             h->count(acc, v[i], ih);
-          }
-        }
+          });
       }
     };
 
     struct fillFromVector {
       template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                    Histo *__restrict__ h,
-                                    uint32_t nh,
-                                    T const *__restrict__ v,
-                                    uint32_t const *__restrict__ offsets) const {
+	ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+				      Histo *__restrict__ h,
+				      uint32_t nh,
+				      T const *__restrict__ v,
+				      uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-        const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(nt));
-
-        for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-             threadIdx < nt;
-             threadIdx += gridDimension, endElementIdx += gridDimension) {
-          for (uint32_t i = threadIdx; i < std::min(endElementIdx, nt); ++i) {
-            auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
-            assert((*off) > 0);
-            int32_t ih = off - offsets - 1;
-            assert(ih >= 0);
-            assert(ih < int(nh));
-            h->fill(acc, v[i], i, ih);
-          }
-        }
+	cms::alpakatools::for_each_element_1D_grid_stride(acc, nt, [&](uint32_t i) {
+	    auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
+	    assert((*off) > 0);
+	    int32_t ih = off - offsets - 1;
+	    assert(ih >= 0);
+	    assert(ih < int(nh));
+	    h->fill(acc, v[i], i, ih);
+	  });
       }
     };
 
     struct launchZero {
       template <typename T_Acc, typename Histo>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void operator()(const T_Acc &acc,
-                                                                                    Histo *__restrict__ h) const {
-        const auto &[firstElementIdxGlobal, endElementIdxGlobal] =
-            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(Histo::totbins()));
-
-        for (uint32_t i = firstElementIdxGlobal[0u]; i < endElementIdxGlobal[0u]; ++i) {
-          h->off[i] = 0;
-        }
+	ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void operator()(const T_Acc &acc,
+										      Histo *__restrict__ h) const {
+	cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, Histo::totbins(), [&](uint32_t i) {
+	    h->off[i] = 0;
+	  });
       }
     };
 
@@ -273,17 +255,9 @@ namespace cms {
           return;
         }
 
-        const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-        const auto &[firstElementIdxNoStride, endElementIdxNoStride] =
-            cms::alpakatools::element_global_index_range_truncated(acc, Vec1::all(totbins()));
-
-        for (uint32_t threadIdx = m + firstElementIdxNoStride[0u], endElementIdx = m + endElementIdxNoStride[0u];
-             threadIdx < totbins();
-             threadIdx += gridDimension, endElementIdx += gridDimension) {
-          for (uint32_t i = threadIdx; i < std::min(endElementIdx, totbins()); ++i) {
+	cms::alpakatools::for_each_element_1D_grid_stride(acc, totbins(), m, [&](uint32_t i) {
             off[i] = n;
-          }
-        }
+	  });
       }
 
       template <typename T_Acc>
