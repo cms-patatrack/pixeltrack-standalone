@@ -144,7 +144,7 @@ namespace cms {
       ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid_truncated(const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements) {
       
       Vec<T_Dim> elementIdxShift = Vec<T_Dim>::zeros();
-      return element_index_range_in_grid_truncated(acc, elementIdxShift, maxNumberOfElements);
+      return element_index_range_in_grid_truncated(acc, maxNumberOfElements, elementIdxShift);
     }
 
 
