@@ -2,16 +2,16 @@
 #define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 
 #include <cstdint>
+#include "CUDACore/CMSUnrollLoop.h"
 #include "AlpakaCore/alpakaConfig.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
 template <typename T>
-ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(
-    uint32_t laneId, T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {
+ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
   // ci and co may be the same
   auto x = ci[i];
-#pragma unroll
+  CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)
@@ -23,7 +23,7 @@ ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(
 template <typename T>
 ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, uint32_t i, uint32_t mask) {
   auto x = c[i];
-#pragma unroll
+  CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)
@@ -39,8 +39,8 @@ namespace cms {
     // limited to 32*32 elements....
     template <typename T_Acc, typename T>
     ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
-                                                             T const* __restrict__ ci,
-                                                             T* __restrict__ co,
+                                                             T const* ci,
+                                                             T* co,
                                                              uint32_t size,
                                                              T* ws
 #ifndef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -48,7 +48,6 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-
       uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
@@ -79,6 +78,7 @@ namespace cms {
         co[i] += ws[warpId - 1];
       }
       alpaka::block::sync::syncBlockThreads(acc);
+
 #else
       co[0] = ci[0];
       for (uint32_t i = 1; i < size; ++i)
@@ -142,7 +142,6 @@ namespace cms {
         uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
         uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-        uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
         auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
         // first each block does a scan of size 1024; (better be enough blocks....)
@@ -161,7 +160,6 @@ namespace cms {
         uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-        uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
         auto* const psum(alpaka::block::shared::dyn::getMem<T>(acc));
