@@ -26,9 +26,7 @@ struct testPrefixScan {
     auto&& c = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
     auto&& co = alpaka::block::shared::st::allocVar<T[1024], __COUNTER__>(acc);
 
-    cms::alpakatools::for_each_element_1D_block_stride(acc, size, [&](uint32_t i) {
-        c[i] = 1;
-      });
+    cms::alpakatools::for_each_element_1D_block_stride(acc, size, [&](uint32_t i) { c[i] = 1; });
 
     alpaka::block::sync::syncBlockThreads(acc);
 
@@ -39,11 +37,10 @@ struct testPrefixScan {
     assert(1 == co[0]);
 
     cms::alpakatools::for_each_element_1D_block_stride(acc, size, 1u, [&](uint32_t i) {
-	assert(c[i] == c[i - 1] + 1);
-	assert(c[i] == i + 1);
-	assert(c[i] = co[i]);
-      });
-
+      assert(c[i] == c[i - 1] + 1);
+      assert(c[i] == i + 1);
+      assert(c[i] = co[i]);
+    });
   }
 };
 
@@ -85,26 +82,24 @@ struct testWarpPrefixScan {
 struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
-
     cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
-	v[index] = val;
+      v[index] = val;
 
-	if (index == 0)
-	  printf("init\n");
-      });
+      if (index == 0)
+        printf("init\n");
+    });
   }
 };
 
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
-
     cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
-	assert(v[index] == index + 1);
+      assert(v[index] == index + 1);
 
-	if (index == 0)
-	  printf("verify\n");
-      });
+      if (index == 0)
+        printf("verify\n");
+    });
   }
 };
 

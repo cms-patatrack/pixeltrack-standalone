@@ -13,9 +13,8 @@ namespace {
                                   unsigned int numElements) const {
       // Global element index in 1D grid.
       // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-      cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t i) {
-	  c[i] = a[i] + b[i];
-	});
+      cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(
+          acc, numElements, [&](uint32_t i) { c[i] = a[i] + b[i]; });
     }
   };
 
@@ -29,7 +28,7 @@ namespace {
       // Global element index in 2D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-	cms::alpakatools::element_index_range_in_grid_truncated(acc, Vec2::all(numElements));
+          cms::alpakatools::element_index_range_in_grid_truncated(acc, Vec2::all(numElements));
 
       for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
         for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
@@ -73,12 +72,12 @@ namespace {
       // Global element index in 1D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
       cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t row) {
-	  T_Data tmp = 0;
-	  for (unsigned int i = 0; i < numElements; ++i) {
-	    tmp += a[row * numElements + i] * b[i];
-	  }
-	  c[row] = tmp;
-	});
+        T_Data tmp = 0;
+        for (unsigned int i = 0; i < numElements; ++i) {
+          tmp += a[row * numElements + i] * b[i];
+        }
+        c[row] = tmp;
+      });
     }
   };
 
@@ -94,12 +93,12 @@ namespace {
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
         // Global element index in 1D grid.
         // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-	cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t i) {
-	    // theoreticalResult = i+i^2 = i*(i+1)
-	    if (result[i] != i * (i + 1)) {
-	      printf("Wrong vectorAdd results, i = %u, c[i] = %f.\n", i, result[i]);
-	    }
-	  });
+        cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t i) {
+          // theoreticalResult = i+i^2 = i*(i+1)
+          if (result[i] != i * (i + 1)) {
+            printf("Wrong vectorAdd results, i = %u, c[i] = %f.\n", i, result[i]);
+          }
+        });
       }
     };
 
