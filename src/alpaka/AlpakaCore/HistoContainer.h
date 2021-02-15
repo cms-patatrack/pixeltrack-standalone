@@ -57,7 +57,7 @@ namespace cms {
       template <typename T_Acc, typename Histo>
 	ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void operator()(const T_Acc &acc,
 										      Histo *__restrict__ h) const {
-	cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, Histo::totbins(), [&](uint32_t i) {
+	cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, Histo::totbins(), [&](uint32_t i) {
 	    h->off[i] = 0;
 	  });
       }

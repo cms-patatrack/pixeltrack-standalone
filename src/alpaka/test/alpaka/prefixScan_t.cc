@@ -86,7 +86,7 @@ struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
 
-    cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, n, [&](uint32_t index) {
+    cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
 	v[index] = val;
 
 	if (index == 0)
@@ -99,7 +99,7 @@ struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
 
-    cms::alpakatools::for_each_element_in_thread_1D_global_index(acc, n, [&](uint32_t index) {
+    cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
 	assert(v[index] == index + 1);
 
 	if (index == 0)

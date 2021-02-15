@@ -56,7 +56,7 @@ struct mykernel {
       });
     alpaka::block::sync::syncBlockThreads(acc);
 
-    cms::alpakatools::for_each_element_in_thread_1D_local_index(acc, 32, [&](uint32_t i) {
+    cms::alpakatools::for_each_element_in_thread_1D_index_in_block(acc, 32, [&](uint32_t i) {
 	ws[i] = 0;  // used by prefix scan...
       });
     alpaka::block::sync::syncBlockThreads(acc);
