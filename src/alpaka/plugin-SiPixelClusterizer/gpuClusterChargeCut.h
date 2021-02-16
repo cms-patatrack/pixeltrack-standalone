@@ -48,13 +48,15 @@ namespace gpuClustering {
 
       if (nclus > MaxNumClustersPerModules) {
 	cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	    if (id[i] == InvId)
-	      continue;  // not valid
-	    if (id[i] != thisModuleId)
-	      break;  // end of module
-	    if (clusterId[i] >= MaxNumClustersPerModules) {
-	      id[i] = InvId;
-	      clusterId[i] = InvId;
+	    if (id[i] != InvId) {  // valid pixel only
+	      if (id[i] != thisModuleId) {
+		i = numElements;  // break, end of module
+	      } else {
+		if (clusterId[i] >= MaxNumClustersPerModules) {
+		  id[i] = InvId;
+		  clusterId[i] = InvId;
+		}
+	      }
 	    }
 	  });
 	nclus = MaxNumClustersPerModules;
@@ -78,11 +80,13 @@ namespace gpuClustering {
       alpaka::block::sync::syncBlockThreads(acc);
 
       cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (id[i] == InvId)
-	    continue;  // not valid
-	  if (id[i] != thisModuleId)
-	    break;  // end of module
-	  alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+	  if (id[i] != InvId) {  // valid pixel only
+	    if (id[i] != thisModuleId) {
+	      i = numElements;  // break, end of module
+	    } else {
+	      alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+	    }
+	  }
 	});
       alpaka::block::sync::syncBlockThreads(acc);
 
@@ -113,13 +117,15 @@ namespace gpuClustering {
 
       // reassign id
       cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (id[i] == InvId)
-	    continue;  // not valid
-	  if (id[i] != thisModuleId)
-	    break;  // end of module
-	  clusterId[i] = newclusId[clusterId[i]] - 1;
-	  if (clusterId[i] == InvId)
-	    id[i] = InvId;
+	  if (id[i] != InvId) {  // valid pixel only
+	    if (id[i] != thisModuleId) {
+	      i = numElements;  // break, end of module
+	    } else {
+	      clusterId[i] = newclusId[clusterId[i]] - 1;
+	      if (clusterId[i] == InvId)
+		id[i] = InvId;
+	    }
+	  }
 	});
 
       //done
