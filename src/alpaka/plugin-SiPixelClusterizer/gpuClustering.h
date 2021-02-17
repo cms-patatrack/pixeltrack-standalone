@@ -10,8 +10,6 @@
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"
 
-#define GPU_DEBUG true
-
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG

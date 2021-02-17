@@ -9,8 +9,6 @@
 
 #include "gpuClusteringConstants.h"
 
-#define GPU_DEBUG true
-
 namespace gpuClustering {
 
   __global__ void clusterChargeCut(

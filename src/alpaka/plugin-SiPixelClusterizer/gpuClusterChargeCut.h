@@ -9,8 +9,6 @@
 #include "AlpakaCore/prefixScan.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 
-#define GPU_DEBUG true
-
 namespace gpuClustering {
 
   struct clusterChargeCut {
