@@ -46,8 +46,8 @@ int main(void) {
   
 
   auto d_moduleStart_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, MaxNumModules + 1);
-  auto d_clusInModule_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, MaxNumModules + 1);
-  auto d_moduleId_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, MaxNumModules + 1);
+  auto d_clusInModule_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, MaxNumModules);
+  auto d_moduleId_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(device, MaxNumModules);
 
   // later random number
   unsigned int n = 0;                                                              // TO DO: added unsigned
@@ -235,8 +235,8 @@ int main(void) {
 
     auto h_nModules_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, 1u);
     auto nModules = alpaka::mem::view::getPtrNative(h_nModules_buf);
-    alpaka::mem::view::set(queue, h_nModules_buf, 0, 1u);
-    alpaka::mem::view::copy(queue, d_moduleStart_buf, h_nModules_buf, 1u);                                         // TO DO: can copy raw pointer into device memory without using host_buf ??????????????????????
+    nModules[0] = 0;
+    alpaka::mem::view::copy(queue, d_moduleStart_buf, h_nModules_buf, 1u);
 
     alpaka::mem::view::copy(queue, d_id_buf, h_id_buf, n);
     alpaka::mem::view::copy(queue, d_x_buf, h_x_buf, n);
