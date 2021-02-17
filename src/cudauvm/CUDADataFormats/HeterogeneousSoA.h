@@ -6,6 +6,7 @@
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/device_unique_ptr.h"
+#include "CUDACore/managed_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
 
 // a heterogeneous unique pointer...
@@ -52,6 +53,36 @@ private:
 
 namespace cms {
   namespace cudacompat {
+
+    struct ManagedTraits {
+      template <typename T>
+      using unique_ptr = cms::cuda::managed::unique_ptr<T>;
+
+      template <typename T>
+      static auto make_unique(cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(stream);
+      }
+
+      template <typename T>
+      static auto make_unique(size_t size, cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(size, stream);
+      }
+
+      template <typename T>
+      static auto make_host_unique(cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(stream);
+      }
+
+      template <typename T>
+      static auto make_device_unique(cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(stream);
+      }
+
+      template <typename T>
+      static auto make_device_unique(size_t size, cudaStream_t stream) {
+        return cms::cuda::make_managed_unique<T>(size, stream);
+      }
+    };
 
     struct GPUTraits {
       template <typename T>
@@ -185,5 +216,7 @@ template <typename T>
 using HeterogeneousSoACPU = HeterogeneousSoAImpl<T, cms::cudacompat::CPUTraits>;
 template <typename T>
 using HeterogeneousSoAHost = HeterogeneousSoAImpl<T, cms::cudacompat::HostTraits>;
+template <typename T>
+using HeterogeneousSoAManaged = HeterogeneousSoAImpl<T, cms::cudacompat::ManagedTraits>;
 
 #endif

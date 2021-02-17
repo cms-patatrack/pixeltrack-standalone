@@ -46,51 +46,60 @@ void go() {
 
     using TeamHist = cms::kokkos::HistoContainer<T, NBINS, N, S, uint16_t>;
 
-    Kokkos::View<TeamHist, KokkosExecSpace> histo_d("histo_d");
+    Kokkos::View<TeamHist*, KokkosExecSpace> histo_d("histo_d", 1);
     auto histo_h = Kokkos::create_mirror_view(histo_d);
 
     Kokkos::parallel_for(
         "set_zero",
         Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, TeamHist::totbins()),
-        KOKKOS_LAMBDA(const int& i) { histo_d().off[i] = 0; });
+        KOKKOS_LAMBDA(const int& i) { histo_d(0).off[i] = 0; });
 
     Kokkos::parallel_for(
         "set_zero_bin",
         Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, TeamHist::capacity()),
-        KOKKOS_LAMBDA(const int& i) { histo_d().bins[i] = 0; });
+        KOKKOS_LAMBDA(const int& i) { histo_d(0).bins[i] = 0; });
 
     Kokkos::parallel_for(
-        "count", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, N), KOKKOS_LAMBDA(const int& i) {
-          histo_d().count(v_d(i));
+        "count",
+// XXX Team prefix scan used in Hist::finalize() requires power-of-two blockDim
+// Kokkos::AUTO() in CUDA backend will somehow use blockDim = 96 thus fail the execution
+#if defined KOKKOS_BACKEND_CUDA || defined KOKKOS_BACKEND_HIP
+        team_policy(KokkosExecSpace(), 1, 64),
+#else
+        team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()),
+#endif
+        KOKKOS_LAMBDA(const member_type& teamMember) {
+          for (uint32_t i = teamMember.team_rank(); i < N; i += teamMember.team_size())
+            histo_d(0).count(v_d(i));
+          teamMember.team_barrier();
+
+          assert(0 == histo_d(0).size());
+          teamMember.team_barrier();
+
+          TeamHist::finalize(histo_d, TeamHist::totbins(), teamMember);
+          teamMember.team_barrier();
+
+          assert(N == histo_d(0).size());
         });
-
-    Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
-    assert(0 == histo_h().size());
-
-    TeamHist::finalize(histo_d, KokkosExecSpace());
-
-    Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
-
-    assert(N == histo_h().size());
 
     Kokkos::parallel_for(
         "assert_check",
         Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, TeamHist::totbins() - 1),
-        KOKKOS_LAMBDA(const int& i) { assert(histo_d().off[i] <= histo_d().off[i + 1]); });
+        KOKKOS_LAMBDA(const int& i) { assert(histo_d(0).off[i] <= histo_d(0).off[i + 1]); });
 
     Kokkos::parallel_for(
         "fill", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, N), KOKKOS_LAMBDA(const int& i) {
-          histo_d().fill(v_d(i), i);
+          histo_d(0).fill(v_d(i), i);
         });
 
     Kokkos::deep_copy(KokkosExecSpace(), histo_h, histo_d);
 
-    assert(0 == histo_h().off[0]);
-    assert(N == histo_h().size());
+    assert(0 == histo_h(0).off[0]);
+    assert(N == histo_h(0).size());
 
     Kokkos::parallel_for(
         "bin", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, N - 1), KOKKOS_LAMBDA(const int& i) {
-          auto p = histo_d().begin() + i;
+          auto p = histo_d(0).begin() + i;
           assert((*p) < N);
           auto k1 = TeamHist::bin(v_d(*p));
           auto k2 = TeamHist::bin(v_d(*(p + 1)));
@@ -99,7 +108,7 @@ void go() {
 
     Kokkos::parallel_for(
         "forEachInWindow", Kokkos::RangePolicy<KokkosExecSpace>(KokkosExecSpace(), 0, N), KOKKOS_LAMBDA(const int& i) {
-          auto p = histo_d().begin() + i;
+          auto p = histo_d(0).begin() + i;
           auto j = *p;
           auto b0 = TeamHist::bin(v_d(j));
           int tot = 0;
@@ -108,7 +117,7 @@ void go() {
             ++tot;
           };
           forEachInWindow(histo_d, v_d(j), v_d(j), ftest);
-          int rtot = histo_d().size(b0);
+          int rtot = histo_d(0).size(b0);
 
           assert(tot == rtot);
           tot = 0;
@@ -123,7 +132,7 @@ void go() {
           forEachInWindow(histo_d, vm, vp, ftest);
           int bp = TeamHist::bin(vp);
           int bm = TeamHist::bin(vm);
-          rtot = histo_d().end(bp) - histo_d().begin(bm);
+          rtot = histo_d(0).end(bp) - histo_d(0).begin(bm);
           assert(tot == rtot);
         });
   }

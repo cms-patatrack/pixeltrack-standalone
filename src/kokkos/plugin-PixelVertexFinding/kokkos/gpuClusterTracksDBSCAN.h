@@ -231,8 +231,6 @@ namespace KOKKOS_NAMESPACE {
             clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
           });
 
-      Hist::finalize(vhist, leagueSize, execSpace);
-
       Kokkos::parallel_for(
           "clusterTracksDBSCAN", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
             clusterTracksDBSCAN(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);

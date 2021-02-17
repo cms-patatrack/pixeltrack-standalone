@@ -78,7 +78,6 @@ void go(const DevHost& host,
                        alpaka::mem::view::getPtrNative(off_d),
                        offsets[10],
                        256,
-                       device,
                        queue);
 
     alpaka::mem::view::copy(queue, h_buf, h_d, 1u);

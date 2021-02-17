@@ -69,6 +69,7 @@ export HIPCC_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
 HIPCONFIG := $(ROCM_BASE)/bin/hipconfig
 export HIP_CXXFLAGS:= $(shell $(HIPCONFIG) --cpp_config)
+export HIP_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # Input data definitions
@@ -475,7 +476,7 @@ $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA
 external_kokkos: $(KOKKOS_LIB)
 
 $(KOKKOS_SRC):
-	git clone --branch 3.3.00 https://github.com/kokkos/kokkos.git $@
+	git clone --branch 3.3.01 https://github.com/kokkos/kokkos.git $@
 
 $(KOKKOS_BUILD):
 	mkdir -p $@

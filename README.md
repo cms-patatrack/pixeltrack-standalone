@@ -8,10 +8,12 @@
   * [Additional make targets](#additional-make-targets)
   * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
     * [`fwtest`](#fwtest)
+    * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
     * [`cudauvm`](#cudauvm)
     * [`cudacompat`](#cudacompat)
+    * [`hip` and `hiptest`](#hip-and-hiptest)
     * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
@@ -40,6 +42,7 @@ In addition, the individual programs assume the following be found from the syst
 | `cudauvm`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudacompat` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `hiptest`    |                    |                             | :heavy_check_mark:     |                                                                                                                  |
+| `hip`        |                    |                             | :heavy_check_mark:     |                                                                                                                  |
 | `kokkostest` | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
 | `kokkos`     | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
 | `alpakatest` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
@@ -63,6 +66,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | `cudauvm`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `cudacompat` | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `hiptest`    | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |
+| `hip`        | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            |                                     |                                                  |
 | `kokkostest` | :heavy_check_mark:                  |                                      | :heavy_check_mark:                         |                                     |                                                  |
 | `kokkos`     | :heavy_check_mark:                  | :heavy_check_mark:                   | :heavy_check_mark:                         |                                     |                                                  |
 | `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |
@@ -90,6 +94,7 @@ downloaded automatically during the build process.
 | `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudacompat` | CPU version (with `cudaCompat`)  | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `hiptest`    | HIP FW test                      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `hip`        | HIP version                      | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `kokkos`     | Kokkos version                   | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
@@ -159,15 +164,37 @@ are filtered based on the availability of compilers/toolchains. Essentially
 
 #### `fwtest`
 
-The printouts can be disabled with `-DFWTEST_SILENT` build flag (e.g. `make ... USER_CXXFLAGS="-DFWTEST_SILENT"`).
+The printouts can be disabled at compile with with
+```
+make fwtest ... USER_CXXFLAGS="-DFWTEST_SILENT"
+```
+
+#### `cudatest`
+
+The use of caching allocator can be disabled at compile time with
+```
+make cudatest ... USER_CXXFLAGS="-DCUDATEST_DISABLE_CACHING_ALLOCATOR"
+```
 
 #### `cuda`
 
 This program is frozen to correspond to CMSSW_11_2_0_pre8_Patatrack.
 
+The location of CUDA 11 libraries can be set with `CUDA_BASE` variable.
+
+The use of caching allocator can be disabled at compile time with
+```
+make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR"
+```
+
 #### `cudadev`
 
 This program is currently equivalent to `cuda`.
+
+The use of caching allocator can be disabled at compile time with
+```
+make cudadev ... USER_CXXFLAGS="-DCUDADEV_DISABLE_CACHING_ALLOCATOR"
+```
 
 #### `cudauvm`
 
@@ -186,9 +213,11 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_DISABLE_ADVISE"
 |----------------------------------------|-------------------------------------------------------|
 | `-DCUDAUVM_DISABLE_ADVISE`             | Disable `cudaMemAdvise(cudaMemAdviseSetReadMostly)`   |
 | `-DCUDAUVM_DISABLE_PREFETCH`           | Disable `cudaMemPrefetchAsync`                        |
+| `-DCUDAUVM_DISABLE_CACHING_ALLOCATOR`  | Disable caching allocator                             |
 | `-DCUDAUVM_MANAGED_TEMPORARY`          | Use managed memory also for temporary data structures |
 | `-DCUDAUVM_DISABLE_MANAGED_BEAMSPOT`   | Disable managed memory in `BeamSpotToCUDA`            |
 | `-DCUDAUVM_DISABLE_MANAGED_CLUSTERING` | Disable managed memory in `SiPixelRawToClusterCUDA`   |
+| `-DCUDAUVM_DISABLE_MANAGED_RECHIT`     | Disable managed memory in `SiPixelRecHitCUDA`         |
 
 To use managed memory also for temporary device-only allocations, compile with
 ```
@@ -202,6 +231,14 @@ This program is a fork of `cuda` by extending the use of `cudaCompat` to cluster
 The program contains the changes from following external PRs on top of `cuda`
 * [cms-patatrack/cmssw#586](https://github.com/cms-patatrack/cmssw/pull/586)
 * [cms-patatrack/cmssw#588](https://github.com/cms-patatrack/cmssw/pull/588)
+
+
+#### `hip` and `hiptest`
+
+The path to ROCm can be set with `ROCM_BASE` variable.
+
+Note that `hip` does not currently run.
+
 
 #### `kokkos` and `kokkostest`
 
