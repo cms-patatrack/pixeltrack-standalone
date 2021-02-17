@@ -47,14 +47,17 @@ namespace gpuClustering {
 
 
       if (nclus > MaxNumClustersPerModules) {
+	bool hasBroken = false;
 	cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	    if (id[i] != InvId) {  // valid pixel only
-	      if (id[i] != thisModuleId) {
-		i = numElements;  // break, end of module
-	      } else {
-		if (clusterId[i] >= MaxNumClustersPerModules) {
-		  id[i] = InvId;
-		  clusterId[i] = InvId;
+	    if (!hasBroken) {
+	      if (id[i] != InvId) {  // valid pixel only
+		if (id[i] != thisModuleId) {
+		  hasBroken = true; // break, end of module
+		} else {
+		  if (clusterId[i] >= MaxNumClustersPerModules) {
+		    id[i] = InvId;
+		    clusterId[i] = InvId;
+		  }
 		}
 	      }
 	    }
@@ -79,12 +82,15 @@ namespace gpuClustering {
 	});
       alpaka::block::sync::syncBlockThreads(acc);
 
+      bool hasBroken = false;
       cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (id[i] != InvId) {  // valid pixel only
-	    if (id[i] != thisModuleId) {
-	      i = numElements;  // break, end of module
-	    } else {
-	      alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+	  if (!hasBroken) {
+	    if (id[i] != InvId) {  // valid pixel only
+	      if (id[i] != thisModuleId) {
+		hasBroken = true; // break, end of module
+	      } else {
+		alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+	      }
 	    }
 	  }
 	});
@@ -116,14 +122,17 @@ namespace gpuClustering {
       alpaka::block::sync::syncBlockThreads(acc);
 
       // reassign id
+      hasBroken = false;
       cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (id[i] != InvId) {  // valid pixel only
-	    if (id[i] != thisModuleId) {
-	      i = numElements;  // break, end of module
-	    } else {
-	      clusterId[i] = newclusId[clusterId[i]] - 1;
-	      if (clusterId[i] == InvId)
-		id[i] = InvId;
+	  if (!hasBroken) {
+	    if (id[i] != InvId) {  // valid pixel only
+	      if (id[i] != thisModuleId) {
+		hasBroken = true; // break, end of module
+	      } else {
+		clusterId[i] = newclusId[clusterId[i]] - 1;
+		if (clusterId[i] == InvId)
+		  id[i] = InvId;
+	      }
 	    }
 	  }
 	});

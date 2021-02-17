@@ -80,11 +80,14 @@ namespace gpuClustering {
       alpaka::block::sync::syncBlockThreads(acc);
 
       // skip threads not associated to an existing pixel
+      bool hasBroken = false;
       cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (id[i] != InvId) {  // skip invalid pixels
-	    if (id[i] != thisModuleId) {  // find the first pixel in a different module
-	      alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &msize, i);
-	      i = numElements;  // break
+	  if (!hasBroken) {
+	    if (id[i] != InvId) {  // skip invalid pixels
+	      if (id[i] != thisModuleId) {  // find the first pixel in a different module
+		alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &msize, i);
+		hasBroken = true;  // break
+	      }
 	    }
 	  }
 	});
