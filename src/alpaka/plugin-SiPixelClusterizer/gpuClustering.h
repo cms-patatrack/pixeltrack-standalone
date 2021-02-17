@@ -288,7 +288,6 @@ namespace gpuClustering {
 	  if (id[i] != InvId) {  // skip invalid pixels
 	    if (clusterId[i] == static_cast<int>(i)) {
 	      auto old = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, &foundClusters, 0xffffffff);
-	      //auto old = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, &foundClusters, 4294967295u);
 	      clusterId[i] = -(old + 1);
 	    }
 	  }
