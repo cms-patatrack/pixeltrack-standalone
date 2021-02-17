@@ -33,10 +33,9 @@ namespace gpuClustering {
 	      --j;
 	    if (j < 0 or id[j] != id[i]) {
 	      // boundary...
-	      //auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, MaxNumModules);   
-	      auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, 2000u);          // TO DO: hard-coded value
-	      //auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &moduleStart[0], 1u);  // TO DO: does that work the same???????
-	      //assert(moduleStart[0] < MaxNumModules);
+	      static_assert(MaxNumModules == 2000u,
+			    "MaxNumModules not copied to device code to preserve same interface. Hardcoded value assuming MaxNumModules == 2000.");
+	      auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, 2000u);
 
 	      moduleStart[loc + 1] = i;
 	    }
@@ -97,8 +96,7 @@ namespace gpuClustering {
       constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
       using Hist = cms::alpakatools::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
       auto&& hist = alpaka::block::shared::st::allocVar<Hist, __COUNTER__>(acc);
-      //auto&& ws = alpaka::block::shared::st::allocVar<(typename Hist::Counter)[32], __COUNTER__>(acc);                 // TO DO: how to deal with typename??
-      auto&& ws = alpaka::block::shared::st::allocVar<Hist::Counter[32], __COUNTER__>(acc);                 // TO DO: how to deal with typename??
+      auto&& ws = alpaka::block::shared::st::allocVar<Hist::Counter[32], __COUNTER__>(acc);
 
       cms::alpakatools::for_each_element_1D_block_stride(acc, Hist::totbins(), [&](uint32_t j) {
 	  hist.off[j] = 0;
@@ -153,14 +151,14 @@ namespace gpuClustering {
 	});
 
       // assume that we can cover the whole module with up to 16 blockDimension-wide iterations
-      constexpr unsigned int maxiter = 16;    // DEBUGGGGG added unsigned
+      constexpr unsigned int maxiter = 16;
 
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
       const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       assert((hist.size() / blockDimension) <= maxiter);
 
-      //constexpr uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      //const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
       constexpr uint32_t threadDimension = 256;  // TO DO: hard-coded value
 
       // nearest neighbour
