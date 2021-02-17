@@ -157,9 +157,14 @@ namespace gpuClustering {
       constexpr int maxNeighbours = 10;
       const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       assert((hist.size() / blockDimension) <= maxiter);
-
-      //const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-      constexpr uint32_t threadDimension = 256;  // TO DO: hard-coded value
+   
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+      constexpr uint32_t threadDimension = 1;
+#else
+      constexpr uint32_t threadDimension = 256;
+#endif
+      const uint32_t runTimeThreadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      assert(runTimeThreadDimension <= threadDimension);
 
       // nearest neighbour
       uint16_t nn[threadDimension][maxiter][maxNeighbours];
@@ -197,7 +202,7 @@ namespace gpuClustering {
       // fill NN
       uint32_t k = 0u;
       cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t j) {
-	  const uint32_t jEquivalentClass = j % blockDimension;
+	  const uint32_t jEquivalentClass = j % threadDimension;
 	  k = j / blockDimension;
 	  assert(k < maxiter);
 	  auto p = hist.begin() + j;
@@ -244,7 +249,7 @@ namespace gpuClustering {
 	  uint32_t k = 0u;
 	  cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t j) {
 	      k = j / blockDimension;
-	      const uint32_t jEquivalentClass = j % blockDimension;
+	      const uint32_t jEquivalentClass = j % threadDimension;
 	      auto p = hist.begin() + j;
 	      auto i = *p + firstPixel;
 	      for (int kk = 0; kk < nnn[jEquivalentClass][k]; ++kk) {
