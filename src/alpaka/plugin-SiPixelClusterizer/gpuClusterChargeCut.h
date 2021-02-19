@@ -43,21 +43,28 @@ namespace gpuClustering {
 	       nclus,
 	       MaxNumClustersPerModules);
 
+      // Stride = block size.
+      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+
+      // Get thread / CPU element indices in block.
+      const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
+	cms::alpakatools::element_index_range_in_block(acc, Vec1::all(firstPixel));
 
       if (nclus > MaxNumClustersPerModules) {
-	bool isInDifferentModule = false;
-	cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	    if (!isInDifferentModule && id[i] != InvId) {  // valid pixel only
-	      if (id[i] != thisModuleId) {
-		isInDifferentModule = true; // break, end of module
-	      } else {
-		if (clusterId[i] >= MaxNumClustersPerModules) {
-		  id[i] = InvId;
-		  clusterId[i] = InvId;
-		}
-	      }
-	    }
-	  });
+	uint32_t firstElementIdx = firstElementIdxNoStride[0u];
+	uint32_t endElementIdx = endElementIdxNoStride[0u];
+	// remove excess  FIXME find a way to cut charge first....
+	for (uint32_t i = firstElementIdx; i < numElements; ++i) {
+	  if (!cms::alpakatools::get_next_element_1D_index_stride(i, firstElementIdx, endElementIdx, blockDimension, numElements)) break;
+	  if (id[i] == InvId)
+	    continue;  // not valid
+	  if (id[i] != thisModuleId)
+	    break;  // end of module
+	  if (clusterId[i] >= MaxNumClustersPerModules) {
+	    id[i] = InvId;
+	    clusterId[i] = InvId;
+	  }
+	}
 	nclus = MaxNumClustersPerModules;
       }
 
@@ -78,16 +85,16 @@ namespace gpuClustering {
 	});
       alpaka::block::sync::syncBlockThreads(acc);
 
-      bool isInDifferentModule = false;
-      cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (!isInDifferentModule && id[i] != InvId) {  // valid pixel only
-	    if (id[i] != thisModuleId) {
-	      isInDifferentModule = true; // break, end of module
-	    } else {
-	      alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
-	    }
-	  }
-	});
+      uint32_t firstElementIdx = firstElementIdxNoStride[0u];
+      uint32_t endElementIdx = endElementIdxNoStride[0u];
+      for (uint32_t i = firstElementIdx; i < numElements; ++i) {
+	if (!cms::alpakatools::get_next_element_1D_index_stride(i, firstElementIdx, endElementIdx, blockDimension, numElements)) break;
+	if (id[i] == InvId)
+	  continue;  // not valid
+	if (id[i] != thisModuleId)
+	  break;  // end of module
+	alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+      }
       alpaka::block::sync::syncBlockThreads(acc);
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
@@ -116,18 +123,18 @@ namespace gpuClustering {
       alpaka::block::sync::syncBlockThreads(acc);
 
       // reassign id
-      isInDifferentModule = false;
-      cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (!isInDifferentModule && id[i] != InvId) {  // valid pixel only
-	    if (id[i] != thisModuleId) {
-	      isInDifferentModule = true; // break, end of module
-	    } else {
-	      clusterId[i] = newclusId[clusterId[i]] - 1;
-	      if (clusterId[i] == InvId)
-		id[i] = InvId;
-	    }
-	  }
-	});
+      firstElementIdx = firstElementIdxNoStride[0u];
+      endElementIdx = endElementIdxNoStride[0u];
+      for (uint32_t i = firstElementIdx; i < numElements; ++i) {
+	if (!cms::alpakatools::get_next_element_1D_index_stride(i, firstElementIdx, endElementIdx, blockDimension, numElements)) break;
+	if (id[i] == InvId)
+	  continue;  // not valid
+	if (id[i] != thisModuleId)
+	  break;  // end of module
+	clusterId[i] = newclusId[clusterId[i]] - 1;
+	if (clusterId[i] == InvId)
+	  id[i] = InvId;
+      }
 
       //done
     }

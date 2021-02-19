@@ -76,16 +76,25 @@ namespace gpuClustering {
       msize = numElements;
       alpaka::block::sync::syncBlockThreads(acc);
 
+      // Stride = block size.
+      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+
+      // Get thread / CPU element indices in block.
+      const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
+	cms::alpakatools::element_index_range_in_block(acc, Vec1::all(firstPixel));      
+      uint32_t firstElementIdx = firstElementIdxNoStride[0u];
+      uint32_t endElementIdx = endElementIdxNoStride[0u];
+ 
       // skip threads not associated to an existing pixel
-      bool isInDifferentModule = false;
-      cms::alpakatools::for_each_element_1D_block_stride(acc, numElements, firstPixel, [&](uint32_t i) {
-	  if (!isInDifferentModule && id[i] != InvId) {  // skip invalid pixels
-	    if (id[i] != thisModuleId) {  // find the first pixel in a different module
-	      alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &msize, i);
-	      isInDifferentModule = true;  // break
-	    }
-	  }
-	});
+      for (uint32_t i = firstElementIdx; i < numElements; ++i) {
+	if (!cms::alpakatools::get_next_element_1D_index_stride(i, firstElementIdx, endElementIdx, blockDimension, numElements)) break;
+	if (id[i] == InvId)  // skip invalid pixels
+	  continue;
+	if (id[i] != thisModuleId) {  // find the first pixel in a different module
+	  alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &msize, i);
+	  break;
+	}
+      }
 
       //init hist  (ymax=416 < 512 : 9bits)
       constexpr uint32_t maxPixInModule = 4000;
@@ -151,7 +160,6 @@ namespace gpuClustering {
 
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       assert((hist.size() / blockDimension) <= maxiter);
    
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
