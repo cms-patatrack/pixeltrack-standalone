@@ -156,8 +156,12 @@ namespace gpuClustering {
         }
       });
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       // assume that we can cover the whole module with up to 16 blockDimension-wide iterations
       constexpr unsigned int maxiter = 16;
+#else
+      constexpr unsigned int maxiter = 1000;  // hist.size() / blockDimension
+#endif
 
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
@@ -166,7 +170,8 @@ namespace gpuClustering {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       constexpr uint32_t threadDimension = 1;
 #else
-      constexpr uint32_t threadDimension = 256;
+      // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
+      constexpr uint32_t threadDimension = 1;
 #endif
       const uint32_t runTimeThreadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
       assert(runTimeThreadDimension <= threadDimension);
