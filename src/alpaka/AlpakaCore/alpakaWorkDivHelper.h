@@ -292,7 +292,7 @@ namespace cms {
     }
 
     /*
-     * If the case where the input index has reached the end of threadDimension: strides the input index.
+     * Case where the input index has reached the end of threadDimension: strides the input index.
      * Otherwise: do nothing.
      */
     ALPAKA_FN_ACC bool get_next_element_1D_index_stride(uint32_t& i,

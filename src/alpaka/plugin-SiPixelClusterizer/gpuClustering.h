@@ -160,7 +160,8 @@ namespace gpuClustering {
       // assume that we can cover the whole module with up to 16 blockDimension-wide iterations
       constexpr unsigned int maxiter = 16;
 #else
-      constexpr unsigned int maxiter = 1000;  // hist.size() / blockDimension
+      const unsigned int maxiter =
+          hist.size();  // After change of threadDimension, should be changed to hist.size() / blockDimension.
 #endif
 
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
@@ -177,11 +178,11 @@ namespace gpuClustering {
       assert(runTimeThreadDimension <= threadDimension);
 
       // nearest neighbour
-      uint16_t nn[threadDimension][maxiter][maxNeighbours];
-      uint8_t nnn[threadDimension][maxiter];  // number of nn
+      uint16_t nn[maxiter][threadDimension][maxNeighbours];
+      uint8_t nnn[maxiter][threadDimension];  // number of nn
       for (uint32_t elementIdx = 0; elementIdx < threadDimension; ++elementIdx) {
         for (uint32_t k = 0; k < maxiter; ++k) {
-          nnn[elementIdx][k] = 0;
+          nnn[k][elementIdx] = 0;
         }
       }
 
@@ -222,16 +223,16 @@ namespace gpuClustering {
         int be = Hist::bin(y[i] + 1);
         auto e = hist.end(be);
         ++p;
-        assert(0 == nnn[jEquivalentClass][k]);
+        assert(0 == nnn[k][jEquivalentClass]);
         for (; p < e; ++p) {
           auto m = (*p) + firstPixel;
           assert(m != i);
           assert(int(y[m]) - int(y[i]) >= 0);
           assert(int(y[m]) - int(y[i]) <= 1);
           if (std::abs(int(x[m]) - int(x[i])) <= 1) {
-            auto l = nnn[jEquivalentClass][k]++;
+            auto l = nnn[k][jEquivalentClass]++;
             assert(l < maxNeighbours);
-            nn[jEquivalentClass][k][l] = *p;
+            nn[k][jEquivalentClass][l] = *p;
           }
         }
       });
@@ -262,8 +263,8 @@ namespace gpuClustering {
             const uint32_t jEquivalentClass = j % threadDimension;
             auto p = hist.begin() + j;
             auto i = *p + firstPixel;
-            for (int kk = 0; kk < nnn[jEquivalentClass][k]; ++kk) {
-              auto l = nn[jEquivalentClass][k][kk];
+            for (int kk = 0; kk < nnn[k][jEquivalentClass]; ++kk) {
+              auto l = nn[k][jEquivalentClass][kk];
               auto m = l + firstPixel;
               assert(m != i);
               auto old = alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &clusterId[m], clusterId[i]);
