@@ -3,7 +3,7 @@ export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # Build flags
 export CXX := g++
 USER_CXXFLAGS :=
-HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Werror=write-strings
+HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
 export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
@@ -458,15 +458,15 @@ $(BOOST_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b 0.5.0 $@
+	git clone git@github.com:alpaka-group/alpaka.git -b 0.6.0 $@
 
 # Cupla
 .PHONY: external_cupla
 external_cupla: $(CUPLA_BASE)/lib
 
 $(CUPLA_BASE):
-	git clone git@github.com:alpaka-group/cupla.git -b master $@
-	cd $@ && git reset --hard 0.2.0
+	git clone git@github.com:alpaka-group/cupla.git -b dev $@
+	cd $@ && git reset --hard 545702f1947feb1d46b2230b502f1f46179b3665
 	cd $@ && git config core.sparsecheckout true && /usr/bin/echo -e '/*\n!/alpaka\n!/build\n!/lib' > .git/info/sparse-checkout && git read-tree -v -mu HEAD
 
 $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)

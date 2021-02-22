@@ -28,7 +28,7 @@ OMP_FLAGS       := -fopenmp -foffload=disable
 # CUDA compiler
 ifdef CUDA_BASE
 NVCC            := $(CUDA_BASE)/bin/nvcc
-NVCC_FLAGS      := --generate-line-info --source-in-ptx --expt-extended-lambda --expt-relaxed-constexpr --generate-code arch=compute_35,code=sm_35 --generate-code arch=compute_50,code=sm_50 --generate-code arch=compute_60,code=sm_60 --generate-code arch=compute_70,code=sm_70 --generate-code arch=compute_70,code=compute_70 --cudart shared -ccbin $(CXX) -Xcudafe --display_error_number -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
+NVCC_FLAGS      := --generate-line-info --source-in-ptx --expt-extended-lambda --expt-relaxed-constexpr --generate-code arch=compute_35,code=[sm_35,compute_35] --generate-code arch=compute_50,code=[sm_50,compute_50] --generate-code arch=compute_60,code=[sm_60,compute_60] --generate-code arch=compute_70,code=[sm_70,compute_70] --generate-code arch=compute_75,code=[sm_75,compute_75] -Wno-deprecated-gpu-targets -t 0 --cudart shared -ccbin $(CXX) -Xcudafe --display_error_number -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored
 CUDA_CXXFLAGS   := -I$(CUDA_BASE)/include
 CUDA_LDFLAGS    := -L$(CUDA_BASE)/lib64 -lcudart
 endif
@@ -62,7 +62,7 @@ SRC=$(wildcard src/*.cpp src/manager/*.cpp)
 
 all: library
 
-library: lib/libcupla-cuda.so lib/libcupla-serial.so lib/libcupla-threads.so lib/libcupla-omp2-threads.so lib/libcupla-omp2-blocks.so lib/libcupla-omp4.so lib/libcupla-tbb.so
+library: lib/libcupla-cuda.so lib/libcupla-serial.so lib/libcupla-threads.so lib/libcupla-omp2-threads.so lib/libcupla-omp2-blocks.so lib/libcupla-omp5.so lib/libcupla-tbb.so
 
 clean:
 	rm -rf build lib
@@ -170,22 +170,22 @@ lib/libcupla-omp2-blocks.so: $(OMP2_SEQ_SYNC_OBJ) $(OMP2_SEQ_ASYNC_OBJ)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $^ -shared -o $@
 
-# OpenMP 4.0 parallel CPU backend with synchronous queues
-OMP4_SYNC_OBJ = $(SRC:src/%.cpp=build/omp4-sync/%.o)
+# OpenMP 5.0 parallel CPU backend with synchronous queues
+OMP4_SYNC_OBJ = $(SRC:src/%.cpp=build/omp5-sync/%.o)
 
-$(OMP4_SYNC_OBJ): build/omp4-sync/%.o: src/%.cpp
+$(OMP4_SYNC_OBJ): build/omp5-sync/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_BT_OMP4_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_ANY_BT_OMP5_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=0 -c $< -o $@
 
-# OpenMP 4.0 parallel CPU backend with asynchronous queues
-OMP4_ASYNC_OBJ = $(SRC:src/%.cpp=build/omp4-async/%.o)
+# OpenMP 5.0 parallel CPU backend with asynchronous queues
+OMP4_ASYNC_OBJ = $(SRC:src/%.cpp=build/omp5-async/%.o)
 
-$(OMP4_ASYNC_OBJ): build/omp4-async/%.o: src/%.cpp
+$(OMP4_ASYNC_OBJ): build/omp5-async/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_CPU_BT_OMP4_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $(BOOST_CXXFLAGS) $(ALPAKA_CXXFLAGS) -Iinclude -DALPAKA_ACC_ANY_BT_OMP5_ENABLED -DCUPLA_STREAM_ASYNC_ENABLED=1 -c $< -o $@
 
-# cupla shared library for the OpenMP 4.0 parallel CPU backend
-lib/libcupla-omp4.so: $(OMP4_SYNC_OBJ) $(OMP4_ASYNC_OBJ)
+# cupla shared library for the OpenMP 5.0 parallel CPU backend
+lib/libcupla-omp5.so: $(OMP4_SYNC_OBJ) $(OMP4_ASYNC_OBJ)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(HOST_CXXFLAGS) $(OMP_FLAGS) $^ -shared -o $@
 
