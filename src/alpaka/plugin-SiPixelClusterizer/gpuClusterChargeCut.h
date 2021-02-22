@@ -22,7 +22,7 @@ namespace gpuClustering {
         uint32_t const* __restrict__ moduleId,     // module id of each module
         int32_t* __restrict__ clusterId,           // modified: cluster id of each pixel
         const uint32_t numElements) const {
-      const uint32_t blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      const uint32_t blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       if (blockIdx >= moduleStart[0])
         return;
 
@@ -35,7 +35,7 @@ namespace gpuClustering {
       if (nclus == 0)
         return;
 
-      const uint32_t threadIdxLocal(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       if (threadIdxLocal == 0 && nclus > MaxNumClustersPerModules)
         printf("Warning too many clusters in module %d in block %d: %d > %d\n",
                thisModuleId,
@@ -44,7 +44,7 @@ namespace gpuClustering {
                MaxNumClustersPerModules);
 
       // Stride = block size.
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
 
       // Get thread / CPU element indices in block.
       const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
@@ -76,13 +76,13 @@ namespace gpuClustering {
           printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx);
 #endif
 
-      auto&& charge = alpaka::block::shared::st::allocVar<int32_t[MaxNumClustersPerModules], __COUNTER__>(acc);
-      auto&& ok = alpaka::block::shared::st::allocVar<uint8_t[MaxNumClustersPerModules], __COUNTER__>(acc);
-      auto&& newclusId = alpaka::block::shared::st::allocVar<uint16_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto&& charge = alpaka::declareSharedVar<int32_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto&& ok = alpaka::declareSharedVar<uint8_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto&& newclusId = alpaka::declareSharedVar<uint16_t[MaxNumClustersPerModules], __COUNTER__>(acc);
 
       assert(nclus <= MaxNumClustersPerModules);
       cms::alpakatools::for_each_element_1D_block_stride(acc, nclus, [&](uint32_t i) { charge[i] = 0; });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       uint32_t firstElementIdx = firstElementIdxNoStride[0u];
       uint32_t endElementIdx = endElementIdxNoStride[0u];
@@ -94,17 +94,17 @@ namespace gpuClustering {
           continue;  // not valid
         if (id[i] != thisModuleId)
           break;  // end of module
-        alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
       cms::alpakatools::for_each_element_1D_block_stride(
           acc, nclus, [&](uint32_t i) { newclusId[i] = ok[i] = charge[i] > chargeCut ? 1 : 0; });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // renumber
-      auto&& ws = alpaka::block::shared::st::allocVar<uint16_t[32], __COUNTER__>(acc);
+      auto&& ws = alpaka::declareSharedVar<uint16_t[32], __COUNTER__>(acc);
       cms::alpakatools::blockPrefixScan(acc, newclusId, nclus, ws);
 
       assert(nclus >= newclusId[nclus - 1]);
@@ -113,14 +113,14 @@ namespace gpuClustering {
         return;
 
       nClustersInModule[thisModuleId] = newclusId[nclus - 1];
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // mark bad cluster again
       cms::alpakatools::for_each_element_1D_block_stride(acc, nclus, [&](uint32_t i) {
         if (0 == ok[i])
           newclusId[i] = InvId + 1;
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // reassign id
       firstElementIdx = firstElementIdxNoStride[0u];

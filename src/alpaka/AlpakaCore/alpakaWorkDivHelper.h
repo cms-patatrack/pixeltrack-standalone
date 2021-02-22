@@ -34,7 +34,7 @@ namespace cms {
      */
     template <typename T_Acc>
     ALPAKA_FN_ACC bool once_per_block_1D(const T_Acc& acc, uint32_t i) {
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       return (i % blockDimension == 0);
     }
 
@@ -42,7 +42,7 @@ namespace cms {
      * Computes the range of the elements indexes, local to the block.
      * Warning: the max index is not truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>>
+    template <typename T_Acc, typename T_Dim = alpaka::Dim<T_Acc>>
     ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_block(const T_Acc& acc,
                                                                                  const Vec<T_Dim>& elementIdxShift) {
       Vec<T_Dim> firstElementIdxVec = Vec<T_Dim>::zeros();
@@ -51,8 +51,8 @@ namespace cms {
       // Loop on all grid dimensions.
       for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
         // Take into account the thread index in block.
-        const uint32_t threadIdxLocal(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[dimIndex]);
-        const uint32_t threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[dimIndex]);
+        const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[dimIndex]);
+        const uint32_t threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[dimIndex]);
 
         // Compute the elements indexes in block.
         // Obviously relevant for CPU only.
@@ -77,7 +77,7 @@ namespace cms {
     ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_block_truncated(
         const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements, const Vec<T_Dim>& elementIdxShift) {
       // Check dimension
-      static_assert(alpaka::dim::Dim<T_Acc>::value == T_Dim::value,
+      static_assert(alpaka::Dim<T_Acc>::value == T_Dim::value,
                     "Accelerator and maxNumberOfElements need to have same dimension.");
       auto&& [firstElementIdxLocalVec, endElementIdxLocalVec] = element_index_range_in_block(acc, elementIdxShift);
 
@@ -94,14 +94,14 @@ namespace cms {
      * Computes the range of the elements indexes in grid.
      * Warning: the max index is not truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim = alpaka::dim::Dim<T_Acc>>
+    template <typename T_Acc, typename T_Dim = alpaka::Dim<T_Acc>>
     ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid(const T_Acc& acc,
                                                                                 Vec<T_Dim>& elementIdxShift) {
       // Loop on all grid dimensions.
       for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
         // Take into account the block index in grid.
-        const uint32_t blockIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
-        const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
+        const uint32_t blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
+        const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
 
         // Shift to get global indices in grid (instead of local to the block)
         elementIdxShift[dimIndex] += blockIdxInGrid * blockDimension;
@@ -119,7 +119,7 @@ namespace cms {
     ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid_truncated(
         const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements, Vec<T_Dim>& elementIdxShift) {
       // Check dimension
-      static_assert(alpaka::dim::Dim<T_Acc>::value == T_Dim::value,
+      static_assert(alpaka::Dim<T_Acc>::value == T_Dim::value,
                     "Accelerator and maxNumberOfElements need to have same dimension.");
       auto&& [firstElementIdxGlobalVec, endElementIdxGlobalVec] = element_index_range_in_grid(acc, elementIdxShift);
 
@@ -187,8 +187,8 @@ namespace cms {
                                                                    uint32_t elementIdxShift,
                                                                    const Func& func) {
       // Take into account the block index in grid to compute the element indices.
-      const uint32_t blockIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      const uint32_t blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       elementIdxShift += blockIdxInGrid * blockDimension;
 
       for_each_element_in_thread_1D_index_in_block(acc, maxNumberOfElements, elementIdxShift, func);
@@ -225,7 +225,7 @@ namespace cms {
           cms::alpakatools::element_index_range_in_block(acc, Vec1::all(elementIdxShift));
 
       // Stride = block size.
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
 
       // Strided access.
       for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
@@ -267,7 +267,7 @@ namespace cms {
           cms::alpakatools::element_index_range_in_grid(acc, elementIdxShiftVec);
 
       // Stride = grid size.
-      const uint32_t gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
+      const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
 
       // Strided access.
       for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
