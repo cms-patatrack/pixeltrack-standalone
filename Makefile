@@ -457,15 +457,15 @@ $(BOOST_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b 0.5.0 $@
+	git clone git@github.com:alpaka-group/alpaka.git -b 0.6.0 $@
 
 # Cupla
 .PHONY: external_cupla
 external_cupla: $(CUPLA_BASE)/lib
 
 $(CUPLA_BASE):
-	git clone git@github.com:alpaka-group/cupla.git -b master $@
-	cd $@ && git reset --hard 0.2.0
+	git clone git@github.com:alpaka-group/cupla.git -b dev $@
+	cd $@ && git reset --hard 545702f1947feb1d46b2230b502f1f46179b3665
 	cd $@ && git config core.sparsecheckout true && /usr/bin/echo -e '/*\n!/alpaka\n!/build\n!/lib' > .git/info/sparse-checkout && git read-tree -v -mu HEAD
 
 $(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)
