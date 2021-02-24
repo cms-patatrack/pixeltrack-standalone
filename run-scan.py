@@ -4,6 +4,7 @@ import os
 import re
 import json
 import time
+import socket
 import argparse
 import subprocess
 import multiprocessing
@@ -13,9 +14,13 @@ n_events_unit = 1000
 n_blocks_per_stream = {
     "fwtest": 1,
     "cuda": {"": 100, "transfer": 100},
+    "cudadev": {"": 100, "transfer": 100},
     "cudauvm": {"": 100, "transfer": 100},
     "cudacompat": {"": 8},
 }
+
+# 30 ev/s * 8 hours should the sufficent and fit into signed int for ~2k threads
+background_events_per_thread = 30*3600*8
 
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")
 
@@ -67,8 +72,39 @@ def run(nev, nstr, cores_main, opts, logfilename):
     with open(logfilename) as logfile:
         return throughput(logfile)
 
+def launchBackground(opts, cores_bkg, logfile):
+    if opts.fill <= 0:
+        return None
+    nth = len(cores_bkg)
+    if nth == 0:
+        return None
+    nev = background_events_per_thread * nth
+    taskset = []
+    exe = os.path.join(os.path.dirname(opts.program), "cudacompat")
+    command = [exe, "--maxEvents", str(nev), "--numberOfThreads", str(nth)]
+    if opts.taskset:
+        taskset = ["taskset", "-c", ",".join(cores_bkg)]
+    if opts.bkgNice is not None:
+        taskset.extend(["nice", "-n", str(opts.bkgNice)])
+
+    logfile.write(" ".join(taskset+command))
+    logfile.write("\n----\n")
+    logfile.flush()
+    if opts.dryRun:
+        print(" ".join(taskset+command))
+        return None
+    cudacompat = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
+    return cudacompat
+
 def main(opts):
-    cores = [str(x) for x in range(0, multiprocessing.cpu_count())]
+    ncores = multiprocessing.cpu_count()
+    if opts.fill > 0:
+        ncores = opts.fill
+
+    if len(opts.tasksetCores) > 0:
+        cores = opts.tasksetCores[:]
+    else:
+        cores = [str(x) for x in range(0, ncores)]
     maxThreads = len(cores)
     if opts.maxThreads > 0:
         maxThreads = min(maxThreads, opts.maxThreads)
@@ -108,6 +144,7 @@ def main(opts):
         for res in data["results"]:
             alreadyExists.add( (res["streams"], res["threads"]) )
 
+    hostname = socket.gethostname()
     stop = False
 
     for nstr, nth in n_streams_threads:
@@ -128,33 +165,52 @@ def main(opts):
           print()
           opts.warmup = False
 
-        msg = "Number of streams %d threads %d events %d" % (nstr, nth, nev)
-        if opts.taskset:
-            msg += ", running on cores %s" % ",".join(cores_main)
-        printMessage(msg)
-        throughputs = []
-        for i in range(opts.repeat):
-            tryAgain = opts.tryAgain
-            while tryAgain > 0:
-                try:
-                    (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr%d_nth%d_n%d.txt"%(nstr, nth, i))
-                    break
-                except Exception as e:
-                    tryAgain -= 1
-                    if tryAgain == 0:
-                        raise
-                    print("Got exception (see below), trying again ({} times left)".format(tryAgain))
-                    print("--------------------")
-                    print(str(e))
-                    print("--------------------")
+        with open(opts.output+"_log_nstr{}_nth{}_bkg.txt".format(nstr, nth), "w") as bkglogfile:
+            backgroundJob = launchBackground(opts, cores_bkg, bkglogfile)
+            if backgroundJob is not None:
+                msg = "Background cudacompat pid {}".format(backgroundJob.pid)
+                if opts.taskset:
+                    msg +=", running on cores " + ",".join(cores_bkg)
+                printMessage(msg)
+
+            try:
+                msg = "Number of streams {} threads {} events {}".format(nstr, nth, nev)
+                if opts.taskset:
+                    msg += ", running on cores " + ",".join(cores_main)
+                printMessage(msg)
+                throughputs = []
+                for i in range(opts.repeat):
+                    tryAgain = opts.tryAgain
+                    while tryAgain > 0:
+                        try:
+                            (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i))
+                            break
+                        except Exception as e:
+                            tryAgain -= 1
+                            if tryAgain == 0:
+                                raise
+                            print("Got exception (see below), trying again ({} times left)".format(tryAgain))
+                            print("--------------------")
+                            print(str(e))
+                            print("--------------------")
+            finally:
+                if backgroundJob is not None:
+                    printMessage("Run complete, terminating background cudacompat")
+                    try:
+                        backgroundJob.terminate()
+                    except OSError:
+                        pass
+                    backgroundJob.wait()
+
             if opts.dryRun:
                 continue
             throughputs.append(th)
             data["results"].append(dict(
+                hostname=hostname,
                 threads=nth,
                 streams=nstr,
                 events=nev,
-                throughput=th
+                throughput=th,
             ))
             # Save results after each test
             with open(outputJson, "w") as out:
@@ -185,6 +241,12 @@ if __name__ == "__main__":
                         help="Append new (stream, threads) results insteads of ignoring already existing point")
     parser.add_argument("--taskset", action="store_true",
                         help="Use taskset to explicitly set the cores where to run on")
+    parser.add_argument("--tasksetCores", type=str, default="",
+                        help="Comma-separated list of cores to be used for taskset in that order. Default (empty) is to use range(0, N(cores))")
+    parser.add_argument("--fill", type=int, default=-1,
+                        help="Launch cudacompat program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
+    parser.add_argument("--bkgNice", type=int, default=None,
+                        help="If given, use this 'nice' level for the background program")
     parser.add_argument("--minThreads", type=int, default=1,
                         help="Minimum number of threads to use in the scan (default: 1)")
     parser.add_argument("--maxThreads", type=int, default=-1,
@@ -219,5 +281,9 @@ if __name__ == "__main__":
         opts.numThreads = [int(x) for x in opts.numThreads.split(",")]
     if opts.numStreams != "":
         opts.numStreams = [int(x) for x in opts.numStreams.split(",")]
+    if opts.tasksetCores != "":
+        opts.tasksetCores = opts.tasksetCores.split(",")
+    if len(opts.tasksetCores) > 0 and opts.fill != -1 and len(opts.tasksetCores) != opts.fill:
+        parser.error("When both --tasksetCores and --fill are given, --fill must match to the number of elements in --tasksetCores. No got --fill {} and {} elements in --tasksetCores {}".format(opts.fill, len(opts.tasksetCores)))
 
     main(opts)
