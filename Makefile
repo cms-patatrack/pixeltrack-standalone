@@ -411,7 +411,7 @@ $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt
 	touch $(DATA_DEPS)
 
 $(DATA_TAR_GZ): | $(DATA_BASE)/url.txt
-	curl -o $(DATA_TAR_GZ) $(shell cat $(DATA_BASE)/url.txt)
+	curl -L -s -S $(shell cat $(DATA_BASE)/url.txt) -o $@
 
 # External rules
 $(EXTERNAL_BASE):
@@ -448,7 +448,7 @@ external_boost: $(BOOST_BASE)
 $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
-	wget -nv https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
+	curl -L -s -S https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 | tar xj -C $(BOOST_TMP)
 	cd $(BOOST_TMP)/boost_1_73_0 && ./bootstrap.sh && ./b2 install --prefix=$@
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
