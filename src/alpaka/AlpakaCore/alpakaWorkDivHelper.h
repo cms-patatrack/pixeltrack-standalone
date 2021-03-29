@@ -153,10 +153,10 @@ namespace cms {
      * Indexes are local to the BLOCK.
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
-                                                                                     const uint32_t maxNumberOfElements,
-                                                                                     const uint32_t elementIdxShift,
-                                                                                     Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
+                                                                    const uint32_t maxNumberOfElements,
+                                                                    const uint32_t elementIdxShift,
+                                                                    Func&& func) {
       const auto& [firstElementIdx, endElementIdx] = cms::alpakatools::element_index_range_in_block_truncated(
           acc, Vec1::all(maxNumberOfElements), Vec1::all(elementIdxShift));
 
@@ -169,9 +169,9 @@ namespace cms {
      * Overload for elementIdxShift = 0
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
-                                                                                     const uint32_t maxNumberOfElements,
-                                                                                     Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
+                                                                    const uint32_t maxNumberOfElements,
+                                                                    Func&& func) {
       const uint32_t elementIdxShift = 0;
       cms::alpakatools::for_each_element_in_thread_1D_index_in_block(
           acc, maxNumberOfElements, elementIdxShift, std::forward<Func>(func));
@@ -183,10 +183,10 @@ namespace cms {
      * Indexes are expressed in GRID 'frame-of-reference'.
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
-                                                                                    const uint32_t maxNumberOfElements,
-                                                                                    uint32_t elementIdxShift,
-                                                                                    Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
+                                                                   const uint32_t maxNumberOfElements,
+                                                                   uint32_t elementIdxShift,
+                                                                   Func&& func) {
       // Take into account the block index in grid to compute the element indices.
       const uint32_t blockIdxInGrid(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
@@ -199,9 +199,9 @@ namespace cms {
      * Overload for elementIdxShift = 0
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
-                                                                                    const uint32_t maxNumberOfElements,
-                                                                                    Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
+                                                                   const uint32_t maxNumberOfElements,
+                                                                   Func&& func) {
       const uint32_t elementIdxShift = 0;
       cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(
           acc, maxNumberOfElements, elementIdxShift, std::forward<Func>(func));
@@ -218,10 +218,10 @@ namespace cms {
      * Indexes are local to the BLOCK.
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_1D_block_stride(const T_Acc& acc,
-                                                                         const uint32_t maxNumberOfElements,
-                                                                         const uint32_t elementIdxShift,
-                                                                         Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const T_Acc& acc,
+                                                        const uint32_t maxNumberOfElements,
+                                                        const uint32_t elementIdxShift,
+                                                        Func&& func) {
       // Get thread / element indices in block.
       const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
           cms::alpakatools::element_index_range_in_block(acc, Vec1::all(elementIdxShift));
@@ -244,9 +244,9 @@ namespace cms {
      * Overload for elementIdxShift = 0
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_1D_block_stride(const T_Acc& acc,
-                                                                         const uint32_t maxNumberOfElements,
-                                                                         Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const T_Acc& acc,
+                                                        const uint32_t maxNumberOfElements,
+                                                        Func&& func) {
       const uint32_t elementIdxShift = 0;
       cms::alpakatools::for_each_element_1D_block_stride(
           acc, maxNumberOfElements, elementIdxShift, std::forward<Func>(func));
@@ -259,10 +259,10 @@ namespace cms {
      * Indexes are local to the GRID.
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_1D_grid_stride(const T_Acc& acc,
-                                                                        const uint32_t maxNumberOfElements,
-                                                                        const uint32_t elementIdxShift,
-                                                                        Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const T_Acc& acc,
+                                                       const uint32_t maxNumberOfElements,
+                                                       const uint32_t elementIdxShift,
+                                                       Func&& func) {
       Vec1 elementIdxShiftVec = Vec1::all(elementIdxShift);
 
       // Get thread / element indices in block.
@@ -287,9 +287,9 @@ namespace cms {
      * Overload for elementIdxShift = 0
      */
     template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void for_each_element_1D_grid_stride(const T_Acc& acc,
-                                                                        const uint32_t maxNumberOfElements,
-                                                                        Func&& func) {
+    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const T_Acc& acc,
+                                                       const uint32_t maxNumberOfElements,
+                                                       Func&& func) {
       const uint32_t elementIdxShift = 0;
       cms::alpakatools::for_each_element_1D_grid_stride(
           acc, maxNumberOfElements, elementIdxShift, std::forward<Func>(func));
