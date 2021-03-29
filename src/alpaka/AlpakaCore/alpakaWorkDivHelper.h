@@ -232,7 +232,10 @@ namespace cms {
            threadIdx < maxNumberOfElements;
            threadIdx += blockDimension, endElementIdx += blockDimension) {
         // (CPU) Loop on all elements.
-        for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
+        if (endElementIdx > maxNumberOfElements) {
+          endElementIdx = maxNumberOfElements;
+        }
+        for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
           func(i);
         }
       }
@@ -274,7 +277,10 @@ namespace cms {
            threadIdx < maxNumberOfElements;
            threadIdx += gridDimension, endElementIdx += gridDimension) {
         // (CPU) Loop on all elements.
-        for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
+        if (endElementIdx > maxNumberOfElements) {
+          endElementIdx = maxNumberOfElements;
+        }
+        for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
           func(i);
         }
       }
