@@ -23,36 +23,16 @@ struct mykernel {
     auto&& hist = alpaka::block::shared::st::allocVar<Hist, __COUNTER__>(acc);
     auto&& ws = alpaka::block::shared::st::allocVar<typename Hist::Counter[32], __COUNTER__>(acc);
 
-    const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-    const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_global_index_range(acc);
-
     // set off zero
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-         threadIdx < Hist::totbins();
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::totbins()); ++j) {
-        hist.off[j] = 0;
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
     alpaka::block::sync::syncBlockThreads(acc);
 
     // set bins zero
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-         threadIdx < Hist::capacity();
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::totbins()); ++j) {
-        hist.bins[j] = 0;
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, Hist::totbins(), [&](uint32_t j) { hist.bins[j] = 0; });
     alpaka::block::sync::syncBlockThreads(acc);
 
     // count
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < N;
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
-        hist.count(acc, v[j]);
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, N, [&](uint32_t j) { hist.count(acc, v[j]); });
     alpaka::block::sync::syncBlockThreads(acc);
 
     assert(0 == hist.size());
@@ -62,83 +42,62 @@ struct mykernel {
     hist.finalize(acc, ws);
     alpaka::block::sync::syncBlockThreads(acc);
 
-    if (threadIdxLocal == 0) {
-      printf("hist.size() = %u.\n", hist.size());
-    }
     assert(N == hist.size());
 
     // verify
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-         threadIdx < Hist::nbins();
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, Hist::nbins()); ++j) {
-        assert(hist.off[j] <= hist.off[j + 1]);
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(
+        acc, Hist::nbins(), [&](uint32_t j) { assert(hist.off[j] <= hist.off[j + 1]); });
     alpaka::block::sync::syncBlockThreads(acc);
 
-    if (threadIdxLocal < 32) {
-      ws[threadIdxLocal] = 0;  // used by prefix scan...
-    }
+    cms::alpakatools::for_each_element_in_thread_1D_index_in_block(acc, 32, [&](uint32_t i) {
+      ws[i] = 0;  // used by prefix scan...
+    });
     alpaka::block::sync::syncBlockThreads(acc);
 
     // fill
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u]; threadIdx < N;
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, N); ++j) {
-        hist.fill(acc, v[j], j);
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, N, [&](uint32_t j) { hist.fill(acc, v[j], j); });
     alpaka::block::sync::syncBlockThreads(acc);
 
     assert(0 == hist.off[0]);
     assert(N == hist.size());
 
     // bin
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-         threadIdx < hist.size() - 1;
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t j = threadIdx; j < std::min(endElementIdx, hist.size() - 1); ++j) {
-        auto p = hist.begin() + j;
-        assert((*p) < N);
-        auto k1 = Hist::bin(v[*p]);
-        auto k2 = Hist::bin(v[*(p + 1)]);
-        assert(k2 >= k1);
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size() - 1, [&](uint32_t j) {
+      auto p = hist.begin() + j;
+      assert((*p) < N);
+      auto k1 = Hist::bin(v[*p]);
+      auto k2 = Hist::bin(v[*(p + 1)]);
+      assert(k2 >= k1);
+    });
 
     // forEachInWindow
-    for (uint32_t threadIdx = firstElementIdxNoStride[0u], endElementIdx = endElementIdxNoStride[0u];
-         threadIdx < hist.size();
-         threadIdx += blockDimension, endElementIdx += blockDimension) {
-      for (uint32_t i = threadIdx; i < std::min(endElementIdx, hist.size()); ++i) {
-        auto p = hist.begin() + i;
-        auto j = *p;
-        auto b0 = Hist::bin(v[j]);
-        int tot = 0;
-        auto ftest = [&](unsigned int k) {
-          assert(k < N);
-          ++tot;
-        };
-        cms::alpakatools::forEachInWindow(hist, v[j], v[j], ftest);
-        int rtot = hist.size(b0);
-        assert(tot == rtot);
-        tot = 0;
-        auto vm = int(v[j]) - DELTA;
-        auto vp = int(v[j]) + DELTA;
-        constexpr int vmax = NBINS != 128 ? NBINS * 2 - 1 : std::numeric_limits<T>::max();
-        vm = std::max(vm, 0);
-        vm = std::min(vm, vmax);
-        vp = std::min(vp, vmax);
-        vp = std::max(vp, 0);
-        assert(vp >= vm);
-        cms::alpakatools::forEachInWindow(hist, vm, vp, ftest);
-        int bp = Hist::bin(vp);
-        int bm = Hist::bin(vm);
-        rtot = hist.end(bp) - hist.begin(bm);
-        assert(tot == rtot);
-      }
-    }
+    cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t i) {
+      auto p = hist.begin() + i;
+      auto j = *p;
+      auto b0 = Hist::bin(v[j]);
+      int tot = 0;
+      auto ftest = [&](unsigned int k) {
+        assert(k < N);
+        ++tot;
+      };
+      cms::alpakatools::forEachInWindow(hist, v[j], v[j], ftest);
+      int rtot = hist.size(b0);
+      assert(tot == rtot);
+      tot = 0;
+      auto vm = int(v[j]) - DELTA;
+      auto vp = int(v[j]) + DELTA;
+      constexpr int vmax = NBINS != 128 ? NBINS * 2 - 1 : std::numeric_limits<T>::max();
+      vm = std::max(vm, 0);
+      vm = std::min(vm, vmax);
+      vp = std::min(vp, vmax);
+      vp = std::max(vp, 0);
+      assert(vp >= vm);
+      cms::alpakatools::forEachInWindow(hist, vm, vp, ftest);
+      int bp = Hist::bin(vp);
+      int bm = Hist::bin(vm);
+      rtot = hist.end(bp) - hist.begin(bm);
+      assert(tot == rtot);
+    });
   }
 };
 
