@@ -245,9 +245,7 @@ namespace gpuClustering {
       int nloops = 0;
       while (alpaka::block::sync::syncBlockThreadsPredicate<alpaka::block::sync::op::LogicalOr>(acc, more)) {
         if (1 == nloops % 2) {
-          uint32_t k = 0u;
           cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t j) {
-            k = j / blockDimension;
             auto p = hist.begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];
