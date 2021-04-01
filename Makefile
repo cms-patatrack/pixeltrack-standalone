@@ -29,7 +29,7 @@ export TEST_DIR := $(BASE_DIR)/test
 
 # System external definitions
 # CUDA
-CUDA_BASE := /usr/local/cuda-11.0
+CUDA_BASE := /usr/local/cuda
 ifeq ($(wildcard $(CUDA_BASE)),)
 # CUDA platform not found
 CUDA_BASE :=
@@ -411,7 +411,7 @@ $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt
 	touch $(DATA_DEPS)
 
 $(DATA_TAR_GZ): | $(DATA_BASE)/url.txt
-	curl -o $(DATA_TAR_GZ) $(shell cat $(DATA_BASE)/url.txt)
+	curl -L -s -S $(shell cat $(DATA_BASE)/url.txt) -o $@
 
 # External rules
 $(EXTERNAL_BASE):
@@ -436,9 +436,8 @@ $(TBB_LIB): $(TBB_BASE) $(TBB_LIBDIR)
 external_eigen: $(EIGEN_BASE)
 
 $(EIGEN_BASE):
-	git clone https://github.com/cms-externals/eigen-git-mirror $@
-	cd $@ && git checkout -b cms_branch b20a61c3a0dc9a79790cd258130a99b574662272
-	cd $@ && patch -p1 < ../../eigen_hip.patch
+	git clone -b master https://gitlab.com/libeigen/eigen.git $@
+	cd $@ && git reset --hard 011e0db31d1bed8b7f73662be6d57d9f30fa457a	# from TensorFlow 2.4.1
 
 # Boost
 .PHONY: external_boost
@@ -448,7 +447,7 @@ external_boost: $(BOOST_BASE)
 $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
-	wget -nv https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 -O - | tar xj -C $(BOOST_TMP)
+	curl -L -s -S https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.bz2 | tar xj -C $(BOOST_TMP)
 	cd $(BOOST_TMP)/boost_1_73_0 && ./bootstrap.sh && ./b2 install --prefix=$@
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)

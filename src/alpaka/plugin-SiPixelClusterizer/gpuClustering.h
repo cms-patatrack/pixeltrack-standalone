@@ -13,6 +13,7 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
+  // move to ALPAKA_ACCELERATOR_NAMESPACE ?
   ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
 #endif
 
@@ -31,11 +32,8 @@ namespace gpuClustering {
             --j;
           if (j < 0 or id[j] != id[i]) {
             // boundary...
-            static_assert(MaxNumModules == 2000u,
-                          "MaxNumModules not copied to device code to preserve same interface. Hardcoded value "
-                          "assuming MaxNumModules == 2000.");
-            auto loc = alpaka::atomicOp<alpaka::AtomicInc>(acc, moduleStart, 2000u);
-
+	    constexpr auto max = MaxNumModules;
+	    auto loc = alpaka::atomicOp<alpaka::AtomicInc>(acc, moduleStart, max);
             moduleStart[loc + 1] = i;
           }
         }
@@ -245,9 +243,7 @@ namespace gpuClustering {
       int nloops = 0;
       while (alpaka::syncBlockThreadsPredicate<alpaka::BlockOr>(acc, more)) {
         if (1 == nloops % 2) {
-          uint32_t k = 0u;
           cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t j) {
-            k = j / blockDimension;
             auto p = hist.begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];
