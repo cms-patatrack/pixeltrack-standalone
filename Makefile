@@ -403,6 +403,15 @@ distclean: | clean
 
 dataclean:
 	rm -fR data/*.tar.gz data/*.bin data/data_ok
+	
+alpakaclean:
+	rm -fR lib/alpaka obj/alpaka test/alpaka alpaka
+	
+cudaclean:
+	rm -fR lib/cuda obj/cuda test/cuda cuda
+	
+kokkosclean:
+	rm -fR lib/kokkos obj/kokkos test/kokkos kokkos	
 
 # Data rules
 $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt
