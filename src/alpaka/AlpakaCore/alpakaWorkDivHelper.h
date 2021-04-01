@@ -232,7 +232,10 @@ namespace cms {
            threadIdx < maxNumberOfElements;
            threadIdx += blockDimension, endElementIdx += blockDimension) {
         // (CPU) Loop on all elements.
-        for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
+        if (endElementIdx > maxNumberOfElements) {
+          endElementIdx = maxNumberOfElements;
+        }
+        for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
           func(i);
         }
       }
@@ -274,7 +277,10 @@ namespace cms {
            threadIdx < maxNumberOfElements;
            threadIdx += gridDimension, endElementIdx += gridDimension) {
         // (CPU) Loop on all elements.
-        for (uint32_t i = threadIdx; i < std::min(endElementIdx, maxNumberOfElements); ++i) {
+        if (endElementIdx > maxNumberOfElements) {
+          endElementIdx = maxNumberOfElements;
+        }
+        for (uint32_t i = threadIdx; i < endElementIdx; ++i) {
           func(i);
         }
       }
@@ -289,6 +295,27 @@ namespace cms {
                                                        const Func func) {
       const uint32_t elementIdxShift = 0;
       cms::alpakatools::for_each_element_1D_grid_stride(acc, maxNumberOfElements, elementIdxShift, func);
+    }
+
+    /*
+     * Case where the input index has reached the end of threadDimension: strides the input index.
+     * Otherwise: do nothing.
+     */
+    ALPAKA_FN_ACC bool get_next_element_1D_index_stride(uint32_t& i,
+                                                        uint32_t& firstElementIdx,
+                                                        uint32_t& endElementIdx,
+                                                        const uint32_t stride,
+                                                        const uint32_t maxNumberOfElements) {
+      bool isNextStrideElementValid = true;
+      if (i == endElementIdx) {
+        firstElementIdx += stride;
+        endElementIdx += stride;
+        i = firstElementIdx;
+        if (i >= maxNumberOfElements) {
+          isNextStrideElementValid = false;
+        }
+      }
+      return isNextStrideElementValid;
     }
 
   }  // namespace alpakatools
