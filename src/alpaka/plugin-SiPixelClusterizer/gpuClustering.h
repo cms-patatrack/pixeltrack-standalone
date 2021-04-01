@@ -13,6 +13,7 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
+  // move to ALPAKA_ACCELERATOR_NAMESPACE ?
   ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
 #endif
 
@@ -31,10 +32,8 @@ namespace gpuClustering {
             --j;
           if (j < 0 or id[j] != id[i]) {
             // boundary...
-            static_assert(MaxNumModules == 2000u,
-                          "MaxNumModules not copied to device code to preserve same interface. Hardcoded value "
-                          "assuming MaxNumModules == 2000.");
-            auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, 2000u);
+	    constexpr auto max = MaxNumModules;
+	    auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, max);
 
             moduleStart[loc + 1] = i;
           }
