@@ -102,9 +102,11 @@ int main(int argc, char** argv) {
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
+  esmodules = {"BeamSpotESProducer"};
   if (not backends.empty()) {
     auto addModules = [&](std::string const& prefix, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+	//edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
         //edmodules.emplace_back(prefix + "SiPixelRawToCluster");
       }
     };
