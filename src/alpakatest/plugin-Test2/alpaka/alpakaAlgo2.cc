@@ -105,7 +105,7 @@ namespace {
     struct verifyVectorProd {
       template <typename T_Acc, typename T_Data>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
-        const auto& threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc));
+        const auto& threadIdxGlobal(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc));
         const uint32_t threadIdxGlobalX(threadIdxGlobal[0u]);
         const uint32_t threadIdxGlobalY(threadIdxGlobal[1u]);
 
@@ -130,7 +130,7 @@ namespace {
     struct verifyMatrixMul {
       template <typename T_Acc, typename T_Data>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
-        const auto& threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc));
+        const auto& threadIdxGlobal(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc));
         const uint32_t threadIdxGlobalX(threadIdxGlobal[0u]);
         const uint32_t threadIdxGlobalY(threadIdxGlobal[1u]);
 
@@ -163,7 +163,7 @@ namespace {
     struct verifyMatrixMulVector {
       template <typename T_Acc, typename T_Data>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
-        const uint32_t threadIdxGlobal(alpaka::idx::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
+        const uint32_t threadIdxGlobal(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
         if (threadIdxGlobal == 0) {
           const unsigned long int N = numElements - 1;
@@ -198,27 +198,27 @@ namespace {
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   AlpakaAccBuf2<float> alpakaAlgo2() {
-    const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
-    const DevAcc2 device(alpaka::pltf::getDevByIdx<PltfAcc2>(0u));
+    const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
+    const DevAcc2 device(alpaka::getDevByIdx<PltfAcc2>(0u));
     const Vec1 size(NUM_VALUES);
     Queue queue(device);
 
     // Host data
-    auto h_a_buf = alpaka::mem::buf::alloc<float, Idx>(host, size);
-    auto h_b_buf = alpaka::mem::buf::alloc<float, Idx>(host, size);
-    auto h_a = alpaka::mem::view::getPtrNative(h_a_buf);
-    auto h_b = alpaka::mem::view::getPtrNative(h_b_buf);
+    auto h_a_buf = alpaka::allocBuf<float, Idx>(host, size);
+    auto h_b_buf = alpaka::allocBuf<float, Idx>(host, size);
+    auto h_a = alpaka::getPtrNative(h_a_buf);
+    auto h_b = alpaka::getPtrNative(h_b_buf);
     for (auto i = 0U; i < NUM_VALUES; i++) {
       h_a[i] = i;
       h_b[i] = i * i;
     }
 
     // Device data
-    auto d_a_buf = alpaka::mem::buf::alloc<float, Idx>(device, size);
-    auto d_b_buf = alpaka::mem::buf::alloc<float, Idx>(device, size);
-    alpaka::mem::view::copy(queue, d_a_buf, h_a_buf, size);
-    alpaka::mem::view::copy(queue, d_b_buf, h_b_buf, size);
-    auto d_c_buf = alpaka::mem::buf::alloc<float, Idx>(device, size);
+    auto d_a_buf = alpaka::allocBuf<float, Idx>(device, size);
+    auto d_b_buf = alpaka::allocBuf<float, Idx>(device, size);
+    alpaka::memcpy(queue, d_a_buf, h_a_buf, size);
+    alpaka::memcpy(queue, d_b_buf, h_b_buf, size);
+    auto d_c_buf = alpaka::allocBuf<float, Idx>(device, size);
 
     // Prepare 1D workDiv
     const Vec1& blocksPerGrid1(Vec1::all((NUM_VALUES + 32 - 1) / 32));
@@ -226,12 +226,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const WorkDiv1& workDiv1 = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
     // VECTOR ADDITION
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc1>(workDiv1,
+    alpaka::enqueue(queue,
+                           alpaka::createTaskKernel<Acc1>(workDiv1,
                                                                   vectorAdd(),
-                                                                  alpaka::mem::view::getPtrNative(d_a_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_b_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_c_buf),
+                                                                  alpaka::getPtrNative(d_a_buf),
+                                                                  alpaka::getPtrNative(d_b_buf),
+                                                                  alpaka::getPtrNative(d_c_buf),
                                                                   NUM_VALUES));
 
     // Prepare 2D workDiv
@@ -243,46 +243,46 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // Device data
     const Vec2 sizeSquare(NUM_VALUES, NUM_VALUES);
-    auto d_ma_buf = alpaka::mem::buf::alloc<float, Idx>(device, sizeSquare);
-    auto d_mb_buf = alpaka::mem::buf::alloc<float, Idx>(device, sizeSquare);
-    auto d_mc_buf = alpaka::mem::buf::alloc<float, Idx>(device, sizeSquare);
+    auto d_ma_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
+    auto d_mb_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
+    auto d_mc_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
 
     // VECTOR MULTIPLICATION
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc2>(workDiv2,
+    alpaka::enqueue(queue,
+                           alpaka::createTaskKernel<Acc2>(workDiv2,
                                                                   vectorProd(),
-                                                                  alpaka::mem::view::getPtrNative(d_a_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_b_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_ma_buf),
+                                                                  alpaka::getPtrNative(d_a_buf),
+                                                                  alpaka::getPtrNative(d_b_buf),
+                                                                  alpaka::getPtrNative(d_ma_buf),
                                                                   NUM_VALUES));
 
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc2>(workDiv2,
+    alpaka::enqueue(queue,
+                           alpaka::createTaskKernel<Acc2>(workDiv2,
                                                                   vectorProd(),
-                                                                  alpaka::mem::view::getPtrNative(d_a_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_c_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_mb_buf),
+                                                                  alpaka::getPtrNative(d_a_buf),
+                                                                  alpaka::getPtrNative(d_c_buf),
+                                                                  alpaka::getPtrNative(d_mb_buf),
                                                                   NUM_VALUES));
 
     // MATRIX MULTIPLICATION
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc2>(workDiv2,
+    alpaka::enqueue(queue,
+                           alpaka::createTaskKernel<Acc2>(workDiv2,
                                                                   matrixMul(),
-                                                                  alpaka::mem::view::getPtrNative(d_ma_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_mb_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_mc_buf),
+                                                                  alpaka::getPtrNative(d_ma_buf),
+                                                                  alpaka::getPtrNative(d_mb_buf),
+                                                                  alpaka::getPtrNative(d_mc_buf),
                                                                   NUM_VALUES));
 
     // MATRIX - VECTOR MULTIPLICATION
-    alpaka::queue::enqueue(queue,
-                           alpaka::kernel::createTaskKernel<Acc1>(workDiv1,
+    alpaka::enqueue(queue,
+                           alpaka::createTaskKernel<Acc1>(workDiv1,
                                                                   matrixMulVector(),
-                                                                  alpaka::mem::view::getPtrNative(d_mc_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_b_buf),
-                                                                  alpaka::mem::view::getPtrNative(d_c_buf),
+                                                                  alpaka::getPtrNative(d_mc_buf),
+                                                                  alpaka::getPtrNative(d_b_buf),
+                                                                  alpaka::getPtrNative(d_c_buf),
                                                                   NUM_VALUES));
 
-    alpaka::wait::wait(queue);
+    alpaka::wait(queue);
     return d_mc_buf;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

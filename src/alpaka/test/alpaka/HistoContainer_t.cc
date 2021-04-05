@@ -16,10 +16,10 @@ void go(const DevHost& host,
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
   constexpr unsigned int N = 12000;
-  auto v_buf = alpaka::mem::buf::alloc<T, Idx>(host, N);
-  auto v = alpaka::mem::view::getPtrNative(v_buf);
-  auto v_d = alpaka::mem::buf::alloc<T, Idx>(device, N);
-  alpaka::mem::view::copy(queue, v_d, v_buf, N);
+  auto v_buf = alpaka::allocBuf<T, Idx>(host, N);
+  auto v = alpaka::getPtrNative(v_buf);
+  auto v_d = alpaka::allocBuf<T, Idx>(device, N);
+  alpaka::memcpy(queue, v_d, v_buf, N);
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
@@ -29,12 +29,12 @@ void go(const DevHost& host,
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  auto offsets_buf = alpaka::mem::buf::alloc<uint32_t, Idx>(host, nParts + 1);
-  auto offsets = alpaka::mem::view::getPtrNative(offsets_buf);
-  auto off_d = alpaka::mem::buf::alloc<uint32_t, Idx>(device, nParts + 1);
+  auto offsets_buf = alpaka::allocBuf<uint32_t, Idx>(host, nParts + 1);
+  auto offsets = alpaka::getPtrNative(offsets_buf);
+  auto off_d = alpaka::allocBuf<uint32_t, Idx>(device, nParts + 1);
 
-  auto h_buf = alpaka::mem::buf::alloc<Hist, Idx>(host, 1u);
-  auto h_d = alpaka::mem::buf::alloc<Hist, Idx>(device, 1u);
+  auto h_buf = alpaka::allocBuf<Hist, Idx>(host, 1u);
+  auto h_d = alpaka::allocBuf<Hist, Idx>(device, 1u);
 
   for (int it = 0; it < 5; ++it) {
     offsets[0] = 0;
@@ -57,7 +57,7 @@ void go(const DevHost& host,
       offsets[10] = 3297 + offsets[9];
     }
 
-    alpaka::mem::view::copy(queue, off_d, offsets_buf, nParts + 1);
+    alpaka::memcpy(queue, off_d, offsets_buf, nParts + 1);
 
     for (long long j = 0; j < N; j++)
       v[j] = rgen(eng);
@@ -67,24 +67,24 @@ void go(const DevHost& host,
         v[j] = sizeof(T) == 1 ? 22 : 3456;
     }
 
-    alpaka::mem::view::copy(queue, v_d, v_buf, N);
+    alpaka::memcpy(queue, v_d, v_buf, N);
 
-    alpaka::mem::view::set(queue, h_d, 0, 1u);
+    alpaka::memset(queue, h_d, 0, 1u);
 
     std::cout << "Calling fillManyFromVector" << std::endl;
-    fillManyFromVector(alpaka::mem::view::getPtrNative(h_d),
+    fillManyFromVector(alpaka::getPtrNative(h_d),
                        nParts,
-                       alpaka::mem::view::getPtrNative(v_d),
-                       alpaka::mem::view::getPtrNative(off_d),
+                       alpaka::getPtrNative(v_d),
+                       alpaka::getPtrNative(off_d),
                        offsets[10],
                        256,
                        queue);
 
-    alpaka::mem::view::copy(queue, h_buf, h_d, 1u);
-    alpaka::wait::wait(queue);
+    alpaka::memcpy(queue, h_buf, h_d, 1u);
+    alpaka::wait(queue);
     std::cout << "Copied results" << std::endl;
 
-    auto h = alpaka::mem::view::getPtrNative(h_buf);
+    auto h = alpaka::getPtrNative(h_buf);
     assert(0 == h->off[0]);
     assert(offsets[10] == h->size());
 
@@ -160,9 +160,9 @@ void go(const DevHost& host,
 }
 
 int main() {
-  const DevHost host(alpaka::pltf::getDevByIdx<PltfHost>(0u));
+  const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(
-      alpaka::pltf::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+      alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);

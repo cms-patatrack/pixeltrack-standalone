@@ -48,9 +48,9 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-      uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDimension % 32);
@@ -66,18 +66,18 @@ namespace cms {
           ws[warpId] = co[i];
         mask = __ballot_sync(mask, i + blockDimension < size);
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       if (size <= 32)
         return;
       if (blockThreadIdx < 32) {
         warpPrefixScan(laneId, ws, blockThreadIdx, 0xffffffff);
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       for (auto i = first + 32; i < size; i += blockDimension) {
         uint32_t warpId = i / 32;
         co[i] += ws[warpId - 1];
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
 #else
       co[0] = ci[0];
@@ -96,9 +96,9 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-      uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockThreadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDimension % 32);
@@ -114,18 +114,18 @@ namespace cms {
           ws[warpId] = c[i];
         mask = __ballot_sync(mask, i + blockDimension < size);
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       if (size <= 32)
         return;
       if (blockThreadIdx < 32) {
         warpPrefixScan(laneId, ws, blockThreadIdx, 0xffffffff);
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       for (auto i = first + 32; i < size; i += blockDimension) {
         auto warpId = i / 32;
         c[i] += ws[warpId - 1];
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 #else
       for (uint32_t i = 1; i < size; ++i)
         c[i] += c[i - 1];
@@ -137,13 +137,13 @@ namespace cms {
     struct multiBlockPrefixScanFirstStep {
       template <typename T_Acc>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size) const {
-        uint32_t const gridDimension(alpaka::workdiv::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-        uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-        uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+        uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-        uint32_t const blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        uint32_t const blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
 
-        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        auto&& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
         // first each block does a scan of size 1024; (better be enough blocks....)
         assert(gridDimension / threadDimension <= 1024);
         int off = blockDimension * blockIdx * threadDimension;
@@ -157,12 +157,12 @@ namespace cms {
     struct multiBlockPrefixScanSecondStep {
       template <typename T_Acc>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
-        uint32_t const blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-        uint32_t const threadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+        uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
 
-        uint32_t const threadIdx(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        uint32_t const threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
-        auto* const psum(alpaka::block::shared::dyn::getMem<T>(acc));
+        auto* const psum(alpaka::getDynSharedMem<T>(acc));
 
         // first each block does a scan of size 1024; (better be enough blocks....)
         assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
@@ -177,9 +177,9 @@ namespace cms {
           }
         }
 
-        alpaka::block::sync::syncBlockThreads(acc);
+        alpaka::syncBlockThreads(acc);
 
-        auto&& ws = alpaka::block::shared::st::allocVar<T[32], __COUNTER__>(acc);
+        auto&& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
         blockPrefixScan(acc, psum, psum, numBlocks, ws);
 
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
@@ -196,37 +196,35 @@ namespace cms {
 }  // namespace cms
 
 namespace alpaka {
-  namespace kernel {
-    namespace traits {
+  namespace traits {
 
-      //#############################################################################
-      //! The trait for getting the size of the block shared dynamic memory for a kernel.
-      template <typename T, typename TAcc>
-      struct BlockSharedMemDynSizeBytes<cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
-        //-----------------------------------------------------------------------------
-        //! \return The size of the shared memory allocated for a block.
-        template <typename TVec>
-        ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-            cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
-            TVec const& blockThreadExtent,
-            TVec const& threadElemExtent,
-            T const* ci,
-            T* co,
-            int32_t size,
-            int32_t numBlocks) -> T {
-          alpaka::ignore_unused(myKernel);
-          alpaka::ignore_unused(blockThreadExtent);
-          alpaka::ignore_unused(threadElemExtent);
-          alpaka::ignore_unused(ci);
-          alpaka::ignore_unused(co);
-          alpaka::ignore_unused(size);
+    //#############################################################################
+    //! The trait for getting the size of the block shared dynamic memory for a kernel.
+    template <typename T, typename TAcc>
+    struct BlockSharedMemDynSizeBytes<cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
+      //-----------------------------------------------------------------------------
+      //! \return The size of the shared memory allocated for a block.
+      template <typename TVec>
+      ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
+          cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
+          TVec const& blockThreadExtent,
+          TVec const& threadElemExtent,
+          T const* ci,
+          T* co,
+          int32_t size,
+          int32_t numBlocks) -> T {
+        alpaka::ignore_unused(myKernel);
+        alpaka::ignore_unused(blockThreadExtent);
+        alpaka::ignore_unused(threadElemExtent);
+        alpaka::ignore_unused(ci);
+        alpaka::ignore_unused(co);
+        alpaka::ignore_unused(size);
 
-          return static_cast<size_t>(numBlocks) * sizeof(T);
-        }
-      };
+        return static_cast<size_t>(numBlocks) * sizeof(T);
+      }
+    };
 
-    }  // namespace traits
-  }    // namespace kernel
+  }  // namespace traits
 }  // namespace alpaka
 
 #endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h

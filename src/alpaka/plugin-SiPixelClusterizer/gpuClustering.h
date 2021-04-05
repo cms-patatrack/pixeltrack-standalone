@@ -33,7 +33,7 @@ namespace gpuClustering {
           if (j < 0 or id[j] != id[i]) {
             // boundary...
 	    constexpr auto max = MaxNumModules;
-	    auto loc = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, moduleStart, max);
+	    auto loc = alpaka::atomicOp<alpaka::AtomicInc>(acc, moduleStart, max);
 
             moduleStart[loc + 1] = i;
           }
@@ -55,7 +55,7 @@ namespace gpuClustering {
         uint32_t* __restrict__ moduleId,           // output: module id of each module
         int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
         const unsigned int numElements) const {
-      const uint32_t blockIdx(alpaka::idx::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      const uint32_t blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       if (blockIdx >= moduleStart[0])
         return;
 
@@ -63,7 +63,7 @@ namespace gpuClustering {
       auto thisModuleId = id[firstPixel];
       assert(thisModuleId < MaxNumModules);
 
-      const uint32_t threadIdxLocal(alpaka::idx::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
 #ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
@@ -72,12 +72,12 @@ namespace gpuClustering {
 #endif
 
       // find the index of the first pixel not belonging to this module (or invalid)
-      auto&& msize = alpaka::block::shared::st::allocVar<unsigned int, __COUNTER__>(acc);
+      auto&& msize = alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
       msize = numElements;
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // Stride = block size.
-      const uint32_t blockDimension(alpaka::workdiv::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+      const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
 
       // Get thread / CPU element indices in block.
       const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
@@ -93,7 +93,7 @@ namespace gpuClustering {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
         if (id[i] != thisModuleId) {  // find the first pixel in a different module
-          alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &msize, i);
+          alpaka::atomicOp<alpaka::AtomicMin>(acc, &msize, i);
           break;
         }
       }
@@ -102,11 +102,11 @@ namespace gpuClustering {
       constexpr uint32_t maxPixInModule = 4000;
       constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
       using Hist = cms::alpakatools::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
-      auto&& hist = alpaka::block::shared::st::allocVar<Hist, __COUNTER__>(acc);
-      auto&& ws = alpaka::block::shared::st::allocVar<Hist::Counter[32], __COUNTER__>(acc);
+      auto&& hist = alpaka::declareSharedVar<Hist, __COUNTER__>(acc);
+      auto&& ws = alpaka::declareSharedVar<Hist::Counter[32], __COUNTER__>(acc);
 
       cms::alpakatools::for_each_element_1D_block_stride(acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
 
@@ -118,13 +118,13 @@ namespace gpuClustering {
         }
       }
 
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       assert(msize - firstPixel <= maxPixInModule);
 
 #ifdef GPU_DEBUG
-      auto&& totGood = alpaka::block::shared::st::allocVar<uint32_t, __COUNTER__>(acc);
+      auto&& totGood = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
       totGood = 0;
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 #endif
 
       // fill histo
@@ -132,17 +132,17 @@ namespace gpuClustering {
         if (id[i] != InvId) {  // skip invalid pixels
           hist.count(acc, y[i]);
 #ifdef GPU_DEBUG
-          alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &totGood, 1u);
+          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &totGood, 1u);
 #endif
         }
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       cms::alpakatools::for_each_element_in_thread_1D_index_in_block(acc, 32u, [&](uint32_t i) {
         ws[i] = 0;  // used by prefix scan...
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       hist.finalize(acc, ws);
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 #ifdef GPU_DEBUG
       assert(hist.size() == totGood);
       if (thisModuleId % 100 == 1)
@@ -173,7 +173,7 @@ namespace gpuClustering {
       // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
       constexpr uint32_t threadDimension = 1;
 #endif
-      const uint32_t runTimeThreadDimension(alpaka::workdiv::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      const uint32_t runTimeThreadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
       assert(runTimeThreadDimension <= threadDimension);
 
       // nearest neighbour
@@ -185,28 +185,28 @@ namespace gpuClustering {
         }
       }
 
-      alpaka::block::sync::syncBlockThreads(acc);  // for hit filling!
+      alpaka::syncBlockThreads(acc);  // for hit filling!
 
 #ifdef GPU_DEBUG
       // look for anomalous high occupancy
-      auto&& n40 = alpaka::block::shared::st::allocVar<uint32_t, __COUNTER__>(acc);
-      auto&& n60 = alpaka::block::shared::st::allocVar<uint32_t, __COUNTER__>(acc);
+      auto&& n40 = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
+      auto&& n60 = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
       n40 = n60 = 0;
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       cms::alpakatools::for_each_element_1D_block_stride(acc, Hist::nbins(), [&](uint32_t j) {
         if (hist.size(j) > 60)
-          alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &n60, 1u);
+          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &n60, 1u);
         if (hist.size(j) > 40)
-          alpaka::atomic::atomicOp<alpaka::atomic::op::Add>(acc, &n40, 1u);
+          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &n40, 1u);
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
       if (0 == threadIdxLocal) {
         if (n60 > 0)
           printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
         else if (n40 > 0)
           printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
       }
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 #endif
 
       // fill NN
@@ -242,7 +242,7 @@ namespace gpuClustering {
       // pixel in the cluster ( clus[i] == i ).
       bool more = true;
       int nloops = 0;
-      while (alpaka::block::sync::syncBlockThreadsPredicate<alpaka::block::sync::op::LogicalOr>(acc, more)) {
+      while (alpaka::syncBlockThreadsPredicate<alpaka::BlockOr>(acc, more)) {
         if (1 == nloops % 2) {
           cms::alpakatools::for_each_element_1D_block_stride(acc, hist.size(), [&](uint32_t j) {
             auto p = hist.begin() + j;
@@ -264,12 +264,12 @@ namespace gpuClustering {
               auto l = nn[k][jEquivalentClass][kk];
               auto m = l + firstPixel;
               assert(m != i);
-              auto old = alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &clusterId[m], clusterId[i]);
+              auto old = alpaka::atomicOp<alpaka::AtomicMin>(acc, &clusterId[m], clusterId[i]);
               if (old != clusterId[i]) {
                 // end the loop only if no changes were applied
                 more = true;
               }
-              alpaka::atomic::atomicOp<alpaka::atomic::op::Min>(acc, &clusterId[i], old);
+              alpaka::atomicOp<alpaka::AtomicMin>(acc, &clusterId[i], old);
             }  // nnloop
           });  // pixel loop
         }
@@ -278,33 +278,33 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
       {
-        auto&& n0 = alpaka::block::shared::st::allocVar<int, __COUNTER__>(acc);
+        auto&& n0 = alpaka::declareSharedVar<int, __COUNTER__>(acc);
         if (threadIdxLocal == 0)
           n0 = nloops;
-        alpaka::block::sync::syncBlockThreads(acc);
+        alpaka::syncBlockThreads(acc);
         auto ok = n0 == nloops;
-        assert(alpaka::block::sync::syncBlockThreadsPredicate<alpaka::block::sync::op::LogicalAnd>(acc, ok));
+        assert(alpaka::syncBlockThreadsPredicate<alpaka::BlockAnd>(acc, ok));
         if (thisModuleId % 100 == 1)
           if (threadIdxLocal == 0)
             printf("# loops %d\n", nloops);
       }
 #endif
 
-      auto&& foundClusters = alpaka::block::shared::st::allocVar<unsigned int, __COUNTER__>(acc);
+      auto&& foundClusters = alpaka::declareSharedVar<unsigned int, __COUNTER__>(acc);
       foundClusters = 0;
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // find the number of different clusters, identified by a pixels with clus[i] == i;
       // mark these pixels with a negative id.
       cms::alpakatools::for_each_element_1D_block_stride(acc, msize, firstPixel, [&](uint32_t i) {
         if (id[i] != InvId) {  // skip invalid pixels
           if (clusterId[i] == static_cast<int>(i)) {
-            auto old = alpaka::atomic::atomicOp<alpaka::atomic::op::Inc>(acc, &foundClusters, 0xffffffff);
+            auto old = alpaka::atomicOp<alpaka::AtomicInc>(acc, &foundClusters, 0xffffffff);
             clusterId[i] = -(old + 1);
           }
         }
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // propagate the negative id to all the pixels in the cluster.
       cms::alpakatools::for_each_element_1D_block_stride(acc, msize, firstPixel, [&](uint32_t i) {
@@ -315,7 +315,7 @@ namespace gpuClustering {
           }
         }
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       // adjust the cluster id to be a positive value starting from 0
       cms::alpakatools::for_each_element_1D_block_stride(acc, msize, firstPixel, [&](uint32_t i) {
@@ -325,7 +325,7 @@ namespace gpuClustering {
           clusterId[i] = -clusterId[i] - 1;
         }
       });
-      alpaka::block::sync::syncBlockThreads(acc);
+      alpaka::syncBlockThreads(acc);
 
       if (threadIdxLocal == 0) {
         nClustersInModule[thisModuleId] = foundClusters;
