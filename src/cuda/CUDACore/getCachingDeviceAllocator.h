@@ -12,17 +12,13 @@
 
 namespace cms::cuda::allocator {
   // Use caching or not
-  enum class Policy {
-    Synchronous = 0,
-    Asynchronous = 1,
-    Caching = 2
-  };
+  enum class Policy { Synchronous = 0, Asynchronous = 1, Caching = 2 };
 #ifndef CUDA_DISABLE_CACHING_ALLOCATOR
-  constexpr Policy policy =  Policy::Caching;
-#elif CUDA_VERSION >= 11020 && ! defined CUDA_DISABLE_ASYNC_ALLOCATOR
-  constexpr Policy policy =  Policy::Asynchronous;
+  constexpr Policy policy = Policy::Caching;
+#elif CUDA_VERSION >= 11020 && !defined CUDA_DISABLE_ASYNC_ALLOCATOR
+  constexpr Policy policy = Policy::Asynchronous;
 #else
-  constexpr Policy policy =  Policy::Synchronous;
+  constexpr Policy policy = Policy::Synchronous;
 #endif
   // Growth factor (bin_growth in cub::CachingDeviceAllocator
   constexpr unsigned int binGrowth = 2;

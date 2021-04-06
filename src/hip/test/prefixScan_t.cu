@@ -143,7 +143,8 @@ int main() {
     nthreads = 1024;
     nblocks = (num_items + nthreads - 1) / nthreads;
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nblocks << std::endl;
-    hipLaunchKernelGGL(multiBlockPrefixScan, dim3(nblocks), dim3(nthreads), 4 * nblocks, 0, d_in, d_out1, num_items, d_pc);
+    hipLaunchKernelGGL(
+        multiBlockPrefixScan, dim3(nblocks), dim3(nthreads), 4 * nblocks, 0, d_in, d_out1, num_items, d_pc);
     cudaCheck(hipGetLastError());
     hipLaunchKernelGGL(verify, dim3(nblocks), dim3(nthreads), 0, 0, d_out1, num_items);
     cudaCheck(hipGetLastError());

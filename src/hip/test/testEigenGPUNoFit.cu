@@ -205,8 +205,8 @@ void testEigenvalues() {
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mgpudebug, m_gpu, sizeof(Matrix3d), hipMemcpyDeviceToHost));
-  cudaCheck(hipMemcpy(
-      ret1, ret_gpu, sizeof(Eigen::SelfAdjointEigenSolver<Matrix3d>::RealVectorType), hipMemcpyDeviceToHost));
+  cudaCheck(
+      hipMemcpy(ret1, ret_gpu, sizeof(Eigen::SelfAdjointEigenSolver<Matrix3d>::RealVectorType), hipMemcpyDeviceToHost));
 #if TEST_DEBUG
   std::cout << "GPU Generated Matrix M 3x3:\n" << (*mgpudebug) << std::endl;
   std::cout << "GPU The eigenvalues of M are:" << std::endl << (*ret1) << std::endl;

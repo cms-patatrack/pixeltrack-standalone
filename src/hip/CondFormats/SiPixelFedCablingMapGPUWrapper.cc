@@ -37,15 +37,14 @@ const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsyn
 }
 
 const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(hipStream_t cudaStream) const {
-  const auto& data =
-      modToUnp_.dataForCurrentDeviceAsync(cudaStream, [this](ModulesToUnpack& data, hipStream_t stream) {
-        cudaCheck(hipMalloc((void**)&data.modToUnpDefault, pixelgpudetails::MAX_SIZE_BYTE_BOOL));
-        cudaCheck(hipMemcpyAsync(data.modToUnpDefault,
-                                  this->modToUnpDefault.data(),
-                                  this->modToUnpDefault.size() * sizeof(unsigned char),
-                                  hipMemcpyDefault,
-                                  stream));
-      });
+  const auto& data = modToUnp_.dataForCurrentDeviceAsync(cudaStream, [this](ModulesToUnpack& data, hipStream_t stream) {
+    cudaCheck(hipMalloc((void**)&data.modToUnpDefault, pixelgpudetails::MAX_SIZE_BYTE_BOOL));
+    cudaCheck(hipMemcpyAsync(data.modToUnpDefault,
+                             this->modToUnpDefault.data(),
+                             this->modToUnpDefault.size() * sizeof(unsigned char),
+                             hipMemcpyDefault,
+                             stream));
+  });
   return data.modToUnpDefault;
 }
 

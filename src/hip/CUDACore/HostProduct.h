@@ -23,7 +23,7 @@ public:
 
 private:
   cms::hip::host::unique_ptr<T> hm_ptr;  //!
-  std::unique_ptr<T> std_ptr;             //!
+  std::unique_ptr<T> std_ptr;            //!
 };
 
 #endif

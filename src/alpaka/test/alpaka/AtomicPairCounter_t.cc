@@ -82,12 +82,12 @@ int main() {
   const Vec1 &threadsPerBlockOrElementsPerThread(Vec1(512u));
   const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::enqueue(queue,
-                         alpaka::createTaskKernel<Acc1>(workDiv,
-                                                                update(),
-                                                                alpaka::getPtrNative(c_dbuf),
-                                                                alpaka::getPtrNative(n_dbuf),
-                                                                alpaka::getPtrNative(m_dbuf),
-                                                                NUM_VALUES));
+                  alpaka::createTaskKernel<Acc1>(workDiv,
+                                                 update(),
+                                                 alpaka::getPtrNative(c_dbuf),
+                                                 alpaka::getPtrNative(n_dbuf),
+                                                 alpaka::getPtrNative(m_dbuf),
+                                                 NUM_VALUES));
 
   // Finalize
   const Vec1 &blocksPerGridFinalize(Vec1(1u));
@@ -95,21 +95,21 @@ int main() {
   const WorkDiv1 &workDivFinalize =
       cms::alpakatools::make_workdiv(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::enqueue(queue,
-                         alpaka::createTaskKernel<Acc1>(workDivFinalize,
-                                                                finalize(),
-                                                                alpaka::getPtrNative(c_dbuf),
-                                                                alpaka::getPtrNative(n_dbuf),
-                                                                alpaka::getPtrNative(m_dbuf),
-                                                                NUM_VALUES));
+                  alpaka::createTaskKernel<Acc1>(workDivFinalize,
+                                                 finalize(),
+                                                 alpaka::getPtrNative(c_dbuf),
+                                                 alpaka::getPtrNative(n_dbuf),
+                                                 alpaka::getPtrNative(m_dbuf),
+                                                 NUM_VALUES));
 
   // Verify
   alpaka::enqueue(queue,
-                         alpaka::createTaskKernel<Acc1>(workDiv,
-                                                                verify(),
-                                                                alpaka::getPtrNative(c_dbuf),
-                                                                alpaka::getPtrNative(n_dbuf),
-                                                                alpaka::getPtrNative(m_dbuf),
-                                                                NUM_VALUES));
+                  alpaka::createTaskKernel<Acc1>(workDiv,
+                                                 verify(),
+                                                 alpaka::getPtrNative(c_dbuf),
+                                                 alpaka::getPtrNative(n_dbuf),
+                                                 alpaka::getPtrNative(m_dbuf),
+                                                 NUM_VALUES));
 
   auto c_hbuf = alpaka::allocBuf<cms::alpakatools::AtomicPairCounter, Idx>(host, sizeC);
   alpaka::memcpy(queue, c_hbuf, c_dbuf, sizeC);

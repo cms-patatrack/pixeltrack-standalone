@@ -124,7 +124,7 @@ __device__ __forceinline__ void radixSortImpl(
     // prefix scan "optimized"???...
     if (threadIdx.x < sb) {
       auto x = c[threadIdx.x];
-      auto laneId = threadIdx.x & (warpSize-1);
+      auto laneId = threadIdx.x & (warpSize - 1);
 #pragma unroll
       for (int offset = 1; offset < warpSize; offset <<= 1) {
         auto y = __shfl_up(x, offset);
@@ -245,7 +245,7 @@ __device__ __forceinline__ void radixSortMulti(T const* v,
                                                uint16_t* index,
                                                uint32_t const* offsets,
                                                uint16_t* workspace) {
-  HIP_DYNAMIC_SHARED( uint16_t, ws)
+  HIP_DYNAMIC_SHARED(uint16_t, ws)
 
   auto a = v + offsets[blockIdx.x];
   auto ind = index + offsets[blockIdx.x];

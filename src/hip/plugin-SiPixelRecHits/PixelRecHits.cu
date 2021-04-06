@@ -49,8 +49,17 @@ namespace pixelgpudetails {
     std::cout << "launching getHits kernel for " << blocks << " blocks" << std::endl;
 #endif
     if (blocks)  // protect from empty events
-      hipLaunchKernelGGL(gpuPixelRecHits::getHits, dim3(blocks), dim3(threadsPerBlock), 0, stream, 
-          cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
+      hipLaunchKernelGGL(gpuPixelRecHits::getHits,
+                         dim3(blocks),
+                         dim3(threadsPerBlock),
+                         0,
+                         stream,
+                         cpeParams,
+                         bs_d.data(),
+                         digis_d.view(),
+                         digis_d.nDigis(),
+                         clusters_d.view(),
+                         hits_d.view());
     cudaCheck(hipGetLastError());
 #ifdef GPU_DEBUG
     hipDeviceSynchronize();
@@ -59,7 +68,14 @@ namespace pixelgpudetails {
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
-      hipLaunchKernelGGL(setHitsLayerStart, dim3(1), dim3(32), 0, stream, clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
+      hipLaunchKernelGGL(setHitsLayerStart,
+                         dim3(1),
+                         dim3(32),
+                         0,
+                         stream,
+                         clusters_d.clusModuleStart(),
+                         cpeParams,
+                         hits_d.hitsLayerStart());
       cudaCheck(hipGetLastError());
     }
 

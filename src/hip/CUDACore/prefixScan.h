@@ -14,7 +14,7 @@ template <typename T>
 __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __restrict__ co, uint32_t i) {
   // ci and co may be the same
   auto x = ci[i];
-  auto laneId = threadIdx.x & (warpSize-1);
+  auto laneId = threadIdx.x & (warpSize - 1);
 #pragma unroll
   for (int offset = 1; offset < warpSize; offset <<= 1) {
     auto y = __shfl_up(x, offset);
@@ -27,7 +27,7 @@ __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __re
 template <typename T>
 __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i) {
   auto x = c[i];
-  auto laneId = threadIdx.x & (warpSize-1);
+  auto laneId = threadIdx.x & (warpSize - 1);
 #pragma unroll
   for (int offset = 1; offset < warpSize; offset <<= 1) {
     auto y = __shfl_up(x, offset);
@@ -37,7 +37,7 @@ __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i) {
   c[i] = x;
 }
 
-#endif // __HIPCC__
+#endif  // __HIPCC__
 
 namespace cms {
   namespace hip {
@@ -60,12 +60,12 @@ namespace cms {
 
       for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         warpPrefixScan(ci, co, i);
-        auto laneId = threadIdx.x & (warpSize-1);
+        auto laneId = threadIdx.x & (warpSize - 1);
         auto warpId = i / warpSize;
 #ifdef THIS_FAILS_TO_BUILD_IN_UNIT_TESTS
         assert(warpId < warpSize);
 #endif
-        if ((warpSize-1) == laneId)
+        if ((warpSize - 1) == laneId)
           ws[warpId] = co[i];
       }
       __syncthreads();
@@ -104,10 +104,10 @@ namespace cms {
 
       for (auto i = first; i < size; i += static_cast<uint32_t>(blockDim.x)) {
         warpPrefixScan(c, i);
-        auto laneId = threadIdx.x & (warpSize-1);
+        auto laneId = threadIdx.x & (warpSize - 1);
         auto warpId = i / warpSize;
         assert(warpId < warpSize);
-        if (warpSize-1 == laneId)
+        if (warpSize - 1 == laneId)
           ws[warpId] = c[i];
       }
       __syncthreads();
@@ -173,7 +173,7 @@ namespace cms {
       // good each block has done its work and now we are left in last block
 
       // let's get the partial sums from each block
-      HIP_DYNAMIC_SHARED( T, psum)
+      HIP_DYNAMIC_SHARED(T, psum)
       for (int i = threadIdx.x, ni = gridDim.x; i < ni; i += blockDim.x) {
         int32_t j = blockDim.x * i + blockDim.x - 1;
         psum[i] = (j < size) ? co[j] : T(0);

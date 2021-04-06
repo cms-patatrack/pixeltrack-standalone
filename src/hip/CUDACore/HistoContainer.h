@@ -80,8 +80,15 @@ namespace cms {
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      hipLaunchKernelGGL(multiBlockPrefixScan, dim3(nblocks), dim3(nthreads), sizeof(int32_t) * nblocks, stream, 
-          poff, poff, Histo::totbins(), ppsws);
+      hipLaunchKernelGGL(multiBlockPrefixScan,
+                         dim3(nblocks),
+                         dim3(nthreads),
+                         sizeof(int32_t) * nblocks,
+                         stream,
+                         poff,
+                         poff,
+                         Histo::totbins(),
+                         ppsws);
       cudaCheck(hipGetLastError());
 #else
       h->finalize();
