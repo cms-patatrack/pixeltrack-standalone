@@ -110,8 +110,7 @@ void go(bool useShared) {
       cms::hip::launch(
           radixSortMultiWrapper<U, NS>, {blocks, ntXBl, MaxSize * 2}, v_d.get(), ind_d.get(), off_d.get(), nullptr);
     else
-      cms::hip::launch(
-          radixSortMultiWrapper2<U, NS>, {blocks, ntXBl}, v_d.get(), ind_d.get(), off_d.get(), ws_d.get());
+      cms::hip::launch(radixSortMultiWrapper2<U, NS>, {blocks, ntXBl}, v_d.get(), ind_d.get(), off_d.get(), ws_d.get());
 
     if (i == 0)
       std::cout << "done for " << offsets[blocks] << std::endl;

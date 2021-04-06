@@ -21,8 +21,8 @@ cms::hip::host::unique_ptr<uint32_t[]> TrackingRecHit2DCUDA::hitsModuleStartToHo
 template <>
 cms::hip::host::unique_ptr<float[]> TrackingRecHit2DCUDA::globalCoordToHostAsync(hipStream_t stream) const {
   auto ret = cms::hip::make_host_unique<float[]>(4 * nHits(), stream);
-  cudaCheck(hipMemcpyAsync(
-      ret.get(), m_store32.get() + 4 * nHits(), 4 * nHits() * sizeof(float), hipMemcpyDefault, stream));
+  cudaCheck(
+      hipMemcpyAsync(ret.get(), m_store32.get() + 4 * nHits(), 4 * nHits() * sizeof(float), hipMemcpyDefault, stream));
   return ret;
 }
 

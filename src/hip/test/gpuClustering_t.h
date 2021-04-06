@@ -265,15 +265,15 @@ int main(void) {
     cudaCheck(hipMemset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)));
 
     cms::hip::launch(findClus,
-                      {blocksPerGrid, threadsPerBlock},
-                      d_id.get(),
-                      d_x.get(),
-                      d_y.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      d_clus.get(),
-                      n);
+                     {blocksPerGrid, threadsPerBlock},
+                     d_id.get(),
+                     d_x.get(),
+                     d_y.get(),
+                     d_moduleStart.get(),
+                     d_clusInModule.get(),
+                     d_moduleId.get(),
+                     d_clus.get(),
+                     n);
     cudaCheck(hipDeviceSynchronize());
     cudaCheck(hipMemcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t), hipMemcpyDeviceToHost));
 
@@ -291,14 +291,14 @@ int main(void) {
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
     cms::hip::launch(clusterChargeCut,
-                      {blocksPerGrid, threadsPerBlock},
-                      d_id.get(),
-                      d_adc.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      d_clus.get(),
-                      n);
+                     {blocksPerGrid, threadsPerBlock},
+                     d_id.get(),
+                     d_adc.get(),
+                     d_moduleStart.get(),
+                     d_clusInModule.get(),
+                     d_moduleId.get(),
+                     d_clus.get(),
+                     n);
 
     cudaCheck(hipDeviceSynchronize());
 #else

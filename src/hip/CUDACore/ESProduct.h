@@ -90,8 +90,8 @@ namespace cms {
         mutable SharedEventPtr m_event;  // guarded by m_mutex
         // non-null if some thread is already filling (hipStream_t is just a pointer)
         mutable hipStream_t m_fillingStream = nullptr;  // guarded by m_mutex
-        mutable std::atomic<bool> m_filled = false;      // easy check if data has been filled already or not
-        mutable T m_data;                                // guarded by m_mutex
+        mutable std::atomic<bool> m_filled = false;     // easy check if data has been filled already or not
+        mutable T m_data;                               // guarded by m_mutex
       };
 
       std::vector<Item> gpuDataPerDevice_;
