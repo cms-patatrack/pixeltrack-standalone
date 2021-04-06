@@ -29,6 +29,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka bs{&bsRaw, queue};
 
     iEvent.emplace(bsPutToken_, std::move(bs));
+
+    alpaka::wait(queue);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
