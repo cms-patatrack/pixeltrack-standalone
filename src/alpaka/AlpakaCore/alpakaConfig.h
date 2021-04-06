@@ -21,6 +21,9 @@ namespace alpaka_common {
   using WorkDiv = alpaka::WorkDivMembers<T_Dim, Idx>;
   using WorkDiv1 = WorkDiv<Dim1>;
   using WorkDiv2 = WorkDiv<Dim2>;
+
+  template <typename T_Data>
+    using ViewHost = alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>;
 }  // namespace alpaka_common
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -33,6 +36,9 @@ namespace alpaka_cuda_async {
   using DevAcc2 = alpaka::Dev<Acc2>;
   using PltfAcc1 = alpaka::Pltf<DevAcc1>;
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
+
+  template <class T_Data>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
 
   template <class T_Data>
   using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
@@ -59,6 +65,9 @@ namespace alpaka_serial_sync {
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
 
   template <class T_Data>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
+
+  template <class T_Data>
   using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
 
   using Queue = alpaka::QueueCpuBlocking;
@@ -81,6 +90,9 @@ namespace alpaka_tbb_async {
   using DevAcc2 = alpaka::Dev<Acc2>;
   using PltfAcc1 = alpaka::Pltf<DevAcc1>;
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
+
+  template <class T_Data>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
 
   template <class T_Data>
   using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
@@ -107,6 +119,9 @@ namespace alpaka_omp2_async {
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
 
   template <class T_Data>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
+
+  template <class T_Data>
   using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
 
   using Queue = alpaka::QueueCpuNonBlocking;
@@ -131,6 +146,9 @@ namespace alpaka_omp4_async {
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
 
   template <class T_Data>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
+
+  template <class T_Data>
   using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
 
   using Queue = alpaka::QueueCpuNonBlocking;
@@ -142,6 +160,20 @@ namespace alpaka_omp4_async {
 #define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
+
+
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+  struct AlpakaExecSpace {
+  AlpakaExecSpace() 
+  : host{ alpaka::getDevByIdx<PltfHost>(0u) },
+      device{ alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u) },
+      queue{ ALPAKA_ACCELERATOR_NAMESPACE::Queue(device) }
+    {}
+    DevHost host;
+    ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device;
+    ALPAKA_ACCELERATOR_NAMESPACE::Queue queue;
+  };
+}
 
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_ALPAKA_MODULE2(name) DEFINE_FWK_MODULE(name)
