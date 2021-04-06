@@ -139,16 +139,15 @@ void go(const DevHost& host,
     const Vec1& blocksPerGrid(Vec1::all(1));
     const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                               workDiv, mykernel<NBINS, S, DELTA>(), alpaka::getPtrNative(v_dbuf), N));
+                    alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                        workDiv, mykernel<NBINS, S, DELTA>(), alpaka::getPtrNative(v_dbuf), N));
   }
   alpaka::wait(queue);
 }
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(
-      alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);

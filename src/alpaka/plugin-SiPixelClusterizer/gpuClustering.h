@@ -32,8 +32,8 @@ namespace gpuClustering {
             --j;
           if (j < 0 or id[j] != id[i]) {
             // boundary...
-	    constexpr auto max = MaxNumModules;
-	    auto loc = alpaka::atomicOp<alpaka::AtomicInc>(acc, moduleStart, max);
+            constexpr auto max = MaxNumModules;
+            auto loc = alpaka::atomicOp<alpaka::AtomicInc>(acc, moduleStart, max);
 
             moduleStart[loc + 1] = i;
           }

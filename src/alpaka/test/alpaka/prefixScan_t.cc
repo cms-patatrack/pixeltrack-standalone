@@ -141,10 +141,8 @@ int main() {
 
     // Problem size
     for (int j = 1; j <= 1024; ++j) {
-      alpaka::enqueue(queue,
-                             alpaka::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
-      alpaka::enqueue(queue,
-                             alpaka::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
+      alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<uint16_t>(), j));
+      alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
     }
   }
 
@@ -168,8 +166,7 @@ int main() {
     const WorkDiv1& workDivMultiBlockInit =
         cms::alpakatools::make_workdiv(blocksPerGrid3, threadsPerBlockOrElementsPerThread3);
 
-    alpaka::enqueue(
-        queue, alpaka::createTaskKernel<Acc1>(workDivMultiBlockInit, init(), input_d, 1, num_items));
+    alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDivMultiBlockInit, init(), input_d, 1, num_items));
 
     const auto nThreads = 1024;
     const Vec1 threadsPerBlockOrElementsPerThread4(Vec1::all(nThreads));
@@ -179,31 +176,28 @@ int main() {
         cms::alpakatools::make_workdiv(blocksPerGrid4, threadsPerBlockOrElementsPerThread4);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
-    alpaka::enqueue(
-        queue,
-        alpaka::createTaskKernel<Acc1>(workDivMultiBlock,
-                                               cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(),
-                                               input_d,
-                                               output1_d,
-                                               num_items));
+    alpaka::enqueue(queue,
+                    alpaka::createTaskKernel<Acc1>(workDivMultiBlock,
+                                                   cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(),
+                                                   input_d,
+                                                   output1_d,
+                                                   num_items));
 
     const Vec1 blocksPerGridSecondStep(Vec1::all(1));
     const WorkDiv1& workDivMultiBlockSecondStep =
         cms::alpakatools::make_workdiv(blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
-    alpaka::enqueue(
-        queue,
-        alpaka::createTaskKernel<Acc1>(workDivMultiBlockSecondStep,
-                                               cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
-                                               input_d,
-                                               output1_d,
-                                               num_items,
-                                               nBlocks));
-
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc1>(workDivMultiBlock, verify(), output1_d, num_items));
+                    alpaka::createTaskKernel<Acc1>(workDivMultiBlockSecondStep,
+                                                   cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
+                                                   input_d,
+                                                   output1_d,
+                                                   num_items,
+                                                   nBlocks));
+
+    alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDivMultiBlock, verify(), output1_d, num_items));
 
     alpaka::wait(queue);  // input_dBuf and output1_dBuf end of scope
-  }                             // ksize
+  }                       // ksize
 
   return 0;
 }
