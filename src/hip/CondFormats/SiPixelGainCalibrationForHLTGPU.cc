@@ -29,10 +29,10 @@ const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsyn
     cudaCheck(hipMemcpyAsync(
         data.gainForHLTonGPU, this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU), hipMemcpyDefault, stream));
     cudaCheck(hipMemcpyAsync(&(data.gainForHLTonGPU->v_pedestals),
-                              &(data.gainDataOnGPU),
-                              sizeof(SiPixelGainForHLTonGPU_DecodingStructure*),
-                              hipMemcpyDefault,
-                              stream));
+                             &(data.gainDataOnGPU),
+                             sizeof(SiPixelGainForHLTonGPU_DecodingStructure*),
+                             hipMemcpyDefault,
+                             stream));
   });
   return data.gainForHLTonGPU;
 }

@@ -20,8 +20,7 @@ int main(void) {
   using namespace gpuClustering;
 
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(
-      alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
 
@@ -272,14 +271,14 @@ int maxEvents = 10;
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
-    alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                               workDivCountModules,
-                               countModules(),
-                               alpaka::getPtrNative(d_id_buf),
-                               alpaka::getPtrNative(d_moduleStart_buf),
-                               alpaka::getPtrNative(d_clus_buf),
-                               n));
+    alpaka::enqueue(
+        queue,
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivCountModules,
+                                                                     countModules(),
+                                                                     alpaka::getPtrNative(d_id_buf),
+                                                                     alpaka::getPtrNative(d_moduleStart_buf),
+                                                                     alpaka::getPtrNative(d_clus_buf),
+                                                                     n));
 
     // FIND CLUSTER
     const WorkDiv1& workDivMaxNumModules =
@@ -289,18 +288,18 @@ int maxEvents = 10;
 
     alpaka::memset(queue, d_clusInModule_buf, 0, MaxNumModules);
 
-    alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                               workDivMaxNumModules,
-                               findClus(),
-                               alpaka::getPtrNative(d_id_buf),
-                               alpaka::getPtrNative(d_x_buf),
-                               alpaka::getPtrNative(d_y_buf),
-                               alpaka::getPtrNative(d_moduleStart_buf),
-                               alpaka::getPtrNative(d_clusInModule_buf),
-                               alpaka::getPtrNative(d_moduleId_buf),
-                               alpaka::getPtrNative(d_clus_buf),
-                               n));
+    alpaka::enqueue(
+        queue,
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
+                                                                     findClus(),
+                                                                     alpaka::getPtrNative(d_id_buf),
+                                                                     alpaka::getPtrNative(d_x_buf),
+                                                                     alpaka::getPtrNative(d_y_buf),
+                                                                     alpaka::getPtrNative(d_moduleStart_buf),
+                                                                     alpaka::getPtrNative(d_clusInModule_buf),
+                                                                     alpaka::getPtrNative(d_moduleId_buf),
+                                                                     alpaka::getPtrNative(d_clus_buf),
+                                                                     n));
     alpaka::memcpy(queue, h_nModules_buf, d_moduleStart_buf, 1u);
 
     auto h_nclus_buf = alpaka::allocBuf<uint32_t, Idx>(host, MaxNumModules);
@@ -324,17 +323,17 @@ int maxEvents = 10;
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
     // CLUSTER CHARGE CUT
-    alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                               workDivMaxNumModules,
-                               clusterChargeCut(),
-                               alpaka::getPtrNative(d_id_buf),
-                               alpaka::getPtrNative(d_adc_buf),
-                               alpaka::getPtrNative(d_moduleStart_buf),
-                               alpaka::getPtrNative(d_clusInModule_buf),
-                               alpaka::getPtrNative(d_moduleId_buf),
-                               alpaka::getPtrNative(d_clus_buf),
-                               n));
+    alpaka::enqueue(
+        queue,
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
+                                                                     clusterChargeCut(),
+                                                                     alpaka::getPtrNative(d_id_buf),
+                                                                     alpaka::getPtrNative(d_adc_buf),
+                                                                     alpaka::getPtrNative(d_moduleStart_buf),
+                                                                     alpaka::getPtrNative(d_clusInModule_buf),
+                                                                     alpaka::getPtrNative(d_moduleId_buf),
+                                                                     alpaka::getPtrNative(d_clus_buf),
+                                                                     n));
     alpaka::memcpy(queue, h_id_buf, d_id_buf, n);
     alpaka::memcpy(queue, h_clus_buf, d_clus_buf, n);
     alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, MaxNumModules);

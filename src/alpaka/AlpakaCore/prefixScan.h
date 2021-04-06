@@ -201,26 +201,26 @@ namespace alpaka {
     //#############################################################################
     //! The trait for getting the size of the block shared dynamic memory for a kernel.
     template <typename T, typename TAcc>
-      struct BlockSharedMemDynSizeBytes<cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
+    struct BlockSharedMemDynSizeBytes<cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
       //-----------------------------------------------------------------------------
       //! \return The size of the shared memory allocated for a block.
       template <typename TVec>
-        ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-								     cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
-								     TVec const& blockThreadExtent,
-								     TVec const& threadElemExtent,
-								     T const* ci,
-								     T* co,
-								     int32_t size,
-								     int32_t numBlocks) -> T {
-	alpaka::ignore_unused(myKernel);
-	alpaka::ignore_unused(blockThreadExtent);
-	alpaka::ignore_unused(threadElemExtent);
-	alpaka::ignore_unused(ci);
-	alpaka::ignore_unused(co);
-	alpaka::ignore_unused(size);
+      ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
+          cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
+          TVec const& blockThreadExtent,
+          TVec const& threadElemExtent,
+          T const* ci,
+          T* co,
+          int32_t size,
+          int32_t numBlocks) -> T {
+        alpaka::ignore_unused(myKernel);
+        alpaka::ignore_unused(blockThreadExtent);
+        alpaka::ignore_unused(threadElemExtent);
+        alpaka::ignore_unused(ci);
+        alpaka::ignore_unused(co);
+        alpaka::ignore_unused(size);
 
-	return static_cast<size_t>(numBlocks) * sizeof(T);
+        return static_cast<size_t>(numBlocks) * sizeof(T);
       }
     };
 

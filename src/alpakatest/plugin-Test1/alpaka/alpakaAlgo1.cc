@@ -227,12 +227,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // VECTOR ADDITION
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc1>(workDiv1,
-                                                                  vectorAdd(),
-                                                                  alpaka::getPtrNative(d_a_buf),
-                                                                  alpaka::getPtrNative(d_b_buf),
-                                                                  alpaka::getPtrNative(d_c_buf),
-                                                                  NUM_VALUES));
+                    alpaka::createTaskKernel<Acc1>(workDiv1,
+                                                   vectorAdd(),
+                                                   alpaka::getPtrNative(d_a_buf),
+                                                   alpaka::getPtrNative(d_b_buf),
+                                                   alpaka::getPtrNative(d_c_buf),
+                                                   NUM_VALUES));
 
     // Prepare 2D workDiv
     const unsigned int blocksPerGridSide = (NUM_VALUES <= 32 ? 1 : std::ceil(NUM_VALUES / 32.));
@@ -249,38 +249,38 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // VECTOR MULTIPLICATION
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                                  vectorProd(),
-                                                                  alpaka::getPtrNative(d_a_buf),
-                                                                  alpaka::getPtrNative(d_b_buf),
-                                                                  alpaka::getPtrNative(d_ma_buf),
-                                                                  NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2>(workDiv2,
+                                                   vectorProd(),
+                                                   alpaka::getPtrNative(d_a_buf),
+                                                   alpaka::getPtrNative(d_b_buf),
+                                                   alpaka::getPtrNative(d_ma_buf),
+                                                   NUM_VALUES));
 
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                                  vectorProd(),
-                                                                  alpaka::getPtrNative(d_a_buf),
-                                                                  alpaka::getPtrNative(d_c_buf),
-                                                                  alpaka::getPtrNative(d_mb_buf),
-                                                                  NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2>(workDiv2,
+                                                   vectorProd(),
+                                                   alpaka::getPtrNative(d_a_buf),
+                                                   alpaka::getPtrNative(d_c_buf),
+                                                   alpaka::getPtrNative(d_mb_buf),
+                                                   NUM_VALUES));
 
     // MATRIX MULTIPLICATION
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                                  matrixMul(),
-                                                                  alpaka::getPtrNative(d_ma_buf),
-                                                                  alpaka::getPtrNative(d_mb_buf),
-                                                                  alpaka::getPtrNative(d_mc_buf),
-                                                                  NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2>(workDiv2,
+                                                   matrixMul(),
+                                                   alpaka::getPtrNative(d_ma_buf),
+                                                   alpaka::getPtrNative(d_mb_buf),
+                                                   alpaka::getPtrNative(d_mc_buf),
+                                                   NUM_VALUES));
 
     // MATRIX - VECTOR MULTIPLICATION
     alpaka::enqueue(queue,
-                           alpaka::createTaskKernel<Acc1>(workDiv1,
-                                                                  matrixMulVector(),
-                                                                  alpaka::getPtrNative(d_mc_buf),
-                                                                  alpaka::getPtrNative(d_b_buf),
-                                                                  alpaka::getPtrNative(d_c_buf),
-                                                                  NUM_VALUES));
+                    alpaka::createTaskKernel<Acc1>(workDiv1,
+                                                   matrixMulVector(),
+                                                   alpaka::getPtrNative(d_mc_buf),
+                                                   alpaka::getPtrNative(d_b_buf),
+                                                   alpaka::getPtrNative(d_c_buf),
+                                                   NUM_VALUES));
 
     alpaka::wait(queue);
     return d_mc_buf;

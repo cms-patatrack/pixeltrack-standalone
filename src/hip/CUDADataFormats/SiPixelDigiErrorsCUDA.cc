@@ -22,9 +22,7 @@ SiPixelDigiErrorsCUDA::SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterE
   cms::hip::copyAsync(error_d, error_h, stream);
 }
 
-void SiPixelDigiErrorsCUDA::copyErrorToHostAsync(hipStream_t stream) {
-  cms::hip::copyAsync(error_h, error_d, stream);
-}
+void SiPixelDigiErrorsCUDA::copyErrorToHostAsync(hipStream_t stream) { cms::hip::copyAsync(error_h, error_d, stream); }
 
 SiPixelDigiErrorsCUDA::HostDataError SiPixelDigiErrorsCUDA::dataErrorToHostAsync(hipStream_t stream) const {
   // On one hand size() could be sufficient. On the other hand, if
