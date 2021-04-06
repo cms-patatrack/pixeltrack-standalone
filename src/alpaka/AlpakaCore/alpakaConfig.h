@@ -162,18 +162,24 @@ namespace alpaka_omp4_async {
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 
 
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+  static const DevHost host = alpaka::getDevByIdx<PltfHost>(0u);
+  static const DevAcc1 device = alpaka::getDevByIdx<PltfAcc1>(0u);
+}
+
+/*namespace ALPAKA_ACCELERATOR_NAMESPACE {
   struct AlpakaExecSpace {
   AlpakaExecSpace() 
   : host{ alpaka::getDevByIdx<PltfHost>(0u) },
-      device{ alpaka::getDevByIdx<PltfAcc1>(0u) },
-      queue{ Queue(device) }
+      device{ alpaka::getDevByIdx<PltfAcc1>(0u) }
     {}
     DevHost host;
     DevAcc1 device;
-    Queue queue;
   };
-}
+  }*/
+
+
 
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_ALPAKA_MODULE2(name) DEFINE_FWK_MODULE(name)

@@ -142,6 +142,8 @@ int main(int argc, char** argv) {
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
 
+  //static const ALPAKA_ACCELERATOR_NAMESPACE::AlpakaExecSpace space{ALPAKA_ACCELERATOR_NAMESPACE::AlpakaExecSpace()};
+
   // Initialize tasks scheduler (thread pool)
   // TO DO: Warning: this will not work, need to be included in header.
   // See external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp

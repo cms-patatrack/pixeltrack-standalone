@@ -23,9 +23,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
+   
+    Queue queue(device);
 
-    AlpakaExecSpace space{AlpakaExecSpace()};
-    BeamSpotAlpaka bs{&bsRaw, space};
+    BeamSpotAlpaka bs{&bsRaw, queue};
 
     iEvent.emplace(bsPutToken_, std::move(bs));
   }
