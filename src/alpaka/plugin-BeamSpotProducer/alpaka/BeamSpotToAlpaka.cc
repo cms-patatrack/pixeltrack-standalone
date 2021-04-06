@@ -16,6 +16,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     edm::EDPutTokenT<BeamSpotAlpaka> bsPutToken_;
+    // TO DO: Add implementation of cms::alpaka::Product?
+    // const edm::EDPutTokenT<cms::alpaka::Product<BeamSpotAlpaka>> bsPutToken_;
   };
 
   BeamSpotToAlpaka::BeamSpotToAlpaka(edm::ProductRegistry& reg)
@@ -24,8 +26,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
    
+    // TO DO: Add inter-event parallelization. cms::alpaka::ScopedContextProduce?
+    // cms::alpaka::ScopedContextProduce ctx{iEvent.streamID()};
     Queue queue(device);
-
     BeamSpotAlpaka bs{&bsRaw, queue};
 
     iEvent.emplace(bsPutToken_, std::move(bs));
