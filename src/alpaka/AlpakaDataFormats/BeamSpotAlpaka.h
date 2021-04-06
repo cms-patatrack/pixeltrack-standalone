@@ -13,17 +13,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka() = default;
   
   BeamSpotAlpaka(BeamSpotPOD const* data, AlpakaExecSpace& space)
-    : data_d{alpaka::allocBuf<BeamSpotPOD, Idx>(space.device, Vec1::all(1))} 
+    : data_d{alpaka::allocBuf<BeamSpotPOD, Idx>(space.device, 1u)} 
     {      
-      ViewHost<const BeamSpotPOD> data_h(data, space.host, Vec1::all(1));
+      ViewHost<const BeamSpotPOD> data_h(data, space.host, 1u);
 
-      alpaka::memcpy(space.queue, data_d, data_h, Vec1::all(1));
+      alpaka::memcpy(space.queue, data_d, data_h, 1u);
     }
 
     BeamSpotPOD const* data() const { return alpaka::getPtrNative(data_d); }
 
   private:
-    ALPAKA_ACCELERATOR_NAMESPACE::AlpakaAccBuf1<BeamSpotPOD> data_d;
+    AlpakaAccBuf1<BeamSpotPOD> data_d;
   };
 
 }

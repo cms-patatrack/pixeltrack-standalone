@@ -6,6 +6,7 @@
 #include "Framework/PluginFactory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
   class BeamSpotToAlpaka : public edm::EDProducer {
   public:
     explicit BeamSpotToAlpaka(edm::ProductRegistry& reg);
@@ -28,6 +29,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     iEvent.emplace(bsPutToken_, std::move(bs));
   }
+
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 DEFINE_FWK_ALPAKA_MODULE(BeamSpotToAlpaka);

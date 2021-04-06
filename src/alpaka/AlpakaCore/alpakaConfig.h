@@ -166,12 +166,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   struct AlpakaExecSpace {
   AlpakaExecSpace() 
   : host{ alpaka::getDevByIdx<PltfHost>(0u) },
-      device{ alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u) },
-      queue{ ALPAKA_ACCELERATOR_NAMESPACE::Queue(device) }
+      device{ alpaka::getDevByIdx<PltfAcc1>(0u) },
+      queue{ Queue(device) }
     {}
     DevHost host;
-    ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device;
-    ALPAKA_ACCELERATOR_NAMESPACE::Queue queue;
+    DevAcc1 device;
+    Queue queue;
   };
 }
 

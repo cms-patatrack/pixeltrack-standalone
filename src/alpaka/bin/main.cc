@@ -143,6 +143,8 @@ int main(int argc, char** argv) {
             << numberOfThreads << " threads." << std::endl;
 
   // Initialize tasks scheduler (thread pool)
+  // TO DO: Warning: this will not work, need to be included in header.
+  // See external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp
   tbb::task_scheduler_init tsi(numberOfThreads);
 
   // Run work
