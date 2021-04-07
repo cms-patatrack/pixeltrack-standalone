@@ -107,7 +107,6 @@ namespace alpaka_omp4_async {
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 
 
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using DevAcc1 = alpaka::Dev<Acc1>;
   using DevAcc2 = alpaka::Dev<Acc2>;
@@ -122,15 +121,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <typename TData>
     using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
-
-
- 
-
-  
-
-
-  static const DevHost host = alpaka::getDevByIdx<PltfHost>(0u);
-  static const DevAcc1 device = alpaka::getDevByIdx<PltfAcc1>(0u);
 }
 
 
