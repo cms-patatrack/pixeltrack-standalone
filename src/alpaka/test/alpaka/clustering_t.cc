@@ -13,8 +13,8 @@
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 
 // dirty, but works
-#include "plugin-SiPixelClusterizer/gpuClustering.h"
-#include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
+#include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
+#include "plugin-SiPixelClusterizer/alpaka/gpuClusterChargeCut.h"
 
 int main(void) {
   using namespace gpuClustering;
