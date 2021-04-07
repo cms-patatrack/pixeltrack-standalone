@@ -1,7 +1,7 @@
 #ifndef AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
 #define AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaCommon.h"
 #include "DataFormats/BeamSpotPOD.h"
 
 #include <cstring>
@@ -13,17 +13,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka() = default;
   
   BeamSpotAlpaka(BeamSpotPOD const* data, Queue& queue)
-    : data_d{alpaka::allocBuf<BeamSpotPOD, Idx>(device, 1u)} 
+    : data_d{cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(device)} 
     {      
-      ViewHost<const BeamSpotPOD> data_h(data, host, 1u);
+      auto data_h{cms::alpakatools::createHostView<const BeamSpotPOD>(host, data)};
 
-      alpaka::memcpy(queue, data_d, data_h, 1u);
+      cms::alpakatools::memcpy(queue, data_d, data_h);
     }
 
     BeamSpotPOD const* data() const { return alpaka::getPtrNative(data_d); }
 
   private:
-    AlpakaAccBuf1<BeamSpotPOD> data_d;
+    AlpakaDeviceBuf<BeamSpotPOD> data_d;
   };
 
 }

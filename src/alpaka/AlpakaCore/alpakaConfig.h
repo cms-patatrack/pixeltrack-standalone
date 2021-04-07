@@ -23,7 +23,7 @@ namespace alpaka_common {
   using WorkDiv2 = WorkDiv<Dim2>;
 
   template <typename T_Data>
-    using ViewHost = alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>;
+    using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>;
 }  // namespace alpaka_common
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -119,6 +119,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <class T_Data>
     using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
+
+  template <typename TData>
+    using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
+
+
+ 
+
+  
+
 
   static const DevHost host = alpaka::getDevByIdx<PltfHost>(0u);
   static const DevAcc1 device = alpaka::getDevByIdx<PltfAcc1>(0u);
