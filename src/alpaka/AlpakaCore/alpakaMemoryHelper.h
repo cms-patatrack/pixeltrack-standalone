@@ -8,6 +8,16 @@ using namespace alpaka_common;
 namespace cms {
   namespace alpakatools {
 
+    template <typename TData, typename TDev>
+      auto allocHostBuf(const TDev& host, const Extent& extent) {
+      return alpaka::allocBuf<TData, Idx>(host, extent); 
+    }
+
+    template <typename TData, typename TDev>
+      auto allocHostBuf(const TDev& host) {
+      return alpaka::allocBuf<TData, Idx>(host, 1u); 
+    }
+
     template <typename T_Data>
       auto createHostView(const DevHost& host, T_Data* data, const Extent& extent) {
       return alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>(data, host, extent);

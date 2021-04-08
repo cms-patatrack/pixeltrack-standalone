@@ -23,6 +23,9 @@ namespace alpaka_common {
   using WorkDiv2 = WorkDiv<Dim2>;
 
   template <typename T_Data>
+    using AlpakaHostBuf = alpaka::Buf<DevHost, T_Data, Dim1, Idx>;
+
+  template <typename T_Data>
     using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>;
 }  // namespace alpaka_common
 
