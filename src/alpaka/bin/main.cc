@@ -120,10 +120,10 @@ int main(int argc, char** argv) {
         }
         if (histogram) {
           edmodules.emplace_back(prefix + "HistoValidator");
-        }
+	  }*/
 
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
-        esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+        /*esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
         esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
       }
     };

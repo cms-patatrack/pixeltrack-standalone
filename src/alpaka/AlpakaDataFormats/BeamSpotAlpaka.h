@@ -26,6 +26,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     AlpakaDeviceBuf<BeamSpotPOD> data_d;
   };
 
-}
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif
