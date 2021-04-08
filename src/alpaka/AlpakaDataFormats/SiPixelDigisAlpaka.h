@@ -5,10 +5,10 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class SiPixelDigisCUDA {
+class SiPixelDigisAlpaka {
 public:
-SiPixelDigisCUDA() = default;
-explicit SiPixelDigisCUDA(size_t maxFedWords)
+SiPixelDigisAlpaka() = default;
+explicit SiPixelDigisAlpaka(size_t maxFedWords)
   : xx_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
   yy_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
   adc_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
@@ -17,12 +17,12 @@ explicit SiPixelDigisCUDA(size_t maxFedWords)
   pdigi_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)},
   rawIdArr_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)}
   {}
-    ~SiPixelDigisCUDA() = default;
+    ~SiPixelDigisAlpaka() = default;
 
-    SiPixelDigisCUDA(const SiPixelDigisCUDA &) = delete;
-    SiPixelDigisCUDA &operator=(const SiPixelDigisCUDA &) = delete;
-    SiPixelDigisCUDA(SiPixelDigisCUDA &&) = default;
-    SiPixelDigisCUDA &operator=(SiPixelDigisCUDA &&) = default;
+    SiPixelDigisAlpaka(const SiPixelDigisAlpaka &) = delete;
+    SiPixelDigisAlpaka &operator=(const SiPixelDigisAlpaka &) = delete;
+    SiPixelDigisAlpaka(SiPixelDigisAlpaka &&) = default;
+    SiPixelDigisAlpaka &operator=(SiPixelDigisAlpaka &&) = default;
 
   void setNModulesDigis(uint32_t nModules, uint32_t nDigis) {
     nModules_h = nModules;
@@ -82,7 +82,7 @@ explicit SiPixelDigisCUDA(size_t maxFedWords)
     ALPAKA_FN_ACC ALPAKA_FN_INLINE uint16_t moduleInd(int i) const { return moduleInd_[i]; }
     ALPAKA_FN_ACC ALPAKA_FN_INLINE int32_t clus(int i) const { return clus_[i]; }
 
-    friend class SiPixelDigisCUDA;
+    friend class SiPixelDigisAlpaka;
 
     // private:
     uint16_t const * __restrict__ xx_;

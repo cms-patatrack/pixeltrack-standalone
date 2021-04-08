@@ -8,10 +8,10 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class SiPixelDigiErrorsCUDA {
+class SiPixelDigiErrorsAlpaka {
 public:
-  SiPixelDigiErrorsCUDA() = default;
-  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors)
+  SiPixelDigiErrorsAlpaka() = default;
+  explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors)
     : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
     error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(device)},
       error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(host)},
@@ -27,12 +27,12 @@ public:
     cms::alpakatools::memcpy(queue, error_d, error_h);
     alpaka::wait(queue);
   }
-  ~SiPixelDigiErrorsCUDA() = default;
+  ~SiPixelDigiErrorsAlpaka() = default;
 
-  SiPixelDigiErrorsCUDA(const SiPixelDigiErrorsCUDA&) = delete;
-  SiPixelDigiErrorsCUDA& operator=(const SiPixelDigiErrorsCUDA&) = delete;
-  SiPixelDigiErrorsCUDA(SiPixelDigiErrorsCUDA&&) = default;
-  SiPixelDigiErrorsCUDA& operator=(SiPixelDigiErrorsCUDA&&) = default;
+  SiPixelDigiErrorsAlpaka(const SiPixelDigiErrorsAlpaka&) = delete;
+  SiPixelDigiErrorsAlpaka& operator=(const SiPixelDigiErrorsAlpaka&) = delete;
+  SiPixelDigiErrorsAlpaka(SiPixelDigiErrorsAlpaka&&) = default;
+  SiPixelDigiErrorsAlpaka& operator=(SiPixelDigiErrorsAlpaka&&) = default;
 
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 

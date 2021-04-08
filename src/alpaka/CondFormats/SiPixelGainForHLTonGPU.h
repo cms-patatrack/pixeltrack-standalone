@@ -35,7 +35,7 @@ public:
   SiPixelGainForHLTonGPU(AlpakaDeviceBuf<DecodingStructure> ped, AlpakaDeviceBuf<RangeAndCols> rc, AlpakaDeviceBuf<Fields> f)
       : v_pedestals(std::move(ped)), rangeAndCols(std::move(rc)), fields(std::move(f)){};
 
-  ALPAKA_FN_INLINE std::pair<float, float> getPedAndGain(
+  ALPAKA_FN_INLINE ALPAKA_FN_ACC std::pair<float, float> getPedAndGain(
       uint32_t moduleInd, int col, int row, bool& isDeadColumn, bool& isNoisyColumn) const {
       auto range = getRangeAndCols()[moduleInd].first;
       auto nCols = getRangeAndCols()[moduleInd].second;

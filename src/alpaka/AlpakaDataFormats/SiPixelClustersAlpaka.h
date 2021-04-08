@@ -5,25 +5,27 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class SiPixelClustersCUDA {
+class SiPixelClustersAlpaka {
 public:
-  SiPixelClustersCUDA() = default;
-explicit SiPixelClustersCUDA(size_t maxClusters)
+  SiPixelClustersAlpaka() = default;
+explicit SiPixelClustersAlpaka(size_t maxClusters)
   : moduleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)},
     clusInModule_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
     moduleId_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
     clusModuleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)}
   {}
-  ~SiPixelClustersCUDA() = default;
+  ~SiPixelClustersAlpaka() = default;
 
-  SiPixelClustersCUDA(const SiPixelClustersCUDA &) = delete;
-  SiPixelClustersCUDA &operator=(const SiPixelClustersCUDA &) = delete;
-  SiPixelClustersCUDA(SiPixelClustersCUDA &&) = default;
-  SiPixelClustersCUDA &operator=(SiPixelClustersCUDA &&) = default;
+  SiPixelClustersAlpaka(const SiPixelClustersAlpaka &) = delete;
+  SiPixelClustersAlpaka &operator=(const SiPixelClustersAlpaka &) = delete;
+  SiPixelClustersAlpaka(SiPixelClustersAlpaka &&) = default;
+  SiPixelClustersAlpaka &operator=(SiPixelClustersAlpaka &&) = default;
 
   void setNClusters(uint32_t nClusters) { nClusters_h = nClusters; }
 
   uint32_t nClusters() const { return nClusters_h; }
+
+auto moduleStartAlpakaDeviceBuf() { return moduleStart_d; }
 
   uint32_t *moduleStart() { return alpaka::getPtrNative(moduleStart_d); }
   uint32_t *clusInModule() { return alpaka::getPtrNative(clusInModule_d); }
@@ -48,7 +50,7 @@ public:
     ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t moduleId(int i) const { return moduleId_[i]; }
     ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
 
-    friend SiPixelClustersCUDA;
+    friend SiPixelClustersAlpaka;
 
     //   private:
     uint32_t const * __restrict__ moduleStart_;
