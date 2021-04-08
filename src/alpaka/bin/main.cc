@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
 	  }*/
 
         esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
-        /*esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
-        esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+        esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+        /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
       }
     };
     addModules("alpaka_serial_sync::", Backend::SERIAL);

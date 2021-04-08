@@ -20,7 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cms::alpakatools::memcpy(queue, data_d, data_h);
     }
 
-    BeamSpotPOD const* data() const { return alpaka::getPtrNative(data_d); }
+    const BeamSpotPOD* data() const { return alpaka::getPtrNative(data_d); }
 
   private:
     AlpakaDeviceBuf<BeamSpotPOD> data_d;
