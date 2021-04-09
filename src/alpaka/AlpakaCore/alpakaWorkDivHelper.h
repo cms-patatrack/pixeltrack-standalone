@@ -301,11 +301,11 @@ namespace cms {
      * Case where the input index has reached the end of threadDimension: strides the input index.
      * Otherwise: do nothing.
      */
-    ALPAKA_FN_ACC bool get_next_element_1D_index_stride(uint32_t& i,
-                                                        uint32_t& firstElementIdx,
-                                                        uint32_t& endElementIdx,
-                                                        const uint32_t stride,
-                                                        const uint32_t maxNumberOfElements) {
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE bool get_next_element_1D_index_stride(uint32_t& i,
+									 uint32_t& firstElementIdx,
+									 uint32_t& endElementIdx,
+									 const uint32_t stride,
+									 const uint32_t maxNumberOfElements) {
       bool isNextStrideElementValid = true;
       if (i == endElementIdx) {
         firstElementIdx += stride;
