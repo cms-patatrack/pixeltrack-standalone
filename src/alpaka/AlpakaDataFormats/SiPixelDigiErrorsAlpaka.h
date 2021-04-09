@@ -11,12 +11,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 class SiPixelDigiErrorsAlpaka {
 public:
   SiPixelDigiErrorsAlpaka() = default;
-  explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors)
+  //explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors)
+  explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords)
     : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
     error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(device)},
-      error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(host)},
-	formatterErrors_h{std::move(errors)} {
-
+      error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(host)}
+      //, formatterErrors_h{std::move(errors)}
+	 {
 	  auto perror_h = alpaka::getPtrNative(error_h);
 	  perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));
 	  assert(perror_h->empty());
@@ -34,6 +35,7 @@ public:
   SiPixelDigiErrorsAlpaka(SiPixelDigiErrorsAlpaka&&) = default;
   SiPixelDigiErrorsAlpaka& operator=(SiPixelDigiErrorsAlpaka&&) = default;
 
+  void setFormatterErrors(PixelFormatterErrors errors) { formatterErrors_h = std::move(errors); }
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
   cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return alpaka::getPtrNative(error_d); }

@@ -7,7 +7,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 class SiPixelClustersAlpaka {
 public:
-  SiPixelClustersAlpaka() = default;
+SiPixelClustersAlpaka() = default;
 explicit SiPixelClustersAlpaka(size_t maxClusters)
   : moduleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)},
     clusInModule_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},

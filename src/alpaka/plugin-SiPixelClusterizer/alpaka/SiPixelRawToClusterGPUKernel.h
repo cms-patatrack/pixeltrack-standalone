@@ -5,10 +5,14 @@
 
 #include "AlpakaCore/alpakaCommon.h"
 
+#include "AlpakaDataFormats/gpuClusteringConstants.h"
+#include "CondFormats/SiPixelFedCablingMapGPU.h"
+
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "DataFormats/PixelErrors.h"
+#include "AlpakaDataFormats/gpuClusteringConstants.h"
 
 struct SiPixelFedCablingMapGPU;
 class SiPixelGainForHLTonGPU;
@@ -144,6 +148,10 @@ namespace pixelgpudetails {
 
   namespace ALPAKA_ACCELERATOR_NAMESPACE {
     namespace pixelgpudetails {
+
+      // number of words for all the FEDs
+      constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
+
   class SiPixelRawToClusterGPUKernel {
   public:
     class WordFedAppender {
@@ -162,9 +170,12 @@ namespace pixelgpudetails {
     };
 
   SiPixelRawToClusterGPUKernel() : 
-    nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>>(host, 2u)}
-      {};
-    ~SiPixelRawToClusterGPUKernel() = default;
+    nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 2u)},
+      digis_d{SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS)},
+	clusters_d{SiPixelClustersAlpaka(gpuClustering::MaxNumModules)},
+	  digiErrors_d{SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS)}
+	  {};
+	  ~SiPixelRawToClusterGPUKernel() = default;
 
     SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
     SiPixelRawToClusterGPUKernel(SiPixelRawToClusterGPUKernel&&) = delete;

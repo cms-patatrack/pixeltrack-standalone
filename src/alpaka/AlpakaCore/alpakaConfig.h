@@ -6,6 +6,7 @@
 namespace alpaka_common {
   using Idx = uint32_t;
   using Extent = uint32_t;
+  using Offsets = Extent;
   using DevHost = alpaka::DevCpu;
   using PltfHost = alpaka::Pltf<DevHost>;
 
@@ -124,6 +125,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <typename TData>
     using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
+
+  template <typename T_Data>
+    using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, T_Data, Dim1, Idx>;
+
+  template <typename TData>
+    using SubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>; // DevAcc or Acc?
 }
 
 

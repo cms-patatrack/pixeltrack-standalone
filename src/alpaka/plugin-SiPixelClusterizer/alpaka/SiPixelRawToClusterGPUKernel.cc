@@ -17,10 +17,10 @@
 #include <iostream>
 #include <string>
 
-// CMSSW includes
-#include "AlpakaDataFormats/gpuClusteringConstants.h"
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
+// Alpaka includes
+//#include "AlpakaCore/alpakaWorkDivHelper.h"
 
+// CMSSW includes
 #include "gpuCalibPixel.h"
 #include "gpuClusterChargeCut.h"
 #include "gpuClustering.h"
@@ -32,9 +32,6 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 namespace pixelgpudetails {
 
-  // number of words for all the FEDs
-  constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
-
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() :
     word_{cms::alpakatools::allocHostBuf<unsigned int>(host, MAX_FED_WORDS)},
     fedId_{cms::alpakatools::allocHostBuf<unsigned char>(host, MAX_FED_WORDS)}
@@ -44,8 +41,8 @@ namespace pixelgpudetails {
                                                                         unsigned int wordCounterGPU,
                                                                         const uint32_t *src,
                                                                         unsigned int length) {
-    std::memcpy(word_.get() + wordCounterGPU, src, sizeof(uint32_t) * length);
-    std::memset(fedId_.get() + wordCounterGPU / 2, fedId - 1200, length / 2);
+    std::memcpy(alpaka::getPtrNative(word_) + wordCounterGPU, src, sizeof(uint32_t) * length);
+    std::memset(alpaka::getPtrNative(fedId_) + wordCounterGPU / 2, fedId - 1200, length / 2);
   }
 
   ////////////////////
@@ -349,45 +346,54 @@ namespace pixelgpudetails {
     template <typename T_Acc>
     ALPAKA_FN_ACC void operator()(const T_Acc& acc,
 				  const SiPixelFedCablingMapGPU *cablingMap,
-                                   const unsigned char *modToUnp,
-                                   const uint32_t wordCounter,
-                                   const uint32_t *word,
-                                   const uint8_t *fedIds,
-                                   uint16_t *xx,
-                                   uint16_t *yy,
-                                   uint16_t *adc,
-                                   uint32_t *pdigi,
-                                   uint32_t *rawIdArr,
-                                   uint16_t *moduleId,
-                                   cms::alpakatools::SimpleVector<PixelErrorCompact> *err,
-                                   bool useQualityInfo,
-                                   bool includeErrors,
-                                   bool debug) {
-    //if (threadIdx.x==0) printf("Event: %u blockIdx.x: %u start: %u end: %u\n", eventno, blockIdx.x, begin, end);
+				  const unsigned char *modToUnp,
+				  const uint32_t wordCounter,
+				  const uint32_t *word,
+				  const uint8_t *fedIds,
+				  uint16_t *xx,
+				  uint16_t *yy,
+				  uint16_t *adc,
+				  uint32_t *pdigi,
+				  uint32_t *rawIdArr,
+				  uint16_t *moduleId,
+				  cms::alpakatools::SimpleVector<PixelErrorCompact> *err,
+				  bool useQualityInfo,
+				  bool includeErrors,
+				  bool debug) const {
+      //int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
+      //for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
 
 
-      
-	  //int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
-	  //for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
-      cms::alpakatools::for_each_element_1D_grid_stride(acc, wordCounter, [&](uint32_t iloop) {
-      auto gIndex = iloop;
-      xx[gIndex] = 0;
-      yy[gIndex] = 0;
-      adc[gIndex] = 0;
-      bool skipROC = false;
+      // TO DO: could also just directly use this function, and replace the continue by return statements.
+      // cms::alpakatools::for_each_element_1D_grid_stride(acc, wordCounter, [&](uint32_t iloop) {
 
-      uint8_t fedId = fedIds[gIndex / 2];  // +1200;
+      const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
+      auto elementIdxShift = Vec1::all(0u);
+      const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_index_range_in_grid(acc, elementIdxShift);
+      uint32_t firstElementIdx = firstElementIdxNoStride[0u];
+      uint32_t endElementIdx = endElementIdxNoStride[0u];
 
-      // initialize (too many coninue below)
-      pdigi[gIndex] = 0;
-      rawIdArr[gIndex] = 0;
-      moduleId[gIndex] = 9999;
+      for (uint32_t iloop = firstElementIdx; iloop < wordCounter; ++iloop) {
+	if (!cms::alpakatools::get_next_element_1D_index_stride(iloop, firstElementIdx, endElementIdx, gridDimension, wordCounter)) { break; }
 
-      uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
-      if (ww == 0) {
-        // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
-        continue;
-      }
+	auto gIndex = iloop;
+	xx[gIndex] = 0;
+	yy[gIndex] = 0;
+	adc[gIndex] = 0;
+	bool skipROC = false;
+
+	uint8_t fedId = fedIds[gIndex / 2];  // +1200;
+
+	// initialize (too many coninue below)
+	pdigi[gIndex] = 0;
+	rawIdArr[gIndex] = 0;
+	moduleId[gIndex] = 9999;
+
+	uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
+	if (ww == 0) {
+	  // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
+	  continue;
+	}
 
       uint32_t link = getLink(ww);  // Extract link
       uint32_t roc = getRoc(ww);    // Extract Roc in link
@@ -397,7 +403,7 @@ namespace pixelgpudetails {
       skipROC = (roc < ::pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
       if (includeErrors and skipROC) {
         uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
-        err->push_back(PixelErrorCompact{rID, ww, errorType, fedId});
+        err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
         continue;
       }
 
@@ -405,7 +411,7 @@ namespace pixelgpudetails {
       uint32_t rocIdInDetUnit = detId.rocInDet;
       bool barrel = isBarrel(rawId);
 
-      uint32_t index = fedId * MAX_LINK * MAX_ROC + (link - 1) * MAX_ROC + roc;
+      uint32_t index = fedId * ::pixelgpudetails::MAX_LINK * ::pixelgpudetails::MAX_ROC + (link - 1) * ::pixelgpudetails::MAX_ROC + roc;
       if (useQualityInfo) {
         skipROC = cablingMap->badRocs[index];
         if (skipROC)
@@ -441,7 +447,7 @@ namespace pixelgpudetails {
         if (includeErrors) {
           if (not rocRowColIsValid(row, col)) {
             uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
-            err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
+            err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
               printf("BPIX1  Error status: %i\n", error);
             continue;
@@ -457,7 +463,7 @@ namespace pixelgpudetails {
         localPix.col = col;
         if (includeErrors and not dcolIsValid(dcol, pxid)) {
           uint8_t error = conversionError(fedId, 3, debug);
-          err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
+          err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
             printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
           continue;
@@ -471,7 +477,8 @@ namespace pixelgpudetails {
       pdigi[gIndex] = ::pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
       moduleId[gIndex] = detId.moduleId;
       rawIdArr[gIndex] = rawId;
-    });  // end of stride on grid
+      }  // end of stride on grid
+      //});  // end of stride on grid
 
   }  
   }; // end of Raw to Digi kernel
@@ -485,10 +492,13 @@ namespace pixelgpudetails {
     template <typename T_Acc>
     ALPAKA_FN_ACC void operator()(const T_Acc& acc,
 				  uint32_t const *__restrict__ cluStart, 
-				  uint32_t *__restrict__ moduleStart) {
+				  uint32_t *__restrict__ moduleStart) const {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == gridDim.x);
-    assert(0 == blockIdx.x);
+
+    const uint32_t blockIdxLocal(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]); 
+    assert(0 == blockIdxLocal);
+    const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+    assert(1 == gridDimension);
 
     //int first = threadIdx.x;
 
@@ -499,8 +509,8 @@ namespace pixelgpudetails {
       });
 
     auto&& ws = alpaka::declareSharedVar<uint32_t[32], __COUNTER__>(acc);
-    cms::alpakatools::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::alpakatools::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    cms::alpakatools::blockPrefixScan(acc, moduleStart + 1, moduleStart + 1, 1024, ws);
+    cms::alpakatools::blockPrefixScan(acc, moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
     //for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
     cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules + 1, 1025u, [&](uint32_t i) {
@@ -562,11 +572,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "decoding " << wordCounter << " digis. Max is " << ::pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-    digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
+    //digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+      //digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+      digiErrors_d.setFormatterErrors(std::move(errors));
     }
-    clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
+    //clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
 
     if (wordCounter)  // protect in case of empty event....
     {
@@ -626,28 +637,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // clusterizer ...
       using namespace gpuClustering;	
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      const int threadsPerBlockOrElementsPerThread = 256;    
+      int threadsPerBlockOrElementsPerThread = 256;    
 #else
-      const int threadsPerBlockOrElementsPerThread = 1; // This should be tuned.
+      int threadsPerBlockOrElementsPerThread = 1; // This should be tuned.
 #endif
-      const uint32_t blocks = (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+      int blocks = (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
       const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(Vec1::all(blocks),
 	Vec1::all(threadsPerBlockOrElementsPerThread));
 
       alpaka::enqueue(queue,
-	alpaka::createTaskKernel<Acc1>(workDiv,
-	gpuCalibPixel::calibDigis(),
-	isRun2,
-	digis_d.moduleInd(),
-	digis_d.c_xx(),
-	digis_d.c_yy(),
-	digis_d.adc(),
-	gains,
-	wordCounter,
-	clusters_d.moduleStart(),
-	clusters_d.clusInModule(),
-	clusters_d.clusModuleStart()
-	));
+		      alpaka::createTaskKernel<Acc1>(workDiv,
+						     gpuCalibPixel::calibDigis(),
+						     isRun2,
+						     digis_d.moduleInd(),
+						     digis_d.c_xx(),
+						     digis_d.c_yy(),
+						     digis_d.adc(),
+						     //gains,
+						     gains->getVpedestals(),
+						     gains->getRangeAndCols(),
+						     gains->getFields(),
+						     wordCounter,
+						     clusters_d.moduleStart(),
+						     clusters_d.clusInModule(),
+						     clusters_d.clusModuleStart()
+						     ));
  
 #ifdef GPU_DEBUG
       alpaka::wait(device);
@@ -673,7 +687,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       //cudaCheck(cudaMemcpyAsync(
       //&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
 
-      auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>>(host, 1u)};
+      auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
       //alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStart(), 1u);
       alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStartAlpakaDeviceBuf(), 1u);
@@ -731,11 +745,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // MUST be ONE block
       alpaka::enqueue(queue,
-	alpaka::createTaskKernel<Acc1>(workDivOneBlock,
-	fillHitsModuleStart,
-	clusters_d.c_clusInModule(), 
-	clusters_d.clusModuleStart()
-	));
+		      alpaka::createTaskKernel<Acc1>(workDivOneBlock,
+						     ::pixelgpudetails::fillHitsModuleStart(),
+						     clusters_d.c_clusInModule(), 
+						     clusters_d.clusModuleStart()
+						     ));
       
       // TO DO: NOOOOO clusters_d.moduleStart() IS NOT A BUFFER but a raw pointer!!!!!!!!!
       // last element holds the number of all clusters  
@@ -745,9 +759,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	cudaMemcpyDefault,
 	stream));*/
 
-      auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>>(host, 1u)};
+      // slice on host
+      auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
-      alpaka::memcpy(queue, nModules_Clusters_1_h, clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, 1u);
+
+
+      // slice on device
+      //auto clusters_1_d = cms::alpakatools::sliceOnDevice(queue, clusters_d.clusModuleStart(), 1u, gpuClustering::MaxNumModules);
+
+      /*
+      AlpakaDeviceBuf<uint32_t> clusters_1_d = cms::alpakatools::allocDeviceBuf<uint32_t>(device, 1u);
+      // Create a subView with a possible offset.
+      SubView<uint32_t> subView = SubView<uint32_t>(clusters_d.moduleStartAlpakaDeviceBuf(), 1u, gpuClustering::MaxNumModules);
+      // Copy the subView into a new buffer.
+      alpaka::memcpy(queue, clusters_1_d, subView, 1u);
+
+      alpaka::memcpy(queue, nModules_Clusters_1_h, clusters_1_d, 1u);
+*/
+
+      auto view = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart());
+      SubView<uint32_t> subView = SubView<uint32_t>(view, 1u, gpuClustering::MaxNumModules);
+      alpaka::memcpy(queue, nModules_Clusters_1_h, subView, 1u);
+
       
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
 

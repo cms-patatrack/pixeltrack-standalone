@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
@@ -28,47 +29,52 @@ ALPAKA_FN_ACC void operator()(const T_Acc& acc,
 				uint16_t const* __restrict__ x,
 				uint16_t const* __restrict__ y,
 				uint16_t* adc,
-				SiPixelGainForHLTonGPU const* __restrict__ ped,
+			      //SiPixelGainForHLTonGPU const* __restrict__ ped,
+			      const SiPixelGainForHLTonGPU::DecodingStructure* __restrict__ v_pedestals, 
+			      const SiPixelGainForHLTonGPU::RangeAndCols* __restrict__ rangeAndCols, 
+			      const SiPixelGainForHLTonGPU::Fields* __restrict__ fields,
 				int numElements,
 				uint32_t* __restrict__ moduleStart,        // just to zero first
 				uint32_t* __restrict__ nClustersInModule,  // just to zero them
 				uint32_t* __restrict__ clusModuleStart     // just to zero first
-				) {
+				) const {
 //int first = blockDim.x * blockIdx.x + threadIdx.x;
+  const uint32_t threadIdxGlobal(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
-    // zero for next kernels...
-    if (0 == first)
-      clusModuleStart[0] = moduleStart[0] = 0;
-//for (int i = first; i < gpuClustering::MaxNumModules; i += gridDim.x * blockDim.x) {
-    cms::alpakatools::for_each_element_1D_grid_stride(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
+  // zero for next kernels...
+  if (threadIdxGlobal == 0) {
+    clusModuleStart[0] = moduleStart[0] = 0;
+  }
+
+  //for (int i = first; i < gpuClustering::MaxNumModules; i += gridDim.x * blockDim.x) {
+  cms::alpakatools::for_each_element_1D_grid_stride(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
       nClustersInModule[i] = 0;
     });
 
-//for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
-    cms::alpakatools::for_each_element_1D_grid_stride(acc, numElements, [&](uint32_t i) {
-      if (InvId == id[i])
-        continue;
+  //for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
+  cms::alpakatools::for_each_element_1D_grid_stride(acc, numElements, [&](uint32_t i) {
+      if (id[i] != InvId ) {
+	float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
+	float offset = (isRun2) ? (id[i] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
 
-      float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
-      float offset = (isRun2) ? (id[i] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
+	bool isDeadColumn = false, isNoisyColumn = false;
 
-      bool isDeadColumn = false, isNoisyColumn = false;
-
-      int row = x[i];
-      int col = y[i];
-      auto ret = ped->getPedAndGain(id[i], col, row, isDeadColumn, isNoisyColumn);
-      float pedestal = ret.first;
-      float gain = ret.second;
-      // float pedestal = 0; float gain = 1.;
-      if (isDeadColumn | isNoisyColumn) {
-        id[i] = InvId;
-        adc[i] = 0;
-        printf("bad pixel at %d in %d\n", i, id[i]);
-      } else {
-        float vcal = adc[i] * gain - pedestal * gain;
-        adc[i] = std::max(100, int(vcal * conversionFactor + offset));
+	int row = x[i];
+	int col = y[i];
+	auto ret = SiPixelGainForHLTonGPU::getPedAndGain(v_pedestals, rangeAndCols, fields, id[i], col, row, isDeadColumn, isNoisyColumn);
+	float pedestal = ret.first;
+	float gain = ret.second;
+	// float pedestal = 0; float gain = 1.;
+	if (isDeadColumn | isNoisyColumn) {
+	  id[i] = InvId;
+	  adc[i] = 0;
+	  printf("bad pixel at %d in %d\n", i, id[i]);
+	} else {
+	  float vcal = adc[i] * gain - pedestal * gain;
+	  adc[i] = std::max(100, int(vcal * conversionFactor + offset));
+	}
       }
-});
+    });
 
   }
 };

@@ -69,7 +69,7 @@ void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSe
   // get the GPU product already here so that the async transfer can begin
   const auto* gpuMap = hgpuMap.cablingMap();
   const unsigned char* gpuModulesToUnpack = alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
-  const auto* gpuGains = alpaka::getPtrNative(iSetup.get<SiPixelGainForHLTonGPU>());
+  const auto* gpuGains = &(iSetup.get<SiPixelGainForHLTonGPU>());
 
   auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
 
@@ -166,4 +166,4 @@ void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 // define as framework plugin
-DEFINE_FWK_MODULE(SiPixelRawToCluster);
+DEFINE_FWK_ALPAKA_MODULE(SiPixelRawToCluster);
