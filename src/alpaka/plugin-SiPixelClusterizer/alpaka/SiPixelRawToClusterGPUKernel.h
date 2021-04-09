@@ -7,6 +7,7 @@
 
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
+#include "CondFormats/SiPixelGainForHLTonGPU.h"
 
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"

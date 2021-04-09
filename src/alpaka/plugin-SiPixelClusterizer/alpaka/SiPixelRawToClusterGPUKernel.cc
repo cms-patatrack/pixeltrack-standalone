@@ -18,7 +18,8 @@
 #include <string>
 
 // Alpaka includes
-//#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/prefixScan.h"
 
 // CMSSW includes
 #include "gpuCalibPixel.h"
@@ -27,6 +28,8 @@
 
 // local includes
 #include "SiPixelRawToClusterGPUKernel.h"
+
+
 
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -751,37 +754,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     clusters_d.clusModuleStart()
 						     ));
       
-      // TO DO: NOOOOO clusters_d.moduleStart() IS NOT A BUFFER but a raw pointer!!!!!!!!!
       // last element holds the number of all clusters  
-      /*cudaCheck(cudaMemcpyAsync(&(nModules_Clusters_h[1]),
-	clusters_d.clusModuleStart() + gpuClustering::MaxNumModules,
-	sizeof(uint32_t),
-	cudaMemcpyDefault,
-	stream));*/
 
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
-
-      // slice on device
-      //auto clusters_1_d = cms::alpakatools::sliceOnDevice(queue, clusters_d.clusModuleStart(), 1u, gpuClustering::MaxNumModules);
-
-      /*
-      AlpakaDeviceBuf<uint32_t> clusters_1_d = cms::alpakatools::allocDeviceBuf<uint32_t>(device, 1u);
-      // Create a subView with a possible offset.
-      SubView<uint32_t> subView = SubView<uint32_t>(clusters_d.moduleStartAlpakaDeviceBuf(), 1u, gpuClustering::MaxNumModules);
-      // Copy the subView into a new buffer.
-      alpaka::memcpy(queue, clusters_1_d, subView, 1u);
-
-      alpaka::memcpy(queue, nModules_Clusters_1_h, clusters_1_d, 1u);
-*/
-
-      auto view = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart());
+      auto view = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> subView = SubView<uint32_t>(view, 1u, gpuClustering::MaxNumModules);
+ 
       alpaka::memcpy(queue, nModules_Clusters_1_h, subView, 1u);
-
-      
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
 
 
