@@ -25,8 +25,6 @@ explicit SiPixelClustersAlpaka(size_t maxClusters)
 
   uint32_t nClusters() const { return nClusters_h; }
 
-auto moduleStartAlpakaDeviceBuf() { return moduleStart_d; }
-
   uint32_t *moduleStart() { return alpaka::getPtrNative(moduleStart_d); }
   uint32_t *clusInModule() { return alpaka::getPtrNative(clusInModule_d); }
   uint32_t *moduleId() { return alpaka::getPtrNative(moduleId_d); }
