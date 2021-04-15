@@ -27,8 +27,10 @@ namespace {
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+	<< " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --histogram         Produce histograms at the end (implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -45,6 +47,8 @@ int main(int argc, char** argv) {
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
+  bool histogram = false;
+  bool empty = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -72,6 +76,11 @@ int main(int argc, char** argv) {
     } else if (*i == "--validation") {
       transfer = true;
       validation = true;
+    } else if (*i == "--histogram") {
+      transfer = true;
+      histogram = true;
+    } else if (*i == "--empty") {
+      empty = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -102,36 +111,38 @@ int main(int argc, char** argv) {
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
-  if (not backends.empty()) {
-    auto addModules = [&](std::string const& prefix, Backend backend) {
-      if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-	edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
-        edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-        /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
-        edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
-        edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");
-        if (transfer) {
-          edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
-          edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");
-        }
-        if (validation) {
-          edmodules.emplace_back(prefix + "CountValidator");
-        }
-        if (histogram) {
-          edmodules.emplace_back(prefix + "HistoValidator");
-	  }*/
+  if (not empty) {
+    esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
+    if (not backends.empty()) {
+      auto addModules = [&](std::string const& prefix, Backend backend) {
+	if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+	  edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
+	  edmodules.emplace_back(prefix + "SiPixelRawToCluster");
+	  /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
+	    edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
+	    edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");
+	    if (transfer) {
+	    edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
+	    edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");
+	    }*/
+	  if (validation) {
+	    edmodules.emplace_back(prefix + "CountValidator");
+	  }
+	  if (histogram) {
+	    edmodules.emplace_back(prefix + "HistoValidator");
+	  }
 
-        esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
-        esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
-        /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+	  esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
+	  esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+	  /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+	}
+      };
+      addModules("alpaka_serial_sync::", Backend::SERIAL);
+      addModules("alpaka_tbb_async::", Backend::TBB);
+      addModules("alpaka_cuda_async::", Backend::CUDA);
+      if (transfer) {
+	// add modules for transfer
       }
-    };
-    addModules("alpaka_serial_sync::", Backend::SERIAL);
-    addModules("alpaka_tbb_async::", Backend::TBB);
-    addModules("alpaka_cuda_async::", Backend::CUDA);
-    if (transfer) {
-      // add modules for transfer
     }
   }
   edm::EventProcessor processor(

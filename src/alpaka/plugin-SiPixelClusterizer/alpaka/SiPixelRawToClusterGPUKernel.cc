@@ -695,10 +695,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
  
 
       // TO DO: NOOOOO clusters_d.moduleStart() IS NOT A BUFFER but a raw pointer!!!!!!!!!
-      // read the number of modules into a data member, used by getProduct())
       //cudaCheck(cudaMemcpyAsync(
       //&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
 
+      // read the number of modules into a data member, used by getProduct())
       auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
 
