@@ -574,7 +574,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "wordCounter = " << wordCounter << std::endl;
 
 #ifdef GPU_DEBUG
-    std::cout << "decoding " << wordCounter << " digis. Max is " << ::pixelgpudetails::MAX_FED_WORDS << std::endl;
+    std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
     //digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
@@ -604,7 +604,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
-      alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter); // TO DO: wordCounter/2?
+      alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter/2); // TO DO: wordCounter/2?
 
       /*auto wordFedWordView = cms::alpakatools::createDeviceView<uint32_t>(device, wordFed.word(), MAX_FED_WORDS);
       SubView<uint32_t> wordFedWordSubView = SubView<uint32_t>(wordFedWordView, wordCounter);
