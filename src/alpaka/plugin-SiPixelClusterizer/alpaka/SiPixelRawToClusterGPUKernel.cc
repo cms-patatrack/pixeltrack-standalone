@@ -571,6 +571,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                        Queue& queue) {
     nDigis = wordCounter;
 
+    std::cout << "wordCounter = " << wordCounter << std::endl;
+
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << ::pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
@@ -603,6 +605,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
       alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter); // TO DO: wordCounter/2?
+
+      /*auto wordFedWordView = cms::alpakatools::createDeviceView<uint32_t>(device, wordFed.word(), MAX_FED_WORDS);
+      SubView<uint32_t> wordFedWordSubView = SubView<uint32_t>(wordFedWordView, wordCounter);
+      auto wordFedFedIdView = cms::alpakatools::createDeviceView<uint8_t>(device, wordFed.word(), MAX_FED_WORDS);
+      SubView<uint8_t> wordFedFedIdSubView = SubView<uint8_t>(wordFedFedIdView, wordCounter/2);
+      alpaka::memcpy(queue, word_d, wordFedWordSubView, wordCounter);
+      alpaka::memcpy(queue, fedId_d, wordFedFedIdSubView, wordCounter/2); // TO DO: wordCounter/2?*/
 
       // Launch rawToDigi kernel
       alpaka::enqueue(queue,
@@ -721,7 +730,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter));
    
 #ifdef GPU_DEBUG
-      alpaka::wait(device);
+      //alpaka::wait(device);
 #endif
 
       // apply charge cut
@@ -768,9 +777,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 
 #ifdef GPU_DEBUG
-      alpaka::wait(device);
+      //alpaka::wait(device);
 #endif
 
+      alpaka::wait(queue);
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails

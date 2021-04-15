@@ -12,10 +12,10 @@
 
 namespace gpuClustering {
 
-#ifdef GPU_DEBUG
+  //#ifdef GPU_DEBUG
   // move to ALPAKA_ACCELERATOR_NAMESPACE ?
-  ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
-#endif
+  //ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
+  //#endif
 
   struct countModules {
     template <typename T_Acc>
@@ -330,13 +330,13 @@ namespace gpuClustering {
       if (threadIdxLocal == 0) {
         nClustersInModule[thisModuleId] = foundClusters;
         moduleId[blockIdx] = thisModuleId;
-#ifdef GPU_DEBUG
+	/*#ifdef GPU_DEBUG
         if (foundClusters > gMaxHit) {
           gMaxHit = foundClusters;
           if (foundClusters > 8)
             printf("max hit %d in %d\n", foundClusters, thisModuleId);
         }
-#endif
+	#endif*/
 #ifdef GPU_DEBUG
         if (thisModuleId % 100 == 1)
           printf("%d clusters in module %d\n", foundClusters, thisModuleId);
