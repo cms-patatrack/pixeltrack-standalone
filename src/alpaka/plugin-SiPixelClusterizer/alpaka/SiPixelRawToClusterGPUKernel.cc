@@ -700,14 +700,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // read the number of modules into a data member, used by getProduct())
       auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
-      auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
+      const auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
 
       auto moduleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
       //alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStart(), 1u);
       alpaka::memcpy(queue, nModules_Clusters_0_h, moduleStartSubView, 1u);
       
-      auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
+      const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
       p_nModules_Clusters_h[0] = p_nModules_Clusters_0_h[0];
 
 
@@ -770,7 +770,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
-      auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
+      const auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
