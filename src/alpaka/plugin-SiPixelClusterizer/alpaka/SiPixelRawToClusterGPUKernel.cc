@@ -643,6 +643,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         digiErrors_d.copyErrorToHostAsync(stream);
       }
 #endif
+      alpaka::wait(queue);
     }
     // End of Raw2Digi and passing data for clustering
 
