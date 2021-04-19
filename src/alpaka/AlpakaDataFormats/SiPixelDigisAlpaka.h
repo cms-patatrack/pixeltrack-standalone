@@ -57,9 +57,9 @@ explicit SiPixelDigisAlpaka(size_t maxFedWords)
   uint32_t const *c_rawIdArr() const { return alpaka::getPtrNative(rawIdArr_d); }
 
   // TO DO: nothing async in here for now... Pass the queue as argument instead, and don't wait anymore!
-  auto adcToHostAsync() const {
+  auto adcToHost() const {
     Queue queue(device);
-    
+
     auto ret = cms::alpakatools::allocHostBuf<uint16_t>(host, nDigis());
     cms::alpakatools::memcpy(queue, ret, adc_d, nDigis());
 

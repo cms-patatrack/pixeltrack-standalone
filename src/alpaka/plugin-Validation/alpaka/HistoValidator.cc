@@ -116,7 +116,8 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
   auto const nDigis = digis.nDigis();
   auto const nModules = digis.nModules();
-  auto const h_adc = alpaka::getPtrNative(digis.adcToHostAsync());
+  auto const h_adcBuf = digis.adcToHost();
+  auto const h_adc = alpaka::getPtrNative(h_adcBuf);
 
   auto const nClusters = clusters.nClusters();
   auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters.clusInModule(), gpuClustering::MaxNumModules);
