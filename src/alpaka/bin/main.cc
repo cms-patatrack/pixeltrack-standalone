@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <tbb/task_scheduler_init.h>
-
 #include <cuda_runtime.h>
 
 #include "EventProcessor.h"
@@ -153,9 +151,9 @@ int main(int argc, char** argv) {
             << numberOfThreads << " threads." << std::endl;
 
   // Initialize tasks scheduler (thread pool)
+  // tbb::task_scheduler_init tsi(numberOfThreads);
   // TO DO: Warning: this will not work, need to be included in header.
   // See external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp
-  tbb::task_scheduler_init tsi(numberOfThreads);
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
