@@ -601,7 +601,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
       auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(device, wordCounter);
-      auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter);
+      auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter/2);
 
       // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
