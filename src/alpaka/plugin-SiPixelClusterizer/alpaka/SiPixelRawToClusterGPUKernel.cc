@@ -709,6 +709,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
       //alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStart(), 1u);
       alpaka::memcpy(queue, nModules_Clusters_0_h, moduleStartSubView, 1u);
+      alpaka::wait(queue);
       std::cout << "p_nModules_Clusters_0_h[0] = " << p_nModules_Clusters_0_h[0] << std::endl;
       
       const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
@@ -781,6 +782,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
  
       alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartSubView, 1u);
+      alpaka::wait(queue);
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
 
 
