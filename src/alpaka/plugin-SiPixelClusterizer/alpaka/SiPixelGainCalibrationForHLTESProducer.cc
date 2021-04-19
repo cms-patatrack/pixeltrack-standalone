@@ -60,7 +60,7 @@ Fields fields_;
 
     auto fields_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::Fields>(host, &gain.fields_)};
     auto fields_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(device)};
-    cms::alpakatools::memcpy(queue, rangeAndCols_d, rangeAndCols_h);
+    cms::alpakatools::memcpy(queue, fields_d, fields_h);
 
     eventSetup.put(std::make_unique<SiPixelGainForHLTonGPU>(std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
 
