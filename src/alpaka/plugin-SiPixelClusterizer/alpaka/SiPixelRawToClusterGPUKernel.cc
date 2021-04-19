@@ -694,7 +694,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	digis_d.clus(), 
 	wordCounter
 	));
- 
+
+      alpaka::wait(queue); 
 
       // TO DO: NOOOOO clusters_d.moduleStart() IS NOT A BUFFER but a raw pointer!!!!!!!!!
       //cudaCheck(cudaMemcpyAsync(
@@ -708,6 +709,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
       //alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStart(), 1u);
       alpaka::memcpy(queue, nModules_Clusters_0_h, moduleStartSubView, 1u);
+      std::cout << "p_nModules_Clusters_0_h[0] = " << p_nModules_Clusters_0_h[0] << std::endl;
       
       const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
       p_nModules_Clusters_h[0] = p_nModules_Clusters_0_h[0];
@@ -767,6 +769,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     clusters_d.c_clusInModule(), 
 						     clusters_d.clusModuleStart()
 						     ));
+      alpaka::wait(queue);
       
       // last element holds the number of all clusters  
 
