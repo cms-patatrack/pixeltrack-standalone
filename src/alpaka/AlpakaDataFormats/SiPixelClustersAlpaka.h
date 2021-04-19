@@ -67,7 +67,7 @@ private:
   // originally from rechits
   AlpakaDeviceBuf<uint32_t> clusModuleStart_d;  // index of the first cluster of each module
 
-  uint32_t nClusters_h = 0u;
+  uint32_t nClusters_h = 0;
 };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
