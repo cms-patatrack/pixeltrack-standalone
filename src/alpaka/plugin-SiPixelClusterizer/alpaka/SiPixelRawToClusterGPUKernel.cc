@@ -577,12 +577,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-    //digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
+    digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
       //digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+      digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS);
       digiErrors_d.setFormatterErrors(std::move(errors));
     }
-    //clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
+    clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
 
     if (wordCounter)  // protect in case of empty event....
     {
