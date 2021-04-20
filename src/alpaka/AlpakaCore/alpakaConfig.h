@@ -130,7 +130,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, TData, Dim1, Idx>;
 
   template <typename TData>
-    using SubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>; // DevAcc or Acc?
+    using SubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>;
 }
 
 

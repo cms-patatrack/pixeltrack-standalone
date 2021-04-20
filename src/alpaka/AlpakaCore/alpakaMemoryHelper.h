@@ -2,6 +2,7 @@
 #define ALPAKAMEMORYHELPER_H
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaDevices.h"
 
 using namespace alpaka_common;
 

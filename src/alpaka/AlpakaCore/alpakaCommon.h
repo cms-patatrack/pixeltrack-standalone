@@ -2,14 +2,8 @@
 #define ALPAKACOMMON_H
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/alpakaMemoryHelper.h"
-//#include "AlpakaCore/alpakaWorkDivHelper.h"
-
-
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  extern const DevHost host;
-  extern const DevAcc1 device;
-}
-
 
 #endif  // ALPAKACOMMON_H
