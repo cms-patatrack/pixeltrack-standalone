@@ -174,7 +174,7 @@ namespace pixelgpudetails {
     nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 2u)},
       digis_d{SiPixelDigisAlpaka(0u)},
 	clusters_d{SiPixelClustersAlpaka(0u)},
-	  digiErrors_d{SiPixelDigiErrorsAlpaka(0u)}
+	  digiErrors_d{SiPixelDigiErrorsAlpaka(0u, PixelFormatterErrors())}
 	  {};
 	  ~SiPixelRawToClusterGPUKernel() = default;
 
