@@ -13,21 +13,21 @@ namespace alpaka_common {
   using Dim1 = alpaka::DimInt<1u>;
   using Dim2 = alpaka::DimInt<2u>;
 
-  template <typename T_Dim>
-  using Vec = alpaka::Vec<T_Dim, Idx>;
+  template <typename TDim>
+  using Vec = alpaka::Vec<TDim, Idx>;
   using Vec1 = Vec<Dim1>;
   using Vec2 = Vec<Dim2>;
 
-  template <typename T_Dim>
-  using WorkDiv = alpaka::WorkDivMembers<T_Dim, Idx>;
+  template <typename TDim>
+  using WorkDiv = alpaka::WorkDivMembers<TDim, Idx>;
   using WorkDiv1 = WorkDiv<Dim1>;
   using WorkDiv2 = WorkDiv<Dim2>;
 
-  template <typename T_Data>
-    using AlpakaHostBuf = alpaka::Buf<DevHost, T_Data, Dim1, Idx>;
+  template <typename TData>
+    using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1, Idx>;
 
-  template <typename T_Data>
-    using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>;
+  template <typename TData>
+    using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>;
 }  // namespace alpaka_common
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -117,17 +117,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using PltfAcc1 = alpaka::Pltf<DevAcc1>;
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
 
-  template <class T_Data>
-    using AlpakaAccBuf1 = alpaka::Buf<Acc1, T_Data, Dim1, Idx>;
+  template <class TData>
+    using AlpakaAccBuf1 = alpaka::Buf<Acc1, TData, Dim1, Idx>;
 
-  template <class T_Data>
-    using AlpakaAccBuf2 = alpaka::Buf<Acc2, T_Data, Dim2, Idx>;
+  template <class TData>
+    using AlpakaAccBuf2 = alpaka::Buf<Acc2, TData, Dim2, Idx>;
 
   template <typename TData>
     using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
 
-  template <typename T_Data>
-    using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, T_Data, Dim1, Idx>;
+  template <typename TData>
+    using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, TData, Dim1, Idx>;
 
   template <typename TData>
     using SubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>; // DevAcc or Acc?

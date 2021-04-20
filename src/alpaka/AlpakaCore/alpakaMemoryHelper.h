@@ -18,14 +18,14 @@ namespace cms {
       return alpaka::allocBuf<TData, Idx>(host, 1u); 
     }
 
-    template <typename T_Data>
-      auto createHostView(const DevHost& host, T_Data* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>(data, host, extent);
+    template <typename TData>
+      auto createHostView(const DevHost& host, TData* data, const Extent& extent) {
+      return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, host, extent);
     }
 
-    template <typename T_Data>
-      auto createHostView(const DevHost& host, T_Data* data) {
-      return alpaka::ViewPlainPtr<DevHost, T_Data, Dim1, Idx>(data, host, 1u);
+    template <typename TData>
+      auto createHostView(const DevHost& host, TData* data) {
+      return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, host, 1u);
     }
 
     template <typename TData, typename TDev>
@@ -38,24 +38,24 @@ namespace cms {
       return alpaka::allocBuf<TData, Idx>(device, 1u); 
     }
 
-    template <typename T_Data, typename TDev>
-      auto createDeviceView(const TDev& device, const T_Data* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<TDev, T_Data, Dim1, Idx>(const_cast<T_Data*>(data), device, extent); // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const T_Data* argument?
+    template <typename TData, typename TDev>
+      auto createDeviceView(const TDev& device, const TData* data, const Extent& extent) {
+      return alpaka::ViewPlainPtr<TDev, TData, Dim1, Idx>(const_cast<TData*>(data), device, extent); // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const TData* argument?
     }
 
-    template <typename T_Data, typename TDev>
-      auto createDeviceView(const TDev& device, const T_Data* data) {
-      return alpaka::ViewPlainPtr<TDev, T_Data, Dim1, Idx>(const_cast<T_Data*>(data), device, 1u); // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const T_Data* argument?
+    template <typename TData, typename TDev>
+      auto createDeviceView(const TDev& device, const TData* data) {
+      return alpaka::ViewPlainPtr<TDev, TData, Dim1, Idx>(const_cast<TData*>(data), device, 1u); // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const TData* argument?
     }
 
-    template <typename T_Data, typename TDev>
-      auto createDeviceView(const TDev& device, T_Data* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<TDev, T_Data, Dim1, Idx>(data, device, extent);
+    template <typename TData, typename TDev>
+      auto createDeviceView(const TDev& device, TData* data, const Extent& extent) {
+      return alpaka::ViewPlainPtr<TDev, TData, Dim1, Idx>(data, device, extent);
     }
 
-    template <typename T_Data, typename TDev>
-      auto createDeviceView(const TDev& device, T_Data* data) {
-      return alpaka::ViewPlainPtr<TDev, T_Data, Dim1, Idx>(data, device, 1u);
+    template <typename TData, typename TDev>
+      auto createDeviceView(const TDev& device, TData* data) {
+      return alpaka::ViewPlainPtr<TDev, TData, Dim1, Idx>(data, device, 1u);
     }
 
     template<typename TQueue, typename TViewDst, typename TViewSrc>

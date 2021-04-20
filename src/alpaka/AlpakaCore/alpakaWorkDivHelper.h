@@ -11,20 +11,20 @@ namespace cms {
     /*
      * Creates the accelerator-dependent workdiv.
      */
-    template <typename T_Dim>
-    WorkDiv<T_Dim> make_workdiv(const Vec<T_Dim>& blocksPerGrid, const Vec<T_Dim>& threadsPerBlockOrElementsPerThread) {
+    template <typename TDim>
+    WorkDiv<TDim> make_workdiv(const Vec<TDim>& blocksPerGrid, const Vec<TDim>& threadsPerBlockOrElementsPerThread) {
       // On the GPU:
       // threadsPerBlockOrElementsPerThread is the number of threads per block.
       // Each thread is looking at a single element: elementsPerThread is always 1.
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      const Vec<T_Dim>& elementsPerThread = Vec<T_Dim>::ones();
-      return WorkDiv<T_Dim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+      const Vec<TDim>& elementsPerThread = Vec<TDim>::ones();
+      return WorkDiv<TDim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
 #else
       // On the CPU:
       // Run serially with a single thread per block: threadsPerBlock is always 1.
       // threadsPerBlockOrElementsPerThread is the number of elements per thread.
-      const Vec<T_Dim>& threadsPerBlock = Vec<T_Dim>::ones();
-      return WorkDiv<T_Dim>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
+      const Vec<TDim>& threadsPerBlock = Vec<TDim>::ones();
+      return WorkDiv<TDim>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
 #endif
     }
 
@@ -32,8 +32,8 @@ namespace cms {
      * 1D helper to only access 1 element per block 
      * (should obviously only be needed for debug / printout).
      */
-    template <typename T_Acc>
-    ALPAKA_FN_ACC bool once_per_block_1D(const T_Acc& acc, uint32_t i) {
+    template <typename TAcc>
+    ALPAKA_FN_ACC bool once_per_block_1D(const TAcc& acc, uint32_t i) {
       const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
       return (i % blockDimension == 0);
     }
@@ -42,14 +42,14 @@ namespace cms {
      * Computes the range of the elements indexes, local to the block.
      * Warning: the max index is not truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim = alpaka::Dim<T_Acc>>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_block(const T_Acc& acc,
-                                                                                 const Vec<T_Dim>& elementIdxShift) {
-      Vec<T_Dim> firstElementIdxVec = Vec<T_Dim>::zeros();
-      Vec<T_Dim> endElementIdxUncutVec = Vec<T_Dim>::zeros();
+    template <typename TAcc, typename TDim = alpaka::Dim<TAcc>>
+    ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_block(const TAcc& acc,
+                                                                                 const Vec<TDim>& elementIdxShift) {
+      Vec<TDim> firstElementIdxVec = Vec<TDim>::zeros();
+      Vec<TDim> endElementIdxUncutVec = Vec<TDim>::zeros();
 
       // Loop on all grid dimensions.
-      for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
+      for (typename TDim::value_type dimIndex(0); dimIndex < TDim::value; ++dimIndex) {
         // Take into account the thread index in block.
         const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[dimIndex]);
         const uint32_t threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[dimIndex]);
@@ -73,16 +73,16 @@ namespace cms {
      * Computes the range of the elements indexes, local to the block.
      * Truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_block_truncated(
-        const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements, const Vec<T_Dim>& elementIdxShift) {
+    template <typename TAcc, typename TDim>
+    ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_block_truncated(
+        const TAcc& acc, const Vec<TDim>& maxNumberOfElements, const Vec<TDim>& elementIdxShift) {
       // Check dimension
-      static_assert(alpaka::Dim<T_Acc>::value == T_Dim::value,
+      static_assert(alpaka::Dim<TAcc>::value == TDim::value,
                     "Accelerator and maxNumberOfElements need to have same dimension.");
       auto&& [firstElementIdxLocalVec, endElementIdxLocalVec] = element_index_range_in_block(acc, elementIdxShift);
 
       // Truncate
-      for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
+      for (typename TDim::value_type dimIndex(0); dimIndex < TDim::value; ++dimIndex) {
         endElementIdxLocalVec[dimIndex] = std::min(endElementIdxLocalVec[dimIndex], maxNumberOfElements[dimIndex]);
       }
 
@@ -94,11 +94,11 @@ namespace cms {
      * Computes the range of the elements indexes in grid.
      * Warning: the max index is not truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim = alpaka::Dim<T_Acc>>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid(const T_Acc& acc,
-                                                                                Vec<T_Dim>& elementIdxShift) {
+    template <typename TAcc, typename TDim = alpaka::Dim<TAcc>>
+    ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_grid(const TAcc& acc,
+                                                                                Vec<TDim>& elementIdxShift) {
       // Loop on all grid dimensions.
-      for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
+      for (typename TDim::value_type dimIndex(0); dimIndex < TDim::value; ++dimIndex) {
         // Take into account the block index in grid.
         const uint32_t blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
         const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
@@ -115,16 +115,16 @@ namespace cms {
      * Computes the range of the elements indexes in grid.
      * Truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid_truncated(
-        const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements, Vec<T_Dim>& elementIdxShift) {
+    template <typename TAcc, typename TDim>
+    ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_grid_truncated(
+        const TAcc& acc, const Vec<TDim>& maxNumberOfElements, Vec<TDim>& elementIdxShift) {
       // Check dimension
-      static_assert(alpaka::Dim<T_Acc>::value == T_Dim::value,
+      static_assert(alpaka::Dim<TAcc>::value == TDim::value,
                     "Accelerator and maxNumberOfElements need to have same dimension.");
       auto&& [firstElementIdxGlobalVec, endElementIdxGlobalVec] = element_index_range_in_grid(acc, elementIdxShift);
 
       // Truncate
-      for (typename T_Dim::value_type dimIndex(0); dimIndex < T_Dim::value; ++dimIndex) {
+      for (typename TDim::value_type dimIndex(0); dimIndex < TDim::value; ++dimIndex) {
         endElementIdxGlobalVec[dimIndex] = std::min(endElementIdxGlobalVec[dimIndex], maxNumberOfElements[dimIndex]);
       }
 
@@ -136,10 +136,10 @@ namespace cms {
      * Computes the range of the element(s) index(es) in grid.
      * Truncated by the max number of elements of interest.
      */
-    template <typename T_Acc, typename T_Dim>
-    ALPAKA_FN_ACC std::pair<Vec<T_Dim>, Vec<T_Dim>> element_index_range_in_grid_truncated(
-        const T_Acc& acc, const Vec<T_Dim>& maxNumberOfElements) {
-      Vec<T_Dim> elementIdxShift = Vec<T_Dim>::zeros();
+    template <typename TAcc, typename TDim>
+    ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_grid_truncated(
+        const TAcc& acc, const Vec<TDim>& maxNumberOfElements) {
+      Vec<TDim> elementIdxShift = Vec<TDim>::zeros();
       return element_index_range_in_grid_truncated(acc, maxNumberOfElements, elementIdxShift);
     }
 
@@ -152,8 +152,8 @@ namespace cms {
      * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
      * Indexes are local to the BLOCK.
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const TAcc& acc,
                                                                     const uint32_t maxNumberOfElements,
                                                                     const uint32_t elementIdxShift,
                                                                     const Func func) {
@@ -168,8 +168,8 @@ namespace cms {
     /*
      * Overload for elementIdxShift = 0
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_block(const TAcc& acc,
                                                                     const uint32_t maxNumberOfElements,
                                                                     const Func func) {
       const uint32_t elementIdxShift = 0;
@@ -181,8 +181,8 @@ namespace cms {
      * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
      * Indexes are expressed in GRID 'frame-of-reference'.
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const TAcc& acc,
                                                                    const uint32_t maxNumberOfElements,
                                                                    uint32_t elementIdxShift,
                                                                    const Func func) {
@@ -197,8 +197,8 @@ namespace cms {
     /*
      * Overload for elementIdxShift = 0
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_in_thread_1D_index_in_grid(const TAcc& acc,
                                                                    const uint32_t maxNumberOfElements,
                                                                    const Func func) {
       const uint32_t elementIdxShift = 0;
@@ -215,8 +215,8 @@ namespace cms {
      * Stride to full problem size, by BLOCK size.
      * Indexes are local to the BLOCK.
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const TAcc& acc,
                                                         const uint32_t maxNumberOfElements,
                                                         const uint32_t elementIdxShift,
                                                         const Func func) {
@@ -244,8 +244,8 @@ namespace cms {
     /*
      * Overload for elementIdxShift = 0
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_1D_block_stride(const TAcc& acc,
                                                         const uint32_t maxNumberOfElements,
                                                         const Func func) {
       const uint32_t elementIdxShift = 0;
@@ -258,8 +258,8 @@ namespace cms {
      * Stride to full problem size, by GRID size.
      * Indexes are local to the GRID.
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const TAcc& acc,
                                                        const uint32_t maxNumberOfElements,
                                                        const uint32_t elementIdxShift,
                                                        const Func func) {
@@ -289,8 +289,8 @@ namespace cms {
     /*
      * Overload for elementIdxShift = 0
      */
-    template <typename T_Acc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const T_Acc& acc,
+    template <typename TAcc, typename Func>
+    ALPAKA_FN_ACC void for_each_element_1D_grid_stride(const TAcc& acc,
                                                        const uint32_t maxNumberOfElements,
                                                        const Func func) {
       const uint32_t elementIdxShift = 0;
