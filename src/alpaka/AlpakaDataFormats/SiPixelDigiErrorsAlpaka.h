@@ -12,8 +12,8 @@ class SiPixelDigiErrorsAlpaka {
 public:
   SiPixelDigiErrorsAlpaka() = default;
   explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors)
-    : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
-    error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(device)},
+    : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(maxFedWords)},
+    error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
       error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
 	formatterErrors_h{std::move(errors)}
 	 {

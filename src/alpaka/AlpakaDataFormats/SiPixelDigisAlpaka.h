@@ -9,13 +9,13 @@ class SiPixelDigisAlpaka {
 public:
 SiPixelDigisAlpaka() = default;
 explicit SiPixelDigisAlpaka(size_t maxFedWords)
-  : xx_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-  yy_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-  adc_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-  moduleInd_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-  clus_d{cms::alpakatools::allocDeviceBuf<int32_t>(device, maxFedWords)},
-  pdigi_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)},
-  rawIdArr_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)}
+  : xx_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
+  yy_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
+  adc_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
+  moduleInd_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
+  clus_d{cms::alpakatools::allocDeviceBuf<int32_t>(maxFedWords)},
+  pdigi_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxFedWords)},
+  rawIdArr_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxFedWords)}
   {}
     ~SiPixelDigisAlpaka() = default;
 

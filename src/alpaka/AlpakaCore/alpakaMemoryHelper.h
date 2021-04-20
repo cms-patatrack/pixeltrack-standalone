@@ -19,14 +19,9 @@ return alpaka::allocBuf<TData, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::host, extent);
       return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, ALPAKA_ACCELERATOR_NAMESPACE::host, extent);
     }
 
-    template <typename TData, typename TDev>
-      auto allocDeviceBuf(const TDev& device, const Extent& extent) {
-      return alpaka::allocBuf<TData, Idx>(device, extent); 
-    }
-
-    template <typename TData, typename TDev>
-      auto allocDeviceBuf(const TDev& device) {
-      return alpaka::allocBuf<TData, Idx>(device, 1u); 
+    template <typename TData>
+      auto allocDeviceBuf(const Extent& extent) {
+      return alpaka::allocBuf<TData, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::device, extent); 
     }
 
     template <typename TData, typename TDev>

@@ -13,7 +13,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka() = default;
   
   BeamSpotAlpaka(BeamSpotPOD const* data, Queue& queue)
-    : data_d{cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(device)} 
+    : data_d{cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(1u)} 
     {      
       auto data_h{cms::alpakatools::createHostView<const BeamSpotPOD>(data, 1u)};
 
