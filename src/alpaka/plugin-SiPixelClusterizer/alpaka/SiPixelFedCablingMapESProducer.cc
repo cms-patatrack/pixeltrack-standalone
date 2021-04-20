@@ -33,12 +33,12 @@ Queue queue(device);
 
  auto cablingMap_h{cms::alpakatools::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};
 auto cablingMap_d{cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(1u)};
-cms::alpakatools::memcpy(queue, cablingMap_d, cablingMap_h);
+ alpaka::memcpy(queue, cablingMap_d, cablingMap_h, 1u);
 eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper>(std::move(cablingMap_d), true));
 
 auto modToUnp_h{cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
 auto modToUnp_d{cms::alpakatools::allocDeviceBuf<unsigned char>(modToUnpDefSize)};
-cms::alpakatools::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
+alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
 eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
 
 alpaka::wait(queue);

@@ -662,7 +662,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter
 	));
 
-      auto moduleStartFirstElement = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), 1u);
+      auto moduleStartFirstElement = cms::alpakatools::createDeviceView<uint32_t>(clusters_d.moduleStart(), 1u);
 
       alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
@@ -721,7 +721,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     ));
  
       // last element holds the number of all clusters
-      auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
+      auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       const auto clusModuleStartLastElement = AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(1u)};

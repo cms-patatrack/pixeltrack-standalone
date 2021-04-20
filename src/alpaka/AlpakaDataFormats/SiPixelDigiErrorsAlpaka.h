@@ -24,7 +24,7 @@ public:
 
     // TO DO: nothing really async in here for now... Pass the queue in constructor argument instead, and don't wait anymore!
     Queue queue(device);
-    cms::alpakatools::memcpy(queue, error_d, error_h);
+    alpaka::memcpy(queue, error_d, error_h, 1u);
     alpaka::wait(queue);
   }
   ~SiPixelDigiErrorsAlpaka() = default;

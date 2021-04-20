@@ -61,7 +61,7 @@ explicit SiPixelDigisAlpaka(size_t maxFedWords)
     Queue queue(device);
 
     auto ret = cms::alpakatools::allocHostBuf<uint16_t>(nDigis());
-    cms::alpakatools::memcpy(queue, ret, adc_d, nDigis());
+    alpaka::memcpy(queue, ret, adc_d, nDigis());
 
     alpaka::wait(queue);
     return ret;

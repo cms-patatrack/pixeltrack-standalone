@@ -51,16 +51,16 @@ Fields fields_;
     const uint32_t numDecodingStructures = gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure);
     auto ped_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::DecodingStructure>(reinterpret_cast<SiPixelGainForHLTonGPU::DecodingStructure*>(gainData.data()), numDecodingStructures)};
     auto ped_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::DecodingStructure>(numDecodingStructures)};
-    cms::alpakatools::memcpy(queue, ped_d, ped_h, numDecodingStructures);
+    alpaka::memcpy(queue, ped_d, ped_h, numDecodingStructures);
 
     auto rangeAndCols_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::RangeAndCols>(gain.rangeAndCols, 2000u)};
     auto rangeAndCols_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::RangeAndCols>(2000u)};
-    cms::alpakatools::memcpy(queue, rangeAndCols_d, rangeAndCols_h, 2000u);
+    alpaka::memcpy(queue, rangeAndCols_d, rangeAndCols_h, 2000u);
 
 
     auto fields_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::Fields>(&gain.fields_, 1u)};
     auto fields_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(1u)};
-    cms::alpakatools::memcpy(queue, fields_d, fields_h);
+    alpaka::memcpy(queue, fields_d, fields_h, 1u);
 
     eventSetup.put(std::make_unique<SiPixelGainForHLTonGPU>(std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
 

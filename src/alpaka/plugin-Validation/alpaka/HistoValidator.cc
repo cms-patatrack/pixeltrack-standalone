@@ -120,7 +120,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   auto const h_adc = alpaka::getPtrNative(h_adcBuf);
 
   auto const nClusters = clusters.nClusters();
-  auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters.clusInModule(), gpuClustering::MaxNumModules);
+  auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(clusters.clusInModule(), gpuClustering::MaxNumModules);
   auto h_clusInModuleBuf{cms::alpakatools::allocHostBuf<uint32_t>(gpuClustering::MaxNumModules)};
   Queue queue(device);
   alpaka::memcpy(queue, h_clusInModuleBuf, d_clusInModuleView, gpuClustering::MaxNumModules);
