@@ -72,29 +72,4 @@ namespace cms {
   }  // namespace alpakatools
 }  // namespace cms
 
-
-/*
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  namespace cms {
-    namespace alpakatools {
-
-
-
-      template<typename TData>
-	auto sliceOnDevice(Queue& devQueue, AlpakaDeviceBuf<TData> bufferToBeSliced, const Extent& subViewExtents, const Offsets& offsets) -> AlpakaDeviceBuf<TData>
-	{
-	  AlpakaDeviceBuf<TData> slicedBuffer = ::cms::alpakatools::allocDeviceBuf<TData>(device, subViewExtents);
-	  // Create a subView with a possible offset.
-	  SubView<TData> subView = SubView<TData>(bufferToBeSliced, subViewExtents, offsets);
-	  // Copy the subView into a new buffer.
-	  alpaka::memcpy(devQueue, slicedBuffer, subView, subViewExtents);
-	  return slicedBuffer;
-	}
-
-
-    }  // namespace alpakatools
-  }  // namespace cms
-  }*/
-
-
 #endif  // ALPAKAMEMORYHELPER_H
