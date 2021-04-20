@@ -605,7 +605,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // but only the first half of elements is eventually used, hence used wordCounter/2 instead.
       auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter/2); 
 
-      // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
       alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter/2);
 
@@ -687,10 +686,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter
 	));
 
-      auto moduleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), gpuClustering::MaxNumModules + 1);
-      SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
+      auto moduleStartFirstElement = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), 1u);
 
-      alpaka::memcpy(queue, nModules_Clusters_h, moduleStartSubView, 1u);
+      alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
       //threadsPerBlock = 256;
       blocks = MaxNumModules;
@@ -749,12 +747,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
  
       // last element holds the number of all clusters
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
-      SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
+      const auto clusModuleStartLastElement = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
-      const auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
+      auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
-      alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartSubView, 1u);
+      alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartLastElement, 1u);
       // Wait for memory transfer to host to complete before looking at host data!
       alpaka::wait(queue);
       auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
