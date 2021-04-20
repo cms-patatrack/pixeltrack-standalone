@@ -11,12 +11,12 @@ namespace cms {
 
     template <typename TData>
       auto allocHostBuf(const Extent& extent) {
-return alpaka::allocBuf<TData, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::host, extent); 
+return alpaka::allocBuf<TData, Idx>(host, extent); 
     }
 
     template <typename TData>
       auto createHostView(TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, ALPAKA_ACCELERATOR_NAMESPACE::host, extent);
+      return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, host, extent);
     }
 
     template <typename TData>

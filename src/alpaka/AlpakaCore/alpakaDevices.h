@@ -1,11 +1,7 @@
 #ifndef ALPAKADEVICES_H
 #define ALPAKADEVICES_H
 
-#include "AlpakaCore/alpakaConfig.h"
-
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  extern const DevHost host;
-  extern const DevAcc1 device;
-}
+#include "AlpakaCore/alpakaDevHost.h"
+#include "AlpakaCore/alpakaDevAcc.h"
 
 #endif  // ALPAKADEVICES_H
