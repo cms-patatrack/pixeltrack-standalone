@@ -25,7 +25,7 @@ namespace {
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-	<< " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
         << " --histogram         Produce histograms at the end (implies --transfer)\n"
         << " --empty             Ignore all producers (for testing only)\n"
@@ -113,27 +113,27 @@ int main(int argc, char** argv) {
     esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
     if (not backends.empty()) {
       auto addModules = [&](std::string const& prefix, Backend backend) {
-	if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-	  edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
-	  edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-	  /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
+        if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+          edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
+          edmodules.emplace_back(prefix + "SiPixelRawToCluster");
+          /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
 	    edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
 	    edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");*/
-	  if (transfer) {
-	    /*edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
+          if (transfer) {
+            /*edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
 	      edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");*/
-	  }
-	  if (validation) {
-	    edmodules.emplace_back(prefix + "CountValidator");
-	  }
-	  if (histogram) {
-	    edmodules.emplace_back(prefix + "HistoValidator");
-	  }
+          }
+          if (validation) {
+            edmodules.emplace_back(prefix + "CountValidator");
+          }
+          if (histogram) {
+            edmodules.emplace_back(prefix + "HistoValidator");
+          }
 
-	  esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
-	  esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
-	  /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
-	}
+          esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
+          esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+          /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+        }
       };
       addModules("alpaka_serial_sync::", Backend::SERIAL);
       addModules("alpaka_tbb_async::", Backend::TBB);

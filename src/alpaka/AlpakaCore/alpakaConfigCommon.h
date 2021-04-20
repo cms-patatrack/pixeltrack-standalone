@@ -24,18 +24,18 @@ namespace alpaka_common {
   using WorkDiv2 = WorkDiv<Dim2>;
 
   template <typename TData>
-    using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1, Idx>;
+  using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1, Idx>;
 
   template <typename TData>
-    using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>;
+  using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>;
 }  // namespace alpaka_common
-
 
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_ALPAKA_MODULE2(name) DEFINE_FWK_MODULE(name)
 #define DEFINE_FWK_ALPAKA_MODULE(name) DEFINE_FWK_ALPAKA_MODULE2(ALPAKA_ACCELERATOR_NAMESPACE::name)
 
 #define DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE2(name) DEFINE_FWK_EVENTSETUP_MODULE(name)
-#define DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE(name) DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE2(ALPAKA_ACCELERATOR_NAMESPACE::name)
+#define DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE(name) \
+  DEFINE_FWK_ALPAKA_EVENTSETUP_MODULE2(ALPAKA_ACCELERATOR_NAMESPACE::name)
 
 #endif  // alpakaConfigHost_h_

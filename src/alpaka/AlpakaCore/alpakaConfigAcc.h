@@ -83,7 +83,6 @@ namespace alpaka_omp4_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using DevAcc1 = alpaka::Dev<Acc1>;
   using DevAcc2 = alpaka::Dev<Acc2>;
@@ -91,19 +90,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
 
   template <class TData>
-    using AlpakaAccBuf1 = alpaka::Buf<Acc1, TData, Dim1, Idx>;
+  using AlpakaAccBuf1 = alpaka::Buf<Acc1, TData, Dim1, Idx>;
 
   template <class TData>
-    using AlpakaAccBuf2 = alpaka::Buf<Acc2, TData, Dim2, Idx>;
+  using AlpakaAccBuf2 = alpaka::Buf<Acc2, TData, Dim2, Idx>;
 
   template <typename TData>
-    using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
+  using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
 
   template <typename TData>
-    using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, TData, Dim1, Idx>;
+  using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, TData, Dim1, Idx>;
 
   template <typename TData>
-    using AlpakaDeviceSubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>;
-}
+  using AlpakaDeviceSubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>;
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // alpakaConfigAcc_h_

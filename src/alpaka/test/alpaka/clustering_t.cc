@@ -241,13 +241,13 @@ int main(void) {
     alpaka::memcpy(queue, d_y_buf, h_y_buf, n);
     alpaka::memcpy(queue, d_adc_buf, h_adc_buf, n);
 
-    // Launch CUDA Kernels
-    #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+// Launch CUDA Kernels
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
-    #else
+#else
     // NB: can be tuned.
     const int threadsPerBlockOrElementsPerThread = 256;
-    #endif
+#endif
 
     // COUNT MODULES
     const int blocksPerGridCountModules =

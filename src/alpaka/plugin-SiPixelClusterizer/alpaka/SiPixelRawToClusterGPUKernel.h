@@ -92,9 +92,9 @@ namespace pixelgpudetails {
 
     // Constructor: pre-computes masks and shifts from field widths
     ALPAKA_FN_HOST_ACC inline constexpr Packing(unsigned int row_w,
-                                                 unsigned int column_w,
-                                                 unsigned int time_w,
-                                                 unsigned int adc_w)
+                                                unsigned int column_w,
+                                                unsigned int time_w,
+                                                unsigned int adc_w)
         : row_width(row_w),
           column_width(column_w),
           adc_width(adc_w),
@@ -146,89 +146,87 @@ namespace pixelgpudetails {
   }
 }  // namespace pixelgpudetails
 
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+  namespace pixelgpudetails {
 
-  namespace ALPAKA_ACCELERATOR_NAMESPACE {
-    namespace pixelgpudetails {
+    // number of words for all the FEDs
+    constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
 
-      // number of words for all the FEDs
-      constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
-
-  class SiPixelRawToClusterGPUKernel {
-  public:
-    class WordFedAppender {
+    class SiPixelRawToClusterGPUKernel {
     public:
-      WordFedAppender();
-      ~WordFedAppender() = default;
+      class WordFedAppender {
+      public:
+        WordFedAppender();
+        ~WordFedAppender() = default;
 
-      void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
+        void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
 
-      auto word() const { return word_; }
-      auto fedId() const { return fedId_; }
+        auto word() const { return word_; }
+        auto fedId() const { return fedId_; }
+
+      private:
+        AlpakaHostBuf<unsigned int> word_;
+        AlpakaHostBuf<unsigned char> fedId_;
+      };
+
+      SiPixelRawToClusterGPUKernel()
+          : nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(2u)},
+            digis_d{SiPixelDigisAlpaka(0u)},
+            clusters_d{SiPixelClustersAlpaka(0u)},
+            digiErrors_d{SiPixelDigiErrorsAlpaka(0u, PixelFormatterErrors())} {};
+      ~SiPixelRawToClusterGPUKernel() = default;
+
+      SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
+      SiPixelRawToClusterGPUKernel(SiPixelRawToClusterGPUKernel&&) = delete;
+      SiPixelRawToClusterGPUKernel& operator=(const SiPixelRawToClusterGPUKernel&) = delete;
+      SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
+
+      void makeClustersAsync(bool isRun2,
+                             const SiPixelFedCablingMapGPU* cablingMap,
+                             const unsigned char* modToUnp,
+                             const SiPixelGainForHLTonGPU* gains,
+                             const WordFedAppender& wordFed,
+                             PixelFormatterErrors&& errors,
+                             const uint32_t wordCounter,
+                             const uint32_t fedCounter,
+                             bool useQualityInfo,
+                             bool includeErrors,
+                             bool debug,
+                             Queue& queue);
+
+      std::pair<SiPixelDigisAlpaka, SiPixelClustersAlpaka> getResults() {
+        auto pnModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
+        digis_d.setNModulesDigis(pnModules_Clusters_h[0], nDigis);
+        clusters_d.setNClusters(pnModules_Clusters_h[1]);
+        return std::make_pair(std::move(digis_d), std::move(clusters_d));
+      }
+
+      SiPixelDigiErrorsAlpaka&& getErrors() { return std::move(digiErrors_d); }
 
     private:
-      AlpakaHostBuf<unsigned int> word_;
-      AlpakaHostBuf<unsigned char> fedId_;
+      uint32_t nDigis = 0;
+
+      // Data to be put in the event
+      AlpakaHostBuf<uint32_t> nModules_Clusters_h;
+      SiPixelDigisAlpaka digis_d;
+      SiPixelClustersAlpaka clusters_d;
+      SiPixelDigiErrorsAlpaka digiErrors_d;
     };
 
-  SiPixelRawToClusterGPUKernel() : 
-    nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(2u)},
-      digis_d{SiPixelDigisAlpaka(0u)},
-	clusters_d{SiPixelClustersAlpaka(0u)},
-	  digiErrors_d{SiPixelDigiErrorsAlpaka(0u, PixelFormatterErrors())}
-	  {};
-	  ~SiPixelRawToClusterGPUKernel() = default;
+    // see RecoLocalTracker/SiPixelClusterizer
+    // all are runtime const, should be specified in python _cfg.py
+    struct ADCThreshold {
+      const int thePixelThreshold = 1000;      // default Pixel threshold in electrons
+      const int theSeedThreshold = 1000;       // seed thershold in electrons not used in our algo
+      const float theClusterThreshold = 4000;  // cluster threshold in electron
+      const int ConversionFactor = 65;         // adc to electron conversion factor
 
-    SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
-    SiPixelRawToClusterGPUKernel(SiPixelRawToClusterGPUKernel&&) = delete;
-    SiPixelRawToClusterGPUKernel& operator=(const SiPixelRawToClusterGPUKernel&) = delete;
-    SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
+      const int theStackADC_ = 255;               // the maximum adc count for stack layer
+      const int theFirstStack_ = 5;               // the index of the fits stack layer
+      const double theElectronPerADCGain_ = 600;  // ADC to electron conversion
+    };
 
-    void makeClustersAsync(bool isRun2,
-                           const SiPixelFedCablingMapGPU* cablingMap,
-                           const unsigned char* modToUnp,
-                           const SiPixelGainForHLTonGPU* gains,
-                           const WordFedAppender& wordFed,
-                           PixelFormatterErrors&& errors,
-                           const uint32_t wordCounter,
-                           const uint32_t fedCounter,
-                           bool useQualityInfo,
-                           bool includeErrors,
-                           bool debug,
-                           Queue& queue);
-
-    std::pair<SiPixelDigisAlpaka, SiPixelClustersAlpaka> getResults() {
-      auto pnModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-      digis_d.setNModulesDigis(pnModules_Clusters_h[0], nDigis);
-      clusters_d.setNClusters(pnModules_Clusters_h[1]);
-      return std::make_pair(std::move(digis_d), std::move(clusters_d));
-    }
-
-    SiPixelDigiErrorsAlpaka&& getErrors() { return std::move(digiErrors_d); }
-
-  private:
-    uint32_t nDigis = 0;
-
-    // Data to be put in the event
-    AlpakaHostBuf<uint32_t> nModules_Clusters_h;
-    SiPixelDigisAlpaka digis_d;
-    SiPixelClustersAlpaka clusters_d;
-    SiPixelDigiErrorsAlpaka digiErrors_d;
-  };
-
-  // see RecoLocalTracker/SiPixelClusterizer
-  // all are runtime const, should be specified in python _cfg.py
-  struct ADCThreshold {
-    const int thePixelThreshold = 1000;      // default Pixel threshold in electrons
-    const int theSeedThreshold = 1000;       // seed thershold in electrons not used in our algo
-    const float theClusterThreshold = 4000;  // cluster threshold in electron
-    const int ConversionFactor = 65;         // adc to electron conversion factor
-
-    const int theStackADC_ = 255;               // the maximum adc count for stack layer
-    const int theFirstStack_ = 5;               // the index of the fits stack layer
-    const double theElectronPerADCGain_ = 600;  // ADC to electron conversion
-  };
-
-}  // namespace pixelgpudetails
+  }  // namespace pixelgpudetails
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h

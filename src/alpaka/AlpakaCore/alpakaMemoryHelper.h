@@ -10,28 +10,32 @@ namespace cms {
   namespace alpakatools {
 
     template <typename TData>
-      auto allocHostBuf(const Extent& extent) {
-return alpaka::allocBuf<TData, Idx>(host, extent); 
+    auto allocHostBuf(const Extent& extent) {
+      return alpaka::allocBuf<TData, Idx>(host, extent);
     }
 
     template <typename TData>
-      auto createHostView(TData* data, const Extent& extent) {
+    auto createHostView(TData* data, const Extent& extent) {
       return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, host, extent);
     }
 
     template <typename TData>
-      auto allocDeviceBuf(const Extent& extent) {
-      return alpaka::allocBuf<TData, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::device, extent); 
+    auto allocDeviceBuf(const Extent& extent) {
+      return alpaka::allocBuf<TData, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
     template <typename TData>
-      auto createDeviceView(const TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(const_cast<TData*>(data), ALPAKA_ACCELERATOR_NAMESPACE::device, extent); // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const TData* argument?
+    auto createDeviceView(const TData* data, const Extent& extent) {
+      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(
+          const_cast<TData*>(data),
+          ALPAKA_ACCELERATOR_NAMESPACE::device,
+          extent);  // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const TData* argument?
     }
 
     template <typename TData>
-      auto createDeviceView(TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
+    auto createDeviceView(TData* data, const Extent& extent) {
+      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(
+          data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
   }  // namespace alpakatools

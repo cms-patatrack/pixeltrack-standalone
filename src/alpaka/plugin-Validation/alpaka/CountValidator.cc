@@ -18,30 +18,30 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class CountValidator : public edm::EDProducer {
-public:
-  explicit CountValidator(edm::ProductRegistry& reg);
+  class CountValidator : public edm::EDProducer {
+  public:
+    explicit CountValidator(edm::ProductRegistry& reg);
 
-private:
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  void endJob() override;
+  private:
+    void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+    void endJob() override;
 
-  edm::EDGetTokenT<DigiClusterCount> digiClusterCountToken_;
-  //edm::EDGetTokenT<TrackCount> trackCountToken_;
-  //edm::EDGetTokenT<VertexCount> vertexCountToken_;
+    edm::EDGetTokenT<DigiClusterCount> digiClusterCountToken_;
+    //edm::EDGetTokenT<TrackCount> trackCountToken_;
+    //edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-  edm::EDGetTokenT<SiPixelDigisAlpaka> digiToken_;
-  edm::EDGetTokenT<SiPixelClustersAlpaka> clusterToken_;
-  //edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
-  //edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
+    edm::EDGetTokenT<SiPixelDigisAlpaka> digiToken_;
+    edm::EDGetTokenT<SiPixelClustersAlpaka> clusterToken_;
+    //edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
+    //edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
 
-  static std::atomic<int> allEvents;
-  static std::atomic<int> goodEvents;
-  static std::atomic<int> sumVertexDifference;
+    static std::atomic<int> allEvents;
+    static std::atomic<int> goodEvents;
+    static std::atomic<int> sumVertexDifference;
 
-  static std::mutex sumTrackDifferenceMutex;
-  static float sumTrackDifference;
-};
+    static std::mutex sumTrackDifferenceMutex;
+    static float sumTrackDifference;
+  };
 
   std::atomic<int> CountValidator::allEvents{0};
   std::atomic<int> CountValidator::goodEvents{0};
@@ -49,44 +49,44 @@ private:
   std::mutex CountValidator::sumTrackDifferenceMutex;
   float CountValidator::sumTrackDifference = 0;
 
-CountValidator::CountValidator(edm::ProductRegistry& reg)
-    : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
-      //trackCountToken_(reg.consumes<TrackCount>()),
-      //vertexCountToken_(reg.consumes<VertexCount>()),
-      digiToken_(reg.consumes<SiPixelDigisAlpaka>()),
-      clusterToken_(reg.consumes<SiPixelClustersAlpaka>())//,
-      //trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
-      //vertexToken_(reg.consumes<ZVertexHeterogeneous>()) 
-{}
+  CountValidator::CountValidator(edm::ProductRegistry& reg)
+      : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
+        //trackCountToken_(reg.consumes<TrackCount>()),
+        //vertexCountToken_(reg.consumes<VertexCount>()),
+        digiToken_(reg.consumes<SiPixelDigisAlpaka>()),
+        clusterToken_(reg.consumes<SiPixelClustersAlpaka>())  //,
+                                                              //trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
+                                                              //vertexToken_(reg.consumes<ZVertexHeterogeneous>())
+  {}
 
-void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  //constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance
-  //constexpr int vertexTolerance = 1;
-  std::stringstream ss;
-  bool ok = true;
+  void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+    //constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance
+    //constexpr int vertexTolerance = 1;
+    std::stringstream ss;
+    bool ok = true;
 
-  ss << "Event " << iEvent.eventID() << " ";
+    ss << "Event " << iEvent.eventID() << " ";
 
-  {
-    auto const& count = iEvent.get(digiClusterCountToken_);
-    auto const& digis = iEvent.get(digiToken_);
-    auto const& clusters = iEvent.get(clusterToken_);
+    {
+      auto const& count = iEvent.get(digiClusterCountToken_);
+      auto const& digis = iEvent.get(digiToken_);
+      auto const& clusters = iEvent.get(clusterToken_);
 
-    if (digis.nModules() != count.nModules()) {
-      ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();
-      ok = false;
+      if (digis.nModules() != count.nModules()) {
+        ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();
+        ok = false;
+      }
+      if (digis.nDigis() != count.nDigis()) {
+        ss << "\n N(digis) is " << digis.nDigis() << " expected " << count.nDigis();
+        ok = false;
+      }
+      if (clusters.nClusters() != count.nClusters()) {
+        ss << "\n N(clusters) is " << clusters.nClusters() << " expected " << count.nClusters();
+        ok = false;
+      }
     }
-    if (digis.nDigis() != count.nDigis()) {
-      ss << "\n N(digis) is " << digis.nDigis() << " expected " << count.nDigis();
-      ok = false;
-    }
-    if (clusters.nClusters() != count.nClusters()) {
-      ss << "\n N(clusters) is " << clusters.nClusters() << " expected " << count.nClusters();
-      ok = false;
-    }
-  }
 
-  /*
+    /*
   {
     auto const& count = iEvent.get(trackCountToken_);
     auto const& tracks = iEvent.get(trackToken_);
@@ -125,30 +125,30 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     }
     }*/
 
-  ++allEvents;
-  if (ok) {
-    ++goodEvents;
-  } else {
-    std::cout << ss.str() << std::endl;
+    ++allEvents;
+    if (ok) {
+      ++goodEvents;
+    } else {
+      std::cout << ss.str() << std::endl;
+    }
   }
-}
 
-void CountValidator::endJob() {
-  if (allEvents == goodEvents) {
-    std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
-    if (sumTrackDifference != 0.f) {
-      std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load()
-                << " (all within tolerance)\n";
+  void CountValidator::endJob() {
+    if (allEvents == goodEvents) {
+      std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
+      if (sumTrackDifference != 0.f) {
+        std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load()
+                  << " (all within tolerance)\n";
+      }
+      if (sumVertexDifference != 0) {
+        std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
+                  << " (all within tolerance)\n";
+      }
+    } else {
+      std::cout << "CountValidator: " << (allEvents - goodEvents) << " events failed validation (see details above)\n";
+      throw std::runtime_error("CountValidator failed");
     }
-    if (sumVertexDifference != 0) {
-      std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
-                << " (all within tolerance)\n";
-    }
-  } else {
-    std::cout << "CountValidator: " << (allEvents - goodEvents) << " events failed validation (see details above)\n";
-    throw std::runtime_error("CountValidator failed");
   }
-}
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

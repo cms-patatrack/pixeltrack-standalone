@@ -27,22 +27,22 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned int modToUnpDefSize;
     in.read(reinterpret_cast<char*>(&modToUnpDefSize), sizeof(unsigned int));
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
-    in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);    
+    in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);
 
-Queue queue(device);
+    Queue queue(device);
 
- auto cablingMap_h{cms::alpakatools::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};
-auto cablingMap_d{cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(1u)};
- alpaka::memcpy(queue, cablingMap_d, cablingMap_h, 1u);
-eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper>(std::move(cablingMap_d), true));
+    auto cablingMap_h{cms::alpakatools::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};
+    auto cablingMap_d{cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(1u)};
+    alpaka::memcpy(queue, cablingMap_d, cablingMap_h, 1u);
+    eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper>(std::move(cablingMap_d), true));
 
-auto modToUnp_h{cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
-auto modToUnp_d{cms::alpakatools::allocDeviceBuf<unsigned char>(modToUnpDefSize)};
-alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
-eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
+    auto modToUnp_h{cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
+    auto modToUnp_d{cms::alpakatools::allocDeviceBuf<unsigned char>(modToUnpDefSize)};
+    alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
+    eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
 
-alpaka::wait(queue);
-}
+    alpaka::wait(queue);
+  }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

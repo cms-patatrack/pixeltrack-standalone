@@ -156,7 +156,7 @@ namespace gpuClustering {
       // Assume that we can cover the whole module with up to 16 blockDimension-wide iterations
       // This maxiter value was tuned for GPU, with 256 or 512 threads per block.
       // Hence, also works for CPU case, with 256 or 512 elements per thread.
-      // Real constrainst is maxiter = hist.size() / blockDimension, 
+      // Real constrainst is maxiter = hist.size() / blockDimension,
       // with blockDimension = threadPerBlock * elementsPerThread.
       // Hence, maxiter can be tuned accordingly to the workdiv.
       constexpr unsigned int maxiter = 16;

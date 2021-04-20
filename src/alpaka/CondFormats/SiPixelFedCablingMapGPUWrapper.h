@@ -7,24 +7,24 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class SiPixelFedCablingMapGPUWrapper {
-public:
-using CablingMapDeviceBuf = AlpakaDeviceBuf<SiPixelFedCablingMapGPU>;
+  class SiPixelFedCablingMapGPUWrapper {
+  public:
+    using CablingMapDeviceBuf = AlpakaDeviceBuf<SiPixelFedCablingMapGPU>;
 
-  explicit SiPixelFedCablingMapGPUWrapper(CablingMapDeviceBuf cablingMap, bool quality)
-      : cablingMapDevice_{std::move(cablingMap)}, hasQuality_{quality} {}
-  ~SiPixelFedCablingMapGPUWrapper() = default;
+    explicit SiPixelFedCablingMapGPUWrapper(CablingMapDeviceBuf cablingMap, bool quality)
+        : cablingMapDevice_{std::move(cablingMap)}, hasQuality_{quality} {}
+    ~SiPixelFedCablingMapGPUWrapper() = default;
 
-  bool hasQuality() const { return hasQuality_; }
+    bool hasQuality() const { return hasQuality_; }
 
-//const CablingMapDeviceBuf& cablingMap() const { return cablingMapDevice_; }
-// TO DO: what about returning a view only?
-const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapDevice_); }
+    //const CablingMapDeviceBuf& cablingMap() const { return cablingMapDevice_; }
+    // TO DO: what about returning a view only?
+    const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapDevice_); }
 
-private:
-  CablingMapDeviceBuf cablingMapDevice_;
-  bool hasQuality_;
-};
+  private:
+    CablingMapDeviceBuf cablingMapDevice_;
+    bool hasQuality_;
+  };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

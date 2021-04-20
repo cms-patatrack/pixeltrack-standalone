@@ -44,7 +44,7 @@ namespace cms {
      */
     template <typename TAcc, typename TDim = alpaka::Dim<TAcc>>
     ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_block(const TAcc& acc,
-                                                                                 const Vec<TDim>& elementIdxShift) {
+                                                                               const Vec<TDim>& elementIdxShift) {
       Vec<TDim> firstElementIdxVec = Vec<TDim>::zeros();
       Vec<TDim> endElementIdxUncutVec = Vec<TDim>::zeros();
 
@@ -96,7 +96,7 @@ namespace cms {
      */
     template <typename TAcc, typename TDim = alpaka::Dim<TAcc>>
     ALPAKA_FN_ACC std::pair<Vec<TDim>, Vec<TDim>> element_index_range_in_grid(const TAcc& acc,
-                                                                                Vec<TDim>& elementIdxShift) {
+                                                                              Vec<TDim>& elementIdxShift) {
       // Loop on all grid dimensions.
       for (typename TDim::value_type dimIndex(0); dimIndex < TDim::value; ++dimIndex) {
         // Take into account the block index in grid.
@@ -302,10 +302,10 @@ namespace cms {
      * Otherwise: do nothing.
      */
     ALPAKA_FN_ACC ALPAKA_FN_INLINE bool get_next_element_1D_index_stride(uint32_t& i,
-									 uint32_t& firstElementIdx,
-									 uint32_t& endElementIdx,
-									 const uint32_t stride,
-									 const uint32_t maxNumberOfElements) {
+                                                                         uint32_t& firstElementIdx,
+                                                                         uint32_t& endElementIdx,
+                                                                         const uint32_t stride,
+                                                                         const uint32_t maxNumberOfElements) {
       bool isNextStrideElementValid = true;
       if (i == endElementIdx) {
         firstElementIdx += stride;
