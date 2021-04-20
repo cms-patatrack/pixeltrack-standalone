@@ -23,16 +23,6 @@ int main(void) {
   const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
-
-
-int maxEvents = 10;
-  auto start = std::chrono::high_resolution_clock::now();
-
-  for (int i = 0; i < maxEvents; ++i) {
-
-
-
-
   constexpr unsigned int numElements = 256 * 2000;
   // these in reality are already on GPU
   auto h_id_buf = alpaka::allocBuf<uint16_t, Idx>(host, numElements);
@@ -388,28 +378,5 @@ int maxEvents = 10;
       }
     // << " and " << seeds.size() << " seeds" << std::endl;
   }  /// end loop kkk
-
-
-
-
-
-
-
-
-}
-auto stop = std::chrono::high_resolution_clock::now();
-
-auto diff = stop - start;
-auto time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(diff).count()) / 1e6;
-std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
-<< std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
-
-
-
-
-
-
-
-
   return 0;
 }
