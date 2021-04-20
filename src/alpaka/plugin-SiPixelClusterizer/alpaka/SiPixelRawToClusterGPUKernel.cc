@@ -551,9 +551,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                        Queue& queue) {
     nDigis = wordCounter;
 
-#ifdef GPU_DEBUG
+    #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
-#endif
+    #endif
 
     digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
@@ -568,7 +568,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const int threadsPerBlockOrElementsPerThread = 512;    
 #else
       // NB: MPORTANT: This could be tuned to benefit from innermost loop.
-      const int threadsPerBlockOrElementsPerThread = 1;
+      const int threadsPerBlockOrElementsPerThread = 32;
 #endif
       const uint32_t blocks = (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
       const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(Vec1::all(blocks),
@@ -625,7 +625,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const int threadsPerBlockOrElementsPerThread = 256;    
 #else
       // NB: MPORTANT: This could be tuned to benefit from innermost loop.
-      const int threadsPerBlockOrElementsPerThread = 1;
+      const int threadsPerBlockOrElementsPerThread = 32;
 #endif
       const int blocks = (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
       const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(Vec1::all(blocks),
@@ -667,12 +667,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
-      const int blocksMaxNumModules = MaxNumModules;
-      const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(Vec1::all(blocksMaxNumModules),
-	Vec1::all(threadsPerBlockOrElementsPerThread));
+      const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(Vec1::all(MaxNumModules),
+									    Vec1::all(256));
+      // NB: With present findClus() / chargeCut() algorithm, 
+      // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
+      // Though, it does not have to be the same number for CPU/GPU cases.
 
 #ifdef GPU_DEBUG
-      std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlockOrElementsPerThread << " threadsPerBlockOrElementsPerThread\n";
+      std::cout << "CUDA findClus kernel launch with " << MaxNumModules << " blocks of " << 256 << " threadsPerBlockOrElementsPerThread\n";
 #endif
 
       alpaka::enqueue(queue,

@@ -252,20 +252,16 @@ int maxEvents = 10;
     alpaka::memcpy(queue, d_adc_buf, h_adc_buf, n);
 
     // Launch CUDA Kernels
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
-#else
+    #else
     // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
-    const int threadsPerBlockOrElementsPerThread = 1;
-#endif
+    const int threadsPerBlockOrElementsPerThread = 256;
+    #endif
 
     // COUNT MODULES
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int blocksPerGridCountModules =
         (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-#else
-    const int blocksPerGridCountModules = 1;
-#endif
     const WorkDiv1& workDivCountModules = cms::alpakatools::make_workdiv(Vec1::all(blocksPerGridCountModules),
                                                                          Vec1::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "

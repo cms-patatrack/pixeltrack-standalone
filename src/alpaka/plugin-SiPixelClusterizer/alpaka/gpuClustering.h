@@ -154,28 +154,27 @@ namespace gpuClustering {
         }
       });
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      // assume that we can cover the whole module with up to 16 blockDimension-wide iterations
+      // Assume that we can cover the whole module with up to 16 blockDimension-wide iterations
+      // This maxiter value was tuned for GPU, with 256 or 512 threads per block.
+      // Hence, also works for CPU case, with 256 or 512 elements per thread.
+      // Real constrainst is maxiter = hist.size() / blockDimension, 
+      // with blockDimension = threadPerBlock * elementsPerThread.
+      // Hence, maxiter can be tuned accordingly to the workdiv.
       constexpr unsigned int maxiter = 16;
-#else
-      const unsigned int maxiter =
-          hist.size();  // After change of threadDimension, should be changed to hist.size() / blockDimension.
-#endif
-
-      // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
-      constexpr int maxNeighbours = 10;
       assert((hist.size() / blockDimension) <= maxiter);
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       constexpr uint32_t threadDimension = 1;
 #else
-      // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
-      constexpr uint32_t threadDimension = 1;
+      // NB: can be tuned.
+      constexpr uint32_t threadDimension = 256;
 #endif
       const uint32_t runTimeThreadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
       assert(runTimeThreadDimension <= threadDimension);
 
       // nearest neighbour
+      // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
+      constexpr int maxNeighbours = 10;
       uint16_t nn[maxiter][threadDimension][maxNeighbours];
       uint8_t nnn[maxiter][threadDimension];  // number of nn
       for (uint32_t elementIdx = 0; elementIdx < threadDimension; ++elementIdx) {
