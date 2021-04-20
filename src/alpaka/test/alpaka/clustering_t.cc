@@ -245,7 +245,7 @@ int main(void) {
     #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
     #else
-    // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
+    // NB: can be tuned.
     const int threadsPerBlockOrElementsPerThread = 256;
     #endif
 

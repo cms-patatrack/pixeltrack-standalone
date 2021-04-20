@@ -138,9 +138,6 @@ int main(int argc, char** argv) {
       addModules("alpaka_serial_sync::", Backend::SERIAL);
       addModules("alpaka_tbb_async::", Backend::TBB);
       addModules("alpaka_cuda_async::", Backend::CUDA);
-      if (transfer) {
-	// add modules for transfer
-      }
     }
   }
   edm::EventProcessor processor(
