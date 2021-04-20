@@ -38,7 +38,6 @@ ALPAKA_FN_ACC void operator()(const T_Acc& acc,
 				uint32_t* __restrict__ nClustersInModule,  // just to zero them
 				uint32_t* __restrict__ clusModuleStart     // just to zero first
 				) const {
-//int first = blockDim.x * blockIdx.x + threadIdx.x;
   const uint32_t threadIdxGlobal(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[0u]);
 
   // zero for next kernels...
@@ -46,12 +45,10 @@ ALPAKA_FN_ACC void operator()(const T_Acc& acc,
     clusModuleStart[0] = moduleStart[0] = 0;
   }
 
-  //for (int i = first; i < gpuClustering::MaxNumModules; i += gridDim.x * blockDim.x) {
   cms::alpakatools::for_each_element_1D_grid_stride(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
       nClustersInModule[i] = 0;
     });
 
-  //for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
   cms::alpakatools::for_each_element_1D_grid_stride(acc, numElements, [&](uint32_t i) {
       if (id[i] != InvId ) {
 	float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
