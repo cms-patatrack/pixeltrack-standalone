@@ -687,19 +687,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter
 	));
 
-      const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-      std::cout << "BEFORE p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
-      std::cout << "BEFORE p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
-
-
       auto moduleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
+
       alpaka::memcpy(queue, nModules_Clusters_h, moduleStartSubView, 1u);
-
-      alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
-      std::cout << "UPDATE0 p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
-      std::cout << "UPDATE0 p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
-
 
       //threadsPerBlock = 256;
       blocks = MaxNumModules;
@@ -754,7 +745,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     ::pixelgpudetails::fillHitsModuleStart(),
 						     clusters_d.c_clusInModule(), 
 						     clusters_d.clusModuleStart()
-						     ));      
+						     ));
+ 
       // last element holds the number of all clusters
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
@@ -763,9 +755,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
       alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartSubView, 1u);
-      alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
+      // Wait for memory transfer to host to complete before looking at host data!
+      alpaka::wait(queue);
+      auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
 
+      
       std::cout << "UPDATE1 p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
       std::cout << "UPDATE1 p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
     }  // end clusterizer scope
