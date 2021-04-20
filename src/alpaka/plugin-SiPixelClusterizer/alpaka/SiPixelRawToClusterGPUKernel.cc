@@ -605,7 +605,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
-      alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter/2); // TO DO: wordCounter/2?
+      alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter/2);
 
       /*auto wordFedWordView = cms::alpakatools::createDeviceView<uint32_t>(device, wordFed.word(), MAX_FED_WORDS);
       SubView<uint32_t> wordFedWordSubView = SubView<uint32_t>(wordFedWordView, wordCounter);
@@ -635,7 +635,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	debug));
      
 #ifdef GPU_DEBUG
-      alpaka::wait(device);
+      alpaka::wait(queue);
 #endif
 
 #ifdef TODO
@@ -643,7 +643,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         digiErrors_d.copyErrorToHostAsync(stream);
       }
 #endif
-      alpaka::wait(queue);
+      alpaka::wait(queue); // Wait work to be completed before end of scope.
     }
     // End of Raw2Digi and passing data for clustering
 
@@ -678,10 +678,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     ));
  
 #ifdef GPU_DEBUG
-      alpaka::wait(device);
-#endif
-
-#ifdef GPU_DEBUG
+      alpaka::wait(queue);
       std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of " << threadsPerBlockOrElementsPerThread
                 << " threadsPerBlockOrElementsPerThread\n";
 #endif
@@ -695,23 +692,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter
 	));
 
-      alpaka::wait(queue); 
-
-      // TO DO: NOOOOO clusters_d.moduleStart() IS NOT A BUFFER but a raw pointer!!!!!!!!!
-      //cudaCheck(cudaMemcpyAsync(
-      //&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
-
       // read the number of modules into a data member, used by getProduct())
       auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       const auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
 
       auto moduleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
-      //alpaka::memcpy(queue, nModules_Clusters_0_h, clusters_d.moduleStart(), 1u);
       alpaka::memcpy(queue, nModules_Clusters_0_h, moduleStartSubView, 1u);
-      alpaka::wait(queue);
+
+      alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
       std::cout << "p_nModules_Clusters_0_h[0] = " << p_nModules_Clusters_0_h[0] << std::endl;
-      
       const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
       p_nModules_Clusters_h[0] = p_nModules_Clusters_0_h[0];
 
@@ -738,7 +728,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter));
    
 #ifdef GPU_DEBUG
-      //alpaka::wait(device);
+      alpaka::wait(queue);
 #endif
 
       // apply charge cut
@@ -769,9 +759,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     ::pixelgpudetails::fillHitsModuleStart(),
 						     clusters_d.c_clusInModule(), 
 						     clusters_d.clusModuleStart()
-						     ));
-      alpaka::wait(queue);
-      
+						     ));      
       // last element holds the number of all clusters  
 
       // slice on host
@@ -780,17 +768,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
- 
       alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartSubView, 1u);
-      alpaka::wait(queue);
+
+      alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
-
-
-#ifdef GPU_DEBUG
-      //alpaka::wait(device);
-#endif
-
-      alpaka::wait(queue);
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails
