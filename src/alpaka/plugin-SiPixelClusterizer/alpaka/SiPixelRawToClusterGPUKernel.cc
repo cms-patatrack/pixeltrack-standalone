@@ -35,8 +35,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 namespace pixelgpudetails {
 
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() :
-    word_{cms::alpakatools::allocHostBuf<unsigned int>(host, MAX_FED_WORDS)},
-    fedId_{cms::alpakatools::allocHostBuf<unsigned char>(host, MAX_FED_WORDS)}
+    word_{cms::alpakatools::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
+    fedId_{cms::alpakatools::allocHostBuf<unsigned char>(MAX_FED_WORDS)}
 {}
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
@@ -724,7 +724,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
       const auto clusModuleStartLastElement = AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       // slice on host
-      auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
+      auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(1u)};
       auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
       alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartLastElement, 1u);

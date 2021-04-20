@@ -60,7 +60,7 @@ explicit SiPixelDigisAlpaka(size_t maxFedWords)
   auto adcToHost() const {
     Queue queue(device);
 
-    auto ret = cms::alpakatools::allocHostBuf<uint16_t>(host, nDigis());
+    auto ret = cms::alpakatools::allocHostBuf<uint16_t>(nDigis());
     cms::alpakatools::memcpy(queue, ret, adc_d, nDigis());
 
     alpaka::wait(queue);
