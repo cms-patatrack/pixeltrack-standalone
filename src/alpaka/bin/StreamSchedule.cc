@@ -42,15 +42,6 @@ namespace edm {
   StreamSchedule::StreamSchedule(StreamSchedule&&) = default;
   StreamSchedule& StreamSchedule::operator=(StreamSchedule&&) = default;
 
-  // For TBB backend
-  void StreamSchedule::runToCompletion() {
-    while (auto event = source_->produce(streamId_, registry_)) {
-      for (auto& worker : path_) {
-        worker->doWork(*event, *eventSetup_);
-      }
-    }
-  }
-
   void StreamSchedule::runToCompletionAsync(WaitingTaskHolder h) {
     auto task =
         make_functor_task(tbb::task::allocate_root(), [this, h]() mutable { processOneEventAsync(std::move(h)); });

@@ -29,9 +29,6 @@ namespace edm {
     // not thread safe
     virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask) = 0;
 
-    // definitively not thread safe
-    virtual void doWork(Event& event, EventSetup const& eventSetup) = 0;
-
     // not thread safe
     virtual void doEndJob() = 0;
 
@@ -98,22 +95,6 @@ namespace edm {
         //std::cout << "calling prefetchAsync " << this << " with moduleTask " << moduleTask << std::endl;
         prefetchAsync(event, eventSetup, moduleTask);
       }
-    }
-
-    void doWork(Event& event, EventSetup const& eventSetup) override {
-      if (producer_.hasAcquire()) {
-        auto waitTask = make_empty_waiting_task();
-        waitTask->increment_ref_count();
-        {
-          WaitingTaskWithArenaHolder runProducerHolder{waitTask.get()};
-          producer_.doAcquire(event, eventSetup, runProducerHolder);
-        }
-        waitTask->wait_for_all();
-        if (waitTask->exceptionPtr()) {
-          std::rethrow_exception(*(waitTask->exceptionPtr()));
-        }
-      }
-      producer_.doProduce(event, eventSetup);
     }
 
     void doEndJob() override { producer_.doEndJob(); }

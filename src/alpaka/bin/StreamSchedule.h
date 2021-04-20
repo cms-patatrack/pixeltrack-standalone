@@ -33,9 +33,6 @@ namespace edm {
     StreamSchedule(StreamSchedule&&);
     StreamSchedule& operator=(StreamSchedule&&);
 
-    // For TBB backend
-    void runToCompletion();
-
     void runToCompletionAsync(WaitingTaskHolder h);
 
     void endJob();
