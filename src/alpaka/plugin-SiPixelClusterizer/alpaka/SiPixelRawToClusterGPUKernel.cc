@@ -469,7 +469,7 @@ namespace pixelgpudetails {
       });  // end of stride on grid
 
   } // end of Raw to Digi kernel operator()
-  };
+  }; // end of Raw to Digi struct
 
 }    // namespace pixelgpudetails
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
@@ -488,10 +488,7 @@ namespace pixelgpudetails {
     const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
     assert(1 == gridDimension);
 
-    //int first = threadIdx.x;
-
     // limit to MaxHitsInModule;
-    //for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
     cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
       });
@@ -500,7 +497,6 @@ namespace pixelgpudetails {
     cms::alpakatools::blockPrefixScan(acc, moduleStart + 1, moduleStart + 1, 1024, ws);
     cms::alpakatools::blockPrefixScan(acc, moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
-    //for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
     cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules + 1, 1025u, [&](uint32_t i) {
 	moduleStart[i] += moduleStart[1024];
       });
@@ -527,14 +523,13 @@ namespace pixelgpudetails {
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    //for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
     cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
-      if (moduleStart[i] > MAX_HITS)
-        moduleStart[i] = MAX_HITS;
+	if (moduleStart[i] > MAX_HITS)
+	  moduleStart[i] = MAX_HITS;
       });
 
-    }
-  }; // end of fillHitsModuleStart kernel
+    } // end of fillHitsModuleStart kernel operator()
+  }; // end of fillHitsModuleStart struct
 
 }  // namespace pixelgpudetails
 
@@ -556,8 +551,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                        Queue& queue) {
     nDigis = wordCounter;
 
-    std::cout << "wordCounter = " << wordCounter << std::endl;
-
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
@@ -574,7 +567,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       const int threadsPerBlockOrElementsPerThread = 512;    
 #else
-      // This should be tuned.
+      // NB: MPORTANT: This could be tuned to benefit from innermost loop.
       const int threadsPerBlockOrElementsPerThread = 1;
 #endif
       const uint32_t blocks = (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
@@ -584,8 +577,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
       auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(device, wordCounter);
-      // NB: IMPORTANT: Legacy allocates wordCounter elements for fedId_d, 
-      // but only the first half of elements is eventually used, hence used wordCounter/2 instead.
+      // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated. 
+      // However, only the first half of elements end up eventually used:
+      // hence, here, only wordCounter/2 elements are allocated.
       auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter/2); 
 
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
@@ -606,7 +600,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	digis_d.pdigi(),
 	digis_d.rawIdArr(),
 	digis_d.moduleInd(),
-	digiErrors_d.error(),  // returns nullptr if default-constructed
+	digiErrors_d.error(),
 	useQualityInfo,
 	includeErrors,
 	debug));
@@ -620,7 +614,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         digiErrors_d.copyErrorToHostAsync(stream);
       }
 #endif
-      alpaka::wait(queue); // Wait work to be completed before end of scope.
+      alpaka::wait(queue); // Wait for work to be completed before end of scope.
     }
     // End of Raw2Digi and passing data for clustering
 
@@ -628,11 +622,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // clusterizer ...
       using namespace gpuClustering;	
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      int threadsPerBlockOrElementsPerThread = 256;    
+      const int threadsPerBlockOrElementsPerThread = 256;    
 #else
-      int threadsPerBlockOrElementsPerThread = 1; // This should be tuned.
+      // NB: MPORTANT: This could be tuned to benefit from innermost loop.
+      const int threadsPerBlockOrElementsPerThread = 1;
 #endif
-      int blocks = (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+      const int blocks = (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
       const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(Vec1::all(blocks),
 	Vec1::all(threadsPerBlockOrElementsPerThread));
 
@@ -653,7 +648,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     clusters_d.clusInModule(),
 						     clusters_d.clusModuleStart()
 						     ));
- 
 #ifdef GPU_DEBUG
       alpaka::wait(queue);
       std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of " << threadsPerBlockOrElementsPerThread
@@ -673,9 +667,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
-      //threadsPerBlock = 256;
-      blocks = MaxNumModules;
-      const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(Vec1::all(blocks),
+      const int blocksMaxNumModules = MaxNumModules;
+      const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(Vec1::all(blocksMaxNumModules),
 	Vec1::all(threadsPerBlockOrElementsPerThread));
 
 #ifdef GPU_DEBUG
@@ -715,10 +708,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // available in the rechit producer without additional points of
       // synchronization/ExternalWork
 
-      threadsPerBlockOrElementsPerThread = 1024;
-      blocks = 1;
-      const WorkDiv1& workDivOneBlock = cms::alpakatools::make_workdiv(Vec1::all(blocks),
-	Vec1::all(threadsPerBlockOrElementsPerThread));
+      const WorkDiv1& workDivOneBlock = cms::alpakatools::make_workdiv(Vec1::all(1u),
+	Vec1::all(1024u));
 
       // MUST be ONE block
       alpaka::enqueue(queue,
