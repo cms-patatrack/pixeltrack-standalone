@@ -601,18 +601,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
       auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(device, wordCounter);
-      auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter/2);
+      // NB: IMPORTANT: Legacy allocates wordCounter elements for fedId_d, 
+      // but only the first half of elements is eventually used, hence used wordCounter/2 instead.
+      auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(device, wordCounter/2); 
 
       // TO DO: NOOOOO different size between src and det, so might not work!!
       alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
       alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter/2);
-
-      /*auto wordFedWordView = cms::alpakatools::createDeviceView<uint32_t>(device, wordFed.word(), MAX_FED_WORDS);
-      SubView<uint32_t> wordFedWordSubView = SubView<uint32_t>(wordFedWordView, wordCounter);
-      auto wordFedFedIdView = cms::alpakatools::createDeviceView<uint8_t>(device, wordFed.word(), MAX_FED_WORDS);
-      SubView<uint8_t> wordFedFedIdSubView = SubView<uint8_t>(wordFedFedIdView, wordCounter/2);
-      alpaka::memcpy(queue, word_d, wordFedWordSubView, wordCounter);
-      alpaka::memcpy(queue, fedId_d, wordFedFedIdSubView, wordCounter/2); // TO DO: wordCounter/2?*/
 
       // Launch rawToDigi kernel
       alpaka::enqueue(queue,
@@ -692,18 +687,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 	wordCounter
 	));
 
-      // read the number of modules into a data member, used by getProduct())
-      auto nModules_Clusters_0_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
-      const auto p_nModules_Clusters_0_h = alpaka::getPtrNative(nModules_Clusters_0_h);
+      const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
+      std::cout << "BEFORE p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
+      std::cout << "BEFORE p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
+
 
       auto moduleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.moduleStart(), gpuClustering::MaxNumModules + 1);
       SubView<uint32_t> moduleStartSubView = SubView<uint32_t>(moduleStartView, 1u, 0u);
-      alpaka::memcpy(queue, nModules_Clusters_0_h, moduleStartSubView, 1u);
+      alpaka::memcpy(queue, nModules_Clusters_h, moduleStartSubView, 1u);
 
       alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
-      std::cout << "p_nModules_Clusters_0_h[0] = " << p_nModules_Clusters_0_h[0] << std::endl;
-      const auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-      p_nModules_Clusters_h[0] = p_nModules_Clusters_0_h[0];
+      std::cout << "UPDATE0 p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
+      std::cout << "UPDATE0 p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
 
 
       //threadsPerBlock = 256;
@@ -760,18 +755,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 						     clusters_d.c_clusInModule(), 
 						     clusters_d.clusModuleStart()
 						     ));      
-      // last element holds the number of all clusters  
-
+      // last element holds the number of all clusters
+      auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
+      SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       const auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
-      auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
-      SubView<uint32_t> clusModuleStartSubView = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartSubView, 1u);
-
       alpaka::wait(queue); // Wait for memory transfer to host to complete before looking at host data!
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
+
+      std::cout << "UPDATE1 p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
+      std::cout << "UPDATE1 p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails
