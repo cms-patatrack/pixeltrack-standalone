@@ -363,22 +363,8 @@ namespace pixelgpudetails {
 				  bool useQualityInfo,
 				  bool includeErrors,
 				  bool debug) const {
-      //int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
-      //for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
 
-
-      // TO DO: could also just directly use this function, and replace the continue by return statements.
-      // cms::alpakatools::for_each_element_1D_grid_stride(acc, wordCounter, [&](uint32_t iloop) {
-
-      const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0u]);
-      auto elementIdxShift = Vec1::all(0u);
-      const auto& [firstElementIdxNoStride, endElementIdxNoStride] = cms::alpakatools::element_index_range_in_grid(acc, elementIdxShift);
-      uint32_t firstElementIdx = firstElementIdxNoStride[0u];
-      uint32_t endElementIdx = endElementIdxNoStride[0u];
-
-      for (uint32_t iloop = firstElementIdx; iloop < wordCounter; ++iloop) {
-	if (!cms::alpakatools::get_next_element_1D_index_stride(iloop, firstElementIdx, endElementIdx, gridDimension, wordCounter)) { break; }
-
+      cms::alpakatools::for_each_element_1D_grid_stride(acc, wordCounter, [&](uint32_t iloop) {
 	auto gIndex = iloop;
 	xx[gIndex] = 0;
 	yy[gIndex] = 0;
@@ -395,7 +381,7 @@ namespace pixelgpudetails {
 	uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
 	if (ww == 0) {
 	  // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
-	  continue;
+	  return;
 	}
 
       uint32_t link = getLink(ww);  // Extract link
@@ -407,7 +393,7 @@ namespace pixelgpudetails {
       if (includeErrors and skipROC) {
         uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
         err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
-        continue;
+        return;
       }
 
       uint32_t rawId = detId.RawId;
@@ -418,11 +404,11 @@ namespace pixelgpudetails {
       if (useQualityInfo) {
         skipROC = cablingMap->badRocs[index];
         if (skipROC)
-          continue;
+          return;
       }
       skipROC = modToUnp[index];
       if (skipROC)
-        continue;
+        return;
 
       uint32_t layer = 0;                   //, ladder =0;
       int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
@@ -453,7 +439,7 @@ namespace pixelgpudetails {
             err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
               printf("BPIX1  Error status: %i\n", error);
-            continue;
+            return;
           }
         }
       } else {
@@ -469,7 +455,7 @@ namespace pixelgpudetails {
           err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
             printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
-          continue;
+          return;
         }
       }
 
@@ -480,11 +466,10 @@ namespace pixelgpudetails {
       pdigi[gIndex] = ::pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
       moduleId[gIndex] = detId.moduleId;
       rawIdArr[gIndex] = rawId;
-      }  // end of stride on grid
-      //});  // end of stride on grid
+      });  // end of stride on grid
 
-  }  
-  }; // end of Raw to Digi kernel
+  } // end of Raw to Digi kernel operator()
+  };
 
 }    // namespace pixelgpudetails
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
