@@ -4,8 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaKernelCommon.h"
 
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"

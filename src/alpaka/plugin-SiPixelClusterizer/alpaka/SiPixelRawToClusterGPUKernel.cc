@@ -18,7 +18,6 @@
 #include <string>
 
 // Alpaka includes
-#include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/prefixScan.h"
 
 // CMSSW includes
