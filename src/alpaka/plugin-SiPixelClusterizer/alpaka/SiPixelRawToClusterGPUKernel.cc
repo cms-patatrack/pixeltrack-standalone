@@ -732,10 +732,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
       auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
       p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
-
-      
-      std::cout << "UPDATE1 p_nModules_Clusters_h[0] = " << p_nModules_Clusters_h[0] << std::endl;
-      std::cout << "UPDATE1 p_nModules_Clusters_h[1] = " << p_nModules_Clusters_h[1] << std::endl;
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails
