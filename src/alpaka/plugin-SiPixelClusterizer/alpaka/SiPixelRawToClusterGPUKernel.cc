@@ -723,7 +723,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
  
       // last element holds the number of all clusters
       auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(device, clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
-      const auto clusModuleStartLastElement = SubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
+      const auto clusModuleStartLastElement = AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
       // slice on host
       auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(host, 1u)};
       auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
