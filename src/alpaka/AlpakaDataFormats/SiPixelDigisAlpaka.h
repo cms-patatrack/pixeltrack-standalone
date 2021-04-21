@@ -56,13 +56,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t const *c_rawIdArr() const { return alpaka::getPtrNative(rawIdArr_d); }
 
     // TO DO: nothing async in here for now... Pass the queue as argument instead, and don't wait anymore!
-    auto adcToHost() const {
-      Queue queue(device);
-
+    auto adcToHostAsync(Queue &queue) const {
       auto ret = cms::alpakatools::allocHostBuf<uint16_t>(nDigis());
       alpaka::memcpy(queue, ret, adc_d, nDigis());
-
-      alpaka::wait(queue);
       return ret;
     }
 

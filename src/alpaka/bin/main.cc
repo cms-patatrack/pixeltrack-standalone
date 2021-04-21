@@ -125,12 +125,12 @@ int main(int argc, char** argv) {
         if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
           edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
           edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-          /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
-	    edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
-	    edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");*/
+          edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
+          edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
+          edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");
           if (transfer) {
-            /*edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
-	      edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");*/
+            edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
+            edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");
           }
           if (validation) {
             edmodules.emplace_back(prefix + "CountValidator");
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 
           esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
           esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
-          /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+          esmodules.emplace_back(prefix + "PixelCPEFastESProducer");
         }
       };
       addModules("alpaka_serial_sync::", Backend::SERIAL);

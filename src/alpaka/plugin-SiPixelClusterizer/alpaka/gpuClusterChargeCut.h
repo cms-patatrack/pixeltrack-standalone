@@ -47,14 +47,14 @@ namespace gpuClustering {
 
       // Get thread / CPU element indices in block.
       const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-          cms::alpakatools::element_index_range_in_block(acc, Vec1::all(firstPixel));
+          cms::alpakatools::element_index_range_in_block(acc, firstPixel);
 
       if (nclus > MaxNumClustersPerModules) {
-        uint32_t firstElementIdx = firstElementIdxNoStride[0u];
-        uint32_t endElementIdx = endElementIdxNoStride[0u];
+        uint32_t firstElementIdx = firstElementIdxNoStride;
+        uint32_t endElementIdx = endElementIdxNoStride;
         // remove excess  FIXME find a way to cut charge first....
         for (uint32_t i = firstElementIdx; i < numElements; ++i) {
-          if (!cms::alpakatools::get_next_element_1D_index_stride(
+          if (!cms::alpakatools::next_valid_element_index_strided(
                   i, firstElementIdx, endElementIdx, blockDimension, numElements))
             break;
           if (id[i] == InvId)
@@ -75,18 +75,18 @@ namespace gpuClustering {
           printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx);
 #endif
 
-      auto&& charge = alpaka::declareSharedVar<int32_t[MaxNumClustersPerModules], __COUNTER__>(acc);
-      auto&& ok = alpaka::declareSharedVar<uint8_t[MaxNumClustersPerModules], __COUNTER__>(acc);
-      auto&& newclusId = alpaka::declareSharedVar<uint16_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto& charge = alpaka::declareSharedVar<int32_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto& ok = alpaka::declareSharedVar<uint8_t[MaxNumClustersPerModules], __COUNTER__>(acc);
+      auto& newclusId = alpaka::declareSharedVar<uint16_t[MaxNumClustersPerModules], __COUNTER__>(acc);
 
       assert(nclus <= MaxNumClustersPerModules);
-      cms::alpakatools::for_each_element_1D_block_stride(acc, nclus, [&](uint32_t i) { charge[i] = 0; });
+      cms::alpakatools::for_each_element_in_block_strided(acc, nclus, [&](uint32_t i) { charge[i] = 0; });
       alpaka::syncBlockThreads(acc);
 
-      uint32_t firstElementIdx = firstElementIdxNoStride[0u];
-      uint32_t endElementIdx = endElementIdxNoStride[0u];
+      uint32_t firstElementIdx = firstElementIdxNoStride;
+      uint32_t endElementIdx = endElementIdxNoStride;
       for (uint32_t i = firstElementIdx; i < numElements; ++i) {
-        if (!cms::alpakatools::get_next_element_1D_index_stride(
+        if (!cms::alpakatools::next_valid_element_index_strided(
                 i, firstElementIdx, endElementIdx, blockDimension, numElements))
           break;
         if (id[i] == InvId)
@@ -98,12 +98,12 @@ namespace gpuClustering {
       alpaka::syncBlockThreads(acc);
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
-      cms::alpakatools::for_each_element_1D_block_stride(
+      cms::alpakatools::for_each_element_in_block_strided(
           acc, nclus, [&](uint32_t i) { newclusId[i] = ok[i] = charge[i] > chargeCut ? 1 : 0; });
       alpaka::syncBlockThreads(acc);
 
       // renumber
-      auto&& ws = alpaka::declareSharedVar<uint16_t[32], __COUNTER__>(acc);
+      auto& ws = alpaka::declareSharedVar<uint16_t[32], __COUNTER__>(acc);
       cms::alpakatools::blockPrefixScan(acc, newclusId, nclus, ws);
 
       assert(nclus >= newclusId[nclus - 1]);
@@ -115,17 +115,17 @@ namespace gpuClustering {
       alpaka::syncBlockThreads(acc);
 
       // mark bad cluster again
-      cms::alpakatools::for_each_element_1D_block_stride(acc, nclus, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nclus, [&](uint32_t i) {
         if (0 == ok[i])
           newclusId[i] = InvId + 1;
       });
       alpaka::syncBlockThreads(acc);
 
       // reassign id
-      firstElementIdx = firstElementIdxNoStride[0u];
-      endElementIdx = endElementIdxNoStride[0u];
+      firstElementIdx = firstElementIdxNoStride;
+      endElementIdx = endElementIdxNoStride;
       for (uint32_t i = firstElementIdx; i < numElements; ++i) {
-        if (!cms::alpakatools::get_next_element_1D_index_stride(
+        if (!cms::alpakatools::next_valid_element_index_strided(
                 i, firstElementIdx, endElementIdx, blockDimension, numElements))
           break;
         if (id[i] == InvId)

@@ -365,7 +365,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     bool useQualityInfo,
                                     bool includeErrors,
                                     bool debug) const {
-        cms::alpakatools::for_each_element_1D_grid_stride(acc, wordCounter, [&](uint32_t iloop) {
+        cms::alpakatools::for_each_element_in_grid_strided(acc, wordCounter, [&](uint32_t iloop) {
           auto gIndex = iloop;
           xx[gIndex] = 0;
           yy[gIndex] = 0;
@@ -485,13 +485,15 @@ namespace pixelgpudetails {
                                   uint32_t *__restrict__ moduleStart) const {
       assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
 
+#ifndef NDEBUG
       const uint32_t blockIdxLocal(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       assert(0 == blockIdxLocal);
       const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       assert(1 == gridDimension);
+#endif
 
       // limit to MaxHitsInModule;
-      cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
         moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
       });
 
@@ -500,7 +502,7 @@ namespace pixelgpudetails {
       cms::alpakatools::blockPrefixScan(
           acc, moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
-      cms::alpakatools::for_each_element_1D_block_stride(
+      cms::alpakatools::for_each_element_in_block_strided(
           acc, gpuClustering::MaxNumModules + 1, 1025u, [&](uint32_t i) { moduleStart[i] += moduleStart[1024]; });
       alpaka::syncBlockThreads(acc);
 
@@ -513,7 +515,7 @@ namespace pixelgpudetails {
       assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
       //for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
-      cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
         if (0 != i)
           assert(moduleStart[i] >= moduleStart[i - i]);
         // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
@@ -525,7 +527,7 @@ namespace pixelgpudetails {
 
       // avoid overflow
       constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-      cms::alpakatools::for_each_element_1D_block_stride(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
         if (moduleStart[i] > MAX_HITS)
           moduleStart[i] = MAX_HITS;
       });
