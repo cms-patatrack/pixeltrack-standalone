@@ -16,6 +16,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto data_h{cms::alpakatools::createHostView<const BeamSpotPOD>(data, 1u)};
 
       alpaka::memcpy(queue, data_d, data_h, 1u);
+      alpaka::wait(queue);
     }
 
     const BeamSpotPOD* data() const { return alpaka::getPtrNative(data_d); }

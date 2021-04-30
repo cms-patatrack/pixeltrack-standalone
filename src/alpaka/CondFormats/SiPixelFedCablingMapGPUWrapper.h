@@ -17,8 +17,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     bool hasQuality() const { return hasQuality_; }
 
-    //const CablingMapDeviceBuf& cablingMap() const { return cablingMapDevice_; }
-    // TO DO: what about returning a view only?
     const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapDevice_); }
 
   private:

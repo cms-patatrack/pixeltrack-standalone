@@ -26,10 +26,8 @@ namespace cms {
 
     template <typename TData>
     auto createDeviceView(const TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(
-          const_cast<TData*>(data),
-          ALPAKA_ACCELERATOR_NAMESPACE::device,
-          extent);  // TO DO: Obviously aweful: why no view constructor inside alpaka library with a const TData* argument?
+      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, const TData, Dim1, Idx>(
+          data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
     template <typename TData>
