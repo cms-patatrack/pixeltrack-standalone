@@ -7,7 +7,8 @@
 #include <string>
 #include <vector>
 
-#include <cuda_runtime.h>
+#include "AlpakaCore/alpakaConfigCommon.h"
+#include <tbb/task_scheduler_init.h>
 
 #include "EventProcessor.h"
 
@@ -95,15 +96,25 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+
+  // TO DO: Handle check & choice of device in an Alpaka-friendly way.
   if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
-    int numberOfDevices;
-    auto status = cudaGetDeviceCount(&numberOfDevices);
-    if (cudaSuccess != status) {
+    /*const uint32_t numberOfDevices = alpaka::getDevCount<alpaka::AccGpuCudaRt<alpaka_common::Dim1, alpaka_common::Extent>>();
+    if (numberOfDevices == 0) {
       std::cout << "Failed to initialize the CUDA runtime, disabling CUDA backend" << std::endl;
       backends.erase(found);
     } else {
       std::cout << "Found " << numberOfDevices << " devices" << std::endl;
-    }
+      }*/
+  }
+
+  // TO DO: Debug TBB backend.
+  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
+    // TO DO: Warning: does not seem to be able to control the number of threads here.
+    // tbb::task_scheduler_init init(2) only have an effect when included in:
+    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (after doing make clean_alpaka of course).
+    numberOfThreads = tbb::task_scheduler_init::
+        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
   }
 
   // Initialize EventProcessor
@@ -146,11 +157,6 @@ int main(int argc, char** argv) {
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
-
-  // Initialize tasks scheduler (thread pool)
-  // tbb::task_scheduler_init tsi(numberOfThreads);
-  // TO DO: Warning: this will not work, need to be included in header.
-  // See external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
