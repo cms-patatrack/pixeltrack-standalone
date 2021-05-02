@@ -97,17 +97,6 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // TO DO: Handle check & choice of device in an Alpaka-friendly way.
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
-    /*const uint32_t numberOfDevices = alpaka::getDevCount<alpaka::AccGpuCudaRt<alpaka_common::Dim1, alpaka_common::Extent>>();
-    if (numberOfDevices == 0) {
-      std::cout << "Failed to initialize the CUDA runtime, disabling CUDA backend" << std::endl;
-      backends.erase(found);
-    } else {
-      std::cout << "Found " << numberOfDevices << " devices" << std::endl;
-      }*/
-  }
-
   // TO DO: Debug TBB backend.
   if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
     // TO DO: Warning: does not seem to be able to control the number of threads here.
