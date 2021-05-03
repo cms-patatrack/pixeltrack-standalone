@@ -202,12 +202,17 @@ private:
 };
 
 #ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-using CAHitNtupletGeneratorKernelsGPU =
-    CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits, cms::cudacompat::GPUTraits>;
+using GPUInputTraits = cms::cudacompat::GPUTraits;
 #else
-using CAHitNtupletGeneratorKernelsGPU =
-    CAHitNtupletGeneratorKernels<cms::cudacompat::GPUTraits, cms::cudacompat::ManagedTraits>;
+using GPUInputTraits = cms::cudacompat::ManagedTraits;
 #endif
+#if (!defined CUDAUVM_DISABLE_MANAGED_TRACK) && defined CUDUVM_MANAGED_TEMPORARY
+using GPUTempTraits = cms::cudacompat::ManagedTraits;
+#else
+using GPUTempTraits = cms::cudacompat::GPUTraits;
+#endif
+
+using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<GPUTempTraits, GPUInputTraits>;
 using CAHitNtupletGeneratorKernelsCPU =
     CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits, cms::cudacompat::CPUTraits>;
 
