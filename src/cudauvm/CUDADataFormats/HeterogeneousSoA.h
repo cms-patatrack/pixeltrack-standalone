@@ -50,6 +50,44 @@ private:
   cms::cuda::host::unique_ptr<T> hm_ptr;    //!
   std::unique_ptr<T> std_ptr;               //!
 };
+template <typename T>
+class ManagedSoA {
+public:
+  using Product = T;
+
+  ManagedSoA() = default;  // make root happy
+  ~ManagedSoA() = default;
+  ManagedSoA(ManagedSoA &&) = default;
+  ManagedSoA &operator=(ManagedSoA &&) = default;
+
+  explicit ManagedSoA(cms::cuda::managed::unique_ptr<T> &&p) : m_ptr(std::move(p)) {}
+  explicit ManagedSoA(std::unique_ptr<T> &&p) : std_ptr(std::move(p)) {}
+
+  auto const *get() const { return m_ptr ? m_ptr.get() : std_ptr.get(); }
+
+  auto const &operator*() const { return *get(); }
+
+  auto const *operator->() const { return get(); }
+
+  auto *get() { return m_ptr ? m_ptr.get() : std_ptr.get(); }
+
+  auto &operator*() { return *get(); }
+
+  auto *operator->() { return get(); }
+
+  // in reality valid only for GPU version...
+  void prefetchAsync(int device, cudaStream_t stream) const {
+    assert(m_ptr);
+#ifndef CUDAUVM_DISABLE_PREFETCH
+    cudaCheck(cudaMemPrefetchAsync(m_ptr.get(), sizeof(T), device, stream));
+#endif
+  }
+
+private:
+  // a union wan't do it, a variant will not be more efficienct
+  cms::cuda::managed::unique_ptr<T> m_ptr;  //!
+  std::unique_ptr<T> std_ptr;               //!
+};
 
 namespace cms {
   namespace cudacompat {

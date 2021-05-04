@@ -69,6 +69,10 @@ namespace pixelTrack {
 
 }  // namespace pixelTrack
 
+#ifdef CUDAUVM_DISABLE_MANAGED_TRACK
 using PixelTrackHeterogeneous = HeterogeneousSoA<pixelTrack::TrackSoA>;
+#else
+using PixelTrackHeterogeneous = ManagedSoA<pixelTrack::TrackSoA>;
+#endif
 
 #endif  // CUDADataFormatsTrackTrackSoA_H
