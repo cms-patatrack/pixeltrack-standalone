@@ -34,7 +34,7 @@ namespace edm {
     explicit WaitingTaskHolder(edm::WaitingTask* iTask) : m_task(iTask) { m_task->increment_ref_count(); }
     ~WaitingTaskHolder() {
       if (m_task) {
-        doneWaiting(std::exception_ptr{});
+        doneWaiting();
       }
     }
 
@@ -66,10 +66,7 @@ namespace edm {
       }
     }
 
-    void doneWaiting(std::exception_ptr iExcept) {
-      if (iExcept) {
-        m_task->dependentTaskFailed(iExcept);
-      }
+    void doneWaiting() {
       //spawn can run the task before we finish
       // doneWaiting and some other thread might
       // try to reuse this object. Resetting
@@ -79,6 +76,13 @@ namespace edm {
       if (0 == task->decrement_ref_count()) {
         tbb::task::spawn(*task);
       }
+    }
+
+    void doneWaiting(std::exception_ptr iExcept) {
+      if (iExcept) {
+        m_task->dependentTaskFailed(iExcept);
+      }
+      doneWaiting();
     }
 
   private:

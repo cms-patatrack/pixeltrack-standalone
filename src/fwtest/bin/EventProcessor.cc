@@ -6,13 +6,14 @@
 #include "EventProcessor.h"
 
 namespace edm {
-  EventProcessor::EventProcessor(int maxEvents,
+  EventProcessor::EventProcessor(int batchEvents,
+                                 int maxEvents,
                                  int numberOfStreams,
                                  std::vector<std::string> const& path,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
                                  bool validation)
-      : source_(maxEvents, registry_, datadir, validation) {
+      : source_(batchEvents, maxEvents, registry_, datadir, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);

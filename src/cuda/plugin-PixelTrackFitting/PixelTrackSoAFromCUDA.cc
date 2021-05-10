@@ -9,7 +9,9 @@
 #include "Framework/EDProducer.h"
 #include "CUDACore/ScopedContext.h"
 
-class PixelTrackSoAFromCUDA : public edm::EDProducerExternalWork {
+using PixelTrackSoAFromCUDA_AsyncState = cms::cuda::host::unique_ptr<pixelTrack::TrackSoA>;
+
+class PixelTrackSoAFromCUDA : public edm::EDProducerExternalWork<PixelTrackSoAFromCUDA_AsyncState> {
 public:
   explicit PixelTrackSoAFromCUDA(edm::ProductRegistry& reg);
   ~PixelTrackSoAFromCUDA() override = default;
@@ -17,13 +19,12 @@ public:
 private:
   void acquire(edm::Event const& iEvent,
                edm::EventSetup const& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
+               edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+               AsyncState& state) const override;
+  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup, AsyncState& state) override;
 
   edm::EDGetTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenCUDA_;
   edm::EDPutTokenT<PixelTrackHeterogeneous> tokenSOA_;
-
-  cms::cuda::host::unique_ptr<pixelTrack::TrackSoA> m_soa;
 };
 
 PixelTrackSoAFromCUDA::PixelTrackSoAFromCUDA(edm::ProductRegistry& reg)
@@ -32,17 +33,18 @@ PixelTrackSoAFromCUDA::PixelTrackSoAFromCUDA(edm::ProductRegistry& reg)
 
 void PixelTrackSoAFromCUDA::acquire(edm::Event const& iEvent,
                                     edm::EventSetup const& iSetup,
-                                    edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+                                    edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+                                    AsyncState& state) const {
   cms::cuda::Product<PixelTrackHeterogeneous> const& inputDataWrapped = iEvent.get(tokenCUDA_);
   cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
   auto const& inputData = ctx.get(inputDataWrapped);
 
-  m_soa = inputData.toHostAsync(ctx.stream());
+  state = inputData.toHostAsync(ctx.stream());
 }
 
-void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
+void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup, AsyncState& state) {
   /*
-  auto const & tsoa = *m_soa;
+  auto const & tsoa = *state;
   auto maxTracks = tsoa.stride();
   std::cout << "size of SoA" << sizeof(tsoa) << " stride " << maxTracks << std::endl;
 
@@ -57,9 +59,9 @@ void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& i
   */
 
   // DO NOT  make a copy  (actually TWO....)
-  iEvent.emplace(tokenSOA_, PixelTrackHeterogeneous(std::move(m_soa)));
+  iEvent.emplace(tokenSOA_, PixelTrackHeterogeneous(std::move(state)));
 
-  assert(!m_soa);
+  assert(!state);
 }
 
 DEFINE_FWK_MODULE(PixelTrackSoAFromCUDA);

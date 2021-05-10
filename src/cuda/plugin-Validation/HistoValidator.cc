@@ -15,15 +15,29 @@
 #include <map>
 #include <fstream>
 
-class HistoValidator : public edm::EDProducerExternalWork {
+struct HistoValidator_AsyncState {
+  uint32_t nDigis;
+  uint32_t nModules;
+  uint32_t nClusters;
+  uint32_t nHits;
+  cms::cuda::host::unique_ptr<uint16_t[]> adc;
+  cms::cuda::host::unique_ptr<uint32_t[]> clusInModule;
+  cms::cuda::host::unique_ptr<float[]> localCoord;
+  cms::cuda::host::unique_ptr<float[]> globalCoord;
+  cms::cuda::host::unique_ptr<int32_t[]> charge;
+  cms::cuda::host::unique_ptr<int16_t[]> size;
+};
+
+class HistoValidator : public edm::EDProducerExternalWork<HistoValidator_AsyncState> {
 public:
   explicit HistoValidator(edm::ProductRegistry& reg);
 
 private:
   void acquire(const edm::Event& iEvent,
                const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+               edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+               AsyncState& state) const override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) override;
   void endJob() override;
 
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
@@ -31,17 +45,6 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> hitToken_;
   edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
   edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
-
-  uint32_t nDigis;
-  uint32_t nModules;
-  uint32_t nClusters;
-  uint32_t nHits;
-  cms::cuda::host::unique_ptr<uint16_t[]> h_adc;
-  cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
-  cms::cuda::host::unique_ptr<float[]> h_localCoord;
-  cms::cuda::host::unique_ptr<float[]> h_globalCoord;
-  cms::cuda::host::unique_ptr<int32_t[]> h_charge;
-  cms::cuda::host::unique_ptr<int16_t[]> h_size;
 
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
@@ -90,61 +93,65 @@ HistoValidator::HistoValidator(edm::ProductRegistry& reg)
 
 void HistoValidator::acquire(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,
-                             edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+                             edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+                             AsyncState& state) const {
   auto const& pdigis = iEvent.get(digiToken_);
   cms::cuda::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
   auto const& digis = ctx.get(iEvent, digiToken_);
   auto const& clusters = ctx.get(iEvent, clusterToken_);
   auto const& hits = ctx.get(iEvent, hitToken_);
 
-  nDigis = digis.nDigis();
-  nModules = digis.nModules();
-  h_adc = digis.adcToHostAsync(ctx.stream());
+  state.nDigis = digis.nDigis();
+  state.nModules = digis.nModules();
+  state.adc = digis.adcToHostAsync(ctx.stream());
 
-  nClusters = clusters.nClusters();
-  h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx.stream());
-  cudaCheck(cudaMemcpyAsync(
-      h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaMemcpyDefault, ctx.stream()));
+  state.nClusters = clusters.nClusters();
+  state.clusInModule = cms::cuda::make_host_unique<uint32_t[]>(state.nModules, ctx.stream());
+  cudaCheck(cudaMemcpyAsync(state.clusInModule.get(),
+                            clusters.clusInModule(),
+                            sizeof(uint32_t) * state.nModules,
+                            cudaMemcpyDefault,
+                            ctx.stream()));
 
-  nHits = hits.nHits();
-  h_localCoord = hits.localCoordToHostAsync(ctx.stream());
-  h_globalCoord = hits.globalCoordToHostAsync(ctx.stream());
-  h_charge = hits.chargeToHostAsync(ctx.stream());
-  h_size = hits.sizeToHostAsync(ctx.stream());
+  state.nHits = hits.nHits();
+  state.localCoord = hits.localCoordToHostAsync(ctx.stream());
+  state.globalCoord = hits.globalCoordToHostAsync(ctx.stream());
+  state.charge = hits.chargeToHostAsync(ctx.stream());
+  state.size = hits.sizeToHostAsync(ctx.stream());
 }
 
-void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  histos["digi_n"].fill(nDigis);
-  for (uint32_t i = 0; i < nDigis; ++i) {
-    histos["digi_adc"].fill(h_adc[i]);
+void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) {
+  histos["digi_n"].fill(state.nDigis);
+  for (uint32_t i = 0; i < state.nDigis; ++i) {
+    histos["digi_adc"].fill(state.adc[i]);
   }
-  h_adc.reset();
-  histos["module_n"].fill(nModules);
+  //adc.reset();
+  histos["module_n"].fill(state.nModules);
 
-  histos["cluster_n"].fill(nClusters);
-  for (uint32_t i = 0; i < nModules; ++i) {
-    histos["cluster_per_module_n"].fill(h_clusInModule[i]);
+  histos["cluster_n"].fill(state.nClusters);
+  for (uint32_t i = 0; i < state.nModules; ++i) {
+    histos["cluster_per_module_n"].fill(state.clusInModule[i]);
   }
-  h_clusInModule.reset();
+  //clusInModule.reset();
 
-  histos["hit_n"].fill(nHits);
-  for (uint32_t i = 0; i < nHits; ++i) {
-    histos["hit_lx"].fill(h_localCoord[i]);
-    histos["hit_ly"].fill(h_localCoord[i + nHits]);
-    histos["hit_lex"].fill(h_localCoord[i + 2 * nHits]);
-    histos["hit_ley"].fill(h_localCoord[i + 3 * nHits]);
-    histos["hit_gx"].fill(h_globalCoord[i]);
-    histos["hit_gy"].fill(h_globalCoord[i + nHits]);
-    histos["hit_gz"].fill(h_globalCoord[i + 2 * nHits]);
-    histos["hit_gr"].fill(h_globalCoord[i + 3 * nHits]);
-    histos["hit_charge"].fill(h_charge[i]);
-    histos["hit_sizex"].fill(h_size[i]);
-    histos["hit_sizey"].fill(h_size[i + nHits]);
+  histos["hit_n"].fill(state.nHits);
+  for (uint32_t i = 0; i < state.nHits; ++i) {
+    histos["hit_lx"].fill(state.localCoord[i]);
+    histos["hit_ly"].fill(state.localCoord[i + state.nHits]);
+    histos["hit_lex"].fill(state.localCoord[i + 2 * state.nHits]);
+    histos["hit_ley"].fill(state.localCoord[i + 3 * state.nHits]);
+    histos["hit_gx"].fill(state.globalCoord[i]);
+    histos["hit_gy"].fill(state.globalCoord[i + state.nHits]);
+    histos["hit_gz"].fill(state.globalCoord[i + 2 * state.nHits]);
+    histos["hit_gr"].fill(state.globalCoord[i + 3 * state.nHits]);
+    histos["hit_charge"].fill(state.charge[i]);
+    histos["hit_sizex"].fill(state.size[i]);
+    histos["hit_sizey"].fill(state.size[i + state.nHits]);
   }
-  h_localCoord.reset();
-  h_globalCoord.reset();
-  h_charge.reset();
-  h_size.reset();
+  //state.localCoord.reset();
+  //state.globalCoord.reset();
+  //state.charge.reset();
+  //state.size.reset();
 
   {
     auto const& tracks = iEvent.get(trackToken_);
