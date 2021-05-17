@@ -8,7 +8,7 @@
 // #define ONLY_TRIPLETS_IN_HOLE
 
 #include "AlpakaCore/alpakaCommon.h"
-
+#include "AlpakaCore/threadfence.h"
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/VecArray.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
@@ -86,11 +86,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      // TO DO: Alpaka equivalent does not exist?
-      //__threadfence();
-      // This is obviously not equivalent, but seems to be sufficient.
-      // To DO: address in a better way?
-      alpaka::syncBlockThreads(acc);
+      cms::alpakatools::threadfence(acc);
 
       return outerNeighbors().push_back(acc, t);
     }
@@ -114,11 +110,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      // TO DO: Alpaka equivalent does not exist?
-      //__threadfence();
-      // This is obviously not equivalent, but seems to be sufficient.
-      // TO DO: address in a better way?
-      alpaka::syncBlockThreads(acc);
+      cms::alpakatools::threadfence(acc);
 
       return tracks().push_back(acc, t);
     }
