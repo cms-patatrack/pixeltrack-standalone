@@ -86,11 +86,13 @@ TBB_LIB := $(TBB_LIBDIR)/libtbb.so
 export TBB_DEPS := $(TBB_LIB)
 export TBB_CXXFLAGS := -I$(TBB_BASE)/include
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
+export TBB_NVCC_CXXFLAGS :=
 
 EIGEN_BASE := $(EXTERNAL_BASE)/eigen
 export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
 export EIGEN_LDFLAGS :=
+export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
 
 BOOST_BASE := /usr
 # Minimum required version of Boost, e.g. 1.65.1
@@ -107,6 +109,7 @@ endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+export BOOST_NVCC_CXXFLAGS :=
 
 BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
 export BACKTRACE_DEPS := $(BACKTRACE_BASE)
@@ -124,6 +127,7 @@ export CUPLA_DEPS := $(CUPLA_BASE)/lib
 export CUPLA_LIBDIR := $(CUPLA_BASE)/lib
 export CUPLA_CXXFLAGS := -I$(CUPLA_BASE)/include
 export CUPLA_LDFLAGS := -L$(CUPLA_LIBDIR)
+export CUPLA_NVCC_CXXFLAGS :=
 
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
@@ -156,6 +160,7 @@ endif
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
+export KOKKOS_NVCC_CXXFLAGS :=
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \

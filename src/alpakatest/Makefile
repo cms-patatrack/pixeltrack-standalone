@@ -137,7 +137,7 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 
 $(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_LIB): $$($(1)_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_TBB_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
@@ -167,7 +167,7 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 # Portable code, for CUDA backend
 $(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
@@ -218,7 +218,7 @@ $(TEST_DIR)/$(TARGET_NAME)/%.tbb: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb
 # CUDA backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(CUDA_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(CUDA_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_NVCC_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.o
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
