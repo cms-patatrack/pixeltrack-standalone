@@ -403,6 +403,12 @@ distclean: | clean
 
 dataclean:
 	rm -fR data/*.tar.gz data/*.bin data/data_ok
+	
+define CLEAN_template
+clean_$(1):
+	rm -fR lib/$(1) obj/$(1) test/$(1) $(1)
+endef
+$(foreach target,$(TARGETS_ALL),$(eval $(call CLEAN_template,$(target))))
 
 # Data rules
 $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt

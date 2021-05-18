@@ -13,8 +13,8 @@
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 
 // dirty, but works
-#include "plugin-SiPixelClusterizer/gpuClustering.h"
-#include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
+#include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
+#include "plugin-SiPixelClusterizer/alpaka/gpuClusterChargeCut.h"
 
 int main(void) {
   using namespace gpuClustering;
@@ -241,21 +241,17 @@ int main(void) {
     alpaka::memcpy(queue, d_y_buf, h_y_buf, n);
     alpaka::memcpy(queue, d_adc_buf, h_adc_buf, n);
 
-    // Launch CUDA Kernels
+// Launch CUDA Kernels
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #else
-    // For now, match legacy, for perf comparison purposes. After fixes in perf, this should be tuned.
-    const int threadsPerBlockOrElementsPerThread = 1;
+    // NB: can be tuned.
+    const int threadsPerBlockOrElementsPerThread = 256;
 #endif
 
     // COUNT MODULES
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const int blocksPerGridCountModules =
         (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-#else
-    const int blocksPerGridCountModules = 1;
-#endif
     const WorkDiv1& workDivCountModules = cms::alpakatools::make_workdiv(Vec1::all(blocksPerGridCountModules),
                                                                          Vec1::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "

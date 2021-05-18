@@ -6,8 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaKernelCommon.h"
 #include "AlpakaCore/AtomicPairCounter.h"
 #include "AlpakaCore/alpakastdAlgorithm.h"
 #include "AlpakaCore/prefixScan.h"

@@ -7,9 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "AlpakaCore/alpakaConfigCommon.h"
 #include <tbb/task_scheduler_init.h>
-
-#include <cuda_runtime.h>
 
 #include "EventProcessor.h"
 
@@ -29,6 +28,8 @@ namespace {
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --histogram         Produce histograms at the end (implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -45,6 +46,8 @@ int main(int argc, char** argv) {
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
+  bool histogram = false;
+  bool empty = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -72,6 +75,11 @@ int main(int argc, char** argv) {
     } else if (*i == "--validation") {
       transfer = true;
       validation = true;
+    } else if (*i == "--histogram") {
+      transfer = true;
+      histogram = true;
+    } else if (*i == "--empty") {
+      empty = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -88,31 +96,57 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
-    int numberOfDevices;
-    auto status = cudaGetDeviceCount(&numberOfDevices);
-    if (cudaSuccess != status) {
-      std::cout << "Failed to initialize the CUDA runtime, disabling CUDA backend" << std::endl;
-      backends.erase(found);
-    } else {
-      std::cout << "Found " << numberOfDevices << " devices" << std::endl;
-    }
+
+  // TO DO: Debug TBB backend.
+  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
+    numberOfStreams = 1;  // Study intra-event parallelization.
+    // TO DO: Warning: does not seem to be able to control the number of threads in TBB pool
+    // from here with a tbb::task_scheduler_init init(numThreads).
+    // Successfully managed to control the number of threads in TBB pool for now, by adding & updating
+    // tbb::task_scheduler_init init(2) directly inside:
+    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (and make clean_alpaka).
+
+    numberOfThreads = tbb::task_scheduler_init::
+        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
   }
+
+  // NB: The choice & tuning of device at runtime needs to be handled properly
+  // inside a ALPAKA_ACCELERATOR_NAMESPACE.
+  // For now, the choice is made at run time
+  // with --serial, --tbb (by default, numberOfThreads = TBB pool default), --cuda (1 GPU only).
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not backends.empty()) {
-    auto addModules = [&](std::string const& prefix, Backend backend) {
-      if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-        //edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-      }
-    };
-    addModules("alpaka_serial_sync::", Backend::SERIAL);
-    addModules("alpaka_tbb_async::", Backend::TBB);
-    addModules("alpaka_cuda_async::", Backend::CUDA);
-    if (transfer) {
-      // add modules for transfer
+  if (not empty) {
+    esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
+    if (not backends.empty()) {
+      auto addModules = [&](std::string const& prefix, Backend backend) {
+        if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+          edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
+          edmodules.emplace_back(prefix + "SiPixelRawToCluster");
+          /*edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
+	    edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
+	    edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");*/
+          if (transfer) {
+            /*edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
+	      edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");*/
+          }
+          if (validation) {
+            edmodules.emplace_back(prefix + "CountValidator");
+          }
+          if (histogram) {
+            edmodules.emplace_back(prefix + "HistoValidator");
+          }
+
+          esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
+          esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
+          /*esmodules.emplace_back(prefix + "PixelCPEFastESProducer");*/
+        }
+      };
+      addModules("alpaka_serial_sync::", Backend::SERIAL);
+      addModules("alpaka_tbb_async::", Backend::TBB);
+      addModules("alpaka_cuda_async::", Backend::CUDA);
     }
   }
   edm::EventProcessor processor(
@@ -121,9 +155,6 @@ int main(int argc, char** argv) {
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
-
-  // Initialize tasks scheduler (thread pool)
-  tbb::task_scheduler_init tsi(numberOfThreads);
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
