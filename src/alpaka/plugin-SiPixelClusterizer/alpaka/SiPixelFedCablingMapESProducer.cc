@@ -39,9 +39,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto modToUnp_h{cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
     auto modToUnp_d{cms::alpakatools::allocDeviceBuf<unsigned char>(modToUnpDefSize)};
     alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
-    eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
 
     alpaka::wait(queue);
+
+    eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

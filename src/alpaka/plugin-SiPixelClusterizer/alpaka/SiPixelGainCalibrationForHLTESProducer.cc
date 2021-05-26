@@ -59,10 +59,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto fields_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(1u)};
     alpaka::memcpy(queue, fields_d, fields_h, 1u);
 
+    alpaka::wait(queue);
+
     eventSetup.put(
         std::make_unique<SiPixelGainForHLTonGPU>(std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
-
-    alpaka::wait(queue);
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

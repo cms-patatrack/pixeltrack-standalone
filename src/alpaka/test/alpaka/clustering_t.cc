@@ -17,8 +17,6 @@
 #include "plugin-SiPixelClusterizer/alpaka/gpuClusterChargeCut.h"
 
 int main(void) {
-  using namespace gpuClustering;
-
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
@@ -43,9 +41,9 @@ int main(void) {
   auto d_adc_buf = alpaka::allocBuf<uint16_t, Idx>(device, numElements);
   auto d_clus_buf = alpaka::allocBuf<int, Idx>(device, numElements);
 
-  auto d_moduleStart_buf = alpaka::allocBuf<uint32_t, Idx>(device, MaxNumModules + 1);
-  auto d_clusInModule_buf = alpaka::allocBuf<uint32_t, Idx>(device, MaxNumModules);
-  auto d_moduleId_buf = alpaka::allocBuf<uint32_t, Idx>(device, MaxNumModules);
+  auto d_moduleStart_buf = alpaka::allocBuf<uint32_t, Idx>(device, gpuClustering::MaxNumModules + 1);
+  auto d_clusInModule_buf = alpaka::allocBuf<uint32_t, Idx>(device, gpuClustering::MaxNumModules);
+  auto d_moduleId_buf = alpaka::allocBuf<uint32_t, Idx>(device, gpuClustering::MaxNumModules);
 
   // later random number
   unsigned int n = 0;
@@ -143,7 +141,7 @@ int main(void) {
         ++n;
       }
       ++ncl;
-      h_id[n++] = InvId;  // error
+      h_id[n++] = gpuClustering::InvId;  // error
       // messy
       int xx[5] = {21, 25, 23, 24, 22};
       for (int k = 0; k < 5; ++k) {
@@ -184,7 +182,7 @@ int main(void) {
     // all odd id
     for (int id = 11; id <= 1800; id += 2) {
       if ((id / 20) % 2)
-        h_id[n++] = InvId;  // error
+        h_id[n++] = gpuClustering::InvId;  // error
       for (int x = 0; x < 40; x += 4) {
         ++ncl;
         if ((id / 10) % 2) {
@@ -210,8 +208,8 @@ int main(void) {
             if (y[k] == 3)
               continue;  // hole
             if (id == 51) {
-              h_id[n++] = InvId;
-              h_id[n++] = InvId;
+              h_id[n++] = gpuClustering::InvId;
+              h_id[n++] = gpuClustering::InvId;
             }  // error
             h_id[n] = id;
             h_x[n] = x + 1;
@@ -260,24 +258,24 @@ int main(void) {
     alpaka::enqueue(
         queue,
         alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivCountModules,
-                                                                     countModules(),
+                                                                     gpuClustering::countModules(),
                                                                      alpaka::getPtrNative(d_id_buf),
                                                                      alpaka::getPtrNative(d_moduleStart_buf),
                                                                      alpaka::getPtrNative(d_clus_buf),
                                                                      n));
 
     // FIND CLUSTER
-    const WorkDiv1& workDivMaxNumModules =
-        cms::alpakatools::make_workdiv(Vec1::all(MaxNumModules), Vec1::all(threadsPerBlockOrElementsPerThread));
-    std::cout << "CUDA findModules kernel launch with " << MaxNumModules << " blocks of "
+    const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(
+        Vec1::all(gpuClustering::MaxNumModules), Vec1::all(threadsPerBlockOrElementsPerThread));
+    std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
-    alpaka::memset(queue, d_clusInModule_buf, 0, MaxNumModules);
+    alpaka::memset(queue, d_clusInModule_buf, 0, gpuClustering::MaxNumModules);
 
     alpaka::enqueue(
         queue,
         alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
-                                                                     findClus(),
+                                                                     gpuClustering::findClus(),
                                                                      alpaka::getPtrNative(d_id_buf),
                                                                      alpaka::getPtrNative(d_x_buf),
                                                                      alpaka::getPtrNative(d_y_buf),
@@ -288,9 +286,9 @@ int main(void) {
                                                                      n));
     alpaka::memcpy(queue, h_nModules_buf, d_moduleStart_buf, 1u);
 
-    auto h_nclus_buf = alpaka::allocBuf<uint32_t, Idx>(host, MaxNumModules);
+    auto h_nclus_buf = alpaka::allocBuf<uint32_t, Idx>(host, gpuClustering::MaxNumModules);
     auto nclus = alpaka::getPtrNative(h_nclus_buf);
-    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, MaxNumModules);
+    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, gpuClustering::MaxNumModules);
 
     // Wait for memory transfers to be completed
     alpaka::wait(queue);
@@ -298,21 +296,21 @@ int main(void) {
     auto h_moduleId_buf = alpaka::allocBuf<uint32_t, Idx>(host, nModules[0]);
     //auto moduleId = alpaka::getPtrNative(h_moduleId_buf);
 
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
-              << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
+    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + gpuClustering::MaxNumModules, 0)
+              << " clusters" << std::endl;
+    for (auto i = gpuClustering::MaxNumModules; i > 0; i--)
       if (nclus[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
         break;
       }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
+    if (ncl != std::accumulate(nclus, nclus + gpuClustering::MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
     // CLUSTER CHARGE CUT
     alpaka::enqueue(
         queue,
         alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
-                                                                     clusterChargeCut(),
+                                                                     gpuClustering::clusterChargeCut(),
                                                                      alpaka::getPtrNative(d_id_buf),
                                                                      alpaka::getPtrNative(d_adc_buf),
                                                                      alpaka::getPtrNative(d_moduleStart_buf),
@@ -322,7 +320,7 @@ int main(void) {
                                                                      n));
     alpaka::memcpy(queue, h_id_buf, d_id_buf, n);
     alpaka::memcpy(queue, h_clus_buf, d_clus_buf, n);
-    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, MaxNumModules);
+    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, gpuClustering::MaxNumModules);
     alpaka::memcpy(queue, h_moduleId_buf, d_moduleId_buf, nModules[0]);
 
     // Wait for memory transfers to be completed
@@ -333,7 +331,7 @@ int main(void) {
     std::set<unsigned int> clids;
     for (unsigned int i = 0; i < n; ++i) {
       assert(h_id[i] != 666);  // only noise
-      if (h_id[i] == InvId)
+      if (h_id[i] == gpuClustering::InvId)
         continue;
       assert(h_clus[i] >= 0);
       assert(h_clus[i] < int(nclus[h_id[i]]));
@@ -369,9 +367,9 @@ int main(void) {
         std::cout << "error " << mid << ": " << nc << ' ' << pnc << std::endl;
     }
 
-    std::cout << "found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
-              << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
+    std::cout << "found " << std::accumulate(nclus, nclus + gpuClustering::MaxNumModules, 0) << ' ' << clids.size()
+              << " clusters" << std::endl;
+    for (auto i = gpuClustering::MaxNumModules; i > 0; i--)
       if (nclus[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
         break;

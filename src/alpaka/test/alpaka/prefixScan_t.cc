@@ -22,11 +22,11 @@ template <typename T>
 struct testPrefixScan {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, unsigned int size) const {
-    auto&& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
-    auto&& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
-    auto&& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
+    auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
+    auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
+    auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
-    cms::alpakatools::for_each_element_1D_block_stride(acc, size, [&](uint32_t i) { c[i] = 1; });
+    cms::alpakatools::for_each_element_in_block_strided(acc, size, [&](uint32_t i) { c[i] = 1; });
 
     alpaka::syncBlockThreads(acc);
 
@@ -36,7 +36,7 @@ struct testPrefixScan {
     assert(1 == c[0]);
     assert(1 == co[0]);
 
-    cms::alpakatools::for_each_element_1D_block_stride(acc, size, 1u, [&](uint32_t i) {
+    cms::alpakatools::for_each_element_in_block_strided(acc, size, 1u, [&](uint32_t i) {
       assert(c[i] == c[i - 1] + 1);
       assert(c[i] == i + 1);
       assert(c[i] = co[i]);
@@ -52,8 +52,8 @@ struct testWarpPrefixScan {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t size) const {
     assert(size <= 32);
-    auto&& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
-    auto&& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
+    auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
+    auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
     uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
     uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
@@ -82,7 +82,7 @@ struct testWarpPrefixScan {
 struct init {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
-    cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
+    cms::alpakatools::for_each_element_in_grid(acc, n, [&](uint32_t index) {
       v[index] = val;
 
       if (index == 0)
@@ -94,7 +94,7 @@ struct init {
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
-    cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, n, [&](uint32_t index) {
+    cms::alpakatools::for_each_element_in_grid(acc, n, [&](uint32_t index) {
       assert(v[index] == index + 1);
 
       if (index == 0)

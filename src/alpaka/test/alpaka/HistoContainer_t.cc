@@ -109,7 +109,9 @@ void go(const DevHost& host,
         auto k = *h->begin(ii);
         if (j % 2)
           k = *(h->begin(ii) + (h->end(ii) - h->begin(ii)) / 2);
+#ifndef NDEBUG
         auto bk = h->bin(v[k]);
+#endif
         assert(bk == i);
         assert(k < offsets[j + 1]);
         auto kl = h->bin(v[k] - window);

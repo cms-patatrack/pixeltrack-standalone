@@ -1,8 +1,8 @@
 #include "AlpakaCore/alpakaCommon.h"
-//#include "AlpakaDataFormats/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
-//#include "DataFormats/ZVertexSoA.h"
+#include "AlpakaDataFormats/ZVertexAlpaka.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
 #include "DataFormats/VertexCount.h"
@@ -27,13 +27,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void endJob() override;
 
     edm::EDGetTokenT<DigiClusterCount> digiClusterCountToken_;
-    //edm::EDGetTokenT<TrackCount> trackCountToken_;
-    //edm::EDGetTokenT<VertexCount> vertexCountToken_;
+    edm::EDGetTokenT<TrackCount> trackCountToken_;
+    edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
     edm::EDGetTokenT<SiPixelDigisAlpaka> digiToken_;
     edm::EDGetTokenT<SiPixelClustersAlpaka> clusterToken_;
-    //edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
-    //edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
+    edm::EDGetTokenT<PixelTrackHost> trackToken_;
+    edm::EDGetTokenT<ZVertexHost> vertexToken_;
 
     static std::atomic<int> allEvents;
     static std::atomic<int> goodEvents;
@@ -51,17 +51,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   CountValidator::CountValidator(edm::ProductRegistry& reg)
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
-        //trackCountToken_(reg.consumes<TrackCount>()),
-        //vertexCountToken_(reg.consumes<VertexCount>()),
+        trackCountToken_(reg.consumes<TrackCount>()),
+        vertexCountToken_(reg.consumes<VertexCount>()),
         digiToken_(reg.consumes<SiPixelDigisAlpaka>()),
-        clusterToken_(reg.consumes<SiPixelClustersAlpaka>())  //,
-                                                              //trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
-                                                              //vertexToken_(reg.consumes<ZVertexHeterogeneous>())
-  {}
+        clusterToken_(reg.consumes<SiPixelClustersAlpaka>()),
+        trackToken_(reg.consumes<PixelTrackHost>()),
+        vertexToken_(reg.consumes<ZVertexHost>()) {}
 
   void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    //constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance
-    //constexpr int vertexTolerance = 1;
+    constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance
+    constexpr int vertexTolerance = 1;
     std::stringstream ss;
     bool ok = true;
 
@@ -86,44 +85,45 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
 
-    /*
-  {
-    auto const& count = iEvent.get(trackCountToken_);
-    auto const& tracks = iEvent.get(trackToken_);
+    {
+      auto const& count = iEvent.get(trackCountToken_);
+      auto const& tracksBuf = iEvent.get(trackToken_);
+      auto const tracks = alpaka::getPtrNative(tracksBuf);
 
-    int nTracks = 0;
-    for (int i = 0; i < tracks->stride(); ++i) {
-      if (tracks->nHits(i) > 0) {
-        ++nTracks;
+      int nTracks = 0;
+      for (int i = 0; i < tracks->stride(); ++i) {
+        if (tracks->nHits(i) > 0) {
+          ++nTracks;
+        }
+      }
+
+      auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
+      if (static_cast<unsigned int>(nTracks) != count.nTracks()) {
+        std::lock_guard<std::mutex> guard(sumTrackDifferenceMutex);
+        sumTrackDifference += rel;
+      }
+      if (rel >= trackTolerance) {
+        ss << "\n N(tracks) is " << nTracks << " expected " << count.nTracks() << ", relative difference " << rel
+           << " is outside tolerance " << trackTolerance;
+        ok = false;
       }
     }
 
-    auto rel = std::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
-    if (static_cast<unsigned int>(nTracks) != count.nTracks()) {
-      std::lock_guard<std::mutex> guard(sumTrackDifferenceMutex);
-      sumTrackDifference += rel;
-    }
-    if (rel >= trackTolerance) {
-      ss << "\n N(tracks) is " << nTracks << " expected " << count.nTracks() << ", relative difference " << rel
-         << " is outside tolerance " << trackTolerance;
-      ok = false;
-    }
-  }
+    {
+      auto const& count = iEvent.get(vertexCountToken_);
+      auto const& verticesBuf = iEvent.get(vertexToken_);
+      auto const vertices = alpaka::getPtrNative(verticesBuf);
 
-  {
-    auto const& count = iEvent.get(vertexCountToken_);
-    auto const& vertices = iEvent.get(vertexToken_);
-
-    auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices()));
-    if (diff != 0) {
-      sumVertexDifference += diff;
+      auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices()));
+      if (diff != 0) {
+        sumVertexDifference += diff;
+      }
+      if (diff > vertexTolerance) {
+        ss << "\n N(vertices) is " << vertices->nvFinal << " expected " << count.nVertices() << ", difference " << diff
+           << " is outside tolerance " << vertexTolerance;
+        ok = false;
+      }
     }
-    if (diff > vertexTolerance) {
-      ss << "\n N(vertices) is " << vertices->nvFinal << " expected " << count.nVertices() << ", difference " << diff
-         << " is outside tolerance " << vertexTolerance;
-      ok = false;
-    }
-    }*/
 
     ++allEvents;
     if (ok) {
