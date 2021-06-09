@@ -52,9 +52,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::atomicAdd(acc, &c.nHits, static_cast<unsigned long long>(nHits), alpaka::hierarchy::Blocks{});
         alpaka::atomicAdd(acc, &c.nCells, static_cast<unsigned long long>(*nCells), alpaka::hierarchy::Blocks{});
         alpaka::atomicAdd(acc, &c.nTuples, static_cast<unsigned long long>(apc->get().m), alpaka::hierarchy::Blocks{});
-        alpaka::atomicAdd(
-            acc, &c.nFitTracks, static_cast<unsigned long long>(tupleMultiplicity->size()),
-            alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc,
+                          &c.nFitTracks,
+                          static_cast<unsigned long long>(tupleMultiplicity->size()),
+                          alpaka::hierarchy::Blocks{});
       }
 
 #ifdef NTUPLE_DEBUG

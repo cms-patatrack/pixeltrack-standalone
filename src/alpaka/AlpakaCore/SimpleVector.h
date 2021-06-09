@@ -35,7 +35,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      constexpr int emplace_back_unsafe(Ts &&... args) {
+      constexpr int emplace_back_unsafe(Ts &&...args) {
         auto previousSize = m_size;
         m_size++;
         if (previousSize < m_capacity) {
@@ -70,7 +70,7 @@ namespace cms {
       }
 
       template <typename T_Acc, class... Ts>
-      ALPAKA_FN_ACC int emplace_back(const T_Acc &acc, Ts &&... args) {
+      ALPAKA_FN_ACC int emplace_back(const T_Acc &acc, Ts &&...args) {
         auto previousSize = alpaka::atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         if (previousSize < m_capacity) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));

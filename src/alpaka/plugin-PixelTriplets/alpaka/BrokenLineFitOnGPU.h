@@ -72,7 +72,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto &&done = alpaka::declareSharedVar<int, __COUNTER__>(acc);
         done = 0;
         alpaka::syncBlockThreads(acc);
-        bool dump = (foundNtuplets->size(tkid) == 5 && 0 == alpaka::atomicAdd(acc, &done, 1, alpaka::hierarchy::Blocks{}));
+        bool dump =
+            (foundNtuplets->size(tkid) == 5 && 0 == alpaka::atomicAdd(acc, &done, 1, alpaka::hierarchy::Blocks{}));
 #endif
 
         // Prepare data structure

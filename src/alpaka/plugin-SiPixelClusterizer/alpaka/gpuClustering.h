@@ -32,7 +32,8 @@ namespace gpuClustering {
             --j;
           if (j < 0 or id[j] != id[i]) {
             // boundary...
-            auto loc = alpaka::atomicInc(acc, moduleStart, std::decay_t<uint32_t>(MaxNumModules), alpaka::hierarchy::Blocks{});
+            auto loc =
+                alpaka::atomicInc(acc, moduleStart, std::decay_t<uint32_t>(MaxNumModules), alpaka::hierarchy::Blocks{});
 
             moduleStart[loc + 1] = i;
           }

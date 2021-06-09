@@ -79,10 +79,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #else
           auto zero = (ptrAsInt)(&cellNeighbors[0]);
           alpaka::atomicCas(acc,
-                                              (ptrAsInt*)(&theOuterNeighbors),
-                                              zero,
-                                              (ptrAsInt)(&cellNeighbors[i]),
-                                              alpaka::hierarchy::Blocks{});  // if fails we cannot give "i" back...
+                            (ptrAsInt*)(&theOuterNeighbors),
+                            zero,
+                            (ptrAsInt)(&cellNeighbors[i]),
+                            alpaka::hierarchy::Blocks{});  // if fails we cannot give "i" back...
 #endif
         } else
           return -1;
@@ -105,8 +105,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           theTracks = &cellTracks[i];
 #else
           auto zero = (ptrAsInt)(&cellTracks[0]);
-          alpaka::atomicCas(
-              acc, (ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]), alpaka::hierarchy::Blocks{});  // if fails we cannot give "i" back...
+          alpaka::atomicCas(acc,
+                            (ptrAsInt*)(&theTracks),
+                            zero,
+                            (ptrAsInt)(&cellTracks[i]),
+                            alpaka::hierarchy::Blocks{});  // if fails we cannot give "i" back...
 #endif
         } else
           return -1;

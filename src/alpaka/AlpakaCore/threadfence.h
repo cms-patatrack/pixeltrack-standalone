@@ -12,7 +12,8 @@ namespace cms {
     // device-wide memory fence
     template <typename T_Acc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void threadfence(T_Acc const& acc) {
-      static_assert(std::is_same_v<T_Acc, void>, "cms::alpakatools::threadfence<T_Acc>(acc) has not been implemented for this Accelerator type.");
+      static_assert(std::is_same_v<T_Acc, void>,
+                    "cms::alpakatools::threadfence<T_Acc>(acc) has not been implemented for this Accelerator type.");
     }
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED

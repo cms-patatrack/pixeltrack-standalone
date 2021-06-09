@@ -173,8 +173,11 @@ namespace cms {
      * Indexes are expressed in GRID 'frame-of-reference'.
      */
     template <typename TAcc, typename Func>
-    ALPAKA_FN_ACC void for_each_element_in_grid(
-        const TAcc& acc, const Idx maxNumberOfElements, Idx elementIdxShift, const Func func, const unsigned int dimIndex = 0) {
+    ALPAKA_FN_ACC void for_each_element_in_grid(const TAcc& acc,
+                                                const Idx maxNumberOfElements,
+                                                Idx elementIdxShift,
+                                                const Func func,
+                                                const unsigned int dimIndex = 0) {
       // Take into account the block index in grid to compute the element indices.
       const Idx blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
       const Idx blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
