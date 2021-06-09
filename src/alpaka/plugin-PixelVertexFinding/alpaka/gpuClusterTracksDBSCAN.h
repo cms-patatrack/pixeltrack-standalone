@@ -206,7 +206,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
           if (iv[i] == int(i)) {
             if (nn[i] >= minT) {
-              auto old = alpaka::atomicOp<alpaka::AtomicInc>(acc, &foundClusters, 0xffffffff);
+              auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Blocks{});
               iv[i] = -(old + 1);
             } else {  // noise
               iv[i] = -9998;

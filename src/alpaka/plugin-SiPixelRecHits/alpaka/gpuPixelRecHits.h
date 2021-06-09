@@ -138,10 +138,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cl -= startClus;
             assert(cl >= 0);
             assert(cl < MaxHitsInIter);
-            alpaka::atomicOp<alpaka::AtomicMin>(acc, &clusParams.minRow[cl], x);
-            alpaka::atomicOp<alpaka::AtomicMax>(acc, &clusParams.maxRow[cl], x);
-            alpaka::atomicOp<alpaka::AtomicMin>(acc, &clusParams.minCol[cl], y);
-            alpaka::atomicOp<alpaka::AtomicMax>(acc, &clusParams.maxCol[cl], y);
+            alpaka::atomicMin(acc, &clusParams.minRow[cl], x, alpaka::hierarchy::Blocks{});
+            alpaka::atomicMax(acc, &clusParams.maxRow[cl], x, alpaka::hierarchy::Blocks{});
+            alpaka::atomicMin(acc, &clusParams.minCol[cl], y, alpaka::hierarchy::Blocks{});
+            alpaka::atomicMax(acc, &clusParams.maxCol[cl], y, alpaka::hierarchy::Blocks{});
           }
 
           alpaka::syncBlockThreads(acc);
@@ -169,15 +169,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             const int32_t ch = std::min(digis.adc(i), pixmx);
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &clusParams.charge[cl], ch);
+            alpaka::atomicAdd(acc, &clusParams.charge[cl], ch, alpaka::hierarchy::Blocks{});
             if (clusParams.minRow[cl] == x)
-              alpaka::atomicOp<alpaka::AtomicAdd>(acc, &clusParams.Q_f_X[cl], ch);
+              alpaka::atomicAdd(acc, &clusParams.Q_f_X[cl], ch, alpaka::hierarchy::Blocks{});
             if (clusParams.maxRow[cl] == x)
-              alpaka::atomicOp<alpaka::AtomicAdd>(acc, &clusParams.Q_l_X[cl], ch);
+              alpaka::atomicAdd(acc, &clusParams.Q_l_X[cl], ch, alpaka::hierarchy::Blocks{});
             if (clusParams.minCol[cl] == y)
-              alpaka::atomicOp<alpaka::AtomicAdd>(acc, &clusParams.Q_f_Y[cl], ch);
+              alpaka::atomicAdd(acc, &clusParams.Q_f_Y[cl], ch, alpaka::hierarchy::Blocks{});
             if (clusParams.maxCol[cl] == y)
-              alpaka::atomicOp<alpaka::AtomicAdd>(acc, &clusParams.Q_l_Y[cl], ch);
+              alpaka::atomicAdd(acc, &clusParams.Q_l_Y[cl], ch, alpaka::hierarchy::Blocks{});
           }
 
           alpaka::syncBlockThreads(acc);

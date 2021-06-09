@@ -93,7 +93,7 @@ namespace gpuClustering {
           continue;  // not valid
         if (id[i] != thisModuleId)
           break;  // end of module
-        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]));
+        alpaka::atomicAdd(acc, &charge[clusterId[i]], static_cast<int32_t>(adc[i]), alpaka::hierarchy::Blocks{});
       }
       alpaka::syncBlockThreads(acc);
 

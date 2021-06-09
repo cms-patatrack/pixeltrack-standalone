@@ -107,7 +107,7 @@ namespace cms {
         // fill bins
         cms::alpakatools::for_each_element_in_block_strided(acc, size, [&](uint32_t i) {
           auto bin = (a[j[i]] >> d * p) & (sb - 1);
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c[bin], 1);
+          alpaka::atomicAdd(acc, &c[bin], 1, alpaka::hierarchy::Blocks{});
         });
         alpaka::syncBlockThreads(acc);
 
@@ -155,7 +155,7 @@ namespace cms {
             if (i >= 0) {
               bin = (a[j[i]] >> d * p) & (sb - 1);
               ct[idx] = bin;
-              alpaka::atomicOp<alpaka::AtomicMax>(acc, &cu[bin], int(i));
+              alpaka::atomicMax(acc, &cu[bin], int(i), alpaka::hierarchy::Blocks{});
             }
           });
           alpaka::syncBlockThreads(acc);

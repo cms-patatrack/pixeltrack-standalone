@@ -41,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] <= 9990) {
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &ptv2[iv[i]], ptt2[i]);
+          alpaka::atomicAdd(acc, &ptv2[iv[i]], ptt2[i], alpaka::hierarchy::Blocks{});
         }
       });
       alpaka::syncBlockThreads(acc);
