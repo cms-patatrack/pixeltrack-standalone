@@ -72,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // copy to local
         cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t k) {
           if (iv[k] == int(kv)) {
-            auto old = alpaka::atomicOp<alpaka::AtomicInc>(acc, &nq, MAXTK);
+            auto old = alpaka::atomicInc(acc, &nq, MAXTK, alpaka::hierarchy::Blocks{});
             zz[old] = zt[k] - zv[kv];
             newV[old] = zz[old] < 0 ? 0 : 1;
             ww[old] = 1.f / ezt2[k];
@@ -102,8 +102,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           cms::alpakatools::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
             auto i = newV[k];
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &znew[i], zz[k] * ww[k]);
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &wnew[i], ww[k]);
+            alpaka::atomicAdd(acc, &znew[i], zz[k] * ww[k], alpaka::hierarchy::Blocks{});
+            alpaka::atomicAdd(acc, &wnew[i], ww[k], alpaka::hierarchy::Blocks{});
           });
           alpaka::syncBlockThreads(acc);
 
@@ -142,7 +142,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // get a new global vertex
         auto& igv = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
         if (0 == threadIdxLocal)
-          igv = alpaka::atomicOp<alpaka::AtomicAdd>(acc, &ws.nvIntermediate, 1u);
+          igv = alpaka::atomicAdd(acc, &ws.nvIntermediate, 1u, alpaka::hierarchy::Blocks{});
         alpaka::syncBlockThreads(acc);
         cms::alpakatools::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
           if (1 == newV[k])

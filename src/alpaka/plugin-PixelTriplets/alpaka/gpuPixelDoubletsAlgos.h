@@ -248,9 +248,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             if (doPtCut && ptcut(oi, idphi))
               continue;
 
-            auto ind = alpaka::atomicOp<alpaka::AtomicAdd>(acc, nCells, 1u);
+            auto ind = alpaka::atomicAdd(acc, nCells, 1u, alpaka::hierarchy::Blocks{});
             if (ind >= maxNumOfDoublets) {
-              alpaka::atomicOp<alpaka::AtomicSub>(acc, nCells, 1u);
+              alpaka::atomicSub(acc, nCells, 1u, alpaka::hierarchy::Blocks{});
               break;
             }  // move to SimpleVector??
             // int layerPairId, int doubletId, int innerHitId, int outerHitId)

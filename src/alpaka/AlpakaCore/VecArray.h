@@ -29,7 +29,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      constexpr int emplace_back_unsafe(Ts &&... args) {
+      constexpr int emplace_back_unsafe(Ts &&...args) {
         auto previousSize = m_size;
         m_size++;
         if (previousSize < maxSize) {
@@ -51,24 +51,24 @@ namespace cms {
       // thread-safe version of the vector, when used in a CUDA kernel
       template <typename T_Acc>
       ALPAKA_FN_ACC int push_back(const T_Acc &acc, const T &element) {
-        auto previousSize = alpaka::atomicOp<alpaka::AtomicAdd>(acc, &m_size, 1);
+        auto previousSize = alpaka::atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         if (previousSize < maxSize) {
           m_data[previousSize] = element;
           return previousSize;
         } else {
-          alpaka::atomicOp<alpaka::AtomicSub>(acc, &m_size, 1);
+          alpaka::atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
           return -1;
         }
       }
 
       template <typename T_Acc, class... Ts>
-      ALPAKA_FN_ACC int emplace_back(const T_Acc &acc, Ts &&... args) {
-        auto previousSize = alpaka::atomicOp<alpaka::AtomicAdd>(acc, &m_size, 1);
+      ALPAKA_FN_ACC int emplace_back(const T_Acc &acc, Ts &&...args) {
+        auto previousSize = alpaka::atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         if (previousSize < maxSize) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
           return previousSize;
         } else {
-          alpaka::atomicOp<alpaka::AtomicSub>(acc, &m_size, 1);
+          alpaka::atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
           return -1;
         }
       }

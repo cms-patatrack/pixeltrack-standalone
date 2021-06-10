@@ -41,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             return;
 
           auto& data = *pws;
-          auto it = alpaka::atomicOp<alpaka::AtomicAdd>(acc, &data.ntrks, 1u);
+          auto it = alpaka::atomicAdd(acc, &data.ntrks, 1u, alpaka::hierarchy::Blocks{});
           data.itrk[it] = idx;
           data.zt[it] = tracks.zip(idx);
           data.ezt2[it] = fit.covariance(idx)(14);

@@ -48,12 +48,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto &c = *counters;
       // counters once per event
       if (0 == threadIdx) {
-        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nEvents, 1ull);
-        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nHits, static_cast<unsigned long long>(nHits));
-        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nCells, static_cast<unsigned long long>(*nCells));
-        alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nTuples, static_cast<unsigned long long>(apc->get().m));
-        alpaka::atomicOp<alpaka::AtomicAdd>(
-            acc, &c.nFitTracks, static_cast<unsigned long long>(tupleMultiplicity->size()));
+        alpaka::atomicAdd(acc, &c.nEvents, 1ull, alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc, &c.nHits, static_cast<unsigned long long>(nHits), alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc, &c.nCells, static_cast<unsigned long long>(*nCells), alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc, &c.nTuples, static_cast<unsigned long long>(apc->get().m), alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc,
+                          &c.nFitTracks,
+                          static_cast<unsigned long long>(tupleMultiplicity->size()),
+                          alpaka::hierarchy::Blocks{});
       }
 
 #ifdef NTUPLE_DEBUG
@@ -98,11 +100,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (thisCell.tracks().full())  //++tooManyTracks[thisCell.theLayerPairId];
           printf("Tracks overflow %d in %d\n", idx, thisCell.theLayerPairId);
         if (thisCell.theDoubletId < 0)
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nKilledCells, 1ull);
+          alpaka::atomicAdd(acc, &c.nKilledCells, 1ull, alpaka::hierarchy::Blocks{});
         if (0 == thisCell.theUsed)
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nEmptyCells, 1ull);
+          alpaka::atomicAdd(acc, &c.nEmptyCells, 1ull, alpaka::hierarchy::Blocks{});
         if (thisCell.tracks().empty())
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nZeroTrackCells, 1ull);
+          alpaka::atomicAdd(acc, &c.nZeroTrackCells, 1ull, alpaka::hierarchy::Blocks{});
       });
 
       cms::alpakatools::for_each_element_in_grid_strided(acc, nHits, [&](uint32_t idx) {
@@ -465,7 +467,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (tuples->size(idx) == 0)
           return;  //guard
         if (quality[idx] == trackQuality::loose) {
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &(counters->nGoodTracks), 1ull);
+          alpaka::atomicAdd(acc, &(counters->nGoodTracks), 1ull, alpaka::hierarchy::Blocks{});
         }
       });
     }
@@ -534,9 +536,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto &c = *counters;
       cms::alpakatools::for_each_element_in_grid_strided(acc, hitToTuple->nbins(), [&](uint32_t idx) {
         if (hitToTuple->size(idx) != 0) {  // SHALL NOT BE break
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nUsedHits, 1ull);
+          alpaka::atomicAdd(acc, &c.nUsedHits, 1ull, alpaka::hierarchy::Blocks{});
           if (hitToTuple->size(idx) > 1)
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &c.nDupHits, 1ull);
+            alpaka::atomicAdd(acc, &c.nDupHits, 1ull, alpaka::hierarchy::Blocks{});
         }
       });
     }

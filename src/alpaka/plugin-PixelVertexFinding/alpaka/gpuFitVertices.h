@@ -60,13 +60,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] > 9990) {
           if (verbose)
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &noise, 1);
+            alpaka::atomicAdd(acc, &noise, 1, alpaka::hierarchy::Blocks{});
         } else {
           assert(iv[i] >= 0);
           assert(iv[i] < int(foundClusters));
           auto w = 1.f / ezt2[i];
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &zv[iv[i]], zt[i] * w);
-          alpaka::atomicOp<alpaka::AtomicAdd>(acc, &wv[iv[i]], w);
+          alpaka::atomicAdd(acc, &zv[iv[i]], zt[i] * w, alpaka::hierarchy::Blocks{});
+          alpaka::atomicAdd(acc, &wv[iv[i]], w, alpaka::hierarchy::Blocks{});
         }
       });
 
@@ -87,8 +87,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (c2 > chi2Max) {
             iv[i] = 9999;
           } else {
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &chi2[iv[i]], c2);
-            alpaka::atomicOp<alpaka::AtomicAdd>(acc, &nn[iv[i]], 1);
+            alpaka::atomicAdd(acc, &chi2[iv[i]], c2, alpaka::hierarchy::Blocks{});
+            alpaka::atomicAdd(acc, &nn[iv[i]], 1, alpaka::hierarchy::Blocks{});
           }
         }
       });

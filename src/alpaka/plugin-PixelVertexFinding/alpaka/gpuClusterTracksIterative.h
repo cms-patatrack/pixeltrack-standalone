@@ -134,12 +134,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     return;
                   if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
                     return;
-                  auto old = alpaka::atomicOp<alpaka::AtomicMin>(acc, &iv[j], iv[i]);
+                  auto old = alpaka::atomicMin(acc, &iv[j], iv[i], alpaka::hierarchy::Blocks{});
                   if (old != iv[i]) {
                     // end the loop only if no changes were applied
                     more = true;
                   }
-                  alpaka::atomicOp<alpaka::AtomicMin>(acc, &iv[i], old);
+                  alpaka::atomicMin(acc, &iv[i], old, alpaka::hierarchy::Blocks{});
                 };
                 ++p;
                 for (; p < hist.end(be); ++p)
@@ -181,7 +181,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
           if (iv[i] == int(i)) {
             if (nn[i] >= minT) {
-              auto old = alpaka::atomicOp<alpaka::AtomicInc>(acc, &foundClusters, 0xffffffff);
+              auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Blocks{});
               iv[i] = -(old + 1);
             } else {  // noise
               iv[i] = -9998;
