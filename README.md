@@ -108,11 +108,11 @@ The column "Validated" means that the program produces the same histograms as th
 ## Quick recipe
 
 ```bash
-# Build application with N-fold concurrency
-$ make -j N cuda
+# Build application using all available CPUs
+$ make -j`nproc` cuda
 
 # For CUDA installations elsewhere than /usr/local/cuda
-$ make -j N cuda CUDA_BASE=/path/to/cuda
+$ make -j`nproc` cuda CUDA_BASE=/path/to/cuda
 
 # Source environment
 $ source env.sh
