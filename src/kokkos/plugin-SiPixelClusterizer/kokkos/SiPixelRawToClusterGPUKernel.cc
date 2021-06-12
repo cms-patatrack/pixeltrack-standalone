@@ -694,7 +694,11 @@ namespace KOKKOS_NAMESPACE {
             execSpace, Kokkos::subview(nModules_Clusters_h, 0), Kokkos::subview(clusters_d.moduleStart(), 0));
 
         const uint32_t blocks = ::gpuClustering::MaxNumModules;
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
         Kokkos::TeamPolicy<KokkosExecSpace> teamPolicy(execSpace, blocks, Kokkos::AUTO());
+#else
+        Kokkos::TeamPolicy<KokkosExecSpace> teamPolicy(execSpace, blocks, 256);
+#endif
 #ifdef GPU_DEBUG
         std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << teamPolicy.team_size()
                   << " threads\n";
