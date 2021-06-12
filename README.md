@@ -29,12 +29,12 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system. All programs require
 * GNU Make, `curl`, `md5sum`, `tar`
-* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8 or 9, possibly 10 with CUDA 11.1
+* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8, 9 or 10
   * testing is currently done with GCC 8
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+| Application  | CMake (>= 3.10)    | CUDA 11.2                   | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
 |--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
