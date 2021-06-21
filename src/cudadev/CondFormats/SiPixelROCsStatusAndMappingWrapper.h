@@ -1,25 +1,25 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
-#define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
+#ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelROCsStatusAndMappingWrapper_h
+#define RecoLocalTracker_SiPixelClusterizer_SiPixelROCsStatusAndMappingWrapper_h
 
 #include "CUDACore/ESProduct.h"
 #include "CUDACore/HostAllocator.h"
 #include "CUDACore/device_unique_ptr.h"
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
+#include "CondFormats/SiPixelROCsStatusAndMapping.h"
 
 #include <cuda_runtime.h>
 
 #include <set>
 
-class SiPixelFedCablingMapGPUWrapper {
+class SiPixelROCsStatusAndMappingWrapper {
 public:
-  explicit SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const &cablingMap,
+  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const &cablingMap,
                                           std::vector<unsigned char> modToUnp);
-  ~SiPixelFedCablingMapGPUWrapper();
+  ~SiPixelROCsStatusAndMappingWrapper();
 
   bool hasQuality() const { return hasQuality_; }
 
   // returns pointer to GPU memory
-  const SiPixelFedCablingMapGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
+  const SiPixelROCsStatusAndMapping *getGPUProductAsync(cudaStream_t cudaStream) const;
 
   // returns pointer to GPU memory
   const unsigned char *getModToUnpAllAsync(cudaStream_t cudaStream) const;
@@ -28,11 +28,11 @@ private:
   std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;
   bool hasQuality_;
 
-  SiPixelFedCablingMapGPU *cablingMapHost = nullptr;  // pointer to struct in CPU
+  SiPixelROCsStatusAndMapping *cablingMapHost = nullptr;  // pointer to struct in CPU
 
   struct GPUData {
     ~GPUData();
-    SiPixelFedCablingMapGPU *cablingMapDevice = nullptr;  // pointer to struct in GPU
+    SiPixelROCsStatusAndMapping *cablingMapDevice = nullptr;  // pointer to struct in GPU
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 

@@ -1,6 +1,6 @@
 #include "CondFormats/SiPixelFedIds.h"
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
-#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
+#include "CondFormats/SiPixelROCsStatusAndMapping.h"
+#include "CondFormats/SiPixelROCsStatusAndMappingWrapper.h"
 #include "Framework/ESProducer.h"
 #include "Framework/EventSetup.h"
 #include "Framework/ESPluginFactory.h"
@@ -8,16 +8,16 @@
 #include <fstream>
 #include <memory>
 
-class SiPixelFedCablingMapGPUWrapperESProducer : public edm::ESProducer {
+class SiPixelROCsStatusAndMappingWrapperESProducer : public edm::ESProducer {
 public:
-  explicit SiPixelFedCablingMapGPUWrapperESProducer(std::filesystem::path const& datadir) : data_(datadir) {}
+  explicit SiPixelROCsStatusAndMappingWrapperESProducer(std::filesystem::path const& datadir) : data_(datadir) {}
   void produce(edm::EventSetup& eventSetup);
 
 private:
   std::filesystem::path data_;
 };
 
-void SiPixelFedCablingMapGPUWrapperESProducer::produce(edm::EventSetup& eventSetup) {
+void SiPixelROCsStatusAndMappingWrapperESProducer::produce(edm::EventSetup& eventSetup) {
   {
     std::ifstream in(data_ / "fedIds.bin", std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
@@ -30,14 +30,14 @@ void SiPixelFedCablingMapGPUWrapperESProducer::produce(edm::EventSetup& eventSet
   {
     std::ifstream in(data_ / "cablingMap.bin", std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
-    SiPixelFedCablingMapGPU obj;
-    in.read(reinterpret_cast<char*>(&obj), sizeof(SiPixelFedCablingMapGPU));
+    SiPixelROCsStatusAndMapping obj;
+    in.read(reinterpret_cast<char*>(&obj), sizeof(SiPixelROCsStatusAndMapping));
     unsigned int modToUnpDefSize;
     in.read(reinterpret_cast<char*>(&modToUnpDefSize), sizeof(unsigned int));
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
     in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);
-    eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper>(obj, std::move(modToUnpDefault)));
+    eventSetup.put(std::make_unique<SiPixelROCsStatusAndMappingWrapper>(obj, std::move(modToUnpDefault)));
   }
 }
 
-DEFINE_FWK_EVENTSETUP_MODULE(SiPixelFedCablingMapGPUWrapperESProducer);
+DEFINE_FWK_EVENTSETUP_MODULE(SiPixelROCsStatusAndMappingWrapperESProducer);

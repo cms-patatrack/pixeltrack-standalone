@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <new>
+
 #include <cuda_runtime.h>
 
 namespace cms {

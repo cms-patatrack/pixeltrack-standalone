@@ -10,31 +10,32 @@
 #include <vector>
 
 #ifdef __CUDACC__
-
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
+#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
-#endif
+#include "CUDACore/requireDevices.h"
+#endif  // __CUDACC__
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/gpuClustering.h"
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
+#include "plugin-SiPixelClusterizer/SiPixelClusterThresholds.h"
 
 int main(void) {
 #ifdef __CUDACC__
   cms::cudatest::requireDevices();
-#endif
+#endif  // __CUDACC__
 
   using namespace gpuClustering;
 
-  int numElements = 256 * 2000;
+  constexpr int numElements = 256 * maxNumModules;
+  constexpr SiPixelClusterThresholds clusterThresholds(kSiPixelClusterThresholdsDefaultPhase1);
+
   // these in reality are already on GPU
   auto h_id = std::make_unique<uint16_t[]>(numElements);
   auto h_x = std::make_unique<uint16_t[]>(numElements);
   auto h_y = std::make_unique<uint16_t[]>(numElements);
   auto h_adc = std::make_unique<uint16_t[]>(numElements);
-
   auto h_clus = std::make_unique<int[]>(numElements);
 
 #ifdef __CUDACC__
@@ -43,16 +44,14 @@ int main(void) {
   auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
   auto d_adc = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
   auto d_clus = cms::cuda::make_device_unique<int[]>(numElements, nullptr);
-  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules + 1, nullptr);
-  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
-  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
-#else
-
-  auto h_moduleStart = std::make_unique<uint32_t[]>(MaxNumModules + 1);
-  auto h_clusInModule = std::make_unique<uint32_t[]>(MaxNumModules);
-  auto h_moduleId = std::make_unique<uint32_t[]>(MaxNumModules);
-
-#endif
+  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules + 1, nullptr);
+  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, nullptr);
+  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, nullptr);
+#else   // __CUDACC__
+  auto h_moduleStart = std::make_unique<uint32_t[]>(maxNumModules + 1);
+  auto h_clusInModule = std::make_unique<uint32_t[]>(maxNumModules);
+  auto h_moduleId = std::make_unique<uint32_t[]>(maxNumModules);
+#endif  // __CUDACC__
 
   // later random number
   int n = 0;
@@ -150,7 +149,7 @@ int main(void) {
         ++n;
       }
       ++ncl;
-      h_id[n++] = InvId;  // error
+      h_id[n++] = invalidModuleId;  // error
       // messy
       int xx[5] = {21, 25, 23, 24, 22};
       for (int k = 0; k < 5; ++k) {
@@ -191,7 +190,7 @@ int main(void) {
     // all odd id
     for (int id = 11; id <= 1800; id += 2) {
       if ((id / 20) % 2)
-        h_id[n++] = InvId;  // error
+        h_id[n++] = invalidModuleId;  // error
       for (int x = 0; x < 40; x += 4) {
         ++ncl;
         if ((id / 10) % 2) {
@@ -217,8 +216,8 @@ int main(void) {
             if (y[k] == 3)
               continue;  // hole
             if (id == 51) {
-              h_id[n++] = InvId;
-              h_id[n++] = InvId;
+              h_id[n++] = invalidModuleId;
+              h_id[n++] = invalidModuleId;
             }  // error
             h_id[n] = id;
             h_x[n] = x + 1;
@@ -245,11 +244,11 @@ int main(void) {
     // size_t size8 = n * sizeof(uint8_t);
 
     cudaCheck(cudaMemcpy(d_moduleStart.get(), &nModules, sizeof(uint32_t), cudaMemcpyHostToDevice));
-
     cudaCheck(cudaMemcpy(d_id.get(), h_id.get(), size16, cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_x.get(), h_x.get(), size16, cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_y.get(), h_y.get(), size16, cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_adc.get(), h_adc.get(), size16, cudaMemcpyHostToDevice));
+
     // Launch CUDA Kernels
     int threadsPerBlock = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
     int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
@@ -258,11 +257,11 @@ int main(void) {
 
     cms::cuda::launch(countModules, {blocksPerGrid, threadsPerBlock}, d_id.get(), d_moduleStart.get(), d_clus.get(), n);
 
-    blocksPerGrid = MaxNumModules;  //nModules;
+    blocksPerGrid = maxNumModules;  //nModules;
 
     std::cout << "CUDA findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
               << " threads\n";
-    cudaCheck(cudaMemset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)));
+    cudaCheck(cudaMemset(d_clusInModule.get(), 0, maxNumModules * sizeof(uint32_t)));
 
     cms::cuda::launch(findClus,
                       {blocksPerGrid, threadsPerBlock},
@@ -277,21 +276,22 @@ int main(void) {
     cudaDeviceSynchronize();
     cudaCheck(cudaMemcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
-    uint32_t nclus[MaxNumModules], moduleId[nModules];
-    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    uint32_t nclus[maxNumModules], moduleId[nModules];
+    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), maxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
+    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + maxNumModules, 0) << " clusters"
               << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
+    for (auto i = maxNumModules; i > 0; i--)
       if (nclus[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
         break;
       }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
+    if (ncl != std::accumulate(nclus, nclus + maxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
     cms::cuda::launch(clusterChargeCut,
                       {blocksPerGrid, threadsPerBlock},
+                      clusterThresholds,
                       d_id.get(),
                       d_adc.get(),
                       d_moduleStart.get(),
@@ -301,58 +301,49 @@ int main(void) {
                       n);
 
     cudaDeviceSynchronize();
-#else
+#else   // __CUDACC__
     h_moduleStart[0] = nModules;
     countModules(h_id.get(), h_moduleStart.get(), h_clus.get(), n);
-    memset(h_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
-    gridDim.x = MaxNumModules;  //not needed in the kernel for this specific case;
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      findClus(h_id.get(),
-               h_x.get(),
-               h_y.get(),
-               h_moduleStart.get(),
-               h_clusInModule.get(),
-               h_moduleId.get(),
-               h_clus.get(),
-               n);
-    resetGrid();
+    memset(h_clusInModule.get(), 0, maxNumModules * sizeof(uint32_t));
+    findClus(
+        h_id.get(), h_x.get(), h_y.get(), h_moduleStart.get(), h_clusInModule.get(), h_moduleId.get(), h_clus.get(), n);
 
     nModules = h_moduleStart[0];
     auto nclus = h_clusInModule.get();
 
-    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
+    std::cout << "before charge cut found " << std::accumulate(nclus, nclus + maxNumModules, 0) << " clusters"
               << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
+    for (auto i = maxNumModules; i > 0; i--)
       if (nclus[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
         break;
       }
-    if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
+    if (ncl != std::accumulate(nclus, nclus + maxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    gridDim.x = MaxNumModules;  // no needed in the kernel for in this specific case
-    assert(blockIdx.x == 0);
-    for (; blockIdx.x < gridDim.x; ++blockIdx.x)
-      clusterChargeCut(
-          h_id.get(), h_adc.get(), h_moduleStart.get(), h_clusInModule.get(), h_moduleId.get(), h_clus.get(), n);
-    resetGrid();
-
-#endif
+    clusterChargeCut(clusterThresholds,
+                     h_id.get(),
+                     h_adc.get(),
+                     h_moduleStart.get(),
+                     h_clusInModule.get(),
+                     h_moduleId.get(),
+                     h_clus.get(),
+                     n);
+#endif  // __CUDACC__
 
     std::cout << "found " << nModules << " Modules active" << std::endl;
 
 #ifdef __CUDACC__
     cudaCheck(cudaMemcpy(h_id.get(), d_id.get(), size16, cudaMemcpyDeviceToHost));
     cudaCheck(cudaMemcpy(h_clus.get(), d_clus.get(), size32, cudaMemcpyDeviceToHost));
-    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), maxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
     cudaCheck(cudaMemcpy(&moduleId, d_moduleId.get(), nModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
-#endif
+#endif  // __CUDACC__
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {
       assert(h_id[i] != 666);  // only noise
-      if (h_id[i] == InvId)
+      if (h_id[i] == invalidModuleId)
         continue;
       assert(h_clus[i] >= 0);
       assert(h_clus[i] < int(nclus[h_id[i]]));
@@ -388,9 +379,9 @@ int main(void) {
         std::cout << "error " << mid << ": " << nc << ' ' << pnc << std::endl;
     }
 
-    std::cout << "found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << ' ' << clids.size() << " clusters"
+    std::cout << "found " << std::accumulate(nclus, nclus + maxNumModules, 0) << ' ' << clids.size() << " clusters"
               << std::endl;
-    for (auto i = MaxNumModules; i > 0; i--)
+    for (auto i = maxNumModules; i > 0; i--)
       if (nclus[i - 1] > 0) {
         std::cout << "last module is " << i - 1 << ' ' << nclus[i - 1] << std::endl;
         break;

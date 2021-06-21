@@ -100,8 +100,8 @@ int main(int argc, char** argv) {
     edmodules = {
         "BeamSpotToCUDA", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "PixelVertexProducerCUDA"};
     esmodules = {"BeamSpotESProducer",
-                 "SiPixelFedCablingMapGPUWrapperESProducer",
                  "SiPixelGainCalibrationForHLTGPUESProducer",
+                 "SiPixelROCsStatusAndMappingWrapperESProducer",
                  "PixelCPEFastESProducer"};
     if (transfer) {
       auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");

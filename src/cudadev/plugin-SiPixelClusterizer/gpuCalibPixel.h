@@ -6,12 +6,11 @@
 
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "CUDACore/cuda_assert.h"
-
-#include "gpuClusteringConstants.h"
+#include "CUDADataFormats/gpuClusteringConstants.h"
 
 namespace gpuCalibPixel {
 
-  constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
+  using gpuClustering::invalidModuleId;
 
   // valid for run2
   constexpr float VCaltoElectronGain = 47;         // L2-4: 47 +- 4.7
@@ -35,12 +34,12 @@ namespace gpuCalibPixel {
     // zero for next kernels...
     if (0 == first)
       clusModuleStart[0] = moduleStart[0] = 0;
-    for (int i = first; i < gpuClustering::MaxNumModules; i += gridDim.x * blockDim.x) {
+    for (int i = first; i < gpuClustering::maxNumModules; i += gridDim.x * blockDim.x) {
       nClustersInModule[i] = 0;
     }
 
     for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
-      if (InvId == id[i])
+      if (invalidModuleId == id[i])
         continue;
 
       float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
@@ -55,7 +54,7 @@ namespace gpuCalibPixel {
       float gain = ret.second;
       // float pedestal = 0; float gain = 1.;
       if (isDeadColumn | isNoisyColumn) {
-        id[i] = InvId;
+        id[i] = invalidModuleId;
         adc[i] = 0;
         printf("bad pixel at %d in %d\n", i, id[i]);
       } else {

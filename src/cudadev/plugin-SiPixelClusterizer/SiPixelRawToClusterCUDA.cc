@@ -1,26 +1,30 @@
-#include "CUDACore/Product.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
-#include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
-#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
-#include "CondFormats/SiPixelFedIds.h"
-#include "DataFormats/PixelErrors.h"
-#include "DataFormats/FEDNumbering.h"
-#include "DataFormats/FEDRawData.h"
-#include "DataFormats/FEDRawDataCollection.h"
-#include "Framework/EventSetup.h"
-#include "Framework/Event.h"
-#include "Framework/PluginFactory.h"
-#include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
-
-#include "ErrorChecker.h"
-#include "SiPixelRawToClusterGPUKernel.h"
-
+// C++ includes
 #include <memory>
 #include <string>
 #include <vector>
+
+// CMSSW includes
+#include "CUDACore/Product.h"
+#include "CUDACore/ScopedContext.h"
+#include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
+#include "CUDADataFormats/SiPixelDigisCUDA.h"
+#include "CondFormats/SiPixelFedIds.h"
+#include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
+#include "CondFormats/SiPixelROCsStatusAndMappingWrapper.h"
+#include "DataFormats/FEDNumbering.h"
+#include "DataFormats/FEDRawData.h"
+#include "DataFormats/FEDRawDataCollection.h"
+#include "DataFormats/SiPixelErrorCompact.h"
+#include "Framework/EDProducer.h"
+#include "Framework/Event.h"
+#include "Framework/EventSetup.h"
+#include "Framework/PluginFactory.h"
+
+// local includes
+#include "ErrorChecker.h"
+#include "SiPixelClusterThresholds.h"
+#include "SiPixelRawToClusterGPUKernel.h"
 
 class SiPixelRawToClusterCUDA : public edm::EDProducerExternalWork {
 public:
@@ -42,11 +46,12 @@ private:
 
   pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
   std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
-  PixelFormatterErrors errors_;
+  SiPixelFormatterErrors errors_;
 
   const bool isRun2_;
   const bool includeErrors_;
   const bool useQuality_;
+  const SiPixelClusterThresholds clusterThresholds_;
 };
 
 SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
@@ -55,7 +60,9 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
       clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClustersCUDA>>()),
       isRun2_(true),
       includeErrors_(true),
-      useQuality_(true) {
+      useQuality_(true),
+      clusterThresholds_{kSiPixelClusterThresholdsDefaultPhase1.layer1, kSiPixelClusterThresholdsDefaultPhase1.otherLayers}
+{
   if (includeErrors_) {
     digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
   }
@@ -68,10 +75,10 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                                       edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
   cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
 
-  auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
+  auto const& hgpuMap = iSetup.get<SiPixelROCsStatusAndMappingWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
     throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
-                             ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
+                             ") differs the one from SiPixelROCsStatusAndMappingWrapper. Please fix your configuration.");
   }
   // get the GPU product already here so that the async transfer can begin
   const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
@@ -101,7 +108,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
     // for GPU
     // first 150 index stores the fedId and next 150 will store the
     // start index of word in that fed
-    assert(fedId >= 1200);
+    assert(fedId >= FEDNumbering::MINSiPixeluTCAFEDID);
     fedCounter++;
 
     // get event data for this fed
@@ -148,6 +155,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
   }  // end of for loop
 
   gpuAlgo_.makeClustersAsync(isRun2_,
+                             clusterThresholds_,
                              gpuMap,
                              gpuModulesToUnpack,
                              gpuGains,

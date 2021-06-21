@@ -2,6 +2,8 @@
 // Original Author: Felice Pantaleo, CERN
 //
 
+// #define GPU_DEBUG
+
 #include <array>
 #include <cassert>
 #include <functional>
@@ -46,16 +48,18 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
     : m_params(true,              // onGPU
                3,                 // minHitsPerNtuplet,
                458752,            // maxNumberOfDoublets
-               false,             //useRiemannFit
+               5,                 // minHitsForSharingCut
+               false,             // useRiemannFit
                true,              // fit5as4,
-               true,              //includeJumpingForwardDoublets
+               true,              // includeJumpingForwardDoublets
                true,              // earlyFishbone
                false,             // lateFishbone
                true,              // idealConditions
-               false,             //fillStatistics
+               false,             // doStats
                true,              // doClusterCut
                true,              // doZ0Cut
                true,              // doPtCut
+               true,              // doSharedHitCut
                0.899999976158,    // ptmin
                0.00200000009499,  // CAThetaCutBarrel
                0.00300000002608,  // CAThetaCutForward
@@ -112,11 +116,11 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecH
   PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(stream));
 
   auto* soa = tracks.get();
+  assert(soa);
 
   CAHitNtupletGeneratorKernelsGPU kernels(m_params);
-  kernels.counters_ = m_counters;
-
-  kernels.allocateOnGPU(stream);
+  kernels.setCounters(m_counters);
+  kernels.allocateOnGPU(hits_d.nHits(), stream);
 
   kernels.buildDoublets(hits_d, stream);
   kernels.launchKernels(hits_d, soa, stream);
@@ -125,11 +129,17 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecH
   HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
   fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
   if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
+    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
   } else {
-    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
+    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
   }
   kernels.classifyTuples(hits_d, soa, stream);
+
+#ifdef GPU_DEBUG
+  cudaDeviceSynchronize();
+  cudaCheck(cudaGetLastError());
+  std::cout << "finished building pixel tracks on GPU" << std::endl;
+#endif
 
   return tracks;
 }
@@ -141,8 +151,8 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
   assert(soa);
 
   CAHitNtupletGeneratorKernelsCPU kernels(m_params);
-  kernels.counters_ = m_counters;
-  kernels.allocateOnGPU(nullptr);
+  kernels.setCounters(m_counters);
+  kernels.allocateOnGPU(hits_d.nHits(), nullptr);
 
   kernels.buildDoublets(hits_d, nullptr);
   kernels.launchKernels(hits_d, soa, nullptr);
@@ -156,12 +166,16 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
   fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
 
   if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernelsOnCPU(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets());
+    fitter.launchRiemannKernelsOnCPU(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
   } else {
-    fitter.launchBrokenLineKernelsOnCPU(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets());
+    fitter.launchBrokenLineKernelsOnCPU(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
   }
 
   kernels.classifyTuples(hits_d, soa, nullptr);
+
+#ifdef GPU_DEBUG
+  std::cout << "finished building pixel tracks on CPU" << std::endl;
+#endif
 
   return tracks;
 }

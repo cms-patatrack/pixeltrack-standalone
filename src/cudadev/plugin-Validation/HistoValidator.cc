@@ -3,7 +3,7 @@
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
 #include "CUDADataFormats/ZVertexHeterogeneous.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
@@ -151,7 +151,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
     int nTracks = 0;
     for (int i = 0; i < tracks->stride(); ++i) {
-      if (tracks->nHits(i) > 0 and tracks->quality(i) >= trackQuality::loose) {
+      if (tracks->nHits(i) > 0 and tracks->quality(i) >= pixelTrack::Quality::loose) {
         ++nTracks;
         histos["track_nhits"].fill(tracks->nHits(i));
         histos["track_chi2"].fill(tracks->chi2(i));
@@ -162,7 +162,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
         histos["track_tip_zoom"].fill(tracks->tip(i));
         histos["track_zip"].fill(tracks->zip(i));
         histos["track_zip_zoom"].fill(tracks->zip(i));
-        histos["track_quality"].fill(tracks->quality(i));
+        histos["track_quality"].fill((uint8_t) tracks->quality(i));
       }
     }
 

@@ -14,11 +14,9 @@ namespace pixelCPEforGPU {
 
 class TrackingRecHit2DSOAView {
 public:
-  static constexpr uint32_t maxHits() { return gpuClustering::MaxNumClusters; }
-  using hindex_type = uint16_t;  // if above is <=2^16
+  using hindex_type = uint32_t;  // if above is <=2^32
 
-  using Hist =
-      cms::cuda::HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
+  using PhiBinner = cms::cuda::HistoContainer<int16_t, 128, -1, 8 * sizeof(int16_t), hindex_type, 10>;
 
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
 
@@ -65,8 +63,8 @@ public:
   __device__ __forceinline__ uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
   __device__ __forceinline__ uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
 
-  __device__ __forceinline__ Hist& phiBinner() { return *m_hist; }
-  __device__ __forceinline__ Hist const& phiBinner() const { return *m_hist; }
+  __device__ __forceinline__ PhiBinner& phiBinner() { return *m_phiBinner; }
+  __device__ __forceinline__ PhiBinner const& phiBinner() const { return *m_phiBinner; }
 
   __device__ __forceinline__ AverageGeometry& averageGeometry() { return *m_averageGeometry; }
   __device__ __forceinline__ AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
@@ -87,15 +85,17 @@ private:
   uint16_t* m_detInd;
 
   // supporting objects
-  AverageGeometry* m_averageGeometry;  // owned (corrected for beam spot: not sure where to host it otherwise)
+  // m_averageGeometry is corrected for beam spot, not sure where to host it otherwise
+  AverageGeometry* m_averageGeometry;              // owned by TrackingRecHit2DHeterogeneous
   pixelCPEforGPU::ParamsOnGPU const* m_cpeParams;  // forwarded from setup, NOT owned
   uint32_t const* m_hitsModuleStart;               // forwarded from clusters
 
   uint32_t* m_hitsLayerStart;
 
-  Hist* m_hist;
+  PhiBinner* m_phiBinner;
+  PhiBinner::index_type* m_phiBinnerStorage;
 
   uint32_t m_nHits;
 };
 
-#endif
+#endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h

@@ -12,7 +12,7 @@ public:
   ~SiPixelGainCalibrationForHLTGPU();
 
   const SiPixelGainForHLTonGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
-  const SiPixelGainForHLTonGPU *getCPUProduct() const { return gainForHLTonHost_; }
+  const SiPixelGainForHLTonGPU *cpuProduct() const { return gainForHLTonHost_; }
 
 private:
   SiPixelGainForHLTonGPU *gainForHLTonHost_ = nullptr;

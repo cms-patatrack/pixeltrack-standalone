@@ -5,7 +5,7 @@
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"
