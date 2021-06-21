@@ -4,8 +4,8 @@ export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 export CXX := g++
 USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
-export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS)
-export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs
+export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
+export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs -ldl
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
@@ -45,7 +45,7 @@ export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 define CUFLAGS_template
 $(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=sm_$$(ARCH)) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
-$(2)NVCC_COMMON := -std=c++17 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+$(2)NVCC_COMMON := -std=c++17 -O3 $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)' -g -lineinfo
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
 endef
@@ -107,6 +107,11 @@ endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+
+BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
+export BACKTRACE_DEPS := $(BACKTRACE_BASE)
+export BACKTRACE_CXXFLAGS := -I$(BACKTRACE_BASE)/include
+export BACKTRACE_LDFLAGS := -L$(BACKTRACE_BASE)/lib -lbacktrace
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
@@ -309,6 +314,10 @@ env.sh: Makefile
 	@echo                                                                   >> $@
 	@echo -n 'export LD_LIBRARY_PATH='                                      >> $@
 	@echo -n '$(TBB_LIBDIR):'                                               >> $@
+	@echo -n '$(BACKTRACE_BASE)/lib:'                                       >> $@
+ifeq ($(NEED_BOOST),true)
+	@echo -n '$(BOOST_BASE)/lib:'                                           >> $@
+endif
 ifdef CUDA_BASE
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 endif
@@ -456,9 +465,24 @@ $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
 	curl -L -s -S https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2 | tar xj -C $(BOOST_TMP)
-	cd $(BOOST_TMP)/boost_1_76_0 && ./bootstrap.sh && ./b2 install --prefix=$@
+	cd $(BOOST_TMP)/boost_1_76_0 && ./bootstrap.sh && ./b2 install --prefix=$@ --without-graph_parallel --without-mpi --without-python
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
+
+# libbacktrace
+.PHONY: external_libbacktrace
+external_libbacktrace: $(BACKTRACE_BASE)
+
+# Let libbacktrace define its own CXXFLAGS
+$(BACKTRACE_BASE): CXXFLAGS:=
+$(BACKTRACE_BASE):
+	$(eval BACKTRACE_TMP := $(shell mktemp -d))
+	git clone https://github.com/ianlancetaylor/libbacktrace.git $(BACKTRACE_TMP)
+	cd $(BACKTRACE_TMP)/ && ./configure --prefix=$@ --enable-shared
+	$(MAKE) -C $(BACKTRACE_TMP)
+	$(MAKE) -C $(BACKTRACE_TMP) install
+	@rm -rf $(BACKTRACE_TMP)
+	$(eval undefine BACKTRACE_TMP)
 
 # Alpaka
 .PHONY: external_alpaka
