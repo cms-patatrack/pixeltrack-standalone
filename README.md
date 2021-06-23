@@ -209,7 +209,8 @@ make cuda ... USER_CXXFLAGS="-DCUDA_DISABLE_CACHING_ALLOCATOR -DCUDA_DISABLE_ASY
 
 #### `cudadev`
 
-This program is currently equivalent to `cuda`.
+This program corresponds to the updated version of the pixel tracking software integrated in
+[CMSSW_12_0_0_pre3](https://github.com/cms-sw/cmssw/tree/CMSSW_12_0_0_pre3).
 
 The use of caching allocator can be disabled at compile time setting the
 `CUDADEV_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
