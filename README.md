@@ -31,6 +31,7 @@ The application is designed to require minimal dependencies on the system. All p
 * GNU Make, `curl`, `md5sum`, `tar`
 * C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8, 9 or 10
   * testing is currently done with GCC 8
+  * not that due to a bug in GCC, GCC 10.3 is not supported
 
 In addition, the individual programs assume the following be found from the system
 
