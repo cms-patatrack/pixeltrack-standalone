@@ -4,7 +4,7 @@
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
@@ -12,7 +12,7 @@
 #include "CUDACore/ScopedContext.h"
 #include "CondFormats/PixelCPEFast.h"
 
-#include "PixelRecHits.h"  // TODO : spit product from kernel
+#include "PixelRecHitGPUKernel.h"
 
 class SiPixelRecHitCUDA : public edm::EDProducer {
 public:
@@ -23,13 +23,11 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   // The mess with inputs will be cleaned up when migrating to the new framework
-  edm::EDGetTokenT<cms::cuda::Product<BeamSpotCUDA>> tBeamSpot;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> token_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> tokenDigi_;
-
-  edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> tokenHit_;
-
-  pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
+  const edm::EDGetTokenT<cms::cuda::Product<BeamSpotCUDA>> tBeamSpot;
+  const edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> token_;
+  const edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> tokenDigi_;
+  const edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> tokenHit_;
+  const pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
 };
 
 SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
@@ -47,11 +45,6 @@ void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto const& clusters = ctx.get(pclusters);
   auto const& digis = ctx.get(iEvent, tokenDigi_);
   auto const& bs = ctx.get(iEvent, tBeamSpot);
-
-  auto nHits = clusters.nClusters();
-  if (nHits >= TrackingRecHit2DSOAView::maxHits()) {
-    std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
-  }
 
   ctx.emplace(iEvent,
               tokenHit_,

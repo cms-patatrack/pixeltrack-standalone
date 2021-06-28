@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksIterative_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksIterative_h
+#ifndef RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksIterative_h
+#define RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksIterative_h
 
 #include <algorithm>
 #include <cmath>
@@ -55,14 +55,13 @@ namespace gpuVertexFinder {
     if (verbose && 0 == threadIdx.x)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
 
-    assert(nt <= hist.capacity());
+    assert((int)nt <= hist.capacity());
 
     // fill hist  (bin shall be wider than "eps")
     for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
       assert(i < ZVertices::MAXTRACKS);
       int iz = int(zt[i] * 10.);  // valid if eps<=0.1
-      // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
-      iz = std::min(std::max(iz, INT8_MIN), INT8_MAX);
+      iz = std::clamp(iz, INT8_MIN, INT8_MAX);
       izt[i] = iz - INT8_MIN;
       assert(iz - INT8_MIN >= 0);
       assert(iz - INT8_MIN < 256);
@@ -210,4 +209,4 @@ namespace gpuVertexFinder {
 
 }  // namespace gpuVertexFinder
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksIterative_h
+#endif  // RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksIterative_h

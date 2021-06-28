@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
+#ifndef RecoPixelVertexing_PixelTriplets_plugins_gpuPixelDoublets_h
+#define RecoPixelVertexing_PixelTriplets_plugins_gpuPixelDoublets_h
 
 #include "gpuPixelDoubletsAlgos.h"
 
@@ -7,15 +7,17 @@
 
 namespace gpuPixelDoublets {
 
-  constexpr int nPairs = 13 + 2 + 4;
-  static_assert(nPairs <= CAConstants::maxNumberOfLayerPairs());
+  constexpr int nPairsForQuadruplets = 13;                     // quadruplets require hits in all layers
+  constexpr int nPairsForTriplets = nPairsForQuadruplets + 2;  // include barrel "jumping" layer pairs
+  constexpr int nPairs = nPairsForTriplets + 4;                // include forward "jumping" layer pairs
+  static_assert(nPairs <= caConstants::maxNumberOfLayerPairs);
 
   // start constants
   // clang-format off
 
   CONSTANT_VAR const uint8_t layerPairs[2 * nPairs] = {
       0, 1, 0, 4, 0, 7,              // BPIX1 (3)
-      1, 2, 1, 4, 1, 7,              // BPIX2 (5)
+      1, 2, 1, 4, 1, 7,              // BPIX2 (6)
       4, 5, 7, 8,                    // FPIX1 (8)
       2, 3, 2, 4, 2, 7, 5, 6, 8, 9,  // BPIX3 & FPIX2 (13)
       0, 2, 1, 3,                    // Jumping Barrel (15)
@@ -58,10 +60,10 @@ namespace gpuPixelDoublets {
   // end constants
   // clang-format on
 
-  using CellNeighbors = CAConstants::CellNeighbors;
-  using CellTracks = CAConstants::CellTracks;
-  using CellNeighborsVector = CAConstants::CellNeighborsVector;
-  using CellTracksVector = CAConstants::CellTracksVector;
+  using CellNeighbors = caConstants::CellNeighbors;
+  using CellTracks = caConstants::CellTracks;
+  using CellNeighborsVector = caConstants::CellNeighborsVector;
+  using CellTracksVector = caConstants::CellTracksVector;
 
   __global__ void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                int nHits,
@@ -75,8 +77,8 @@ namespace gpuPixelDoublets {
       isOuterHitOfCell[i].reset();
 
     if (0 == first) {
-      cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
-      cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
+      cellNeighbors->construct(caConstants::maxNumOfActiveDoublets, cellNeighborsContainer);
+      cellTracks->construct(caConstants::maxNumOfActiveDoublets, cellTracksContainer);
       auto i = cellNeighbors->extend();
       assert(0 == i);
       (*cellNeighbors)[0].reset();
@@ -127,4 +129,4 @@ namespace gpuPixelDoublets {
 
 }  // namespace gpuPixelDoublets
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDouplets_h
+#endif  // RecoPixelVertexing_PixelTriplets_plugins_gpuPixelDoublets_h

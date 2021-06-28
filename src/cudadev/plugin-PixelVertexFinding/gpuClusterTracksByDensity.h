@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
+#ifndef RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksByDensity_h
+#define RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksByDensity_h
 
 #include <algorithm>
 #include <cmath>
@@ -59,7 +59,7 @@ namespace gpuVertexFinder {
     if (verbose && 0 == threadIdx.x)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
 
-    assert(nt <= hist.capacity());
+    assert((int)nt <= hist.capacity());
 
     // fill hist  (bin shall be wider than "eps")
     for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
@@ -231,4 +231,4 @@ namespace gpuVertexFinder {
 
 }  // namespace gpuVertexFinder
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
+#endif  // RecoPixelVertexing_PixelVertexFinding_plugins_gpuClusterTracksByDensity_h

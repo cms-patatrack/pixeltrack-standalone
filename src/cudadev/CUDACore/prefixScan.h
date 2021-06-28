@@ -5,6 +5,7 @@
 
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/cuda_assert.h"
+#include "Framework/CMSUnrollLoop.h"
 
 #ifdef __CUDA_ARCH__
 
@@ -13,7 +14,7 @@ __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __re
   // ci and co may be the same
   auto x = ci[i];
   auto laneId = threadIdx.x & 0x1f;
-#pragma unroll
+  CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)
@@ -26,7 +27,7 @@ template <typename T>
 __device__ void __forceinline__ warpPrefixScan(T* c, uint32_t i, uint32_t mask) {
   auto x = c[i];
   auto laneId = threadIdx.x & 0x1f;
-#pragma unroll
+  CMS_UNROLL_LOOP
   for (int offset = 1; offset < 32; offset <<= 1) {
     auto y = __shfl_up_sync(mask, x, offset);
     if (laneId >= offset)

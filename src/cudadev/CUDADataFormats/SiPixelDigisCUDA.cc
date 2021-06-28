@@ -1,19 +1,19 @@
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 
+#include "CUDACore/copyAsync.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
-#include "CUDACore/copyAsync.h"
 
-SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream) {
-  xx_d = cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream);
-  yy_d = cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream);
-  adc_d = cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream);
-  moduleInd_d = cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream);
-  clus_d = cms::cuda::make_device_unique<int32_t[]>(maxFedWords, stream);
-
-  pdigi_d = cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream);
-  rawIdArr_d = cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream);
-
+SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream)
+    : xx_d(cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream)),
+      yy_d(cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream)),
+      adc_d(cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream)),
+      moduleInd_d(cms::cuda::make_device_unique<uint16_t[]>(maxFedWords, stream)),
+      clus_d(cms::cuda::make_device_unique<int32_t[]>(maxFedWords, stream)),
+      view_d(cms::cuda::make_device_unique<DeviceConstView>(stream)),
+      pdigi_d(cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream)),
+      rawIdArr_d(cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream))
+{
   auto view = cms::cuda::make_host_unique<DeviceConstView>(stream);
   view->xx_ = xx_d.get();
   view->yy_ = yy_d.get();
@@ -21,7 +21,6 @@ SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream) {
   view->moduleInd_ = moduleInd_d.get();
   view->clus_ = clus_d.get();
 
-  view_d = cms::cuda::make_device_unique<DeviceConstView>(stream);
   cms::cuda::copyAsync(view_d, view, stream);
 }
 

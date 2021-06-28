@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include "CUDACore/cuda_assert.h"
+#include "Framework/CMSUnrollLoop.h"
 
 template <typename T>
 __device__ inline void dummyReorder(T const* a, uint16_t* ind, uint16_t* ind2, uint32_t size) {}
@@ -124,7 +125,7 @@ __device__ __forceinline__ void radixSortImpl(
     if (threadIdx.x < sb) {
       auto x = c[threadIdx.x];
       auto laneId = threadIdx.x & 0x1f;
-#pragma unroll
+      CMS_UNROLL_LOOP
       for (int offset = 1; offset < 32; offset <<= 1) {
         auto y = __shfl_up_sync(0xffffffff, x, offset);
         if (laneId >= offset)

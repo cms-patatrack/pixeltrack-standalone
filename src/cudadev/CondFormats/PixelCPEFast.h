@@ -20,20 +20,18 @@ public:
   pixelCPEforGPU::ParamsOnGPU const &getCPUProduct() const { return cpuData_; }
 
 private:
-  // allocate it with posix malloc to be ocmpatible with cpu wf
-  std::vector<pixelCPEforGPU::DetParams> m_detParamsGPU;
-  // std::vector<pixelCPEforGPU::DetParams, cms::cuda::HostAllocator<pixelCPEforGPU::DetParams>> m_detParamsGPU;
-  pixelCPEforGPU::CommonParams m_commonParamsGPU;
-  pixelCPEforGPU::LayerGeometry m_layerGeometry;
-  pixelCPEforGPU::AverageGeometry m_averageGeometry;
-
+  // allocate this with posix malloc to be compatible with the cpu workflow
+  std::vector<pixelCPEforGPU::DetParams> detParamsGPU_;
+  pixelCPEforGPU::CommonParams commonParamsGPU_;
+  pixelCPEforGPU::LayerGeometry layerGeometry_;
+  pixelCPEforGPU::AverageGeometry averageGeometry_;
   pixelCPEforGPU::ParamsOnGPU cpuData_;
 
   struct GPUData {
     ~GPUData();
     // not needed if not used on CPU...
-    pixelCPEforGPU::ParamsOnGPU h_paramsOnGPU;
-    pixelCPEforGPU::ParamsOnGPU *d_paramsOnGPU = nullptr;  // copy of the above on the Device
+    pixelCPEforGPU::ParamsOnGPU paramsOnGPU_h;
+    pixelCPEforGPU::ParamsOnGPU *paramsOnGPU_d = nullptr;  // copy of the above on the Device
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 

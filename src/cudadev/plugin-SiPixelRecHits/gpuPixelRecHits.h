@@ -5,11 +5,12 @@
 #include <cstdio>
 #include <limits>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
+#include "CUDADataFormats/BeamSpotCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
+#include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CondFormats/pixelCPEforGPU.h"
+#include "DataFormats/approx_atan2.h"
 
 namespace gpuPixelRecHits {
 
@@ -53,7 +54,7 @@ namespace gpuPixelRecHits {
     }
 
     // to be moved in common namespace...
-    constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
+    using gpuClustering::invalidModuleId;
     constexpr int32_t MaxHitsInIter = pixelCPEforGPU::MaxHitsInIter;
 
     using ClusParams = pixelCPEforGPU::ClusParams;
@@ -70,7 +71,7 @@ namespace gpuPixelRecHits {
 #ifdef GPU_DEBUG
     if (threadIdx.x == 0) {
       auto k = clusters.moduleStart(1 + blockIdx.x);
-      while (digis.moduleInd(k) == InvId)
+      while (digis.moduleInd(k) == invalidModuleId)
         ++k;
       assert(digis.moduleInd(k) == me);
     }
@@ -83,8 +84,6 @@ namespace gpuPixelRecHits {
 #endif
 
     for (int startClus = 0, endClus = nclus; startClus < endClus; startClus += MaxHitsInIter) {
-      auto first = clusters.moduleStart(1 + blockIdx.x);
-
       int nClusInIter = std::min(MaxHitsInIter, endClus - startClus);
       int lastClus = startClus + nClusInIter;
       assert(nClusInIter <= nclus);
@@ -100,32 +99,30 @@ namespace gpuPixelRecHits {
         clusParams.minCol[ic] = std::numeric_limits<uint32_t>::max();
         clusParams.maxCol[ic] = 0;
         clusParams.charge[ic] = 0;
-        clusParams.Q_f_X[ic] = 0;
-        clusParams.Q_l_X[ic] = 0;
-        clusParams.Q_f_Y[ic] = 0;
-        clusParams.Q_l_Y[ic] = 0;
+        clusParams.q_f_X[ic] = 0;
+        clusParams.q_l_X[ic] = 0;
+        clusParams.q_f_Y[ic] = 0;
+        clusParams.q_l_Y[ic] = 0;
       }
-
-      first += threadIdx.x;
 
       __syncthreads();
 
-      // one thead per "digi"
-
+      // one thread per "digi"
+      auto first = clusters.moduleStart(1 + blockIdx.x) + threadIdx.x;
       for (int i = first; i < numElements; i += blockDim.x) {
         auto id = digis.moduleInd(i);
-        if (id == InvId)
+        if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
         auto cl = digis.clus(i);
         if (cl < startClus || cl >= lastClus)
           continue;
-        auto x = digis.xx(i);
-        auto y = digis.yy(i);
         cl -= startClus;
         assert(cl >= 0);
         assert(cl < MaxHitsInIter);
+        auto x = digis.xx(i);
+        auto y = digis.yy(i);
         atomicMin(&clusParams.minRow[cl], x);
         atomicMax(&clusParams.maxRow[cl], x);
         atomicMin(&clusParams.minCol[cl], y);
@@ -139,7 +136,7 @@ namespace gpuPixelRecHits {
       auto pixmx = std::numeric_limits<uint16_t>::max();
       for (int i = first; i < numElements; i += blockDim.x) {
         auto id = digis.moduleInd(i);
-        if (id == InvId)
+        if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
@@ -154,13 +151,13 @@ namespace gpuPixelRecHits {
         auto ch = std::min(digis.adc(i), pixmx);
         atomicAdd(&clusParams.charge[cl], ch);
         if (clusParams.minRow[cl] == x)
-          atomicAdd(&clusParams.Q_f_X[cl], ch);
+          atomicAdd(&clusParams.q_f_X[cl], ch);
         if (clusParams.maxRow[cl] == x)
-          atomicAdd(&clusParams.Q_l_X[cl], ch);
+          atomicAdd(&clusParams.q_l_X[cl], ch);
         if (clusParams.minCol[cl] == y)
-          atomicAdd(&clusParams.Q_f_Y[cl], ch);
+          atomicAdd(&clusParams.q_f_Y[cl], ch);
         if (clusParams.maxCol[cl] == y)
-          atomicAdd(&clusParams.Q_l_Y[cl], ch);
+          atomicAdd(&clusParams.q_l_Y[cl], ch);
       }
 
       __syncthreads();
@@ -168,13 +165,9 @@ namespace gpuPixelRecHits {
       // next one cluster per thread...
 
       first = clusters.clusModuleStart(me) + startClus;
-
       for (int ic = threadIdx.x; ic < nClusInIter; ic += blockDim.x) {
         auto h = first + ic;  // output index in global memory
 
-        // this cannot happen anymore
-        if (h >= TrackingRecHit2DSOAView::maxHits())
-          break;  // overflow...
         assert(h < hits.nHits());
         assert(h < clusters.clusModuleStart(me + 1));
 
@@ -182,9 +175,7 @@ namespace gpuPixelRecHits {
         pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
 
         // store it
-
         hits.charge(h) = clusParams.charge[ic];
-
         hits.detectorIndex(h) = me;
 
         float xl, yl;
