@@ -44,7 +44,7 @@ export CUDA_TEST_CXXFLAGS := -DGPU_DEBUG
 export CUDA_LDFLAGS := -L$(CUDA_BASE)/lib64 -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 define CUFLAGS_template
-$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=[sm_$$(ARCH),compute_$$(ARCH)]) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --cudart=shared
+$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=[sm_$$(ARCH),compute_$$(ARCH)]) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --display-error-number --threads $$(words $(1)) --cudart=shared
 $(2)NVCC_COMMON := -std=c++17 -O3 -g $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
@@ -86,11 +86,13 @@ TBB_LIB := $(TBB_LIBDIR)/libtbb.so
 export TBB_DEPS := $(TBB_LIB)
 export TBB_CXXFLAGS := -I$(TBB_BASE)/include
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
+export TBB_NVCC_CXXFLAGS :=
 
 EIGEN_BASE := $(EXTERNAL_BASE)/eigen
 export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -I$(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
 export EIGEN_LDFLAGS :=
+export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
 
 BOOST_BASE := /usr
 # Minimum required version of Boost, e.g. 1.65.1
@@ -107,6 +109,7 @@ endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -I$(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+export BOOST_NVCC_CXXFLAGS :=
 
 BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
 export BACKTRACE_DEPS := $(BACKTRACE_BASE)
@@ -124,6 +127,7 @@ export CUPLA_DEPS := $(CUPLA_BASE)/lib
 export CUPLA_LIBDIR := $(CUPLA_BASE)/lib
 export CUPLA_CXXFLAGS := -I$(CUPLA_BASE)/include
 export CUPLA_LDFLAGS := -L$(CUPLA_LIBDIR)
+export CUPLA_NVCC_CXXFLAGS :=
 
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
@@ -156,6 +160,7 @@ endif
 export KOKKOS_CXXFLAGS := -I$(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
+export KOKKOS_NVCC_CXXFLAGS :=
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
@@ -165,6 +170,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
 ifndef KOKKOS_DEVICE_PARALLEL
   KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=g++
   export KOKKOS_DEVICE_CXX := $(CXX)
+  export KOKKOS_DEVICE_CXX_NAME := GCC
   export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS)
   export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS)
   export KOKKOS_DEVICE_CXXFLAGS := $(CXXFLAGS)
@@ -173,6 +179,7 @@ else
   ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
     KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(KOKKOS_SRC)/bin/nvcc_wrapper -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_CONSTEXPR=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_CUDA_DIR=$(CUDA_BASE) $(KOKKOS_CMAKE_CUDA_ARCH)
     export KOKKOS_DEVICE_CXX := $(CUDA_NVCC)
+    export KOKKOS_DEVICE_CXX_NAME := NVCC
     export KOKKOS_DEVICE_LDFLAGS := $(LDFLAGS_NVCC)
     export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS_NVCC)
     export KOKKOS_DEVICE_CXXFLAGS := $(KOKKOS_NVCC_COMMON) $(CUDA_CXXFLAGS) $(USER_CUDAFLAGS)
@@ -181,6 +188,7 @@ else
     KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(ROCM_HIPCC) -DCMAKE_CXX_FLAGS="--gcc-toolchain=$(GCC_TOOLCHAIN)" -DKokkos_ENABLE_HIP=On $(KOKKOS_CMAKE_HIP_ARCH) -DBUILD_SHARED_LIBS=On
     export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
     export KOKKOS_DEVICE_CXX := $(ROCM_HIPCC)
+    export KOKKOS_DEVICE_CXX_NAME := HIPCC
     export KOKKOS_DEVICE_LDFLAGS := $(HIPCC_LDFLAGS)
     export KOKKOS_DEVICE_SO_LDFLAGS := $(SO_LDFLAGS)
     export KOKKOS_DEVICE_CXXFLAGS := $(HIPCC_CXXFLAGS)
@@ -412,7 +420,7 @@ distclean: | clean
 
 dataclean:
 	rm -fR data/*.tar.gz data/*.bin data/data_ok
-	
+
 define CLEAN_template
 clean_$(1):
 	rm -fR lib/$(1) obj/$(1) test/$(1) $(1)

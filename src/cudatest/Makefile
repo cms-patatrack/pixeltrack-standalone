@@ -98,7 +98,7 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 
 $(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
@@ -136,7 +136,7 @@ $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o | $(LIBS)
 
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cu
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_NVCC_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@

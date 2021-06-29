@@ -29,12 +29,13 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system. All programs require
 * GNU Make, `curl`, `md5sum`, `tar`
-* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8 or 9, possibly 10 with CUDA 11.1
+* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8, 9 or 10
   * testing is currently done with GCC 8
+  * not that due to a bug in GCC, GCC 10.3 is not supported
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.10)    | CUDA 11 runtime and drivers | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+| Application  | CMake (>= 3.10)    | CUDA 11.2                   | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
 |--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
@@ -108,11 +109,11 @@ The column "Validated" means that the program produces the same histograms as th
 ## Quick recipe
 
 ```bash
-# Build application with N-fold concurrency
-$ make -j N cuda
+# Build application using all available CPUs
+$ make -j`nproc` cuda
 
 # For CUDA installations elsewhere than /usr/local/cuda
-$ make -j N cuda CUDA_BASE=/path/to/cuda
+$ make -j`nproc` cuda CUDA_BASE=/path/to/cuda
 
 # Source environment
 $ source env.sh

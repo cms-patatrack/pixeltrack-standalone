@@ -211,20 +211,20 @@ $(OBJ_DIR)/$(2)/kokkoshost/%.cc.o: $(SRC_DIR)/$(2)/kokkoshost/%.cc
 # Portable code, for serial backend
 $(OBJ_DIR)/$(2)/kokkos/%.cc.serial.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 # Portable code, for host parallel backend
 ifdef KOKKOS_HOST_PARALLEL
 $(OBJ_DIR)/$(2)/kokkos/%.cc.parallel.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $$< -o $$@ -MMD
 endif
 
 # Portable code, for device parallel backend
 ifdef KOKKOS_DEVICE_PARALLEL
 $(OBJ_DIR)/$(2)/kokkos/%.cc.device.o: $(SRC_DIR)/$(2)/kokkos/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $$< -o $$@ -MMD
 endif
 endef
 
@@ -244,7 +244,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 # Serial backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_SERIAL $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.serial.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
@@ -254,7 +254,7 @@ $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.
 ifdef KOKKOS_HOST_PARALLEL
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_HOST_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%.parallel: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.parallel.o| $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
@@ -265,7 +265,7 @@ endif
 ifdef KOKKOS_DEVICE_PARALLEL
 $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o: $(SRC_DIR)/$(TARGET_NAME)/test/kokkos/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(KOKKOS_DEVICE_TEST_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(KOKKOS_DEVICE_CXX) -DKOKKOS_BACKEND_$(KOKKOS_DEVICE_PARALLEL) $(KOKKOS_DEVICE_CXXFLAGS) $(MY_DEVICE_CXXFLAGS) $(KOKKOS_DEVICE_TEST_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_$(KOKKOS_DEVICE_CXX_NAME)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%.device: $(OBJ_DIR)/$(TARGET_NAME)/test/kokkos/%.cc.device.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
