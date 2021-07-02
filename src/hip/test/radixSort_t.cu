@@ -140,8 +140,9 @@ void go(bool useShared) {
         auto sh = sizeof(uint64_t) - NS;
         sh *= 8;
         auto shorten = [sh](T& t) {
-          auto k = (uint64_t*)(&t);
-          *k = (*k >> sh) << sh;
+          uint64_t k = *(uint64_t *)(&t);
+          k = (k >> sh) << sh;
+          t = *(T*)(&k);
         };
         shorten(k1);
         shorten(k2);
