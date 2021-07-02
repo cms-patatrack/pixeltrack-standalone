@@ -92,6 +92,8 @@ __device__ __forceinline__ void radixSortImpl(
   __shared__ int32_t c[sb], ct[sb], cu[sb];
 
   __shared__ int ibs;
+  __shared__ int ibs2;
+  __shared__ int ibs3;
   __shared__ int p;
 
   assert(size > 0);
@@ -148,6 +150,7 @@ __device__ __forceinline__ void radixSortImpl(
 
     // broadcast
     ibs = size - 1;
+    ibs3 = ibs;
     __syncthreads();
     while (__syncthreads_and(ibs > 0)) {
       int i = ibs - threadIdx.x;
@@ -177,8 +180,10 @@ __device__ __forceinline__ void radixSortImpl(
       __syncthreads();
       if (bin >= 0)
         assert(c[bin] >= 0);
-      if (threadIdx.x == 0)
+      if (threadIdx.x == 0) {
         ibs -= sb;
+        ibs2 = ibs;
+      }
       __syncthreads();
     }
 
@@ -260,7 +265,9 @@ namespace cms {
   namespace hip {
 
     template <typename T, int NS = sizeof(T)>
-    __global__ void __launch_bounds__(256, 4)
+    // The launch bounds seems to cause the kernel to silently fail to run (rocm 4.2)
+    //__global__ void __launch_bounds__(256, 4)
+    __global__ void
         radixSortMultiWrapper(T const* v, uint16_t* index, uint32_t const* offsets, uint16_t* workspace) {
       radixSortMulti<T, NS>(v, index, offsets, workspace);
     }
