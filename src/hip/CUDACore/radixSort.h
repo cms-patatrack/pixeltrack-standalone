@@ -150,7 +150,10 @@ __device__ __forceinline__ void radixSortImpl(
 
     // broadcast
     ibs = size - 1;
+
+    // Workaround for hang in gpuVertexFinder_t.
     ibs3 = ibs;
+
     __syncthreads();
     while (__syncthreads_and(ibs > 0)) {
       int i = ibs - threadIdx.x;
@@ -182,6 +185,7 @@ __device__ __forceinline__ void radixSortImpl(
         assert(c[bin] >= 0);
       if (threadIdx.x == 0) {
         ibs -= sb;
+        // Workaround for problems in radixSort_t.
         ibs2 = ibs;
       }
       __syncthreads();
