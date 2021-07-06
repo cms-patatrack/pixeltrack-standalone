@@ -82,7 +82,7 @@ namespace edm {
         (*iWorker)->doWorkAsync(*eventPtr, *eventSetup_, nextEventTask);
       }
     } else {
-      h.doneWaiting(std::exception_ptr{});
+      h.doneWaiting();
     }
   }
 
