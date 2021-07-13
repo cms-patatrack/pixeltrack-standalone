@@ -9,6 +9,7 @@ namespace alpaka_cuda_async {
   using namespace alpaka_common;
   using Acc1 = alpaka::AccGpuCudaRt<Dim1, Extent>;
   using Acc2 = alpaka::AccGpuCudaRt<Dim2, Extent>;
+  using Acc3 = alpaka::AccGpuCudaRt<Dim3, Extent>;
   using Queue = alpaka::QueueCudaRtNonBlocking;
 }  // namespace alpaka_cuda_async
 
@@ -25,6 +26,7 @@ namespace alpaka_serial_sync {
   using namespace alpaka_common;
   using Acc1 = alpaka::AccCpuSerial<Dim1, Extent>;
   using Acc2 = alpaka::AccCpuSerial<Dim2, Extent>;
+  using Acc3 = alpaka::AccCpuSerial<Dim3, Extent>;
   using Queue = alpaka::QueueCpuBlocking;
 }  // namespace alpaka_serial_sync
 
@@ -41,6 +43,7 @@ namespace alpaka_tbb_async {
   using namespace alpaka_common;
   using Acc1 = alpaka::AccCpuTbbBlocks<Dim1, Extent>;
   using Acc2 = alpaka::AccCpuTbbBlocks<Dim2, Extent>;
+  using Acc3 = alpaka::AccCpuTbbBlocks<Dim3, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_tbb_async
 
@@ -57,6 +60,7 @@ namespace alpaka_omp2_async {
   using namespace alpaka_common;
   using Acc1 = alpaka::AccCpuOmp2Blocks<Dim1, Extent>;
   using Acc2 = alpaka::AccCpuOmp2Blocks<Dim2, Extent>;
+  using Acc3 = alpaka::AccCpuOmp2Blocks<Dim3, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp2_async
 
@@ -73,6 +77,7 @@ namespace alpaka_omp4_async {
   using namespace alpaka_common;
   using Acc1 = alpaka::AccCpuOmp4<Dim1, Extent>;
   using Acc2 = alpaka::AccCpuOmp4<Dim2, Extent>;
+  using Acc3 = alpaka::AccCpuOmp4<Dim3, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp4_async
 
@@ -86,8 +91,10 @@ namespace alpaka_omp4_async {
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using DevAcc1 = alpaka::Dev<Acc1>;
   using DevAcc2 = alpaka::Dev<Acc2>;
+  using DevAcc3 = alpaka::Dev<Acc3>;
   using PltfAcc1 = alpaka::Pltf<DevAcc1>;
   using PltfAcc2 = alpaka::Pltf<DevAcc2>;
+  using PltfAcc3 = alpaka::Pltf<DevAcc3>;
 
   template <class TData>
   using AlpakaAccBuf1 = alpaka::Buf<Acc1, TData, Dim1, Idx>;

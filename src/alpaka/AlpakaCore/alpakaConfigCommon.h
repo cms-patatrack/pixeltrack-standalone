@@ -12,16 +12,19 @@ namespace alpaka_common {
 
   using Dim1 = alpaka::DimInt<1u>;
   using Dim2 = alpaka::DimInt<2u>;
+  using Dim3 = alpaka::DimInt<3u>;
 
   template <typename TDim>
   using Vec = alpaka::Vec<TDim, Idx>;
   using Vec1 = Vec<Dim1>;
   using Vec2 = Vec<Dim2>;
+  using Vec3 = Vec<Dim3>;
 
   template <typename TDim>
   using WorkDiv = alpaka::WorkDivMembers<TDim, Idx>;
   using WorkDiv1 = WorkDiv<Dim1>;
   using WorkDiv2 = WorkDiv<Dim2>;
+  using WorkDiv3 = WorkDiv<Dim3>;
 
   template <typename TData>
   using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1, Idx>;

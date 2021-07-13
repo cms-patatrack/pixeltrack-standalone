@@ -72,13 +72,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       const auto ntNbins = foundNtuplets->nbins();
-      cms::alpakatools::for_each_element_in_grid_strided(acc, ntNbins, [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, ntNbins)) {
         if (foundNtuplets->size(idx) > 5)
           printf("ERROR %d, %d\n", idx, foundNtuplets->size(idx));
         assert(foundNtuplets->size(idx) < 6);
         for (auto ih = foundNtuplets->begin(idx); ih != foundNtuplets->end(idx); ++ih)
           assert(*ih < nHits);
-      });
+      }
 #endif
 
       if (0 == threadIdx) {
@@ -93,7 +94,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       const auto ntNCells = (*nCells);
-      cms::alpakatools::for_each_element_in_grid_strided(acc, ntNCells, [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, ntNCells)) {
         auto const &thisCell = cells[idx];
         if (thisCell.outerNeighbors().full())  //++tooManyNeighbors[thisCell.theLayerPairId];
           printf("OuterNeighbors overflow %d in %d\n", idx, thisCell.theLayerPairId);
@@ -105,12 +106,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           alpaka::atomicAdd(acc, &c.nEmptyCells, 1ull, alpaka::hierarchy::Blocks{});
         if (thisCell.tracks().empty())
           alpaka::atomicAdd(acc, &c.nZeroTrackCells, 1ull, alpaka::hierarchy::Blocks{});
-      });
+      }
 
-      cms::alpakatools::for_each_element_in_grid_strided(acc, nHits, [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, nHits)) {
         if (isOuterHitOfCell[idx].full())  // ++tooManyOuterHitOfCell;
           printf("OuterHitOfCell overflow %d\n", idx);
-      });
+      }
     }
   };
 
@@ -123,14 +124,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       constexpr auto bad = trackQuality::bad;
 
       const auto ntNCells = (*nCells);
-      cms::alpakatools::for_each_element_in_grid_strided(acc, ntNCells, [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, ntNCells)) {
         auto const &thisCell = cells[idx];
 
         if (thisCell.theDoubletId < 0) {
           for (auto it : thisCell.tracks())
             quality[it] = bad;
         }
-      });
+      }
     }
   };
 
@@ -147,7 +149,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       assert(nCells);
       const auto ntNCells = (*nCells);
-      cms::alpakatools::for_each_element_in_grid_strided(acc, ntNCells, [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, ntNCells)) {
         auto const &thisCell = cells[idx];
 
         if (thisCell.tracks().size() >= 2) {
@@ -167,7 +170,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               quality[it] = dup;  //no race:  simple assignment of the same constant
           }
         }
-      });
+      }
     }
   };
 
@@ -184,7 +187,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       assert(nCells);
 
-      cms::alpakatools::for_each_element_in_grid_strided(acc, (*nCells), [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, *nCells)) {
         auto const &thisCell = cells[idx];
         if (thisCell.tracks().size() >= 2) {
           // if (thisCell.theDoubletId < 0) continue;
@@ -210,7 +213,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               tracks->quality(it) = dup;  //no race:  simple assignment of the same constant
           }
         }
-      });
+      }
     }
   };
 
@@ -232,6 +235,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   float dcaCutOuterTriplet) const {
       auto const &hh = *hhp;
 
+      const Idx elementShift = 0;
       const uint32_t dimIndexY = 0u;
       const uint32_t dimIndexX = 1u;
       const uint32_t threadIdxY(alpaka::getIdx<alpaka::Grid, alpaka::Threads>(acc)[dimIndexY]);
@@ -242,11 +246,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         (*apc2) = 0;
       }  // ready for next kernel
 
-      cms::alpakatools::for_each_element_in_grid_strided(
-          acc,
-          (*nCells),
-          0u,
-          [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, *nCells, elementShift, dimIndexY)) {
             auto cellIndex = idx;
             auto &thisCell = cells[idx];
             //if (thisCell.theDoubletId < 0 || thisCell.theUsed>1)
@@ -297,8 +297,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                   }
                 },
                 dimIndexX);  // loop on inner cells
-          },
-          dimIndexY);  // loop on outer cells
+          } // loop on outer cells
     }
   };
 
@@ -318,7 +317,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       //auto first = threadIdx.x + blockIdx.x * blockDim.x;
       //for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, (*nCells), [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, *nCells)) {
         auto const &thisCell = cells[idx];
         if (thisCell.theDoubletId >= 0) {  // cut by earlyFishbone
 
@@ -333,7 +332,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());
           }
         }
-      });
+      }
     }
   };
 
@@ -344,11 +343,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   GPUCACell *__restrict__ cells,
                                   uint32_t const *nCells) const {
       // auto const &hh = *hhp;
-      cms::alpakatools::for_each_element_in_grid_strided(acc, (*nCells), [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, *nCells)) {
         auto &thisCell = cells[idx];
         if (!thisCell.tracks().empty())
           thisCell.theUsed |= 2;
-      });
+      }
     }
   };
 
@@ -358,7 +358,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   HitContainer const *__restrict__ foundNtuplets,
                                   Quality const *__restrict__ quality,
                                   CAConstants::TupleMultiplicity *tupleMultiplicity) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, foundNtuplets->nbins(), [&](uint32_t it) {
+
+      for (uint32_t it : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, foundNtuplets->nbins())) {
         auto nhits = foundNtuplets->size(it);
         if (nhits >= 3 && quality[it] != trackQuality::dup) {
           assert(quality[it] == trackQuality::bad);
@@ -367,7 +368,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           assert(nhits < 8);
           tupleMultiplicity->countDirect(acc, nhits);
         }
-      });
+      }
     }
   };
 
@@ -377,7 +378,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   HitContainer const *__restrict__ foundNtuplets,
                                   Quality const *__restrict__ quality,
                                   CAConstants::TupleMultiplicity *tupleMultiplicity) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, foundNtuplets->nbins(), [&](uint32_t it) {
+
+      for (uint32_t it : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, foundNtuplets->nbins())) {
         auto nhits = foundNtuplets->size(it);
         if (nhits >= 3 && quality[it] != trackQuality::dup) {
           assert(quality[it] == trackQuality::bad);
@@ -386,7 +388,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           assert(nhits < 8);
           tupleMultiplicity->fillDirect(acc, nhits, it);
         }
-      });
+      }
     }
   };
 
@@ -397,7 +399,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   TkSoA const *__restrict__ tracks,
                                   CAHitNtupletGeneratorKernels::QualityCuts cuts,
                                   Quality *__restrict__ quality) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->nbins(), [&](uint32_t it) {
+
+      for (uint32_t it : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->nbins())) {
         auto nhits = tuples->size(it);
         if (nhits == 0)
           return;  // guard
@@ -453,7 +456,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             }  // chi2Cut
           }    // !isNaN
         }      // trackQuality and nhits
-      });
+      }
     }
   };
 
@@ -463,13 +466,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::Counters *counters) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->nbins(), [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->nbins())) {
         if (tuples->size(idx) == 0)
           return;  //guard
         if (quality[idx] == trackQuality::loose) {
           alpaka::atomicAdd(acc, &(counters->nGoodTracks), 1ull, alpaka::hierarchy::Blocks{});
         }
-      });
+      }
     }
   };
 
@@ -479,14 +483,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::HitToTuple *hitToTuple) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->nbins(), [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->nbins())) {
         if (tuples->size(idx) == 0)
           return;  // guard
         if (quality[idx] == trackQuality::loose) {
           for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h)
             hitToTuple->countDirect(acc, *h);
         }
-      });
+      }
     }
   };
 
@@ -496,14 +501,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::HitToTuple *hitToTuple) const {
-      cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->nbins(), [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->nbins())) {
         if (tuples->size(idx) == 0)
           return;  // guard
         if (quality[idx] == trackQuality::loose) {
           for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h)
             hitToTuple->fillDirect(acc, *h, idx);
         }
-      });
+      }
     }
   };
 
@@ -514,17 +520,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   TrackingRecHit2DSOAView const *__restrict__ hhp,
                                   HitContainer *__restrict__ hitDetIndices) const {
       // copy offsets
-      cms::alpakatools::for_each_element_in_grid_strided(
-          acc, tuples->totbins(), [&](uint32_t idx) { hitDetIndices->off[idx] = tuples->off[idx]; });
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->totbins())) {
+        hitDetIndices->off[idx] = tuples->off[idx];
+      }
       // fill hit indices
       auto const &hh = *hhp;
 #ifndef NDEBUG
       auto nhits = hh.nHits();
 #endif
-      cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->size(), [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, tuples->size())) {
         assert(tuples->bins[idx] < nhits);
         hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
-      });
+      }
     }
   };
 
@@ -534,13 +541,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   CAHitNtupletGeneratorKernels::HitToTuple const *__restrict__ hitToTuple,
                                   CAHitNtupletGeneratorKernels::Counters *counters) const {
       auto &c = *counters;
-      cms::alpakatools::for_each_element_in_grid_strided(acc, hitToTuple->nbins(), [&](uint32_t idx) {
+
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, hitToTuple->nbins())) {
         if (hitToTuple->size(idx) != 0) {  // SHALL NOT BE break
           alpaka::atomicAdd(acc, &c.nUsedHits, 1ull, alpaka::hierarchy::Blocks{});
           if (hitToTuple->size(idx) > 1)
             alpaka::atomicAdd(acc, &c.nDupHits, 1ull, alpaka::hierarchy::Blocks{});
         }
-      });
+      }
     }
   };
 
@@ -563,7 +571,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       //  auto const & hh = *hhp;
       // auto l1end = hh.hitsLayerStart_d[1];
 
-      cms::alpakatools::for_each_element_in_grid_strided(acc, phitToTuple->nbins(), [&](uint32_t idx) {
+      for (uint32_t idx : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, phitToTuple->nbins())) {
         if (hitToTuple.size(idx) >= 2) {
           float mc = 10000.f;
           uint16_t im = 60000;
@@ -600,7 +608,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           }  // maxNh
         }    // hitToTuple.size
-      });    // loop over hits
+      }  // loop over hits
     }
   };
 
@@ -617,7 +625,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto const &foundNtuplets = *ptuples;
       auto const &tracks = *ptracks;
       const auto np = std::min(maxPrint, foundNtuplets.nbins());
-      cms::alpakatools::for_each_element_in_grid_strided(acc, np, [&](uint32_t i) {
+
+      for (uint32_t i : cms::alpakatools::elements_with_stride<uint32_t, T_Acc>(acc, np)) {
         auto nh = foundNtuplets.size(i);
         if (nh >= 3) {
           printf("TK: %d %d %d %f %f %f %f %f %f %f %d %d %d %d %d\n",
@@ -638,7 +647,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                  nh > 3 ? int(*(foundNtuplets.begin(i) + 3)) : -1,
                  nh > 4 ? int(*(foundNtuplets.begin(i) + 4)) : -1);
         }  // nh
-      });
+      }
     }
   };
 

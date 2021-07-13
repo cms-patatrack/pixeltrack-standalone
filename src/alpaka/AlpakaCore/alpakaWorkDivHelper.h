@@ -320,6 +320,500 @@ namespace cms {
       return isNextStrideElementValid;
     }
 
+    /*
+     * Class which simplifies "for" loops over elements index
+     */
+    template <typename T, typename T_Acc>
+    class elements_with_stride {
+    public:
+
+      ALPAKA_FN_ACC elements_with_stride(const T_Acc& acc,
+                                         T extent,
+                                         Idx elementIdxShift = 0,
+                                         const unsigned int dimIndex = 0) {
+
+        const Idx threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[dimIndex]);
+        const Idx blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
+
+        const Idx blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
+        const Idx gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[dimIndex]);
+        
+        thread_ = blockDimension * blockIdxInGrid + threadIdxLocal;
+        thread_ = thread_ + elementIdxShift;  // Add the shift
+        stride_ = gridDimension * blockDimension;
+        blockDim = blockDimension;
+
+        extent_ = extent;
+      }
+
+      ALPAKA_FN_ACC elements_with_stride(const T_Acc& acc) {
+        
+        const Idx gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[0]);
+        elements_with_stride(acc, gridDimension);      
+      }
+
+      class iterator {
+        friend class elements_with_stride;
+
+      public:
+        ALPAKA_FN_ACC constexpr T operator*() const { return index_; }
+
+        ALPAKA_FN_ACC constexpr iterator& operator++() {
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+          // increment the index
+          index_ += stride_;
+          if (index_ < extent_)
+            return *this;
+
+#else  // CPU Backend
+          // Iterate over all the elements for one thread
+          index_ += 1;
+          if (index_ < old_index_ + blockDim && index_ < extent_) {
+            return *this;
+          }
+#endif
+
+          // the iterator has reached or ovrflowed the end of the extent, clamp it
+          // to the extent
+          index_ = extent_;
+          return *this;
+        }
+
+        ALPAKA_FN_ACC constexpr iterator operator++(int) {
+          iterator old = *this;
+          ++(*this);
+          return old;
+        }
+
+        ALPAKA_FN_ACC constexpr bool operator==(iterator const& other) const { return (index_ == other.index_); }
+
+        ALPAKA_FN_ACC constexpr bool operator!=(iterator const& other) const { return index_ < other.index_; }
+
+      private:
+        ALPAKA_FN_ACC constexpr iterator(T thread, T stride, T extent, T blockDim)
+            : thread_{thread},
+              stride_{stride},
+              extent_{extent},
+              index_{thread_},
+              old_index_{index_},
+              blockDim{blockDim} {}
+
+        ALPAKA_FN_ACC constexpr iterator(T thread, T stride, T extent, T index, T blockDim)
+            : thread_{thread}, stride_{stride}, extent_{extent}, index_{index}, old_index_{index_}, blockDim{blockDim} {}
+
+        T thread_;
+        T stride_;
+        T extent_;
+        T index_;
+        T old_index_;
+        T blockDim;
+      };
+
+      ALPAKA_FN_ACC constexpr iterator begin() const { return iterator(thread_, stride_, extent_, blockDim); }
+
+      ALPAKA_FN_ACC constexpr iterator end() const { return iterator(thread_, stride_, extent_, extent_, blockDim); }
+
+    private:
+      T thread_;
+      T stride_;
+      T extent_;
+      T blockDim;
+    };
+
+    /*
+     * Class which simplifies "for" loops over elements index
+     * Iterates over one dimension
+     */
+    template <typename T, typename T_Acc>
+    class elements_with_stride_1d {
+    public:
+      ALPAKA_FN_ACC elements_with_stride_1d(const T_Acc& acc) {
+
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        stride_ = {blockDimension[0u] * gridDimension[0u], 1, 1};
+        extent_ = stride_;
+
+        blockDim = blockDimension;
+      }
+
+      ALPAKA_FN_ACC elements_with_stride_1d(const T_Acc& acc, Vec3 extent, Vec3 elementIdxShift = Vec3::all(0))
+          : extent_(extent + elementIdxShift) {
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        thread_ = thread_ + elementIdxShift;
+        stride_ = {blockDimension[0u] * gridDimension[0u], 1, 1};
+
+        blockDim = blockDimension;
+      }
+
+      class iterator {
+        friend class elements_with_stride_1d;
+
+      public:
+        ALPAKA_FN_ACC Vec3 operator*() const { return index_; }
+
+        ALPAKA_FN_ACC constexpr iterator& operator++() {
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+          // increment the first coordinate
+          index_[0u] += stride_[0u];
+          if (index_[0u] < extent_[0u])
+            return *this;
+#else
+          // increment the 3rd index and check its value
+          index_[2u] += 1;
+          if (index_[2u] == old_index_[2u] + blockDim[2u])
+            index_[2u] = old_index_[2u];
+
+          //  if the 3rd index was reset, increment the 2nd index
+          if (index_[2u] == old_index_[2u])
+            index_[1u] += 1;
+          if (index_[1u] == old_index_[1u] + blockDim[1u])
+            index_[1u] = old_index_[1u];
+
+          // if the 3rd and 2nd indices were set, increment the first coordinate
+          if (index_[1u] == old_index_[1u] && index_[2u] == old_index_[2u])
+            index_[0u] += 1;
+
+          if (index_[0u] < old_index_[0u] + blockDim[0u] && index_[0u] < extent_[0u]) {
+            return *this;
+          }
+#endif
+
+          // the iterator has reached or ovrflowed the end of the extent, clamp it
+          // to the extent
+          index_ = extent_;
+          return *this;
+        }
+
+        ALPAKA_FN_ACC constexpr iterator operator++(int) {
+          iterator old = *this;
+          ++(*this);
+          return old;
+        }
+
+        ALPAKA_FN_ACC constexpr bool operator==(iterator const& other) const { return (index_ == other.index_); }
+
+        ALPAKA_FN_ACC constexpr bool operator!=(iterator const& other) const { return index_[0u] < other.index_[0u]; }
+
+      private:
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 blockDim)
+            : thread_{thread},
+              stride_{stride},
+              extent_{extent},
+              index_{thread_},
+              old_index_{index_},
+              blockDim{blockDim} {}
+
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 index, Vec3 blockDim)
+            : thread_{thread}, stride_{stride}, extent_{extent}, index_{index}, old_index_{index_}, blockDim{blockDim} {}
+
+        Vec3 thread_;
+        Vec3 stride_;
+        Vec3 extent_;
+        Vec3 index_;
+        Vec3 old_index_;
+        Vec3 blockDim;
+      };
+
+      ALPAKA_FN_ACC constexpr iterator begin() const { return iterator(thread_, stride_, extent_, blockDim); }
+
+      ALPAKA_FN_ACC constexpr iterator end() const { return iterator(thread_, stride_, extent_, extent_, blockDim); }
+
+    private:
+      Vec3 thread_ = Vec3::all(1);
+      Vec3 stride_ = Vec3::all(1);
+      Vec3 extent_ = Vec3::all(1);
+      Vec3 blockDim = Vec3::all(1);
+    };
+
+    /*
+     * Class which simplifies "for" loops over elements index
+     * Iterates over two dimensions
+     */
+    template <typename T, typename T_Acc>
+    class elements_with_stride_2d {
+    public:
+      ALPAKA_FN_ACC elements_with_stride_2d(const T_Acc& acc) {
+
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], 1};
+        extent_ = stride_;
+
+        blockDim = blockDimension;
+      }
+
+      ALPAKA_FN_ACC elements_with_stride_2d(const T_Acc& acc, Vec3 extent, Vec3 elementIdxShift = Vec3::all(0))
+          : extent_(extent + elementIdxShift) {
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        thread_ = thread_ + elementIdxShift;
+        stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], 1};
+
+        blockDim = blockDimension;
+      }
+
+      class iterator {
+        friend class elements_with_stride_2d;
+
+      public:
+        ALPAKA_FN_ACC Vec3 operator*() const { return index_; }
+
+        ALPAKA_FN_ACC constexpr iterator& operator++() {
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+          // increment the first coordinate
+          index_[0u] += stride_[0u];
+          if (index_[0u] < extent_[0u])
+            return *this;
+
+          // if the first coordinate overflows, reset it and increment the second
+          // coordinate
+          index_[0u] = thread_[0u];
+          index_[1u] += stride_[1u];
+          if (index_[1u] < extent_[1u])
+            return *this;
+#else
+          // increment the 3rd index and check its value
+          index_[2u] += 1;
+          if (index_[2u] == old_index_[2u] + blockDim[2u])
+            index_[2u] = old_index_[2u];
+
+          //  if the 3rd index was reset, increment the 2nd index
+          if (index_[2u] == old_index_[2u])
+            index_[1u] += 1;
+          if (index_[1u] == old_index_[1u] + blockDim[1u] || index_[1u] == extent_[1u])
+            index_[1u] = old_index_[1u];
+
+          // if the 3rd and 2nd indices were set, increment the first coordinate
+          if (index_[1u] == old_index_[1u] && index_[2u] == old_index_[2u])
+            index_[0u] += 1;
+
+          if (index_[0u] < old_index_[0u] + blockDim[0u] && index_[0u] < extent_[0u] && index_[1u] < extent_[1u]) {
+            return *this;
+          }
+#endif
+
+          // the iterator has reached or ovrflowed the end of the extent, clamp it
+          // to the extent
+          index_ = extent_;
+          return *this;
+        }
+
+        ALPAKA_FN_ACC constexpr iterator operator++(int) {
+          iterator old = *this;
+          ++(*this);
+          return old;
+        }
+
+        ALPAKA_FN_ACC constexpr bool operator==(iterator const& other) const { return (index_ == other.index_); }
+
+        ALPAKA_FN_ACC constexpr bool operator!=(iterator const& other) const {
+          return (index_[0u] < other.index_[0u] && index_[1u] < other.index_[1u]);
+        }
+
+      private:
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 blockDim)
+            : thread_{thread},
+              stride_{stride},
+              extent_{extent},
+              index_{thread_},
+              old_index_{index_},
+              blockDim{blockDim} {}
+
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 index, Vec3 blockDim)
+            : thread_{thread}, stride_{stride}, extent_{extent}, index_{index}, old_index_{index_}, blockDim{blockDim} {}
+
+        Vec3 thread_;
+        Vec3 stride_;
+        Vec3 extent_;
+        Vec3 index_;
+        Vec3 old_index_;
+        Vec3 blockDim;
+      };
+
+      ALPAKA_FN_ACC constexpr iterator begin() const { return iterator(thread_, stride_, extent_, blockDim); }
+
+      ALPAKA_FN_ACC constexpr iterator end() const { return iterator(thread_, stride_, extent_, extent_, blockDim); }
+
+    private:
+      Vec3 thread_ = Vec3::all(1);
+      Vec3 stride_ = Vec3::all(1);
+      Vec3 extent_ = Vec3::all(1);
+      Vec3 blockDim = Vec3::all(1);
+    };
+
+    /*
+     * Class which simplifies "for" loops over elements index
+     * Iterates over three dimensions
+     */
+    template <typename T, typename T_Acc>
+    class elements_with_stride_3d {
+    public:
+      ALPAKA_FN_ACC elements_with_stride_3d(const T_Acc& acc) {
+
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u],
+                   blockDimension[2u] * gridDimension[2u]};
+        extent_ = stride_;
+
+        blockDim = blockDimension;
+      }
+
+      ALPAKA_FN_ACC elements_with_stride_3d(const T_Acc& acc, Vec3 extent, Vec3 elementIdxShift = Vec3::all(0))
+          : extent_(extent + elementIdxShift) {
+        const Vec3 threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc));
+        const Vec3 blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc));
+
+        const Vec3 blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
+        const Vec3 gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc));
+
+        thread_ = {blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
+                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
+                   blockDimension[2u] * blockIdxInGrid[2u] + threadIdxLocal[2u]};
+        thread_ = thread_ + elementIdxShift;
+        stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u],
+                   blockDimension[2u] * gridDimension[2u]};
+
+        blockDim = blockDimension;
+      }
+
+      class iterator {
+        friend class elements_with_stride_3d;
+
+      public:
+        ALPAKA_FN_ACC Vec3 operator*() const { return index_; }
+
+        ALPAKA_FN_ACC constexpr iterator& operator++() {
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+          // increment the first coordinate
+          index_[0u] += stride_[0u];
+          if (index_[0u] < extent_[0u])
+            return *this;
+
+          // if the first coordinate overflows, reset it and increment the second
+          // coordinate
+          index_[0u] = thread_[0u];
+          index_[1u] += stride_[1u];
+          if (index_[1u] < extent_[1u])
+            return *this;
+
+          // if the second coordinate overflows, reset it and increment the third
+          // coordinate
+          index_[1u] = thread_[1u];
+          index_[2u] += stride_[2u];
+          if (index_[2u] < extent_[2u])
+            return *this;
+#else
+          // increment the 3rd index and check its value
+          index_[2u] += 1;
+          if (index_[2u] == old_index_[2u] + blockDim[2u] || index_[2u] == extent_[2u])
+            index_[2u] = old_index_[2u];
+
+          //  if the 3rd index was reset, increment the 2nd index
+          if (index_[2u] == old_index_[2u])
+            index_[1u] += 1;
+          if (index_[1u] == old_index_[1u] + blockDim[1u] || index_[1u] == extent_[1u])
+            index_[1u] = old_index_[1u];
+
+          // if the 3rd and 2nd indices were set, increment the first coordinate
+          if (index_[1u] == old_index_[1u] && index_[2u] == old_index_[2u])
+            index_[0u] += 1;
+          if (index_[0u] < old_index_[0u] + blockDim[0u] && index_[0u] < extent_[0u] && index_[1u] < extent_[1u] &&
+              index_[2u] < extent_[2u]) {
+            return *this;
+          }
+#endif
+
+          // the iterator has reached or ovrflowed the end of the extent, clamp it
+          // to the extent
+          index_ = extent_;
+          return *this;
+        }
+
+        ALPAKA_FN_ACC constexpr iterator operator++(int) {
+          iterator old = *this;
+          ++(*this);
+          return old;
+        }
+
+        ALPAKA_FN_ACC constexpr bool operator==(iterator const& other) const { return (index_ == other.index_); }
+
+        ALPAKA_FN_ACC constexpr bool operator!=(iterator const& other) const {
+          return (index_[0u] < other.index_[0u] && index_[1u] < other.index_[1u] && index_[2u] < other.index_[2u]);
+        }
+
+      private:
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 blockDim)
+            : thread_{thread},
+              stride_{stride},
+              extent_{extent},
+              index_{thread_},
+              old_index_{index_},
+              blockDim{blockDim} {}
+
+        ALPAKA_FN_ACC iterator(Vec3 thread, Vec3 stride, Vec3 extent, Vec3 index, Vec3 blockDim)
+            : thread_{thread}, stride_{stride}, extent_{extent}, index_{index}, old_index_{index_}, blockDim{blockDim} {}
+
+        Vec3 thread_;
+        Vec3 stride_;
+        Vec3 extent_;
+        Vec3 index_;
+        Vec3 old_index_;
+        Vec3 blockDim;
+      };
+
+      ALPAKA_FN_ACC constexpr iterator begin() const { return iterator(thread_, stride_, extent_, blockDim); }
+
+      ALPAKA_FN_ACC constexpr iterator end() const { return iterator(thread_, stride_, extent_, extent_, blockDim); }
+
+    private:
+      Vec3 thread_ = Vec3::all(1);
+      Vec3 stride_ = Vec3::all(1);
+      Vec3 extent_ = Vec3::all(1);
+      Vec3 blockDim = Vec3::all(1);
+    };
+
   }  // namespace alpakatools
 }  // namespace cms
 
