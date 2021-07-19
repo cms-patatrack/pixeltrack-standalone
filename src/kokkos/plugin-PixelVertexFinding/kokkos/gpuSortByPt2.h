@@ -63,7 +63,7 @@ namespace KOKKOS_NAMESPACE {
     template <typename ExecSpace>
     void sortByPt2Host(const Kokkos::View<ZVertices, ExecSpace, Restrict>& vdata,
                        const Kokkos::View<WorkSpace, ExecSpace, Restrict>& vws,
-                       typename Kokkos::View<ZVertices, ExecSpace>::HostMirror hdata,
+                       const typename Kokkos::View<ZVertices, ExecSpace>::HostMirror& hdata,
                        const ExecSpace& execSpace,
                        const Kokkos::TeamPolicy<ExecSpace>& policy) {
       using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;

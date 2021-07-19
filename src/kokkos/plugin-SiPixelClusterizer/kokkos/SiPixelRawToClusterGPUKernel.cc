@@ -719,7 +719,6 @@ namespace KOKKOS_NAMESPACE {
 #ifdef GPU_DEBUG
         execSpace.fence();
 #endif
-
         // apply charge cut
         ::gpuClustering::clusterChargeCut<KokkosExecSpace>(digis_d.moduleInd(),
                                                            digis_d.c_adc(),

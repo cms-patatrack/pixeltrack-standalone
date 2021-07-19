@@ -10,10 +10,10 @@ namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
     // this algo does not really scale as it works in a single block...
     // enough for <10K tracks we have
-    template <typename Histo>
-    KOKKOS_INLINE_FUNCTION void clusterFillHist(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-                                                const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
-                                                const Kokkos::View<Histo*, KokkosExecSpace, Restrict>& vhist,
+    template <typename Hist, typename MemorySpace1, typename MemorySpace2>
+    KOKKOS_INLINE_FUNCTION void clusterFillHist(const Kokkos::View<ZVertices, MemorySpace1, Restrict>& vdata,
+                                                const Kokkos::View<WorkSpace, MemorySpace1, Restrict>& vws,
+                                                const Kokkos::View<Hist, MemorySpace2, RestrictUnmanaged>& hist,
                                                 int minT,       // min number of neighbours to be "core"
                                                 float eps,      // max absolute distance to cluster
                                                 float errmax,   // max error to be "seed"
@@ -40,16 +40,13 @@ namespace KOKKOS_NAMESPACE {
       assert(vdata.data());
       assert(zt);
 
-      auto* localHist = &vhist(leagueRank);
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, Histo::totbins()),
-                           [=](int j) { localHist->off[j] = 0; });
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, Hist::totbins()), [=](int j) { hist().off[j] = 0; });
       team_member.team_barrier();
 
       if (verbose && 0 == id)
-        printf("booked hist with %d bins, size %d for %d tracks\n", localHist->nbins(), localHist->capacity(), nt);
+        printf("booked hist with %d bins, size %d for %d tracks\n", hist().nbins(), hist().capacity(), nt);
 
-      assert(nt <= localHist->capacity());
+      assert(nt <= hist().capacity());
 
       // fill hist  (bin shall be wider than "eps")
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
@@ -60,13 +57,13 @@ namespace KOKKOS_NAMESPACE {
         izt[i] = iz - INT8_MIN;
         assert(iz - INT8_MIN >= 0);
         assert(iz - INT8_MIN < 256);
-        localHist->count(izt[i]);
+        hist().count(izt[i]);
         iv[i] = i;
         nn[i] = 0;
       });
 
       team_member.team_barrier();
-      Histo::finalize(vhist, Histo::totbins(), team_member);
+      hist().finalize(team_member);
     }
   }  // namespace gpuVertexFinder
 }  // namespace KOKKOS_NAMESPACE

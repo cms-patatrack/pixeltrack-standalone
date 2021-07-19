@@ -135,7 +135,11 @@ namespace KOKKOS_NAMESPACE {
           hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, TkSoA::stride())),
           KOKKOS_LAMBDA(const size_t i) { loadTracks(tksoa, vertices_d, workspace_d, ptMin, i); });
 
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
       auto policy = TeamPolicy(execSpace, 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#else
+      auto policy = TeamPolicy(execSpace, 1, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#endif
 
       if (oneKernel_) {
         // implemented only for density clustesrs

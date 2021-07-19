@@ -52,28 +52,21 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
       int numElements,
       Kokkos::TeamPolicy<KokkosExecSpace>& teamPolicy,
       KokkosExecSpace const& execSpace) {
-    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-    using shared_team_view = Kokkos::View<uint32_t, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
-    size_t shared_view_bytes = shared_team_view::shmem_size();
-
     constexpr int maxPixInModule = 4000;
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
     using Hist = cms::kokkos::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
-    Kokkos::View<Hist*, KokkosExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"),
-                                                teamPolicy.league_size());
-    Kokkos::View<int*, KokkosExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"),
-                                                teamPolicy.league_size());
+    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
+    using shared_team_view = Kokkos::View<uint32_t, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using HistView = Kokkos::View<Hist, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using SizeView = Kokkos::View<int, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    size_t shared_view_bytes = shared_team_view::shmem_size() + HistView::shmem_size() + SizeView::shmem_size();
 
-    int loop_count = Hist::totbins();
+    int shared_view_level = 0;
     Kokkos::parallel_for(
-        "init_hist_off", hintLightWeight(teamPolicy), KOKKOS_LAMBDA(const member_type& teamMember) {
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, loop_count),
-                               [&](const int index) { d_hist(teamMember.league_rank()).off[index] = 0; });
-        });
-
-    Kokkos::parallel_for(
-        "findClus_msize", hintLightWeight(teamPolicy), KOKKOS_LAMBDA(const member_type& teamMember) {
+        "findClus",
+        hintLightWeight(teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes))),
+        KOKKOS_LAMBDA(const member_type& teamMember) {
           if (teamMember.league_rank() >= static_cast<int>(moduleStart(0)))
             return;
 
@@ -84,7 +77,8 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           auto first = firstPixel + teamMember.team_rank();
 
           // find the index of the first pixel not belonging to this module (or invalid)
-          d_msize(teamMember.league_rank()) = numElements;
+          SizeView d_msize(teamMember.team_scratch(shared_view_level));
+          d_msize() = numElements;
           teamMember.team_barrier();
 
           // skip threads not associated to an existing pixel
@@ -92,58 +86,49 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (id(i) != thisModuleId) {  // find the first pixel in a different module
-              Kokkos::atomic_fetch_min(&d_msize(teamMember.league_rank()), i);
+              Kokkos::atomic_fetch_min(&d_msize(), i);
               break;
             }
           }
 
-          assert((d_msize(teamMember.league_rank()) == numElements) or
-                 ((d_msize(teamMember.league_rank()) < numElements) and
-                  (id(d_msize(teamMember.league_rank())) != thisModuleId)));
+          //init hist  (ymax=416 < 512 : 9bits)
+          constexpr int loop_count = Hist::totbins();
+          HistView d_hist(teamMember.team_scratch(shared_view_level));
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, loop_count),
+                               [&](const int index) { d_hist().off[index] = 0; });
+          teamMember.team_barrier();
+
+          assert((d_msize() == numElements) or ((d_msize() < numElements) and (id(d_msize()) != thisModuleId)));
 
           // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
           if (0 == teamMember.team_rank()) {
-            if (d_msize(teamMember.league_rank()) - firstPixel > maxPixInModule) {
-              printf("too many pixels in module %d: %d > %d\n",
-                     thisModuleId,
-                     d_msize(teamMember.league_rank()) - firstPixel,
-                     maxPixInModule);
-              d_msize(teamMember.league_rank()) = maxPixInModule + firstPixel;
+            if (d_msize() - firstPixel > maxPixInModule) {
+              printf("too many pixels in module %d: %d > %d\n", thisModuleId, d_msize() - firstPixel, maxPixInModule);
+              d_msize() = maxPixInModule + firstPixel;
             }
           }
 
           teamMember.team_barrier();
-          assert(d_msize(teamMember.league_rank()) - firstPixel <= maxPixInModule);
+          assert(d_msize() - firstPixel <= maxPixInModule);
 
           // fill histo
-          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+          for (int i = first; i < d_msize(); i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
-            d_hist(teamMember.league_rank()).count(y(i));
+            d_hist().count(y(i));
           }
 
           teamMember.team_barrier();
-          Hist::finalize(d_hist, loop_count, teamMember);
-        });
+          d_hist().finalize(teamMember);
+          teamMember.team_barrier();
 
-    int shared_view_level = 0;
-    Kokkos::parallel_for(
-        "findClus_msize",
-        hintLightWeight(teamPolicy.set_scratch_size(shared_view_level, Kokkos::PerTeam(shared_view_bytes))),
-        KOKKOS_LAMBDA(const member_type& teamMember) {
-          if (uint32_t(teamMember.league_rank()) >= moduleStart(0))
-            return;
-
-          auto firstPixel = moduleStart(1 + teamMember.league_rank());
-          auto first = firstPixel + teamMember.team_rank();
-
-          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+          for (int i = first; i < d_msize(); i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
-            d_hist(teamMember.league_rank()).fill(y(i), i - firstPixel);
+            d_hist().fill(y(i), i - firstPixel);
           }
 
-          const uint32_t hist_size = d_hist(teamMember.league_rank()).size();
+          const uint32_t hist_size = d_hist().size();
 
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
           const uint32_t maxiter = hist_size;
@@ -180,15 +165,14 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           teamMember.team_barrier();  // for hit filling!
 
           // fill NN
-          auto thisModuleId = id(firstPixel);
           for (uint32_t j = teamMember.team_rank(), k = 0U; j < hist_size; j += teamMember.team_size(), ++k) {
             assert(k < maxiter);
-            auto p = d_hist(teamMember.league_rank()).begin() + j;
+            auto p = d_hist().begin() + j;
             auto i = *p + firstPixel;
             assert(id(i) != ::gpuClustering::InvId);
             assert(id(i) == thisModuleId);  // same module
             int be = Hist::bin(y(i) + 1);
-            auto e = d_hist(teamMember.league_rank()).end(be);
+            auto e = d_hist().end(be);
             ++p;
             assert(0 == nnn[k]);
             for (; p < e; ++p) {
@@ -212,9 +196,8 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           int nloops = 0;
           while (more) {
             if (1 == nloops % 2) {
-              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist(teamMember.league_rank()).size();
-                   j += teamMember.team_size(), ++k) {
-                auto p = d_hist(teamMember.league_rank()).begin() + j;
+              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist().size(); j += teamMember.team_size(), ++k) {
+                auto p = d_hist().begin() + j;
                 auto i = *p + firstPixel;
                 auto m = clusterId(i);
                 while (m != clusterId(m)) {
@@ -224,9 +207,8 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
               }
             } else {
               more = 0;
-              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist(teamMember.league_rank()).size();
-                   j += teamMember.team_size(), ++k) {
-                auto p = d_hist(teamMember.league_rank()).begin() + j;
+              for (uint16_t j = teamMember.team_rank(), k = 0U; j < d_hist().size(); j += teamMember.team_size(), ++k) {
+                auto p = d_hist().begin() + j;
                 auto i = *p + firstPixel;
                 for (uint16_t kk = 0; kk < nnn[k]; ++kk) {
                   auto l = nn[k][kk];
@@ -251,7 +233,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
 
           // find the number of different clusters, identified by a pixels with clus[i] == i;
           // mark these pixels with a negative id.
-          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+          for (int i = first; i < d_msize(); i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (clusterId(i) == i) {
@@ -263,7 +245,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           teamMember.team_barrier();
 
           // propagate the negative id to all the pixels in the cluster.
-          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+          for (int i = first; i < d_msize(); i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (clusterId(i) >= 0) {
@@ -274,7 +256,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           teamMember.team_barrier();
 
           // adjust the cluster id to be a positive value starting from 0
-          for (int i = first; i < d_msize(teamMember.league_rank()); i += teamMember.team_size()) {
+          for (int i = first; i < d_msize(); i += teamMember.team_size()) {
             if (id(i) == ::gpuClustering::InvId) {  // skip invalid pixels
               clusterId(i) = -9999;
               continue;

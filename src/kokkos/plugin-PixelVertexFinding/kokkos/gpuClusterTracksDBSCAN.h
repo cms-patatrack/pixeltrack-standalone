@@ -11,16 +11,21 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    template <typename Histo>
+    template <typename Hist>
     KOKKOS_INLINE_FUNCTION void clusterTracksDBSCAN(
         const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
         const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
-        const Kokkos::View<Histo*, KokkosExecSpace, Restrict>& vhist,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
         float chi2max,  // max normalized distance to cluster
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+      Hist* hist = static_cast<Hist*>(team_member.team_shmem().get_shmem(sizeof(Hist)));
+      Kokkos::View<Hist, KokkosExecSpace::scratch_memory_space, RestrictUnmanaged> histView(hist);
+
+      clusterFillHist(vdata, vws, histView, minT, eps, errmax, chi2max, team_member);
+      team_member.team_barrier();
+
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       const auto leagueRank = team_member.league_rank();
@@ -44,12 +49,9 @@ namespace KOKKOS_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-      auto* localHist = &vhist(leagueRank);
+      assert(hist->size() == nt);
 
-      assert(localHist->size() == nt);
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt),
-                           [=](int i) { localHist->fill(izt[i], uint16_t(i)); });
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) { hist->fill(izt[i], uint16_t(i)); });
       team_member.team_barrier();
 
       // count neighbours
@@ -67,7 +69,7 @@ namespace KOKKOS_NAMESPACE {
           nn[i]++;
         };
 
-        forEachInBins(localHist, izt[i], 1, loop);
+        forEachInBins(hist, izt[i], 1, loop);
       }
 
       team_member.team_barrier();
@@ -90,7 +92,7 @@ namespace KOKKOS_NAMESPACE {
           mz = zt[j];
           iv[i] = j;  // assign to cluster (better be unique??)
         };
-        forEachInBins(localHist, izt[i], 1, loop);
+        forEachInBins(hist, izt[i], 1, loop);
       }
 
       team_member.team_barrier();
@@ -145,7 +147,7 @@ namespace KOKKOS_NAMESPACE {
           }
           assert(iv[i] == iv[j]);
         };
-        forEachInBins(localHist, izt[i], 1, loop);
+        forEachInBins(hist, izt[i], 1, loop);
       }
       team_member.team_barrier();
 #endif
@@ -168,7 +170,7 @@ namespace KOKKOS_NAMESPACE {
           mdist = dist;
           iv[i] = iv[j];  // assign to cluster (better be unique??)
         };
-        forEachInBins(localHist, izt[i], 1, loop);
+        forEachInBins(hist, izt[i], 1, loop);
       }
 
       unsigned int* foundClusters =
@@ -218,22 +220,18 @@ namespace KOKKOS_NAMESPACE {
                                  float errmax,   // max error to be "seed"
                                  float chi2max,  // max normalized distance to cluster
                                  const ExecSpace& execSpace,
-                                 const Kokkos::TeamPolicy<ExecSpace>& policy) {
+                                 Kokkos::TeamPolicy<ExecSpace> policy) {
       using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
 
-      auto leagueSize = policy.league_size();
-
       using Hist = cms::kokkos::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-      Kokkos::View<Hist*, ExecSpace, Restrict> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
+      // TODO: don't really understand why 8 additional bytes are needed. Some internal bookkeeping?
+      auto shared_mem_bytes = sizeof(Hist) + 8 + sizeof(unsigned int);
 
       Kokkos::parallel_for(
-          "clusterFillHist", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
-            clusterFillHist(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
-          });
-
-      Kokkos::parallel_for(
-          "clusterTracksDBSCAN", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {
-            clusterTracksDBSCAN(vdata, vws, vhist, minT, eps, errmax, chi2max, team_member);
+          "clusterTracksDBSCAN",
+          hintLightWeight(policy.set_scratch_size(0, Kokkos::PerTeam(shared_mem_bytes))),
+          KOKKOS_LAMBDA(const member_type& team_member) {
+            clusterTracksDBSCAN<Hist>(vdata, vws, minT, eps, errmax, chi2max, team_member);
           });
     }
   }  // namespace gpuVertexFinder

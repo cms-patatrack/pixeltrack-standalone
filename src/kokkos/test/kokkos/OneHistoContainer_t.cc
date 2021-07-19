@@ -76,7 +76,7 @@ void go() {
           assert(0 == histo_d(0).size());
           teamMember.team_barrier();
 
-          TeamHist::finalize(histo_d, TeamHist::totbins(), teamMember);
+          histo_d().finalize(teamMember);
           teamMember.team_barrier();
 
           assert(N == histo_d(0).size());

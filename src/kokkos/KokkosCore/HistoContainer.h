@@ -344,17 +344,13 @@ namespace cms {
 
 #pragma hd_warning_disable
       // The team size must be power-of-two
-      template <typename Histo, typename ExecSpace, typename... Traits>
-      static KOKKOS_FORCEINLINE_FUNCTION void finalize(
-          Kokkos::View<Histo, ExecSpace, Traits...> histo,
-          const uint32_t loop_count,
-          const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
-        Kokkos::parallel_scan(Kokkos::TeamThreadRange(teamMember, loop_count),
-                              [&](int i, uint32_t& update, const bool final) {
-                                auto leagueRank = teamMember.league_rank();
-                                update += histo(leagueRank).off[i];
+      template <typename TeamMemberType>
+      KOKKOS_FORCEINLINE_FUNCTION void finalize(const TeamMemberType& teamMember) {
+        Kokkos::parallel_scan(Kokkos::TeamThreadRange(teamMember, totbins()),
+                              [=](int i, uint32_t& update, const bool final) {
+                                update += this->off[i];
                                 if (final)
-                                  histo(leagueRank).off[i] = update;
+                                  this->off[i] = update;
                               });
       }
 
