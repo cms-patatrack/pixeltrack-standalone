@@ -2,16 +2,17 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 
 #include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/memoryTraits.h"
 
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void splitVertices(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                              Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                              float maxChi2,
-                                              const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void splitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                                   const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+                                                   float maxChi2,
+                                                   const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -143,9 +144,9 @@ namespace KOKKOS_NAMESPACE {
       }  // loop on vertices
     }
 
-    KOKKOS_INLINE_FUNCTION void splitVerticesKernel(
-        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+    KOKKOS_FORCEINLINE_FUNCTION void splitVerticesKernel(
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
         float maxChi2,
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       splitVertices(vdata, vws, maxChi2, team_member);

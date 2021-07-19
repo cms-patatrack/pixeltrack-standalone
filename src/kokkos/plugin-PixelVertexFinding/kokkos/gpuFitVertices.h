@@ -2,16 +2,17 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 
 #include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/memoryTraits.h"
 
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void fitVertices(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                            Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                            float chi2Max,  // for outlier rejection
-                                            const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void fitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                                 const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+                                                 float chi2Max,  // for outlier rejection
+                                                 const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -104,10 +105,11 @@ namespace KOKKOS_NAMESPACE {
         printf("and %d noise\n", noise[0]);
     }
 
-    KOKKOS_INLINE_FUNCTION void fitVerticesKernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                                  Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                                  float chi2Max,  // for outlier rejection
-                                                  const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void fitVerticesKernel(
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        float chi2Max,  // for outlier rejection
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       fitVertices(vdata, vws, chi2Max, team_member);
     }
 

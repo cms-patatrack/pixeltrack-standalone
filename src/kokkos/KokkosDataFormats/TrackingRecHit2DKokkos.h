@@ -29,13 +29,13 @@ public:
 
   auto nHits() const { return m_nHits; }
 
-  Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart() const { return m_hitsModuleStart; }
-  Kokkos::View<uint32_t*, MemorySpace> hitsLayerStart() { return m_hitsLayerStart; }
-  Kokkos::View<Hist, MemorySpace> phiBinner() { return m_hist; }
-  Kokkos::View<int16_t*, MemorySpace> iphi() { return m_iphi; }
+  Kokkos::View<uint32_t const*, MemorySpace, Restrict> hitsModuleStart() const { return m_hitsModuleStart; }
+  Kokkos::View<uint32_t*, MemorySpace, Restrict> hitsLayerStart() { return m_hitsLayerStart; }
+  Kokkos::View<Hist, MemorySpace, Restrict> phiBinner() { return m_hist; }
+  Kokkos::View<int16_t*, MemorySpace, Restrict> iphi() { return m_iphi; }
 
-  Kokkos::View<uint32_t const*, MemorySpace> c_hitsLayerStart() { return m_hitsLayerStart; }
-  Kokkos::View<int16_t const*, MemorySpace> c_iphi() { return m_iphi; }
+  Kokkos::View<uint32_t const*, MemorySpace, Restrict> c_hitsLayerStart() { return m_hitsLayerStart; }
+  Kokkos::View<int16_t const*, MemorySpace, Restrict> c_iphi() { return m_iphi; }
 
 #define TO_HOST_ASYNC(name)                                  \
   template <typename ExecSpace>                              \

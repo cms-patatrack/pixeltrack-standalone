@@ -11,20 +11,22 @@
 #include "KokkosCore/VecArray.h"
 #include "KokkosCore/kokkos_assert.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/memoryTraits.h"
 #include "KokkosDataFormats/approx_atan2.h"
 
 #include "../GPUCACell.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelDoublets {
-    KOKKOS_INLINE_FUNCTION void fishbone(TrackingRecHit2DSOAView const* __restrict__ hhp,
-                                         Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
-                                         Kokkos::View<uint32_t, KokkosExecSpace> nCells,  // not used
-                                         Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
-                                         uint32_t nHits,
-                                         bool checkTrack,
-                                         const uint32_t stride,
-                                         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
+    KOKKOS_INLINE_FUNCTION void fishbone(
+        TrackingRecHit2DSOAView const* __restrict__ hhp,
+        const Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict>& cells,
+        const Kokkos::View<uint32_t, KokkosExecSpace, Restrict>& nCells,  // not used
+        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict>& isOuterHitOfCell,
+        uint32_t nHits,
+        bool checkTrack,
+        const uint32_t stride,
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& teamMember) {
       constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
       auto const& hh = *hhp;

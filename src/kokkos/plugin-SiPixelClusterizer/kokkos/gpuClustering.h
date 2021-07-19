@@ -16,9 +16,9 @@ namespace KOKKOS_NAMESPACE {
     __device__ uint32_t gMaxHit = 0;
 #endif
 
-    KOKKOS_INLINE_FUNCTION void countModules(Kokkos::View<uint16_t const*, KokkosExecSpace> id,
-                                             Kokkos::View<uint32_t*, KokkosExecSpace> moduleStart,
-                                             Kokkos::View<int32_t*, KokkosExecSpace> clusterId,
+    KOKKOS_INLINE_FUNCTION void countModules(const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& id,
+                                             const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleStart,
+                                             const Kokkos::View<int32_t*, KokkosExecSpace, Restrict>& clusterId,
                                              int numElements,
                                              const size_t index) {
       clusterId[index] = index;
@@ -37,29 +37,33 @@ namespace KOKKOS_NAMESPACE {
   }  // namespace gpuClustering
 }  // namespace KOKKOS_NAMESPACE
 
-namespace gpuClustering {
+namespace KOKKOS_NAMESPACE::gpuClustering {
   //  __launch_bounds__(256,4)
-  template <typename ExecSpace>
-  void findClus(Kokkos::View<const uint16_t*, ExecSpace> id,           // module id of each pixel
-                Kokkos::View<const uint16_t*, ExecSpace> x,            // local coordinates of each pixel
-                Kokkos::View<const uint16_t*, ExecSpace> y,            //
-                Kokkos::View<const uint32_t*, ExecSpace> moduleStart,  // index of the first pixel of each module
-                Kokkos::View<uint32_t*, ExecSpace> nClustersInModule,  // output: number of clusters found in each module
-                Kokkos::View<uint32_t*, ExecSpace> moduleId,           // output: module id of each module
-                Kokkos::View<int*, ExecSpace> clusterId,               // output: cluster id of each pixel
-                int numElements,
-                Kokkos::TeamPolicy<ExecSpace>& teamPolicy,
-                ExecSpace const& execSpace) {
-    using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
-    using shared_team_view = Kokkos::View<uint32_t, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+  KOKKOS_INLINE_FUNCTION void findClus(
+      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& id,  // module id of each pixel
+      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& x,   // local coordinates of each pixel
+      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& y,   //
+      const Kokkos::View<const uint32_t*, KokkosExecSpace, Restrict>&
+          moduleStart,  // index of the first pixel of each module
+      const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>&
+          nClustersInModule,  // output: number of clusters found in each module
+      const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleId,  // output: module id of each module
+      const Kokkos::View<int*, KokkosExecSpace, Restrict>& clusterId,      // output: cluster id of each pixel
+      int numElements,
+      Kokkos::TeamPolicy<KokkosExecSpace>& teamPolicy,
+      KokkosExecSpace const& execSpace) {
+    using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
+    using shared_team_view = Kokkos::View<uint32_t, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
     size_t shared_view_bytes = shared_team_view::shmem_size();
 
     constexpr int maxPixInModule = 4000;
     constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
     using Hist = cms::kokkos::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
-    Kokkos::View<Hist*, ExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"), teamPolicy.league_size());
-    Kokkos::View<int*, ExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"), teamPolicy.league_size());
+    Kokkos::View<Hist*, KokkosExecSpace> d_hist(Kokkos::ViewAllocateWithoutInitializing("d_hist"),
+                                                teamPolicy.league_size());
+    Kokkos::View<int*, KokkosExecSpace> d_msize(Kokkos::ViewAllocateWithoutInitializing("d_msize"),
+                                                teamPolicy.league_size());
 
     int loop_count = Hist::totbins();
     Kokkos::parallel_for(
@@ -285,5 +289,5 @@ namespace gpuClustering {
           }
         });
   }  // end findClus()
-}  // namespace gpuClustering
+}  // namespace KOKKOS_NAMESPACE::gpuClustering
 #endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h

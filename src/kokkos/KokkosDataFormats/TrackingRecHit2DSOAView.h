@@ -24,51 +24,51 @@ public:
   template <typename>
   friend class TrackingRecHit2DKokkos;
 
-  KOKKOS_INLINE_FUNCTION uint32_t nHits() const { return m_nHits; }
+  KOKKOS_FORCEINLINE_FUNCTION uint32_t nHits() const { return m_nHits; }
 
-  KOKKOS_INLINE_FUNCTION float& xLocal(int i) { return m_xl[i]; }
-  KOKKOS_INLINE_FUNCTION float xLocal(int i) const { return m_xl[i]; }
-  KOKKOS_INLINE_FUNCTION float& yLocal(int i) { return m_yl[i]; }
-  KOKKOS_INLINE_FUNCTION float yLocal(int i) const { return m_yl[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& xLocal(int i) { return m_xl[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float xLocal(int i) const { return m_xl[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& yLocal(int i) { return m_yl[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float yLocal(int i) const { return m_yl[i]; }
 
-  KOKKOS_INLINE_FUNCTION float& xerrLocal(int i) { return m_xerr[i]; }
-  KOKKOS_INLINE_FUNCTION float xerrLocal(int i) const { return m_xerr[i]; }
-  KOKKOS_INLINE_FUNCTION float& yerrLocal(int i) { return m_yerr[i]; }
-  KOKKOS_INLINE_FUNCTION float yerrLocal(int i) const { return m_yerr[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& xerrLocal(int i) { return m_xerr[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float xerrLocal(int i) const { return m_xerr[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& yerrLocal(int i) { return m_yerr[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float yerrLocal(int i) const { return m_yerr[i]; }
 
-  KOKKOS_INLINE_FUNCTION float& xGlobal(int i) { return m_xg[i]; }
-  KOKKOS_INLINE_FUNCTION float xGlobal(int i) const { return m_xg[i]; }
-  KOKKOS_INLINE_FUNCTION float& yGlobal(int i) { return m_yg[i]; }
-  KOKKOS_INLINE_FUNCTION float yGlobal(int i) const { return m_yg[i]; }
-  KOKKOS_INLINE_FUNCTION float& zGlobal(int i) { return m_zg[i]; }
-  KOKKOS_INLINE_FUNCTION float zGlobal(int i) const { return m_zg[i]; }
-  KOKKOS_INLINE_FUNCTION float& rGlobal(int i) { return m_rg[i]; }
-  KOKKOS_INLINE_FUNCTION float rGlobal(int i) const { return m_rg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& xGlobal(int i) { return m_xg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float xGlobal(int i) const { return m_xg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& yGlobal(int i) { return m_yg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float yGlobal(int i) const { return m_yg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& zGlobal(int i) { return m_zg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float zGlobal(int i) const { return m_zg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float& rGlobal(int i) { return m_rg[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION float rGlobal(int i) const { return m_rg[i]; }
 
-  KOKKOS_INLINE_FUNCTION int16_t& iphi(int i) { return m_iphi[i]; }
-  KOKKOS_INLINE_FUNCTION int16_t iphi(int i) const { return m_iphi[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t& iphi(int i) { return m_iphi[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t iphi(int i) const { return m_iphi[i]; }
 
-  KOKKOS_INLINE_FUNCTION int32_t& charge(int i) { return m_charge[i]; }
-  KOKKOS_INLINE_FUNCTION int32_t charge(int i) const { return m_charge[i]; }
-  KOKKOS_INLINE_FUNCTION int16_t& clusterSizeX(int i) { return m_xsize[i]; }
-  KOKKOS_INLINE_FUNCTION int16_t clusterSizeX(int i) const { return m_xsize[i]; }
-  KOKKOS_INLINE_FUNCTION int16_t& clusterSizeY(int i) { return m_ysize[i]; }
-  KOKKOS_INLINE_FUNCTION int16_t clusterSizeY(int i) const { return m_ysize[i]; }
-  KOKKOS_INLINE_FUNCTION uint16_t& detectorIndex(int i) { return m_detInd[i]; }
-  KOKKOS_INLINE_FUNCTION uint16_t detectorIndex(int i) const { return m_detInd[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int32_t& charge(int i) { return m_charge[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int32_t charge(int i) const { return m_charge[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t& clusterSizeX(int i) { return m_xsize[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t clusterSizeX(int i) const { return m_xsize[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t& clusterSizeY(int i) { return m_ysize[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION int16_t clusterSizeY(int i) const { return m_ysize[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION uint16_t& detectorIndex(int i) { return m_detInd[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION uint16_t detectorIndex(int i) const { return m_detInd[i]; }
 
-  KOKKOS_INLINE_FUNCTION pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
+  KOKKOS_FORCEINLINE_FUNCTION pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
 
-  KOKKOS_INLINE_FUNCTION uint32_t hitsModuleStart(int i) const { return m_hitsModuleStart[i]; }
+  KOKKOS_FORCEINLINE_FUNCTION uint32_t hitsModuleStart(int i) const { return m_hitsModuleStart[i]; }
 
-  KOKKOS_INLINE_FUNCTION uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
-  KOKKOS_INLINE_FUNCTION uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
+  KOKKOS_FORCEINLINE_FUNCTION uint32_t* hitsLayerStart() { return m_hitsLayerStart; }
+  KOKKOS_FORCEINLINE_FUNCTION uint32_t const* hitsLayerStart() const { return m_hitsLayerStart; }
 
-  KOKKOS_INLINE_FUNCTION Hist& phiBinner() { return *m_hist; }
-  KOKKOS_INLINE_FUNCTION Hist const& phiBinner() const { return *m_hist; }
+  KOKKOS_FORCEINLINE_FUNCTION Hist& phiBinner() { return *m_hist; }
+  KOKKOS_FORCEINLINE_FUNCTION Hist const& phiBinner() const { return *m_hist; }
 
-  KOKKOS_INLINE_FUNCTION AverageGeometry& averageGeometry() { return *m_averageGeometry; }
-  KOKKOS_INLINE_FUNCTION AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
+  KOKKOS_FORCEINLINE_FUNCTION AverageGeometry& averageGeometry() { return *m_averageGeometry; }
+  KOKKOS_FORCEINLINE_FUNCTION AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
 
 private:
   // local coord

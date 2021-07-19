@@ -30,13 +30,13 @@ namespace KOKKOS_NAMESPACE {
   // TeamPolicy instead of RangePolicy due to loops with different iteration counts
   KOKKOS_INLINE_FUNCTION void kernel_checkOverflows(
       HitContainer const *foundNtuplets,
-      Kokkos::View<TupleMultiplicity, KokkosExecSpace> tupleMultiplicity,
-      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc,
-      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
-      Kokkos::View<uint32_t, KokkosExecSpace> nCells,
-      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used
-      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used
-      Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace> isOuterHitOfCell,
+      const Kokkos::View<TupleMultiplicity, KokkosExecSpace, Restrict> &tupleMultiplicity,
+      const Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> &apc,
+      const Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict> &cells,
+      const Kokkos::View<uint32_t, KokkosExecSpace, Restrict> &nCells,
+      const Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict> &cellNeighbors,  // not used
+      const Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict> &cellTracks,        // not used
+      const Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace, Restrict> &isOuterHitOfCell,
       uint32_t nHits,
       uint32_t maxNumberOfDoublets,
       cAHitNtupletGenerator::Counters *counters,
@@ -122,10 +122,11 @@ namespace KOKKOS_NAMESPACE {
       quality[it] = bad;
   }
 
-  KOKKOS_INLINE_FUNCTION void kernel_earlyDuplicateRemover(Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
-                                                           HitContainer *foundNtuplets,
-                                                           Quality *quality,
-                                                           const size_t idx) {
+  KOKKOS_INLINE_FUNCTION void kernel_earlyDuplicateRemover(
+      const Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict> &cells,
+      HitContainer *foundNtuplets,
+      Quality *quality,
+      const size_t idx) {
     // constexpr auto bad = trackQuality::bad;
     constexpr auto dup = trackQuality::dup;
     // constexpr auto loose = trackQuality::loose;
@@ -187,13 +188,13 @@ namespace KOKKOS_NAMESPACE {
   }
 
   KOKKOS_INLINE_FUNCTION void kernel_connect(
-      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc1,
-      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc2,  // just to zero them,
+      const Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> &apc1,
+      const Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> &apc2,  // just to zero them,
       TrackingRecHit2DSOAView const *__restrict__ hhp,
-      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
-      Kokkos::View<uint32_t, KokkosExecSpace> nCells,
-      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,
-      Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace> isOuterHitOfCell,
+      const Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict> &cells,
+      const Kokkos::View<uint32_t, KokkosExecSpace, Restrict> &nCells,
+      const Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict> &cellNeighbors,
+      const Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace, Restrict> &isOuterHitOfCell,
       float hardCurvCut,
       float ptmin,
       float CAThetaCutBarrel,
@@ -272,10 +273,10 @@ namespace KOKKOS_NAMESPACE {
 
   KOKKOS_INLINE_FUNCTION void kernel_find_ntuplets(
       TrackingRecHit2DSOAView const *__restrict__ hhp,
-      Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
-      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,
+      const Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict> &cells,
+      const Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict> &cellTracks,
       HitContainer *foundNtuplets,
-      Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> apc,
+      const Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> &apc,
       Quality *__restrict__ quality,
       unsigned int minHitsPerNtuplet,
       const size_t idx) {
@@ -299,7 +300,7 @@ namespace KOKKOS_NAMESPACE {
   }
 
   KOKKOS_INLINE_FUNCTION void kernel_mark_used(TrackingRecHit2DSOAView const *__restrict__ hhp,  // not used
-                                               Kokkos::View<GPUCACell *, KokkosExecSpace> cells,
+                                               const Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict> &cells,
                                                const size_t idx) {
     auto &thisCell = cells(idx);
     if (!thisCell.tracks().empty())

@@ -289,16 +289,16 @@ void test() {
           d_clusInModule(i) = 0;
         });
 
-    gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
-                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
-                            Kokkos::View<const uint16_t*, KokkosExecSpace>(d_y),
-                            Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
-                            d_clusInModule,
-                            d_moduleId,
-                            d_clus,
-                            n,
-                            teamPolicy,
-                            KokkosExecSpace());
+    KOKKOS_NAMESPACE::gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
+                                              Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
+                                              Kokkos::View<const uint16_t*, KokkosExecSpace>(d_y),
+                                              Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+                                              d_clusInModule,
+                                              d_moduleId,
+                                              d_clus,
+                                              n,
+                                              teamPolicy,
+                                              KokkosExecSpace());
 
     KokkosExecSpace().fence();
     Kokkos::deep_copy(KokkosExecSpace(), h_moduleStart, d_moduleStart);

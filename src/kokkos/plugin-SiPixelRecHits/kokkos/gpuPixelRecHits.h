@@ -14,9 +14,9 @@ namespace KOKKOS_NAMESPACE {
   namespace gpuPixelRecHits {
     KOKKOS_INLINE_FUNCTION void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                                         BeamSpotPOD const* __restrict__ bs,
-                                        SiPixelDigisKokkos<KokkosExecSpace>::DeviceConstView pdigis,
+                                        const SiPixelDigisKokkos<KokkosExecSpace>::DeviceConstView& pdigis,
                                         int numElements,
-                                        SiPixelClustersKokkos<KokkosExecSpace>::DeviceConstView pclusters,
+                                        const SiPixelClustersKokkos<KokkosExecSpace>::DeviceConstView& pclusters,
                                         TrackingRecHit2DSOAView* hits,
                                         Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
       // FIXME

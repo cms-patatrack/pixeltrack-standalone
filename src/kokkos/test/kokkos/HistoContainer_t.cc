@@ -26,10 +26,10 @@ void go() {
             << Hist::capacity() << ' ' << Hist::wsSize() << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  Kokkos::View<Hist, KokkosExecSpace> h_d("h_d");
+  Kokkos::View<Hist, KokkosExecSpace, Restrict> h_d("h_d");
   auto h_h = Kokkos::create_mirror_view(h_d);
 
-  Kokkos::View<uint32_t*, KokkosExecSpace> off_d("off_d", nParts + 1);
+  Kokkos::View<uint32_t*, KokkosExecSpace, Restrict> off_d("off_d", nParts + 1);
   auto off_h = Kokkos::create_mirror_view(off_d);
 
   for (int it = 0; it < 5; ++it) {
@@ -65,8 +65,8 @@ void go() {
 
     cms::kokkos::fillManyFromVector(h_d,
                                     nParts,
-                                    Kokkos::View<T const*, KokkosExecSpace>(v_d),
-                                    Kokkos::View<uint32_t const*, KokkosExecSpace>(off_d),
+                                    Kokkos::View<T const*, KokkosExecSpace, Restrict>(v_d),
+                                    Kokkos::View<uint32_t const*, KokkosExecSpace, Restrict>(off_d),
                                     off_h(10),
                                     256,
                                     KokkosExecSpace());

@@ -17,10 +17,10 @@ namespace KOKKOS_NAMESPACE {
     // based on Rodrighez&Laio algo
     //
     template <typename Histo>
-    KOKKOS_INLINE_FUNCTION void clusterTracksByDensity(
-        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-        Kokkos::View<Histo*, KokkosExecSpace> vhist,
+    KOKKOS_FORCEINLINE_FUNCTION void clusterTracksByDensity(
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        const Kokkos::View<Histo*, KokkosExecSpace, Restrict>& vhist,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -192,8 +192,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(
-        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -204,8 +204,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     template <typename ExecSpace>
-    void clusterTracksByDensityHost(Kokkos::View<ZVertices, ExecSpace> vdata,
-                                    Kokkos::View<WorkSpace, ExecSpace> vws,
+    void clusterTracksByDensityHost(const Kokkos::View<ZVertices, ExecSpace, Restrict>& vdata,
+                                    const Kokkos::View<WorkSpace, ExecSpace, Restrict>& vws,
                                     int minT,       // min number of neighbours to be "seed"
                                     float eps,      // max absolute distance to cluster
                                     float errmax,   // max error to be "seed"
@@ -217,7 +217,7 @@ namespace KOKKOS_NAMESPACE {
       auto leagueSize = policy.league_size();
 
       using Hist = cms::kokkos::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-      Kokkos::View<Hist*, ExecSpace> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
+      Kokkos::View<Hist*, ExecSpace, Restrict> vhist(Kokkos::ViewAllocateWithoutInitializing("vhist"), leagueSize);
 
       Kokkos::parallel_for(
           "clusterFillHist", hintLightWeight(policy), KOKKOS_LAMBDA(const member_type& team_member) {

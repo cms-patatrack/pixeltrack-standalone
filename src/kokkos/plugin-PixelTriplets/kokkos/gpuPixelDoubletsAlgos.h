@@ -23,15 +23,17 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    KOKKOS_INLINE_FUNCTION void doubletsFromHisto(
+    KOKKOS_FORCEINLINE_FUNCTION void doubletsFromHisto(
         uint8_t const* __restrict__ layerPairs,
         uint32_t nPairs,
-        Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
-        Kokkos::View<uint32_t, KokkosExecSpace> nCells,
-        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
-        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
+        const Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict>& cells,
+        const Kokkos::View<uint32_t, KokkosExecSpace, Restrict>& nCells,
+        const Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict>&
+            cellNeighbors,  // not used at the moment
+        const Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict>&
+            cellTracks,  // not used at the moment
         TrackingRecHit2DSOAView const& __restrict__ hh,
-        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict>& isOuterHitOfCell,
         int16_t const* __restrict__ phicuts,
         float const* __restrict__ minz,
         float const* __restrict__ maxz,

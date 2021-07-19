@@ -57,12 +57,13 @@ namespace KOKKOS_NAMESPACE {
           20., 30., 0., 22., 30., -10., 70., 70., 22., 30., -15., 70., 70., 20., 22., 30., 0., 70., 70.};
       float const maxr[nPairs] = {20., 9., 9., 20., 7., 7., 5., 5., 20., 6., 6., 5., 5., 20., 20., 9., 9., 9., 9.};
 
-      Kokkos::View<GPUCACell*, KokkosExecSpace> cells;
-      Kokkos::View<uint32_t, KokkosExecSpace> nCells;
-      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors;  // not used at the moment
-      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks;        // not used at the moment
+      // Need to be by value because the object if this struct is transferred to the device
+      Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict> cells;
+      Kokkos::View<uint32_t, KokkosExecSpace, Restrict> nCells;
+      Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict> cellNeighbors;  // not used at the moment
+      Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict> cellTracks;  // not used at the moment
       TrackingRecHit2DSOAView const* __restrict__ hhp;
-      Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell;
+      Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict> isOuterHitOfCell;
       int nActualPairs;
       bool ideal_cond;
       bool doClusterCut;
@@ -72,20 +73,21 @@ namespace KOKKOS_NAMESPACE {
       const int stride;
 
     public:
-      getDoubletsFromHisto(
-          Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
-          Kokkos::View<uint32_t, KokkosExecSpace> nCells,
-          Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
-          Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
-          TrackingRecHit2DSOAView const* __restrict__ hhp,
-          Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
-          int nActualPairs,
-          bool ideal_cond,
-          bool doClusterCut,
-          bool doZ0Cut,
-          bool doPtCut,
-          uint32_t maxNumOfDoublets,
-          const int stride)
+      getDoubletsFromHisto(const Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict>& cells,
+                           const Kokkos::View<uint32_t, KokkosExecSpace, Restrict>& nCells,
+                           const Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict>&
+                               cellNeighbors,  // not used at the moment
+                           const Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict>&
+                               cellTracks,  // not used at the moment
+                           TrackingRecHit2DSOAView const* __restrict__ hhp,
+                           const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict>& isOuterHitOfCell,
+                           int nActualPairs,
+                           bool ideal_cond,
+                           bool doClusterCut,
+                           bool doZ0Cut,
+                           bool doPtCut,
+                           uint32_t maxNumOfDoublets,
+                           const int stride)
           : cells(cells),
             nCells(nCells),
             cellNeighbors(cellNeighbors),

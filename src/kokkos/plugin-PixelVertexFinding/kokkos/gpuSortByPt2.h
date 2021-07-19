@@ -8,9 +8,9 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void sortByPt2(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                          Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                          const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void sortByPt2(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                               const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+                                               const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       auto& __restrict__ data = *vdata.data();
       auto& __restrict__ ws = *vws.data();
       auto nt = ws.ntrks;
@@ -53,16 +53,16 @@ namespace KOKKOS_NAMESPACE {
       }
     }
 
-    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                                Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                                const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
                                                 const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       Kokkos::abort("sortByPt2Kernel: device sort kernel not supported in Kokkos (see sortByPt2Host)");
     }
 
     // equivalent to CUDA sortByPt2Kernel + deep copy to host
     template <typename ExecSpace>
-    void sortByPt2Host(Kokkos::View<ZVertices, ExecSpace> vdata,
-                       Kokkos::View<WorkSpace, ExecSpace> vws,
+    void sortByPt2Host(const Kokkos::View<ZVertices, ExecSpace, Restrict>& vdata,
+                       const Kokkos::View<WorkSpace, ExecSpace, Restrict>& vws,
                        typename Kokkos::View<ZVertices, ExecSpace>::HostMirror hdata,
                        const ExecSpace& execSpace,
                        const Kokkos::TeamPolicy<ExecSpace>& policy) {
