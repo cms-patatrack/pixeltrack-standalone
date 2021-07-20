@@ -21,15 +21,21 @@ namespace cms {
                                     uint32_t nh,
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
-        const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        auto threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        auto blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        auto blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+        auto gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        int first = blockDimension * blockIdxInGrid + threadIdxLocal;
+        for (uint32_t i = first, nt = offsets[nh]; i < nt; i += gridDimension*blockDimension) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           assert((*off) > 0);
           int32_t ih = off - offsets - 1;
           assert(ih >= 0);
           assert(ih < int(nh));
           h->count(acc, v[i], ih);
-        });
+        }
       }
     };
 
@@ -40,15 +46,24 @@ namespace cms {
                                     uint32_t nh,
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
-        const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        auto threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        auto blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        auto blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+        auto gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        int first = blockDimension * blockIdxInGrid + threadIdxLocal;
+
+        //cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+          for (int i = first, nt = offsets[nh]; i < nt; i += gridDimension * blockDimension) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           assert((*off) > 0);
           int32_t ih = off - offsets - 1;
           assert(ih >= 0);
           assert(ih < int(nh));
           h->fill(acc, v[i], i, ih);
-        });
+        //});
+        }
       }
     };
 
@@ -74,17 +89,22 @@ namespace cms {
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1 blocksPerGrid(nblocks);
 
+      auto d_pc = alpaka::allocBuf<int32_t, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::device, Vec1::all(1));
+      int32_t* pc = alpaka::getPtrNative(d_pc);
+
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
+                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items, pc));
 
+      /*
       const WorkDiv1 &workDivWith1Block =
           cms::alpakatools::make_workdiv(Vec1::all(1), threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
               workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
+        */
     }
 
     template <typename Histo, typename T>
@@ -250,7 +270,17 @@ namespace cms {
           return;
         }
 
-        cms::alpakatools::for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
+        //cms::alpakatools::for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
+        auto threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        auto blockIdxInGrid(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        auto blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+        auto gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+
+        auto first = m + blockDimension * blockIdxInGrid + threadIdxLocal;
+        for (auto i = first; i < totbins(); i += gridDimension * blockDimension) {
+          off[i] = n;
+        }
       }
 
       template <typename T_Acc>
