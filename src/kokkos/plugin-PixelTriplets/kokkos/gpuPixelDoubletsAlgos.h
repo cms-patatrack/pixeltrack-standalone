@@ -9,6 +9,7 @@
 
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "KokkosCore/VecArray.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosDataFormats/approx_atan2.h"
 
 #include <Kokkos_Core.hpp>
@@ -229,9 +230,9 @@ namespace KOKKOS_NAMESPACE {
             if (doPtCut && ptcut(oi, idphi))
               continue;
 
-            auto ind = Kokkos::atomic_fetch_add(nCells.data(), 1);
+            auto ind = cms::kokkos::atomic_fetch_add(nCells.data(), 1U);
             if (ind >= maxNumOfDoublets) {
-              Kokkos::atomic_decrement(nCells.data());
+              cms::kokkos::atomic_decrement(nCells.data());
               break;
             }  // move to SimpleVector??
             // int layerPairId, int doubletId, int innerHitId, int outerHitId)

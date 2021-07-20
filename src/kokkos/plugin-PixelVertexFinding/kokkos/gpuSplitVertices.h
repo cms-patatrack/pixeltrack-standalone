@@ -62,7 +62,7 @@ namespace KOKKOS_NAMESPACE {
           if (iv[k] == int(kv)) {
             // FIXME: different from old = atomicInc(&nq, MAXTK)
             // where nq will be zero when nq >= MAXTK, is it OK?
-            uint32_t old = Kokkos::atomic_fetch_add(nq, 1);
+            uint32_t old = cms::kokkos::atomic_fetch_add(nq, 1U);
             zz[old] = zt[k] - zv[kv];
             newV[old] = zz[old] < 0 ? 0 : 1;
             ww[old] = 1.f / ezt2[k];
@@ -92,8 +92,8 @@ namespace KOKKOS_NAMESPACE {
           team_member.team_barrier();
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
             auto i = newV[k];
-            Kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
-            Kokkos::atomic_add(&wnew[i], ww[k]);
+            cms::kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
+            cms::kokkos::atomic_add(&wnew[i], ww[k]);
           });
           team_member.team_barrier();
           if (0 == teamRank) {
@@ -134,7 +134,7 @@ namespace KOKKOS_NAMESPACE {
         uint32_t* igv = (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t));
 
         if (0 == teamRank)
-          igv[0] = Kokkos::atomic_fetch_add(&ws.nvIntermediate, 1);
+          igv[0] = cms::kokkos::atomic_fetch_add(&ws.nvIntermediate, 1U);
         team_member.team_barrier();
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
           if (1 == newV[k])

@@ -315,6 +315,11 @@ $ make kokkos ...
 | `ROCM_BASE`              | Path to ROCm installation. Relevant only if `KOKKOS_DEVICE_PARALLEL=HIP`.                                                                                                   |
 | `KOKKOS_HIP_ARCH`        | Target AMD GPU architecture for Kokkos build (default: `VEGA900`, possible values: `VEGA900`, `VEGA909`; trivial to extend). Relevant only if `KOKKOS_DEVICE_PARALLEL=HIP`. |
 
+| Macro                                  | Effect                                                            |
+|----------------------------------------|-------------------------------------------------------------------|
+| `-DKOKKOS_SERIALONLY_DISABLE_ATOMICS`  | Disable Kokkos (real) atomics, can be used with Serial-only build |
+
+
 ## Code structure
 
 The project is split into several programs, one (or more) for each

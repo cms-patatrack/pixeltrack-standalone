@@ -41,7 +41,7 @@ namespace KOKKOS_NAMESPACE {
       for (unsigned int i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990)
           continue;
-        Kokkos::atomic_add(&ptv2[iv[i]], ptt2[i]);
+        cms::kokkos::atomic_add(&ptv2[iv[i]], ptt2[i]);
       }
 
       team_member.team_barrier();

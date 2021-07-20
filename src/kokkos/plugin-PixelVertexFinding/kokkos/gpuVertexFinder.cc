@@ -36,7 +36,7 @@ namespace KOKKOS_NAMESPACE {
         return;
 
       auto& data = ws();
-      auto it = Kokkos::atomic_fetch_add(&data.ntrks, 1);
+      auto it = cms::kokkos::atomic_fetch_add(&data.ntrks, 1U);
       data.itrk[it] = idx;
       data.zt[it] = tracks().zip(idx);
       data.ezt2[it] = fit.covariance(idx)(14);

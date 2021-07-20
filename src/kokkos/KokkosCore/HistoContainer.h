@@ -11,6 +11,7 @@
 #include "KokkosCore/AtomicPairCounter.h"
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/memoryTraits.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosCore/kokkos_assert.h"
 
 namespace cms {
@@ -243,16 +244,16 @@ namespace cms {
 
       KOKKOS_FORCEINLINE_FUNCTION void add(const CountersOnly& co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-          Kokkos::atomic_fetch_add(off + i, co.off[i]);
+          cms::kokkos::atomic_add(off + i, co.off[i]);
         }
       }
 
       static KOKKOS_FORCEINLINE_FUNCTION uint32_t atomicIncrement(Counter& x) {
-        return Kokkos::atomic_fetch_add(&x, 1U);
+        return cms::kokkos::atomic_fetch_add(&x, 1U);
       }
 
       static KOKKOS_FORCEINLINE_FUNCTION uint32_t atomicDecrement(Counter& x) {
-        return Kokkos::atomic_fetch_sub(&x, 1U);
+        return cms::kokkos::atomic_fetch_sub(&x, 1U);
       }
 
       KOKKOS_FORCEINLINE_FUNCTION void countDirect(T b) {

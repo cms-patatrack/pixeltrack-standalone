@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "KokkosCore/atomic.h"
+
 namespace cms {
   namespace kokkos {
     class AtomicPairCounter {
@@ -41,7 +43,7 @@ namespace cms {
         c_type c = i;
         c += incr;
         Atomic2 ret;
-        ret.ac = Kokkos::atomic_fetch_add(&counter.ac, c);
+        ret.ac = cms::kokkos::atomic_fetch_add(&counter.ac, c);
         return ret.counters;
       }
 

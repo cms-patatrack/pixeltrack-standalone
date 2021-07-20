@@ -9,6 +9,7 @@
 
 #include "CondFormats/pixelCPEforGPU.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/atomic.h"
 
 #include "../CAConstants.h"
 #include "CAHitNtupletGeneratorKernels.h"
@@ -51,11 +52,11 @@ namespace KOKKOS_NAMESPACE {
     auto &c = *counters;
     // counters once per event
     if (0 == first) {
-      Kokkos::atomic_add<unsigned long long>(&c.nEvents, 1);
-      Kokkos::atomic_add<unsigned long long>(&c.nHits, nHits);
-      Kokkos::atomic_add<unsigned long long>(&c.nCells, nCells());
-      Kokkos::atomic_add<unsigned long long>(&c.nTuples, apc().get().m);
-      Kokkos::atomic_add<unsigned long long>(&c.nFitTracks, tupleMultiplicity().size());
+      cms::kokkos::atomic_add<unsigned long long>(&c.nEvents, 1);
+      cms::kokkos::atomic_add<unsigned long long>(&c.nHits, nHits);
+      cms::kokkos::atomic_add<unsigned long long>(&c.nCells, nCells());
+      cms::kokkos::atomic_add<unsigned long long>(&c.nTuples, apc().get().m);
+      cms::kokkos::atomic_add<unsigned long long>(&c.nFitTracks, tupleMultiplicity().size());
     }
 
 #ifdef NTUPLE_DEBUG
@@ -98,11 +99,11 @@ namespace KOKKOS_NAMESPACE {
       if (thisCell.tracks().full())  //++tooManyTracks[thisCell.theLayerPairId];
         printf("Tracks overflow %d in %d\n", idx, thisCell.theLayerPairId);
       if (thisCell.theDoubletId < 0)
-        Kokkos::atomic_add<unsigned long long>(&c.nKilledCells, 1);
+        cms::kokkos::atomic_add<unsigned long long>(&c.nKilledCells, 1);
       if (0 == thisCell.theUsed)
-        Kokkos::atomic_add<unsigned long long>(&c.nEmptyCells, 1);
+        cms::kokkos::atomic_add<unsigned long long>(&c.nEmptyCells, 1);
       if (thisCell.tracks().empty())
-        Kokkos::atomic_add<unsigned long long>(&c.nZeroTrackCells, 1);
+        cms::kokkos::atomic_add<unsigned long long>(&c.nZeroTrackCells, 1);
     }
 
     for (int idx = first, nt = nHits; idx < nt; idx += leagueSize * teamSize) {
@@ -413,7 +414,7 @@ namespace KOKKOS_NAMESPACE {
       return;  //guard
     if (quality[idx] != trackQuality::loose)
       return;
-    Kokkos::atomic_add<unsigned long long>(&(counters->nGoodTracks), 1);
+    cms::kokkos::atomic_add<unsigned long long>(&(counters->nGoodTracks), 1);
   }
 
   KOKKOS_INLINE_FUNCTION void kernel_countHitInTracks(HitContainer const *__restrict__ tuples,
@@ -462,9 +463,9 @@ namespace KOKKOS_NAMESPACE {
     auto &c = *counters;
     if (hitToTuple->size(idx) == 0)
       return;
-    Kokkos::atomic_add<unsigned long long>(&c.nUsedHits, 1);
+    cms::kokkos::atomic_add<unsigned long long>(&c.nUsedHits, 1);
     if (hitToTuple->size(idx) > 1)
-      Kokkos::atomic_add<unsigned long long>(&c.nDupHits, 1);
+      cms::kokkos::atomic_add<unsigned long long>(&c.nDupHits, 1);
   }
 
   KOKKOS_INLINE_FUNCTION void kernel_tripletCleaner(

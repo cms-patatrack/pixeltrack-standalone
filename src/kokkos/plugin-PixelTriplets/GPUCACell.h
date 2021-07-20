@@ -9,6 +9,7 @@
 
 #include "KokkosCore/SimpleVector.h"
 #include "KokkosCore/VecArray.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosCore/kokkos_assert.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
@@ -69,19 +70,13 @@ public:
       if (i > 0) {
         cellNeighbors[i].reset();
 #ifdef KOKKOS_BACKEND_SERIAL
-        // TODO: this is really a workaround for the case where only
-        // the serial backend is available in the Kokkos runtime. For
-        // some reason the effect atomic_compare_exchange in that
-        // particular case does not propagate properly. A direct,
-        // non-atomic assignment appears to work though, as would e.g.
-        // std::atomic_thread_fence(std::memory_order_seq_cst);
-        // after the atomic_compare_exchange() call.
+        // cuda/cudacompat also do direct assignment when compiling for CPU
         theOuterNeighbors = &cellNeighbors[i];
 #else
         auto zero = (ptrAsInt)(&cellNeighbors[0]);
-        Kokkos::atomic_compare_exchange((ptrAsInt*)(&theOuterNeighbors),
-                                        zero,
-                                        (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
+        cms::kokkos::atomic_compare_exchange((ptrAsInt*)(&theOuterNeighbors),
+                                             zero,
+                                             (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
 #endif
         // effectively: theOuterNeighbors = &cellNeighbors[i];
       } else
@@ -98,11 +93,11 @@ public:
       if (i > 0) {
         cellTracks[i].reset();
 #ifdef KOKKOS_BACKEND_SERIAL
-        // TODO: See comment in addOuterNeighbor()
+        // cuda/cudacompat also do direct assignment when compiling for CPU
         theTracks = &cellTracks[i];
 #else
         auto zero = (ptrAsInt)(&cellTracks[0]);
-        Kokkos::atomic_compare_exchange(
+        cms::kokkos::atomic_compare_exchange(
             (ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
 #endif
         // effectively: theTracks = &cellTracks[i];

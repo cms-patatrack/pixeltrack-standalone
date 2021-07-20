@@ -3,6 +3,7 @@
 
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/HistoContainer.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosCore/kokkos_assert.h"
 
 #include "gpuVertexFinder.h"
@@ -164,7 +165,7 @@ namespace KOKKOS_NAMESPACE {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nt), [=](int i) {
         if (iv[i] == int(i)) {
           if (nn[i] >= minT) {
-            auto old = Kokkos::atomic_fetch_add(foundClusters, 1);
+            auto old = cms::kokkos::atomic_fetch_add(foundClusters, 1U);
             iv[i] = -(old + 1);
           } else {  // noise
             iv[i] = -9998;

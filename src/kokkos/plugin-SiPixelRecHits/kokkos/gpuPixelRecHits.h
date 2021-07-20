@@ -9,6 +9,7 @@
 #include "KokkosDataFormats/approx_atan2.h"
 #include "KokkosDataFormats/BeamSpotKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
+#include "KokkosCore/atomic.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelRecHits {
@@ -124,10 +125,10 @@ namespace KOKKOS_NAMESPACE {
           cl -= startClus;
           assert(cl >= 0);
           assert(cl < MaxHitsInIter);
-          Kokkos::atomic_min_fetch<uint32_t>(&clusParams->minRow[cl], x);
-          Kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxRow[cl], x);
-          Kokkos::atomic_min_fetch<uint32_t>(&clusParams->minCol[cl], y);
-          Kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxCol[cl], y);
+          cms::kokkos::atomic_min_fetch<uint32_t>(&clusParams->minRow[cl], x);
+          cms::kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxRow[cl], x);
+          cms::kokkos::atomic_min_fetch<uint32_t>(&clusParams->minCol[cl], y);
+          cms::kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxCol[cl], y);
         }
 
         teamMember.team_barrier();
@@ -151,15 +152,15 @@ namespace KOKKOS_NAMESPACE {
           auto x = digis.xx(i);
           auto y = digis.yy(i);
           auto ch = std::min(digis.adc(i), pixmx);
-          Kokkos::atomic_add<int32_t>(&clusParams->charge[cl], ch);
+          cms::kokkos::atomic_add<int32_t>(&clusParams->charge[cl], ch);
           if (clusParams->minRow[cl] == x)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_f_X[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_f_X[cl], ch);
           if (clusParams->maxRow[cl] == x)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_l_X[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_l_X[cl], ch);
           if (clusParams->minCol[cl] == y)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_f_Y[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_f_Y[cl], ch);
           if (clusParams->maxCol[cl] == y)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_l_Y[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_l_Y[cl], ch);
         }
 
         teamMember.team_barrier();

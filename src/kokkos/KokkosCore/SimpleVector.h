@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/atomic.h"
 
 namespace cms {
   namespace kokkos {
@@ -57,45 +58,45 @@ namespace cms {
 
       // thread-safe version of the vector, when used in a CUDA kernel
       KOKKOS_INLINE_FUNCTION int push_back(const T &element) {
-        auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+        auto previousSize = cms::kokkos::atomic_fetch_add(&m_size, 1);
         if (previousSize < m_capacity) {
           m_data[previousSize] = element;
           return previousSize;
         } else {
-          Kokkos::atomic_sub(&m_size, 1);
+          cms::kokkos::atomic_sub(&m_size, 1);
           return -1;
         }
       }
 
       template <class... Ts>
       KOKKOS_INLINE_FUNCTION int emplace_back(Ts &&...args) {
-        auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+        auto previousSize = cms::kokkos::atomic_fetch_add(&m_size, 1);
         if (previousSize < m_capacity) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
           return previousSize;
         } else {
-          Kokkos::atomic_sub(&m_size, 1);
+          cms::kokkos::atomic_sub(&m_size, 1);
           return -1;
         }
       }
 
       // thread safe version of resize
       KOKKOS_INLINE_FUNCTION int extend(int size = 1) {
-        auto previousSize = Kokkos::atomic_fetch_add(&m_size, size);
+        auto previousSize = cms::kokkos::atomic_fetch_add(&m_size, size);
         if (previousSize < m_capacity) {
           return previousSize;
         } else {
-          Kokkos::atomic_sub(&m_size, size);
+          cms::kokkos::atomic_sub(&m_size, size);
           return -1;
         }
       }
 
       KOKKOS_INLINE_FUNCTION int shrink(int size = 1) {
-        auto previousSize = Kokkos::atomic_fetch_sub(&m_size, size);
+        auto previousSize = cms::kokkos::atomic_fetch_sub(&m_size, size);
         if (previousSize >= size) {
           return previousSize - size;
         } else {
-          Kokkos::atomic_add(&m_size, size);
+          cms::kokkos::atomic_add(&m_size, size);
           return -1;
         }
       }

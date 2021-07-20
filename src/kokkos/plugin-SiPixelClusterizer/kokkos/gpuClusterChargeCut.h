@@ -7,6 +7,7 @@
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/kokkosConfigCommon.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
 namespace gpuClustering {
@@ -100,7 +101,7 @@ namespace gpuClustering {
               continue;  // not valid
             if (id(i) != thisModuleId)
               break;  // end of module
-            Kokkos::atomic_fetch_add(&charge(clusterId(i)), adc(i));
+            cms::kokkos::atomic_add<int>(&charge(clusterId(i)), adc(i));
           }
           teamMember.team_barrier();
 

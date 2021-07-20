@@ -7,6 +7,7 @@
 #include "Geometry/phase1PixelTopology.h"
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/HistoContainer.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
 namespace KOKKOS_NAMESPACE {
@@ -29,7 +30,7 @@ namespace KOKKOS_NAMESPACE {
         --j;
       if (j < 0 or id[j] != id[index]) {
         // boundary... replacing atomicInc with explicit logic
-        auto loc = Kokkos::atomic_fetch_add(&moduleStart(0), 1);
+        auto loc = cms::kokkos::atomic_fetch_add(&moduleStart(0), 1U);
         assert(moduleStart(0) < ::gpuClustering::MaxNumModules);
         moduleStart(loc + 1) = index;
       }
@@ -86,7 +87,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (id(i) != thisModuleId) {  // find the first pixel in a different module
-              Kokkos::atomic_fetch_min(&d_msize(), i);
+              cms::kokkos::atomic_min_fetch(&d_msize(), i);
               break;
             }
           }
@@ -214,12 +215,12 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
                   auto l = nn[k][kk];
                   auto m = l + firstPixel;
                   assert(m != i);
-                  auto old = Kokkos::atomic_fetch_min(&clusterId(m), clusterId(i));
+                  auto old = cms::kokkos::atomic_fetch_min(&clusterId(m), clusterId(i));
                   if (old != clusterId(i)) {
                     // end the loop only if no changes were applied
                     more = 1;
                   }
-                  Kokkos::atomic_fetch_min(&clusterId(i), old);
+                  cms::kokkos::atomic_fetch_min(&clusterId(i), old);
                 }  // nnloop
               }    // pixel loop
             }
@@ -237,7 +238,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
             if (id(i) == ::gpuClustering::InvId)  // skip invalid pixels
               continue;
             if (clusterId(i) == i) {
-              auto old = Kokkos::atomic_fetch_add(&foundClusters(), 1);
+              auto old = cms::kokkos::atomic_fetch_add(&foundClusters(), 1U);
               assert(foundClusters() < 0xffffffff);
               clusterId(i) = -(old + 1);
             }
