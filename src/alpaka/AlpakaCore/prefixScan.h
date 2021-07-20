@@ -170,7 +170,7 @@ namespace cms {
         auto& psum = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
         // first each block does a scan of size 1024; (better be enough blocks....)
-        assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
+        assert(static_cast<int32_t>(blockDimension * threadDimension) >= gridDimension);
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
 
