@@ -81,6 +81,7 @@ namespace cms {
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
         Histo *__restrict__ h, ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       uint32_t *poff = (uint32_t *)(char *)(&(h->off));
+      int32_t *ppsws = (int32_t *)(char *)(&(h->psws));
 
       const int num_items = Histo::totbins();
 
@@ -89,13 +90,10 @@ namespace cms {
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1 blocksPerGrid(nblocks);
 
-      auto d_pc = alpaka::allocBuf<int32_t, Idx>(ALPAKA_ACCELERATOR_NAMESPACE::device, Vec1::all(1));
-      int32_t* pc = alpaka::getPtrNative(d_pc);
-
       const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items, pc));
+                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items, ppsws));
 
       /*
       const WorkDiv1 &workDivWith1Block =
@@ -336,6 +334,7 @@ namespace cms {
       constexpr index_type const *end(uint32_t b) const { return bins + off[b + 1]; }
 
       Counter off[totbins()];
+      int32_t psws;  // prefix-scan working space
       index_type bins[capacity()];
     };
 
