@@ -45,16 +45,14 @@ void countMultiLocal(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
       policy.set_scratch_size(level, Kokkos::PerTeam(team_view_size)),
       KOKKOS_LAMBDA(const MemberType teamMember) {
         TeamView local(teamMember.team_scratch(level));
-        if (teamMember.team_rank() == 0)
-          local().zero();
+        Kokkos::single(Kokkos::PerTeam(teamMember), [&]() { local().zero(); });
         auto first = teamMember.team_size() * teamMember.league_rank() + teamMember.team_rank();
 
         for (int i = first; i < n; i += teamMember.league_size() * teamMember.team_size()) {
           teamMember.team_barrier();
           local().countDirect(2 + i % 4);
           teamMember.team_barrier();
-          if (teamMember.team_rank() == 0)
-            assoc().add(local());
+          Kokkos::single(Kokkos::PerTeam(teamMember), [&]() { assoc().add(local()); });
         }
       });
 }

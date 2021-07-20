@@ -121,8 +121,7 @@ namespace KOKKOS_NAMESPACE {
               loop(*p);
           }  // for i
         }
-        if (teamRank == 0)
-          ++nloops[0];
+        Kokkos::single(Kokkos::PerTeam(team_member), [&]() { ++nloops[0]; });
 
         team_member.team_reduce(Kokkos::Sum<int>(more));
       }  // while

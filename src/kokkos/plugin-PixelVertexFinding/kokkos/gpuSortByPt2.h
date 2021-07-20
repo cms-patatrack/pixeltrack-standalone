@@ -47,8 +47,7 @@ namespace KOKKOS_NAMESPACE {
       team_member.team_barrier();
 
       if (1 == nvFinal) {
-        if (teamRank == 0)
-          sortInd[0] = 0;
+        Kokkos::single(Kokkos::PerTeam(team_member), [&]() { sortInd[0] = 0; });
         return;
       }
     }

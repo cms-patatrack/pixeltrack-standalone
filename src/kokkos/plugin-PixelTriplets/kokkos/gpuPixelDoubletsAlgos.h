@@ -78,13 +78,13 @@ namespace KOKKOS_NAMESPACE {
       uint32_t* innerLayerCumulativeSize = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t) * nPairsMax);
       uint32_t* ntot = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t));
 
-      if (teamRank == 0) {
+      Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
         innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
         for (uint32_t i = 1; i < nPairs; ++i) {
           innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
         }
         ntot[0] = innerLayerCumulativeSize[nPairs - 1];
-      }
+      });
       teamMember.team_barrier();
 
       // x runs faster

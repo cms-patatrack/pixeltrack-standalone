@@ -102,12 +102,12 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           assert((d_msize() == numElements) or ((d_msize() < numElements) and (id(d_msize()) != thisModuleId)));
 
           // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
-          if (0 == teamMember.team_rank()) {
+          Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
             if (d_msize() - firstPixel > maxPixInModule) {
               printf("too many pixels in module %d: %d > %d\n", thisModuleId, d_msize() - firstPixel, maxPixInModule);
               d_msize() = maxPixInModule + firstPixel;
             }
-          }
+          });
 
           teamMember.team_barrier();
           assert(d_msize() - firstPixel <= maxPixInModule);
@@ -266,10 +266,10 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           }
           teamMember.team_barrier();
 
-          if (teamMember.team_rank() == 0) {
+          Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
             nClustersInModule(thisModuleId) = foundClusters();
             moduleId(teamMember.league_rank()) = thisModuleId;
-          }
+          });
         });
   }  // end findClus()
 }  // namespace KOKKOS_NAMESPACE::gpuClustering

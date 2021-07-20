@@ -83,12 +83,12 @@ namespace KOKKOS_NAMESPACE {
         int more = 1;
         while (more) {
           more = 0;
-          if (0 == teamRank) {
+          Kokkos::single(Kokkos::PerTeam(team_member), [&]() {
             znew[0] = 0;
             znew[1] = 0;
             wnew[0] = 0;
             wnew[1] = 0;
-          }
+          });
           team_member.team_barrier();
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
             auto i = newV[k];
@@ -96,10 +96,10 @@ namespace KOKKOS_NAMESPACE {
             cms::kokkos::atomic_add(&wnew[i], ww[k]);
           });
           team_member.team_barrier();
-          if (0 == teamRank) {
+          Kokkos::single(Kokkos::PerTeam(team_member), [&]() {
             znew[0] /= wnew[0];
             znew[1] /= wnew[1];
-          }
+          });
           team_member.team_barrier();
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=, &more](int k) {
             auto d0 = fabs(zz[k] - znew[0]);
@@ -124,8 +124,10 @@ namespace KOKKOS_NAMESPACE {
 
         auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-        if (verbose && 0 == teamRank)
-          printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
+        if (verbose) {
+          Kokkos::single(Kokkos::PerTeam(team_member),
+                         [&]() { printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]); });
+        }
 
         if (chi2Dist < 4)
           continue;
@@ -133,8 +135,8 @@ namespace KOKKOS_NAMESPACE {
         // get a new global vertex
         uint32_t* igv = (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t));
 
-        if (0 == teamRank)
-          igv[0] = cms::kokkos::atomic_fetch_add(&ws.nvIntermediate, 1U);
+        Kokkos::single(Kokkos::PerTeam(team_member),
+                       [&]() { igv[0] = cms::kokkos::atomic_fetch_add(&ws.nvIntermediate, 1U); });
         team_member.team_barrier();
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
           if (1 == newV[k])
