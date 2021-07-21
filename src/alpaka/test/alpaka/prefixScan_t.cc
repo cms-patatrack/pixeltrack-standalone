@@ -26,7 +26,13 @@ struct testPrefixScan {
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
-    cms::alpakatools::for_each_element_in_block_strided(acc, size, [&](uint32_t i) { c[i] = 1; });
+    uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+
+    //cms::alpakatools::for_each_element_in_block_strided(acc, size, [&](uint32_t i) { c[i] = 1; });
+    auto first = threadIdx;
+    for (auto i = first; i < size; i += blockDimension)
+      c[i] = 1;
 
     alpaka::syncBlockThreads(acc);
 
@@ -36,11 +42,13 @@ struct testPrefixScan {
     assert(1 == c[0]);
     assert(1 == co[0]);
 
-    cms::alpakatools::for_each_element_in_block_strided(acc, size, 1u, [&](uint32_t i) {
+    //cms::alpakatools::for_each_element_in_block_strided(acc, size, 1u, [&](uint32_t i) {
+    for(auto i = first + 1; i < size; i += blockDimension) {
       assert(c[i] == c[i - 1] + 1);
       assert(c[i] == i + 1);
       assert(c[i] = co[i]);
-    });
+    }
+    //});
   }
 };
 
@@ -103,7 +111,7 @@ struct verify {
   }
 };
 
-int main() {
+int main() {  
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const DevAcc1 device(alpaka::getDevByIdx<PltfAcc1>(0u));
   const Vec1 size(1u);
@@ -135,6 +143,7 @@ int main() {
     const Vec1 blocksPerGrid2(Vec1::all(1));
     const WorkDiv1& workDivSingleBlock =
         cms::alpakatools::make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
+    
 
     /*
     std::cout << "blocks per grid: " << blocksPerGrid2
@@ -147,6 +156,7 @@ int main() {
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDivSingleBlock, testPrefixScan<float>(), j));
     }
   }
+  
 
   // PORTABLE MULTI-BLOCK PREFIXSCAN
   int num_items = 200;
@@ -177,8 +187,10 @@ int main() {
     const WorkDiv1& workDivMultiBlock =
         cms::alpakatools::make_workdiv(blocksPerGrid4, threadsPerBlockOrElementsPerThread4);
 
-    auto d_pc = alpaka::allocBuf<int32_t, Idx>(device, Vec1::all(1));
+    auto d_pc(alpaka::allocBuf<int32_t, Idx>(device, size));
     int32_t* pc = alpaka::getPtrNative(d_pc);
+
+    alpaka::memset(queue, d_pc, 0, size);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
     alpaka::enqueue(queue,

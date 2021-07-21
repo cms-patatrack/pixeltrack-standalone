@@ -75,7 +75,7 @@ namespace cms {
       }
       alpaka::syncBlockThreads(acc);
       for (auto i = first + 32; i < size; i += blockDimension) {
-        uint32_t warpId = i / 32;
+        auto warpId = i / 32;
         co[i] += ws[warpId - 1];
       }
       alpaka::syncBlockThreads(acc);
@@ -166,11 +166,11 @@ namespace cms {
           return;
 
         assert(int(gridDimension) == *pc);
-
         auto& psum = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
         // first each block does a scan of size 1024; (better be enough blocks....)
         assert(static_cast<int32_t>(blockDimension * threadDimension) >= gridDimension);
+        
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
 
@@ -181,11 +181,10 @@ namespace cms {
                             : T(0);
           }
         }
-
+        
         alpaka::syncBlockThreads(acc);
-          
-        auto& wss = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
-        blockPrefixScan(acc, psum, psum, gridDimension, wss);
+        
+        blockPrefixScan(acc, psum, psum, gridDimension, ws);
           
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int first = threadIdx * threadDimension + elemId;
