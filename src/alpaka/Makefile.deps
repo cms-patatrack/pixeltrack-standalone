@@ -1,4 +1,7 @@
 alpaka_EXTERNAL_DEPENDS := TBB EIGEN ALPAKA BOOST
+ifdef CUDA_BASE
+alpaka_EXTERNAL_DEPENDS += CUDA
+endif
 BeamSpotProducer_DEPENDS := Framework AlpakaCore AlpakaDataFormats DataFormats
 PixelTriplets_DEPENDS := Framework AlpakaCore AlpakaDataFormats
 PixelVertexFinding_DEPENDS := Framework AlpakaCore AlpakaDataFormats DataFormats CondFormats

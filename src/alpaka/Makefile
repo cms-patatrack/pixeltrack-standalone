@@ -4,10 +4,6 @@ TARGET := $(BASE_DIR)/$(TARGET_NAME)
 include Makefile.deps
 EXTERNAL_DEPENDS := $(alpaka_EXTERNAL_DEPENDS)
 
-ifneq ($(wildcard $(CUDA_BASE)),)
-EXTERNAL_DEPENDS += CUDA
-endif
-
 $(TARGET):
 test_cpu: $(TARGET)
 	@echo
@@ -244,3 +240,4 @@ $(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cu
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif
+
