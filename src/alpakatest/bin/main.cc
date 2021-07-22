@@ -6,11 +6,12 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include "AlpakaCore/alpakaConfig.h"
 
 #include <tbb/task_scheduler_init.h>
-
+#ifdef alpaka_cuda
 #include <cuda_runtime.h>
-
+#endif
 #include "EventProcessor.h"
 
 namespace {
@@ -22,7 +23,9 @@ namespace {
         << "Options\n"
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
+#ifdef alpaka_cuda
         << " --cuda              Use CUDA backend\n"
+#endif
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -53,9 +56,13 @@ int main(int argc, char** argv) {
       backends.emplace_back(Backend::SERIAL);
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
-    } else if (*i == "--cuda") {
+    } 
+#ifdef alpaka_cuda
+     else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
-    } else if (*i == "--numberOfThreads") {
+    }
+#endif
+     else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
     } else if (*i == "--numberOfStreams") {
@@ -88,6 +95,7 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+#ifdef alpaka_cuda
   if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
     int numberOfDevices;
     auto status = cudaGetDeviceCount(&numberOfDevices);
@@ -98,6 +106,7 @@ int main(int argc, char** argv) {
       std::cout << "Found " << numberOfDevices << " devices" << std::endl;
     }
   }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
