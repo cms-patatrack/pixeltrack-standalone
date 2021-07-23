@@ -28,7 +28,6 @@ namespace {
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
-        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -44,7 +43,6 @@ int main(int argc, char** argv) {
   int maxEvents = -1;
   std::filesystem::path datadir;
   bool transfer = false;
-  bool validation = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -69,9 +67,6 @@ int main(int argc, char** argv) {
       datadir = *i;
     } else if (*i == "--transfer") {
       transfer = true;
-    } else if (*i == "--validation") {
-      transfer = true;
-      validation = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
