@@ -6,12 +6,10 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include "AlpakaCore/alpakaConfig.h"
 
+#include "AlpakaCore/alpakaConfigCommon.h"
 #include <tbb/task_scheduler_init.h>
-#ifdef alpaka_cuda
-#include <cuda_runtime.h>
-#endif
+
 #include "EventProcessor.h"
 
 namespace {
@@ -23,15 +21,14 @@ namespace {
         << "Options\n"
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
-#ifdef alpaka_cuda
         << " --cuda              Use CUDA backend\n"
-#endif
         << " --numberOfThreads   Number of threads to use (default 1)\n"
         << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -56,13 +53,9 @@ int main(int argc, char** argv) {
       backends.emplace_back(Backend::SERIAL);
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
-    } 
-#ifdef alpaka_cuda
-     else if (*i == "--cuda") {
+    } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
-    }
-#endif
-     else if (*i == "--numberOfThreads") {
+    } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
     } else if (*i == "--numberOfStreams") {
@@ -95,18 +88,20 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-#ifdef alpaka_cuda
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
-    int numberOfDevices;
-    auto status = cudaGetDeviceCount(&numberOfDevices);
-    if (cudaSuccess != status) {
-      std::cout << "Failed to initialize the CUDA runtime, disabling CUDA backend" << std::endl;
-      backends.erase(found);
-    } else {
-      std::cout << "Found " << numberOfDevices << " devices" << std::endl;
-    }
+
+  // TO DO: Debug TBB backend.
+  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
+    numberOfStreams = 1;  // Study intra-event parallelization.
+    // TO DO: Warning: does not seem to be able to control the number of threads in TBB pool
+    // from here with a tbb::task_scheduler_init init(numThreads).
+    // Successfully managed to control the number of threads in TBB pool for now, by adding & updating
+    // tbb::task_scheduler_init init(2) directly inside:
+    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (and make clean_alpaka).
+
+    numberOfThreads = tbb::task_scheduler_init::
+        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
   }
-#endif
+
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
@@ -134,9 +129,6 @@ int main(int argc, char** argv) {
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
-
-  // Initialize tasks scheduler (thread pool)
-  tbb::task_scheduler_init tsi(numberOfThreads);
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
