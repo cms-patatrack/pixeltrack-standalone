@@ -116,6 +116,11 @@ export BACKTRACE_DEPS := $(BACKTRACE_BASE)
 export BACKTRACE_CXXFLAGS := -I$(BACKTRACE_BASE)/include
 export BACKTRACE_LDFLAGS := -L$(BACKTRACE_BASE)/lib -lbacktrace
 
+HWLOC_BASE := $(EXTERNAL_BASE)/hwloc
+export HWLOC_DEPS := $(HWLOC_BASE)
+HWLOC_CXXFLAGS := -I$(HWLOC_BASE)/include
+HWLOC_LDFLAGS := -L$(HWLOC_BASE)/lib -lhwloc
+
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -I$(ALPAKA_BASE)/include
@@ -167,6 +172,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DCMAKE_INSTALL_LIBDIR=lib \
                      -DKokkos_CXX_STANDARD=14 \
                      -DKokkos_ENABLE_SERIAL=On
+KOKKOS_IS_SHARED :=
 ifndef KOKKOS_DEVICE_PARALLEL
   KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=g++
   export KOKKOS_DEVICE_CXX := $(CXX)
@@ -186,6 +192,7 @@ else
     export KOKKOS_DEVICE_TEST_CXXFLAGS := $(CUDA_TEST_CXXFLAGS)
   else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
     KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=$(ROCM_HIPCC) -DCMAKE_CXX_FLAGS="--gcc-toolchain=$(GCC_TOOLCHAIN)" -DKokkos_ENABLE_HIP=On $(KOKKOS_CMAKE_HIP_ARCH) -DBUILD_SHARED_LIBS=On
+    KOKKOS_IS_SHARED := 1
     export KOKKOS_LIB := $(KOKKOS_LIBDIR)/libkokkoscore.so
     export KOKKOS_DEVICE_CXX := $(ROCM_HIPCC)
     export KOKKOS_DEVICE_CXX_NAME := HIPCC
@@ -200,6 +207,11 @@ endif
 ifdef KOKKOS_HOST_PARALLEL
   ifeq ($(KOKKOS_HOST_PARALLEL),PTHREAD)
     KOKKOS_CMAKEFLAGS += -DKokkos_ENABLE_PTHREAD=On
+    ifdef KOKKOS_PTHREAD_USE_HWLOC
+      KOKKOS_CMAKEFLAGS += -DKokkos_ENABLE_HWLOC=On -DKokkos_HWLOC_DIR=$(HWLOC_BASE)
+      KOKKOS_CXXFLAGS += $(HWLOC_CXXFLAGS)
+      KOKKOS_LDFLAGS += $(HWLOC_LDFLAGS)
+    endif
   else
     $(error Unsupported KOKKOS_HOST_PARALLEL $(KOKKOS_HOST_PARALLEL))
   endif
@@ -492,6 +504,22 @@ $(BACKTRACE_BASE):
 	@rm -rf $(BACKTRACE_TMP)
 	$(eval undefine BACKTRACE_TMP)
 
+# hwloc
+.PHONY: external_hwloc
+external_hwloc: $(HWLOC_BASE)
+
+# Let hwloc define its own CXXFLAGS
+$(HWLOC_BASE): CXXFLAGS:=
+$(HWLOC_BASE):
+	$(eval HWLOC_TMP := $(shell mktemp -d))
+	git clone -b hwloc-2.5.0 https://github.com/open-mpi/hwloc.git $(HWLOC_TMP)
+	cd $(HWLOC_TMP)/ && ./autogen.sh
+	cd $(HWLOC_TMP)/ && ./configure --prefix=$@ --enable-shared
+	$(MAKE) -C $(HWLOC_TMP)
+	$(MAKE) -C $(HWLOC_TMP) install
+	@rm -rf $(HWLOC_TMP)
+	$(eval undefine HWLOC_TMP)
+
 # Alpaka
 .PHONY: external_alpaka
 external_alpaka: $(ALPAKA_BASE)
@@ -520,6 +548,11 @@ $(KOKKOS_SRC):
 $(KOKKOS_BUILD):
 	mkdir -p $@
 
+ifeq ($(KOKKOS_HOST_PARALLEL),PTHREAD)
+ifdef KOKKOS_PTHREAD_USE_HWLOC
+$(KOKKOS_MAKEFILE): $(HWLOC_BASE)
+endif
+endif
 $(KOKKOS_MAKEFILE): $(KOKKOS_SRC) | $(KOKKOS_BUILD)
 	cd $(KOKKOS_BUILD) && $(CMAKE) $(KOKKOS_SRC) $(KOKKOS_CMAKEFLAGS)
 
