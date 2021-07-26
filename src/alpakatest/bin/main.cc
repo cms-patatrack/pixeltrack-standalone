@@ -7,9 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "AlpakaCore/alpakaConfigCommon.h"
 #include <tbb/task_scheduler_init.h>
-
-#include <cuda_runtime.h>
 
 #include "EventProcessor.h"
 
@@ -18,7 +17,7 @@ namespace {
     std::cout
         << name
         << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation]\n\n"
+           "[--transfer]\n\n"
         << "Options\n"
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
@@ -28,7 +27,7 @@ namespace {
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-        << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -44,7 +43,6 @@ int main(int argc, char** argv) {
   int maxEvents = -1;
   std::filesystem::path datadir;
   bool transfer = false;
-  bool validation = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -69,10 +67,7 @@ int main(int argc, char** argv) {
       datadir = *i;
     } else if (*i == "--transfer") {
       transfer = true;
-    } else if (*i == "--validation") {
-      transfer = true;
-      validation = true;
-    } else {
+    }  else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
       return EXIT_FAILURE;
@@ -88,22 +83,25 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::CUDA); found != backends.end()) {
-    int numberOfDevices;
-    auto status = cudaGetDeviceCount(&numberOfDevices);
-    if (cudaSuccess != status) {
-      std::cout << "Failed to initialize the CUDA runtime, disabling CUDA backend" << std::endl;
-      backends.erase(found);
-    } else {
-      std::cout << "Found " << numberOfDevices << " devices" << std::endl;
-    }
+
+  // TO DO: Debug TBB backend.
+  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
+    numberOfStreams = 1;  // Study intra-event parallelization.
+    // TO DO: Warning: does not seem to be able to control the number of threads in TBB pool
+    // from here with a tbb::task_scheduler_init init(numThreads).
+    // Successfully managed to control the number of threads in TBB pool for now, by adding & updating
+    // tbb::task_scheduler_init init(2) directly inside:
+    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (and make clean_alpaka).
+
+    numberOfThreads = tbb::task_scheduler_init::
+        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
   }
+
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not backends.empty()) {
-    //edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
     auto addModules = [&](std::string const& prefix, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "TestProducer");
@@ -111,6 +109,7 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "TestProducer2");
       }
     };
+    
     addModules("alpaka_serial_sync::", Backend::SERIAL);
     addModules("alpaka_tbb_async::", Backend::TBB);
     addModules("alpaka_cuda_async::", Backend::CUDA);
@@ -120,14 +119,11 @@ int main(int argc, char** argv) {
     }
   }
   edm::EventProcessor processor(
-      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, false);
   maxEvents = processor.maxEvents();
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
-
-  // Initialize tasks scheduler (thread pool)
-  tbb::task_scheduler_init tsi(numberOfThreads);
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
