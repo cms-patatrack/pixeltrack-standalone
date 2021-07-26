@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     if (transfer) {
       // add modules for transfer
     }
-  }  
+  }
   edm::EventProcessor processor(
       maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, false);
   maxEvents = processor.maxEvents();

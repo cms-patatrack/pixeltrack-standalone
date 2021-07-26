@@ -45,7 +45,7 @@ $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
 # TBB backend
 $(1)_TBB_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.tbb.o))
 $(1)_TBB_DEP := $$($(1)_TBB_OBJ:$.o=$.d)
-# # CUDA backend
+# CUDA backend
 ifdef CUDA_BASE
 $(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
 $(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
@@ -173,9 +173,8 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp >> $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d; \
 	  rm $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp
 
-# # Portable code, for CUDA backend
+# Portable code, for CUDA backend
 ifdef CUDA_BASE
-
 $(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CUDA_NVCC) -x cu -DALPAKA_ACC_GPU_CUDA_ENABLED $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
@@ -240,4 +239,3 @@ $(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cu
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif
-
