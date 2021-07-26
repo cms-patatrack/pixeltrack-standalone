@@ -17,7 +17,7 @@ namespace {
     std::cout
         << name
         << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer] [--validation]\n\n"
+           "[--transfer]\n\n"
         << "Options\n"
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
@@ -27,7 +27,7 @@ namespace {
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-        << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
       datadir = *i;
     } else if (*i == "--transfer") {
       transfer = true;
-    } else {
+    }  else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
       return EXIT_FAILURE;
@@ -102,7 +102,6 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not backends.empty()) {
-    //edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
     auto addModules = [&](std::string const& prefix, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
         edmodules.emplace_back(prefix + "TestProducer");
@@ -110,6 +109,7 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "TestProducer2");
       }
     };
+    
     addModules("alpaka_serial_sync::", Backend::SERIAL);
     addModules("alpaka_tbb_async::", Backend::TBB);
     addModules("alpaka_cuda_async::", Backend::CUDA);
@@ -117,9 +117,9 @@ int main(int argc, char** argv) {
     if (transfer) {
       // add modules for transfer
     }
-  }
+  }  
   edm::EventProcessor processor(
-      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, false);
   maxEvents = processor.maxEvents();
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
