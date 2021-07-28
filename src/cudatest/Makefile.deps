@@ -1,4 +1,4 @@
-cudatest_EXTERNAL_DEPENDS := TBB CUDA
+cudatest_EXTERNAL_DEPENDS := TBB CUDA BOOST BACKTRACE
 CUDACore_DEPENDS := Framework
 Test1_DEPENDS := Framework CUDACore DataFormats
 Test2_DEPENDS := Framework CUDACore
