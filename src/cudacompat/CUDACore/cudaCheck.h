@@ -6,6 +6,10 @@
 #include <sstream>
 #include <stdexcept>
 
+// Boost headers
+#define BOOST_STACKTRACE_USE_BACKTRACE
+#include <boost/stacktrace.hpp>
+
 // CUDA headers
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -26,6 +30,11 @@ namespace cms {
       out << error << ": " << message << "\n";
       if (description)
         out << description << "\n";
+
+      out << "\nCurrent stack trace:\n";
+      out << boost::stacktrace::stacktrace();
+      out << "\n";
+
       throw std::runtime_error(out.str());
     }
 
