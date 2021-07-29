@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/memoryTraits.h"
 
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
@@ -22,15 +23,15 @@ namespace KOKKOS_NAMESPACE {
 
     KOKKOS_INLINE_FUNCTION void calibDigis(
         bool isRun2,
-        Kokkos::View<uint16_t*, KokkosExecSpace> id,
-        Kokkos::View<uint16_t const*, KokkosExecSpace> x,
-        Kokkos::View<uint16_t const*, KokkosExecSpace> y,
-        Kokkos::View<uint16_t*, KokkosExecSpace> adc,
-        SiPixelGainForHLTonGPU<KokkosExecSpace> ped,
+        const Kokkos::View<uint16_t*, KokkosExecSpace>& id,
+        const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& x,
+        const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& y,
+        const Kokkos::View<uint16_t*, KokkosExecSpace>& adc,
+        const SiPixelGainForHLTonGPU<KokkosExecSpace>& ped,
         int numElements,
-        Kokkos::View<uint32_t*, KokkosExecSpace> moduleStart,        // just to zero first
-        Kokkos::View<uint32_t*, KokkosExecSpace> nClustersInModule,  // just to zero them
-        Kokkos::View<uint32_t*, KokkosExecSpace> clusModuleStart,    // just to zero first
+        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleStart,        // just to zero first
+        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& nClustersInModule,  // just to zero them
+        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& clusModuleStart,    // just to zero first
         const size_t index) {
       // zero for next kernels...
       if (0 == index) {

@@ -9,14 +9,15 @@
 #include "KokkosDataFormats/approx_atan2.h"
 #include "KokkosDataFormats/BeamSpotKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
+#include "KokkosCore/atomic.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuPixelRecHits {
     KOKKOS_INLINE_FUNCTION void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                                         BeamSpotPOD const* __restrict__ bs,
-                                        SiPixelDigisKokkos<KokkosExecSpace>::DeviceConstView pdigis,
+                                        const SiPixelDigisKokkos<KokkosExecSpace>::DeviceConstView& pdigis,
                                         int numElements,
-                                        SiPixelClustersKokkos<KokkosExecSpace>::DeviceConstView pclusters,
+                                        const SiPixelClustersKokkos<KokkosExecSpace>::DeviceConstView& pclusters,
                                         TrackingRecHit2DSOAView* hits,
                                         Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
       // FIXME
@@ -44,11 +45,11 @@ namespace KOKKOS_NAMESPACE {
           agc->ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
           agc->ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
         });
-        if (0 == teamMember.team_rank()) {
+        Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
           agc->endCapZ[0] = ag.endCapZ[0] - bs->z;
           agc->endCapZ[1] = ag.endCapZ[1] - bs->z;
           //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
-        }
+        });
       }
 
       // to be moved in common namespace...
@@ -67,18 +68,19 @@ namespace KOKKOS_NAMESPACE {
         return;
 
 #ifdef GPU_DEBUG
-      if (teamMember.team_rank() == 0) {
+      Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
         auto k = clusters.moduleStart(1 + teamMember.league_rank());
         while (digis.moduleInd(k) == InvId)
           ++k;
         assert(digis.moduleInd(k) == me);
-      }
+      });
 #endif
 
 #ifdef GPU_DEBUG
       if (me % 100 == 1)
-        if (teamMember.team_rank() == 0)
+        Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
           printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
+        });
 #endif
 
       for (int startClus = 0, endClus = nclus; startClus < endClus; startClus += MaxHitsInIter) {
@@ -124,10 +126,10 @@ namespace KOKKOS_NAMESPACE {
           cl -= startClus;
           assert(cl >= 0);
           assert(cl < MaxHitsInIter);
-          Kokkos::atomic_min_fetch<uint32_t>(&clusParams->minRow[cl], x);
-          Kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxRow[cl], x);
-          Kokkos::atomic_min_fetch<uint32_t>(&clusParams->minCol[cl], y);
-          Kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxCol[cl], y);
+          cms::kokkos::atomic_min_fetch<uint32_t>(&clusParams->minRow[cl], x);
+          cms::kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxRow[cl], x);
+          cms::kokkos::atomic_min_fetch<uint32_t>(&clusParams->minCol[cl], y);
+          cms::kokkos::atomic_max_fetch<uint32_t>(&clusParams->maxCol[cl], y);
         }
 
         teamMember.team_barrier();
@@ -151,15 +153,15 @@ namespace KOKKOS_NAMESPACE {
           auto x = digis.xx(i);
           auto y = digis.yy(i);
           auto ch = std::min(digis.adc(i), pixmx);
-          Kokkos::atomic_add<int32_t>(&clusParams->charge[cl], ch);
+          cms::kokkos::atomic_add<int32_t>(&clusParams->charge[cl], ch);
           if (clusParams->minRow[cl] == x)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_f_X[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_f_X[cl], ch);
           if (clusParams->maxRow[cl] == x)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_l_X[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_l_X[cl], ch);
           if (clusParams->minCol[cl] == y)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_f_Y[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_f_Y[cl], ch);
           if (clusParams->maxCol[cl] == y)
-            Kokkos::atomic_add<int32_t>(&clusParams->Q_l_Y[cl], ch);
+            cms::kokkos::atomic_add<int32_t>(&clusParams->Q_l_Y[cl], ch);
         }
 
         teamMember.team_barrier();

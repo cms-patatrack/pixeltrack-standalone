@@ -2,6 +2,7 @@
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/memoryTraits.h"
 
 template <typename MemorySpace>
 class SiPixelDigisKokkos {
@@ -68,20 +69,20 @@ public:
 
   class DeviceConstView {
   public:
-    KOKKOS_INLINE_FUNCTION uint16_t xx(int i) const { return xx_[i]; }
-    KOKKOS_INLINE_FUNCTION uint16_t yy(int i) const { return yy_[i]; }
-    KOKKOS_INLINE_FUNCTION uint16_t adc(int i) const { return adc_[i]; }
-    KOKKOS_INLINE_FUNCTION uint16_t moduleInd(int i) const { return moduleInd_[i]; }
-    KOKKOS_INLINE_FUNCTION int32_t clus(int i) const { return clus_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint16_t xx(int i) const { return xx_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint16_t yy(int i) const { return yy_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint16_t adc(int i) const { return adc_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint16_t moduleInd(int i) const { return moduleInd_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION int32_t clus(int i) const { return clus_[i]; }
 
     friend class SiPixelDigisKokkos;
 
     // private:
-    Kokkos::View<uint16_t const*, MemorySpace> xx_;
-    Kokkos::View<uint16_t const*, MemorySpace> yy_;
-    Kokkos::View<uint16_t const*, MemorySpace> adc_;
-    Kokkos::View<uint16_t const*, MemorySpace> moduleInd_;
-    Kokkos::View<int32_t const*, MemorySpace> clus_;
+    Kokkos::View<uint16_t const*, MemorySpace, Restrict> xx_;
+    Kokkos::View<uint16_t const*, MemorySpace, Restrict> yy_;
+    Kokkos::View<uint16_t const*, MemorySpace, Restrict> adc_;
+    Kokkos::View<uint16_t const*, MemorySpace, Restrict> moduleInd_;
+    Kokkos::View<int32_t const*, MemorySpace, Restrict> clus_;
   };
 
   DeviceConstView view() const { return DeviceConstView{xx_d, yy_d, adc_d, moduleInd_d, clus_d}; }

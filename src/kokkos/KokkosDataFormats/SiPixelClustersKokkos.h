@@ -2,6 +2,7 @@
 #define CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/memoryTraits.h"
 
 template <typename MemorySpace>
 class SiPixelClustersKokkos {
@@ -42,18 +43,18 @@ public:
   public:
     // DeviceConstView() = default;
 
-    KOKKOS_INLINE_FUNCTION uint32_t moduleStart(int i) const { return moduleStart_[i]; }
-    KOKKOS_INLINE_FUNCTION uint32_t clusInModule(int i) const { return clusInModule_[i]; }
-    KOKKOS_INLINE_FUNCTION uint32_t moduleId(int i) const { return moduleId_[i]; }
-    KOKKOS_INLINE_FUNCTION uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint32_t moduleStart(int i) const { return moduleStart_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint32_t clusInModule(int i) const { return clusInModule_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint32_t moduleId(int i) const { return moduleId_[i]; }
+    KOKKOS_FORCEINLINE_FUNCTION uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
 
     friend SiPixelClustersKokkos;
 
     // private:
-    Kokkos::View<uint32_t const *, MemorySpace> moduleStart_;
-    Kokkos::View<uint32_t const *, MemorySpace> clusInModule_;
-    Kokkos::View<uint32_t const *, MemorySpace> moduleId_;
-    Kokkos::View<uint32_t const *, MemorySpace> clusModuleStart_;
+    Kokkos::View<uint32_t const *, MemorySpace, Restrict> moduleStart_;
+    Kokkos::View<uint32_t const *, MemorySpace, Restrict> clusInModule_;
+    Kokkos::View<uint32_t const *, MemorySpace, Restrict> moduleId_;
+    Kokkos::View<uint32_t const *, MemorySpace, Restrict> clusModuleStart_;
   };
 
   DeviceConstView view() const { return DeviceConstView{moduleStart_d, clusInModule_d, moduleId_d, clusModuleStart_d}; }

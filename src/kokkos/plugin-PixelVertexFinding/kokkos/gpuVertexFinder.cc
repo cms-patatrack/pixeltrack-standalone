@@ -10,9 +10,9 @@
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
-    KOKKOS_INLINE_FUNCTION void loadTracks(Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks,
-                                           Kokkos::View<ZVertexSoA, KokkosExecSpace> soa,
-                                           Kokkos::View<WorkSpace, KokkosExecSpace> ws,
+    KOKKOS_INLINE_FUNCTION void loadTracks(const Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace, Restrict>& tracks,
+                                           const Kokkos::View<ZVertexSoA, KokkosExecSpace, Restrict>& soa,
+                                           const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& ws,
                                            const float ptMin,
                                            const size_t idx) {
       auto nHits = tracks().nHits(idx);
@@ -36,7 +36,7 @@ namespace KOKKOS_NAMESPACE {
         return;
 
       auto& data = ws();
-      auto it = Kokkos::atomic_fetch_add(&data.ntrks, 1);
+      auto it = cms::kokkos::atomic_fetch_add(&data.ntrks, 1U);
       data.itrk[it] = idx;
       data.zt[it] = tracks().zip(idx);
       data.ezt2[it] = fit.covariance(idx)(14);
@@ -45,15 +45,16 @@ namespace KOKKOS_NAMESPACE {
 
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
-    void vertexFinderOneKernel(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
-                               Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
-                               typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror hdata,
-                               int minT,       // min number of neighbours to be "seed"
-                               float eps,      // max absolute distance to cluster
-                               float errmax,   // max error to be "seed"
-                               float chi2max,  // max normalized distance to cluster,
-                               KokkosExecSpace const& execSpace,
-                               Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
+    void vertexFinderOneKernel(
+        const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
+        const typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror& hdata,
+        int minT,       // min number of neighbours to be "seed"
+        float eps,      // max absolute distance to cluster
+        float errmax,   // max error to be "seed"
+        float chi2max,  // max normalized distance to cluster,
+        KokkosExecSpace const& execSpace,
+        Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
       clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, execSpace, teamPolicy);
 
       Kokkos::parallel_for(
@@ -74,8 +75,8 @@ namespace KOKKOS_NAMESPACE {
       sortByPt2Host(vdata, vws, hdata, execSpace, teamPolicy);
     }
 #else
-    void vertexFinderKernel1(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
-                             Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
+    void vertexFinderKernel1(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
+                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
                              int minT,       // min number of neighbours to be "seed"
                              float eps,      // max absolute distance to cluster
                              float errmax,   // max error to be "seed"
@@ -92,8 +93,8 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    void vertexFinderKernel2(Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
-                             Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
+    void vertexFinderKernel2(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
+                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
                              typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror hdata,
                              KokkosExecSpace const& execSpace,
                              Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
@@ -110,13 +111,15 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
     Kokkos::View<ZVertexSoA, KokkosExecSpace> Producer::make(
-        Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> const& tksoa,
+        Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace, Restrict> const& tksoa,
         float ptMin,
         KokkosExecSpace const& execSpace) const {
       // std::cout << "producing Vertices on GPU" << std::endl;
-      Kokkos::View<ZVertexSoA, KokkosExecSpace> vertices_d(Kokkos::ViewAllocateWithoutInitializing("vertices"));
+      Kokkos::View<ZVertexSoA, KokkosExecSpace, Restrict> vertices_d(
+          Kokkos::ViewAllocateWithoutInitializing("vertices"));
       auto vertices_h = Kokkos::create_mirror_view(vertices_d);
-      Kokkos::View<WorkSpace, KokkosExecSpace> workspace_d(Kokkos::ViewAllocateWithoutInitializing("workspace"));
+      Kokkos::View<WorkSpace, KokkosExecSpace, Restrict> workspace_d(
+          Kokkos::ViewAllocateWithoutInitializing("workspace"));
 
       using TeamPolicy = Kokkos::TeamPolicy<KokkosExecSpace>;
       using MemberType = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
@@ -132,7 +135,11 @@ namespace KOKKOS_NAMESPACE {
           hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, TkSoA::stride())),
           KOKKOS_LAMBDA(const size_t i) { loadTracks(tksoa, vertices_d, workspace_d, ptMin, i); });
 
+#if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
       auto policy = TeamPolicy(execSpace, 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#else
+      auto policy = TeamPolicy(execSpace, 1, 128).set_scratch_size(0, Kokkos::PerTeam(8192 * 4));
+#endif
 
       if (oneKernel_) {
         // implemented only for density clustesrs

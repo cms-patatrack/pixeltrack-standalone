@@ -6,6 +6,7 @@
 //
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/atomic.h"
 
 namespace cms {
   namespace kokkos {
@@ -29,7 +30,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      constexpr int emplace_back_unsafe(Ts &&... args) {
+      constexpr int emplace_back_unsafe(Ts &&...args) {
         auto previousSize = m_size;
         m_size++;
         if (previousSize < maxSize) {
@@ -50,24 +51,24 @@ namespace cms {
 
       // thread-safe version of the vector, when used in a CUDA kernel
       KOKKOS_INLINE_FUNCTION int push_back(const T &element) {
-        auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+        auto previousSize = cms::kokkos::atomic_fetch_add(&m_size, 1);
         if (previousSize < maxSize) {
           m_data[previousSize] = element;
           return previousSize;
         } else {
-          Kokkos::atomic_sub(&m_size, 1);
+          cms::kokkos::atomic_sub(&m_size, 1);
           return -1;
         }
       }
 
       template <class... Ts>
-      KOKKOS_INLINE_FUNCTION int emplace_back(Ts &&... args) {
-        auto previousSize = Kokkos::atomic_fetch_add(&m_size, 1);
+      KOKKOS_INLINE_FUNCTION int emplace_back(Ts &&...args) {
+        auto previousSize = cms::kokkos::atomic_fetch_add(&m_size, 1);
         if (previousSize < maxSize) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
           return previousSize;
         } else {
-          Kokkos::atomic_sub(&m_size, 1);
+          cms::kokkos::atomic_sub(&m_size, 1);
           return -1;
         }
       }

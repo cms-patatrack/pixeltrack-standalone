@@ -7,6 +7,7 @@
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/kokkosConfigCommon.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
 namespace gpuClustering {
@@ -50,12 +51,15 @@ namespace gpuClustering {
           if (nclus == 0)
             return;
 
-          if (teamMember.team_rank() == 0 && nclus > ::gpuClustering::MaxNumClustersPerModules)
-            printf("Warning too many clusters in module %d in block %d: %d > %d\n",
-                   thisModuleId,
-                   teamMember.league_rank(),
-                   nclus,
-                   ::gpuClustering::MaxNumClustersPerModules);
+          Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
+            if (nclus > ::gpuClustering::MaxNumClustersPerModules) {
+              printf("Warning too many clusters in module %d in block %d: %d > %d\n",
+                     thisModuleId,
+                     teamMember.league_rank(),
+                     nclus,
+                     ::gpuClustering::MaxNumClustersPerModules);
+            }
+          });
 
           auto first = firstPixel + teamMember.team_rank();
 
@@ -75,9 +79,11 @@ namespace gpuClustering {
           }
 
 #ifdef GPU_DEBUG
-          if (thisModuleId % 100 == 1)
-            if (teamMember.team_rank() == 0)
+          if (thisModuleId % 100 == 1) {
+            Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
               printf("start clusterizer for module %d in block %d\n", thisModuleId, teamMember.league_rank());
+            });
+          }
 #endif
 
           charge_view_type charge(teamMember.team_scratch(shared_view_level),
@@ -100,7 +106,7 @@ namespace gpuClustering {
               continue;  // not valid
             if (id(i) != thisModuleId)
               break;  // end of module
-            Kokkos::atomic_fetch_add(&charge(clusterId(i)), adc(i));
+            cms::kokkos::atomic_add<int>(&charge(clusterId(i)), adc(i));
           }
           teamMember.team_barrier();
 

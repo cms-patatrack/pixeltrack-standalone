@@ -350,17 +350,18 @@ namespace KOKKOS_NAMESPACE {
     }
 
     // Kernel to perform Raw to Digi conversion
-    KOKKOS_FUNCTION void RawToDigi_kernel(const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace> cablingMap,
-                                          const Kokkos::View<const unsigned char *, KokkosExecSpace> modToUnp,
+    // TODO: in principle could use restrict here
+    KOKKOS_FUNCTION void RawToDigi_kernel(const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosExecSpace> &cablingMap,
+                                          const Kokkos::View<const unsigned char *, KokkosExecSpace> &modToUnp,
                                           const uint32_t wordCounter,
-                                          const Kokkos::View<unsigned int const *, KokkosExecSpace> word,
-                                          const Kokkos::View<uint8_t const *, KokkosExecSpace> fedIds,
-                                          Kokkos::View<uint16_t *, KokkosExecSpace> xx,
-                                          Kokkos::View<uint16_t *, KokkosExecSpace> yy,
-                                          Kokkos::View<uint16_t *, KokkosExecSpace> adc,
-                                          Kokkos::View<uint32_t *, KokkosExecSpace> pdigi,
-                                          Kokkos::View<uint32_t *, KokkosExecSpace> rawIdArr,
-                                          Kokkos::View<uint16_t *, KokkosExecSpace> moduleId,
+                                          const Kokkos::View<unsigned int const *, KokkosExecSpace> &word,
+                                          const Kokkos::View<uint8_t const *, KokkosExecSpace> &fedIds,
+                                          const Kokkos::View<uint16_t *, KokkosExecSpace> &xx,
+                                          const Kokkos::View<uint16_t *, KokkosExecSpace> &yy,
+                                          const Kokkos::View<uint16_t *, KokkosExecSpace> &adc,
+                                          const Kokkos::View<uint32_t *, KokkosExecSpace> &pdigi,
+                                          const Kokkos::View<uint32_t *, KokkosExecSpace> &rawIdArr,
+                                          const Kokkos::View<uint16_t *, KokkosExecSpace> &moduleId,
                                           cms::kokkos::SimpleVector<PixelErrorCompact> *err,
                                           const bool useQualityInfo,
                                           const bool includeErrors,
@@ -472,8 +473,8 @@ namespace KOKKOS_NAMESPACE {
 
 namespace pixelgpudetails {
   template <typename ExecSpace>
-  void fillHitsModuleStart(Kokkos::View<uint32_t const *, ExecSpace> cluStart,
-                           Kokkos::View<uint32_t *, ExecSpace> moduleStart,
+  void fillHitsModuleStart(const Kokkos::View<uint32_t const *, ExecSpace> &cluStart,
+                           const Kokkos::View<uint32_t *, ExecSpace> &moduleStart,
                            ExecSpace const &execSpace) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
 
@@ -704,21 +705,20 @@ namespace KOKKOS_NAMESPACE {
                   << " threads\n";
 #endif
 
-        ::gpuClustering::findClus<KokkosExecSpace>(digis_d.c_moduleInd(),
-                                                   digis_d.c_xx(),
-                                                   digis_d.c_yy(),
-                                                   clusters_d.c_moduleStart(),
-                                                   clusters_d.clusInModule(),
-                                                   clusters_d.moduleId(),
-                                                   digis_d.clus(),
-                                                   int(wordCounter),
-                                                   teamPolicy,
-                                                   execSpace);
+        gpuClustering::findClus(digis_d.c_moduleInd(),
+                                digis_d.c_xx(),
+                                digis_d.c_yy(),
+                                clusters_d.c_moduleStart(),
+                                clusters_d.clusInModule(),
+                                clusters_d.moduleId(),
+                                digis_d.clus(),
+                                int(wordCounter),
+                                teamPolicy,
+                                execSpace);
 
 #ifdef GPU_DEBUG
         execSpace.fence();
 #endif
-
         // apply charge cut
         ::gpuClustering::clusterChargeCut<KokkosExecSpace>(digis_d.moduleInd(),
                                                            digis_d.c_adc(),

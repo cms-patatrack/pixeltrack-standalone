@@ -157,49 +157,49 @@ namespace KOKKOS_NAMESPACE {
     CAHitNtupletGeneratorKernels(Params const& params) : m_params(params) {}
     ~CAHitNtupletGeneratorKernels() = default;
 
-    Kokkos::View<TupleMultiplicity const, KokkosExecSpace> tupleMultiplicity() const {
+    Kokkos::View<TupleMultiplicity const, KokkosExecSpace, Restrict> tupleMultiplicity() const {
       return device_tupleMultiplicity_;
     }
 
     void launchKernels(HitsOnCPU const& hh,
-                       Kokkos::View<TkSoA, KokkosExecSpace> tuples_d,
+                       const Kokkos::View<TkSoA, KokkosExecSpace, Restrict>& tuples_d,
                        KokkosExecSpace const& execSpace);
 
     void classifyTuples(HitsOnCPU const& hh,
-                        Kokkos::View<TkSoA, KokkosExecSpace> tuples_d,
+                        const Kokkos::View<TkSoA, KokkosExecSpace, Restrict>& tuples_d,
                         KokkosExecSpace const& execSpace);
 
     void fillHitDetIndices(HitsView const* hv,
-                           Kokkos::View<TkSoA, KokkosExecSpace> tuples_d,
+                           const Kokkos::View<TkSoA, KokkosExecSpace, Restrict>& tuples_d,
                            KokkosExecSpace const& execSpace);
 
     void buildDoublets(HitsOnCPU const& hh, KokkosExecSpace const& execSpace);
 
     void allocateOnGPU(KokkosExecSpace const& execSpace);
 
-    static void printCounters(Kokkos::View<Counters const, KokkosExecSpace> counters);
+    static void printCounters(const Kokkos::View<Counters const, KokkosExecSpace, Restrict>& counters);
 
     Counters* counters_ = nullptr;
 
   private:
-    Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> device_theCellNeighbors_;
-    Kokkos::View<CAConstants::CellNeighbors*, KokkosExecSpace> device_theCellNeighborsContainer_;
-    Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> device_theCellTracks_;
-    Kokkos::View<CAConstants::CellTracks*, KokkosExecSpace> device_theCellTracksContainer_;
+    Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict> device_theCellNeighbors_;
+    Kokkos::View<CAConstants::CellNeighbors*, KokkosExecSpace, Restrict> device_theCellNeighborsContainer_;
+    Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict> device_theCellTracks_;
+    Kokkos::View<CAConstants::CellTracks*, KokkosExecSpace, Restrict> device_theCellTracksContainer_;
 
-    Kokkos::View<GPUCACell*, KokkosExecSpace> device_theCells_;
-    Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> device_isOuterHitOfCell_;
-    Kokkos::View<uint32_t, KokkosExecSpace> device_nCells_;
+    Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict> device_theCells_;
+    Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict> device_isOuterHitOfCell_;
+    Kokkos::View<uint32_t, KokkosExecSpace, Restrict> device_nCells_;
 
-    Kokkos::View<HitToTuple, KokkosExecSpace> device_hitToTuple_;
+    Kokkos::View<HitToTuple, KokkosExecSpace, Restrict> device_hitToTuple_;
 
-    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> device_hitToTuple_apc_;
+    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> device_hitToTuple_apc_;
 
-    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace> device_hitTuple_apc_;
+    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> device_hitTuple_apc_;
 
-    Kokkos::View<TupleMultiplicity, KokkosExecSpace> device_tupleMultiplicity_;
+    Kokkos::View<TupleMultiplicity, KokkosExecSpace, Restrict> device_tupleMultiplicity_;
 
-    Kokkos::View<uint8_t*, KokkosExecSpace> device_tmws_;
+    Kokkos::View<uint8_t*, KokkosExecSpace, Restrict> device_tmws_;
 
     //Kokkos::View<cms::kokkos::AtomicPairCounter::c_type*, KokkosExecSpace> device_storage_;
 

@@ -2,16 +2,18 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 
 #include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/memoryTraits.h"
+#include "KokkosCore/atomic.h"
 
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void fitVertices(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                            Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                            float chi2Max,  // for outlier rejection
-                                            const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void fitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                                 const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+                                                 float chi2Max,  // for outlier rejection
+                                                 const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -58,14 +60,14 @@ namespace KOKKOS_NAMESPACE {
       for (unsigned i = teamRank; i < nt; i += teamSize) {
         if (iv[i] > 9990) {
           if (verbose)
-            Kokkos::atomic_add(noise, 1);
+            cms::kokkos::atomic_add(noise, 1);
           continue;
         }
         assert(iv[i] >= 0);
         assert(iv[i] < int(foundClusters));
         auto w = 1.f / ezt2[i];
-        Kokkos::atomic_add(&zv[iv[i]], zt[i] * w);
-        Kokkos::atomic_add(&wv[iv[i]], w);
+        cms::kokkos::atomic_add(&zv[iv[i]], zt[i] * w);
+        cms::kokkos::atomic_add(&wv[iv[i]], w);
       }
 
       team_member.team_barrier();
@@ -89,8 +91,8 @@ namespace KOKKOS_NAMESPACE {
           iv[i] = 9999;
           continue;
         }
-        Kokkos::atomic_add(&chi2[iv[i]], c2);
-        Kokkos::atomic_add(&nn[iv[i]], 1);
+        cms::kokkos::atomic_add(&chi2[iv[i]], c2);
+        cms::kokkos::atomic_add(&nn[iv[i]], 1);
       }
       team_member.team_barrier();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, foundClusters), [=](int i) {
@@ -104,10 +106,11 @@ namespace KOKKOS_NAMESPACE {
         printf("and %d noise\n", noise[0]);
     }
 
-    KOKKOS_INLINE_FUNCTION void fitVerticesKernel(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                                  Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                                  float chi2Max,  // for outlier rejection
-                                                  const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void fitVerticesKernel(
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        float chi2Max,  // for outlier rejection
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       fitVertices(vdata, vws, chi2Max, team_member);
     }
 

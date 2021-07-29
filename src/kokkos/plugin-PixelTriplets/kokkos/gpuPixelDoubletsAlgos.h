@@ -9,6 +9,7 @@
 
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "KokkosCore/VecArray.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosDataFormats/approx_atan2.h"
 
 #include <Kokkos_Core.hpp>
@@ -23,15 +24,17 @@ namespace KOKKOS_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    KOKKOS_INLINE_FUNCTION void doubletsFromHisto(
+    KOKKOS_FORCEINLINE_FUNCTION void doubletsFromHisto(
         uint8_t const* __restrict__ layerPairs,
         uint32_t nPairs,
-        Kokkos::View<GPUCACell*, KokkosExecSpace> cells,
-        Kokkos::View<uint32_t, KokkosExecSpace> nCells,
-        Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace> cellNeighbors,  // not used at the moment
-        Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace> cellTracks,        // not used at the moment
+        const Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict>& cells,
+        const Kokkos::View<uint32_t, KokkosExecSpace, Restrict>& nCells,
+        const Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict>&
+            cellNeighbors,  // not used at the moment
+        const Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict>&
+            cellTracks,  // not used at the moment
         TrackingRecHit2DSOAView const& __restrict__ hh,
-        Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace> isOuterHitOfCell,
+        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict>& isOuterHitOfCell,
         int16_t const* __restrict__ phicuts,
         float const* __restrict__ minz,
         float const* __restrict__ maxz,
@@ -75,13 +78,13 @@ namespace KOKKOS_NAMESPACE {
       uint32_t* innerLayerCumulativeSize = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t) * nPairsMax);
       uint32_t* ntot = (uint32_t*)teamMember.team_shmem().get_shmem(sizeof(uint32_t));
 
-      if (teamRank == 0) {
+      Kokkos::single(Kokkos::PerTeam(teamMember), [&]() {
         innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
         for (uint32_t i = 1; i < nPairs; ++i) {
           innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
         }
         ntot[0] = innerLayerCumulativeSize[nPairs - 1];
-      }
+      });
       teamMember.team_barrier();
 
       // x runs faster
@@ -227,9 +230,9 @@ namespace KOKKOS_NAMESPACE {
             if (doPtCut && ptcut(oi, idphi))
               continue;
 
-            auto ind = Kokkos::atomic_fetch_add(nCells.data(), 1);
+            auto ind = cms::kokkos::atomic_fetch_add(nCells.data(), 1U);
             if (ind >= maxNumOfDoublets) {
-              Kokkos::atomic_decrement(nCells.data());
+              cms::kokkos::atomic_decrement(nCells.data());
               break;
             }  // move to SimpleVector??
             // int layerPairId, int doubletId, int innerHitId, int outerHitId)

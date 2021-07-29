@@ -2,16 +2,17 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 
 #include "KokkosCore/kokkos_assert.h"
+#include "KokkosCore/memoryTraits.h"
 
 #include "gpuVertexFinder.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_INLINE_FUNCTION void splitVertices(Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-                                              Kokkos::View<WorkSpace, KokkosExecSpace> vws,
-                                              float maxChi2,
-                                              const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void splitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+                                                   const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+                                                   float maxChi2,
+                                                   const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
       auto& __restrict__ data = *vdata.data();
@@ -61,7 +62,7 @@ namespace KOKKOS_NAMESPACE {
           if (iv[k] == int(kv)) {
             // FIXME: different from old = atomicInc(&nq, MAXTK)
             // where nq will be zero when nq >= MAXTK, is it OK?
-            uint32_t old = Kokkos::atomic_fetch_add(nq, 1);
+            uint32_t old = cms::kokkos::atomic_fetch_add(nq, 1U);
             zz[old] = zt[k] - zv[kv];
             newV[old] = zz[old] < 0 ? 0 : 1;
             ww[old] = 1.f / ezt2[k];
@@ -82,23 +83,23 @@ namespace KOKKOS_NAMESPACE {
         int more = 1;
         while (more) {
           more = 0;
-          if (0 == teamRank) {
+          Kokkos::single(Kokkos::PerTeam(team_member), [&]() {
             znew[0] = 0;
             znew[1] = 0;
             wnew[0] = 0;
             wnew[1] = 0;
-          }
+          });
           team_member.team_barrier();
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
             auto i = newV[k];
-            Kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
-            Kokkos::atomic_add(&wnew[i], ww[k]);
+            cms::kokkos::atomic_add(&znew[i], zz[k] * ww[k]);
+            cms::kokkos::atomic_add(&wnew[i], ww[k]);
           });
           team_member.team_barrier();
-          if (0 == teamRank) {
+          Kokkos::single(Kokkos::PerTeam(team_member), [&]() {
             znew[0] /= wnew[0];
             znew[1] /= wnew[1];
-          }
+          });
           team_member.team_barrier();
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=, &more](int k) {
             auto d0 = fabs(zz[k] - znew[0]);
@@ -123,8 +124,10 @@ namespace KOKKOS_NAMESPACE {
 
         auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-        if (verbose && 0 == teamRank)
-          printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
+        if (verbose) {
+          Kokkos::single(Kokkos::PerTeam(team_member),
+                         [&]() { printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]); });
+        }
 
         if (chi2Dist < 4)
           continue;
@@ -132,8 +135,8 @@ namespace KOKKOS_NAMESPACE {
         // get a new global vertex
         uint32_t* igv = (uint32_t*)team_member.team_shmem().get_shmem(sizeof(uint32_t));
 
-        if (0 == teamRank)
-          igv[0] = Kokkos::atomic_fetch_add(&ws.nvIntermediate, 1);
+        Kokkos::single(Kokkos::PerTeam(team_member),
+                       [&]() { igv[0] = cms::kokkos::atomic_fetch_add(&ws.nvIntermediate, 1U); });
         team_member.team_barrier();
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, nq[0]), [=](int k) {
           if (1 == newV[k])
@@ -143,9 +146,9 @@ namespace KOKKOS_NAMESPACE {
       }  // loop on vertices
     }
 
-    KOKKOS_INLINE_FUNCTION void splitVerticesKernel(
-        Kokkos::View<ZVertices, KokkosExecSpace> vdata,
-        Kokkos::View<WorkSpace, KokkosExecSpace> vws,
+    KOKKOS_FORCEINLINE_FUNCTION void splitVerticesKernel(
+        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
         float maxChi2,
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       splitVertices(vdata, vws, maxChi2, team_member);

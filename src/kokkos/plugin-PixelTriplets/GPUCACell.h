@@ -9,6 +9,7 @@
 
 #include "KokkosCore/SimpleVector.h"
 #include "KokkosCore/VecArray.h"
+#include "KokkosCore/atomic.h"
 #include "KokkosCore/kokkos_assert.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
@@ -38,13 +39,13 @@ public:
 
   GPUCACell() = default;
 
-  KOKKOS_INLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,
-                                   CellTracksVector& cellTracks,
-                                   Hits const& hh,
-                                   int layerPairId,
-                                   int doubletId,
-                                   hindex_type innerHitId,
-                                   hindex_type outerHitId) {
+  KOKKOS_FORCEINLINE_FUNCTION void init(CellNeighborsVector& cellNeighbors,
+                                        CellTracksVector& cellTracks,
+                                        Hits const& hh,
+                                        int layerPairId,
+                                        int doubletId,
+                                        hindex_type innerHitId,
+                                        hindex_type outerHitId) {
     theInnerHitId = innerHitId;
     theOuterHitId = outerHitId;
     theDoubletId = doubletId;
@@ -62,26 +63,20 @@ public:
     assert(tracks().empty());
   }
 
-  KOKKOS_INLINE_FUNCTION int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
+  KOKKOS_FORCEINLINE_FUNCTION int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
     // use smart cache
     if (outerNeighbors().empty()) {
       auto i = cellNeighbors.extend();  // maybe waisted....
       if (i > 0) {
         cellNeighbors[i].reset();
 #ifdef KOKKOS_BACKEND_SERIAL
-        // TODO: this is really a workaround for the case where only
-        // the serial backend is available in the Kokkos runtime. For
-        // some reason the effect atomic_compare_exchange in that
-        // particular case does not propagate properly. A direct,
-        // non-atomic assignment appears to work though, as would e.g.
-        // std::atomic_thread_fence(std::memory_order_seq_cst);
-        // after the atomic_compare_exchange() call.
+        // cuda/cudacompat also do direct assignment when compiling for CPU
         theOuterNeighbors = &cellNeighbors[i];
 #else
         auto zero = (ptrAsInt)(&cellNeighbors[0]);
-        Kokkos::atomic_compare_exchange((ptrAsInt*)(&theOuterNeighbors),
-                                        zero,
-                                        (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
+        cms::kokkos::atomic_compare_exchange((ptrAsInt*)(&theOuterNeighbors),
+                                             zero,
+                                             (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
 #endif
         // effectively: theOuterNeighbors = &cellNeighbors[i];
       } else
@@ -92,17 +87,17 @@ public:
     return outerNeighbors().push_back(t);
   }
 
-  KOKKOS_INLINE_FUNCTION int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
+  KOKKOS_FORCEINLINE_FUNCTION int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
     if (tracks().empty()) {
       auto i = cellTracks.extend();  // maybe waisted....
       if (i > 0) {
         cellTracks[i].reset();
 #ifdef KOKKOS_BACKEND_SERIAL
-        // TODO: See comment in addOuterNeighbor()
+        // cuda/cudacompat also do direct assignment when compiling for CPU
         theTracks = &cellTracks[i];
 #else
         auto zero = (ptrAsInt)(&cellTracks[0]);
-        Kokkos::atomic_compare_exchange(
+        cms::kokkos::atomic_compare_exchange(
             (ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
 #endif
         // effectively: theTracks = &cellTracks[i];
@@ -114,26 +109,26 @@ public:
     return tracks().push_back(t);
   }
 
-  KOKKOS_INLINE_FUNCTION CellTracks& tracks() { return *theTracks; }
-  KOKKOS_INLINE_FUNCTION CellTracks const& tracks() const { return *theTracks; }
-  KOKKOS_INLINE_FUNCTION CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
-  KOKKOS_INLINE_FUNCTION CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
-  KOKKOS_INLINE_FUNCTION float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
-  KOKKOS_INLINE_FUNCTION float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
-  KOKKOS_INLINE_FUNCTION float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
-  KOKKOS_INLINE_FUNCTION float get_outer_y(Hits const& hh) const { return hh.yGlobal(theOuterHitId); }
-  KOKKOS_INLINE_FUNCTION float get_inner_z(Hits const& hh) const { return theInnerZ; }
+  KOKKOS_FORCEINLINE_FUNCTION CellTracks& tracks() { return *theTracks; }
+  KOKKOS_FORCEINLINE_FUNCTION CellTracks const& tracks() const { return *theTracks; }
+  KOKKOS_FORCEINLINE_FUNCTION CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
+  KOKKOS_FORCEINLINE_FUNCTION CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
+  KOKKOS_FORCEINLINE_FUNCTION float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_outer_y(Hits const& hh) const { return hh.yGlobal(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_inner_z(Hits const& hh) const { return theInnerZ; }
   // { return hh.zGlobal(theInnerHitId); } // { return theInnerZ; }
-  KOKKOS_INLINE_FUNCTION float get_outer_z(Hits const& hh) const { return hh.zGlobal(theOuterHitId); }
-  KOKKOS_INLINE_FUNCTION float get_inner_r(Hits const& hh) const { return theInnerR; }
+  KOKKOS_FORCEINLINE_FUNCTION float get_outer_z(Hits const& hh) const { return hh.zGlobal(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_inner_r(Hits const& hh) const { return theInnerR; }
   // { return hh.rGlobal(theInnerHitId); } // { return theInnerR; }
-  KOKKOS_INLINE_FUNCTION float get_outer_r(Hits const& hh) const { return hh.rGlobal(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_outer_r(Hits const& hh) const { return hh.rGlobal(theOuterHitId); }
 
-  KOKKOS_INLINE_FUNCTION auto get_inner_iphi(Hits const& hh) const { return hh.iphi(theInnerHitId); }
-  KOKKOS_INLINE_FUNCTION auto get_outer_iphi(Hits const& hh) const { return hh.iphi(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION auto get_inner_iphi(Hits const& hh) const { return hh.iphi(theInnerHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION auto get_outer_iphi(Hits const& hh) const { return hh.iphi(theOuterHitId); }
 
-  KOKKOS_INLINE_FUNCTION float get_inner_detIndex(Hits const& hh) const { return hh.detectorIndex(theInnerHitId); }
-  KOKKOS_INLINE_FUNCTION float get_outer_detIndex(Hits const& hh) const { return hh.detectorIndex(theOuterHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_inner_detIndex(Hits const& hh) const { return hh.detectorIndex(theInnerHitId); }
+  KOKKOS_FORCEINLINE_FUNCTION float get_outer_detIndex(Hits const& hh) const { return hh.detectorIndex(theOuterHitId); }
 
   constexpr unsigned int get_inner_hit_id() const { return theInnerHitId; }
   constexpr unsigned int get_outer_hit_id() const { return theOuterHitId; }
@@ -183,7 +178,7 @@ public:
                    hardCurvCut));  // FIXME tune cuts
   }
 
-  KOKKOS_INLINE_FUNCTION static bool areAlignedRZ(
+  KOKKOS_FORCEINLINE_FUNCTION static bool areAlignedRZ(
       float r1, float z1, float ri, float zi, float ro, float zo, const float ptmin, const float thetaCut) {
     float radius_diff = std::abs(r1 - ro);
     float distance_13_squared = radius_diff * radius_diff + (z1 - zo) * (z1 - zo);
@@ -195,10 +190,10 @@ public:
     return tan_12_13_half_mul_distance_13_squared * pMin <= thetaCut * distance_13_squared * radius_diff;
   }
 
-  KOKKOS_INLINE_FUNCTION bool dcaCut(Hits const& hh,
-                                     GPUCACell const& otherCell,
-                                     const float region_origin_radius_plus_tolerance,
-                                     const float maxCurv) const {
+  KOKKOS_FORCEINLINE_FUNCTION bool dcaCut(Hits const& hh,
+                                          GPUCACell const& otherCell,
+                                          const float region_origin_radius_plus_tolerance,
+                                          const float maxCurv) const {
     auto x1 = otherCell.get_inner_x(hh);
     auto y1 = otherCell.get_inner_y(hh);
 

@@ -21,14 +21,15 @@ using team_policy = Kokkos::TeamPolicy<KokkosExecSpace>;
 using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
 #ifdef ONE_KERNEL
-void vertexFinderOneKernel(Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace> vdata,
-                           Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace> vws,
-                           typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror hdata,
-                           int minT,       // min number of neighbours to be "seed"
-                           float eps,      // max absolute distance to cluster
-                           float errmax,   // max error to be "seed"
-                           float chi2max,  // max normalized distance to cluster,
-                           const team_policy& policy) {
+void vertexFinderOneKernel(
+    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
+    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
+    const typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror& hdata,
+    int minT,       // min number of neighbours to be "seed"
+    float eps,      // max absolute distance to cluster
+    float errmax,   // max error to be "seed"
+    float chi2max,  // max normalized distance to cluster,
+    const team_policy& policy) {
   clusterTracksByDensityHost(vdata, vws, minT, eps, errmax, chi2max, KokkosExecSpace(), policy);
 
   Kokkos::parallel_for(
@@ -109,8 +110,8 @@ struct ClusterGenerator {
 #define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, M))
 
 void test() {
-  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace> onGPU_d("onGPU_d");
-  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace> ws_d("ws_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict> onGPU_d("onGPU_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict> ws_d("ws_d");
 
   Event ev;
 
