@@ -10,6 +10,7 @@
 
 #include <cuda_runtime.h>
 
+#include "CUDACore/getCachingDeviceAllocator.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -86,6 +87,16 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
+
+#if CUDA_VERSION >= 11020
+  // Initialize the CUDA memory pool
+  uint64_t threshold = cms::cuda::allocator::minCachedBytes();
+  for (int device = 0; device < numberOfDevices; ++device) {
+    cudaMemPool_t pool;
+    cudaDeviceGetDefaultMemPool(&pool, device);
+    cudaMemPoolSetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &threshold);
+  }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
