@@ -15,6 +15,7 @@
 /alpaka
 /alpakatest
 /cuda
+/cudacompat
 /cudadev
 /cudatest
 /cudauvm
