@@ -526,7 +526,7 @@ $(HWLOC_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b 0.6.0 $@
+	git clone git@github.com:alpaka-group/alpaka.git -b 0.6.1 $@
 
 # Cupla
 .PHONY: external_cupla
