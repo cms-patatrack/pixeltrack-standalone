@@ -37,6 +37,7 @@ else
 # CUDA platform at $(CUDA_BASE)
 CUDA_LIBDIR := $(CUDA_BASE)/lib64
 USER_CUDAFLAGS :=
+export CUDA_BASE
 export CUDA_DEPS := $(CUDA_BASE)/lib64/libcudart.so
 export CUDA_ARCH := 35 50 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
