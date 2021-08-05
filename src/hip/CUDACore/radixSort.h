@@ -92,8 +92,6 @@ __device__ __forceinline__ void radixSortImpl(
   __shared__ int32_t c[sb], ct[sb], cu[sb];
 
   __shared__ int ibs;
-  __shared__ int ibs2;
-  __shared__ int ibs3;
   __shared__ int p;
 
   assert(size > 0);
@@ -151,8 +149,6 @@ __device__ __forceinline__ void radixSortImpl(
     // broadcast
     ibs = size - 1;
 
-    // Workaround for hang in gpuVertexFinder_t.
-    ibs3 = ibs;
 
     __syncthreads();
     while (__syncthreads_and(ibs > 0)) {
@@ -185,8 +181,10 @@ __device__ __forceinline__ void radixSortImpl(
         assert(c[bin] >= 0);
       if (threadIdx.x == 0) {
         ibs -= sb;
-        // Workaround for problems in radixSort_t.
-        ibs2 = ibs;
+
+        // Fix for problems in radixSort_t.
+        // Without this, this c[bin] >=0 assert above will be triggered.
+        __threadfence();
       }
       __syncthreads();
     }
