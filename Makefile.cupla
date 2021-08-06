@@ -19,7 +19,7 @@ ALPAKA_BASE     :=
 
 # host compiler
 CXX             := g++
-CXXFLAGS        := -std=c++14 -O2 -g
+CXXFLAGS        := -std=c++17 -O2 -g
 HOST_CXXFLAGS   := -pthread -fPIC -Wall -Wextra
 
 # OpenMP flags
