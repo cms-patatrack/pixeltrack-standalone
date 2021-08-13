@@ -8,6 +8,13 @@
 
 // Boost headers
 #define BOOST_STACKTRACE_USE_BACKTRACE
+// The definition of BOOST_NOINLINE is __attribute__((__noinline__))
+// and the AMD HIP definition of __noinline__ is __attribute__((noinline))
+// The preprocessor mixes these to create an erroneous __attribute__ clause.
+// Workaround is to define BOOST_NOINLINE in the correct form directly.
+// Note: a fix has been merged upstream, so this might become unnecessary
+// in a future version of Boost (>= 1.78).
+#define BOOST_NOINLINE __attribute__((noinline))
 #include <boost/stacktrace.hpp>
 
 // CUDA headers
