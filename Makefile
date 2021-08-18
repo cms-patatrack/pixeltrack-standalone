@@ -339,6 +339,7 @@ env.sh: Makefile
 ifeq ($(NEED_BOOST),true)
 	@echo -n '$(BOOST_BASE)/lib:'                                           >> $@
 endif
+	@echo -n '$(HWLOC_BASE)/lib:'                                           >> $@
 ifdef CUDA_BASE
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 endif
