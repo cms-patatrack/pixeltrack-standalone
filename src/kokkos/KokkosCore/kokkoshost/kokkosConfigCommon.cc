@@ -1,6 +1,11 @@
 #include "KokkosCore/kokkosConfigCommon.h"
+#include "KokkosCore/ExecSpaceCache.h"
 
 #include <Kokkos_Core.hpp>
+
+#ifdef KOKKOS_ENABLE_CUDA
+#include "CUDACore/StreamCache.h"
+#endif
 
 namespace kokkos_common {
   class InitializeScopeGuard::Impl {
@@ -31,7 +36,12 @@ namespace kokkos_common {
       Kokkos::Impl::post_initialize(args);
     }
 
-    ~Impl() { Kokkos::finalize(); }
+    ~Impl() {
+#ifdef KOKKOS_ENABLE_CUDA
+      cms::kokkos::getExecSpaceCache<Kokkos::Cuda>().clear();
+#endif
+      Kokkos::finalize();
+    }
   };
 
   InitializeScopeGuard::InitializeScopeGuard(std::vector<Backend> const& backends, int numberOfInnerThreads) {

@@ -30,7 +30,7 @@ namespace cms {
         ScopedContextGetterBase() : execSpaceSpecific_(std::make_unique<impl::ExecSpaceSpecific<ExecSpace>>()) {}
 
         explicit ScopedContextGetterBase(const ProductBase& data)
-            : execSpaceSpecific_(data.execSpaceSpecific<ExecSpace>().cloneShareStream()) {}
+            : execSpaceSpecific_(data.execSpaceSpecific<ExecSpace>().cloneShareExecSpace()) {}
 
         explicit ScopedContextGetterBase(std::unique_ptr<ExecSpaceSpecific<ExecSpace>> specific)
             : execSpaceSpecific_(std::move(specific)) {}

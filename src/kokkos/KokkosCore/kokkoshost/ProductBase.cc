@@ -42,7 +42,7 @@ namespace cms {
 #ifdef KOKKOS_ENABLE_CUDA
       void ExecSpaceSpecific<Kokkos::Cuda>::enqueueCallback(edm::WaitingTaskWithArenaHolder holder) {
         cudaCheck(cudaStreamAddCallback(
-            stream_.get(), cudaScopedContextCallback, new CallbackData{std::move(holder), device()}, 0));
+            space_->stream(), cudaScopedContextCallback, new CallbackData{std::move(holder), device()}, 0));
       }
 
       void ExecSpaceSpecific<Kokkos::Cuda>::synchronizeWith(ExecSpaceSpecific const& other) {
@@ -52,7 +52,7 @@ namespace cms {
           throw std::runtime_error("Handling data from multiple devices is not yet supported");
         }
 
-        if (other.stream_.get() != stream_.get()) {
+        if (other.space_->stream() != space_->stream()) {
           // Different streams, need to synchronize
           if (not other.isAvailable()) {
             // Event not yet occurred, so need to add synchronization
@@ -60,7 +60,7 @@ namespace cms {
             // wait for an event, so all subsequent work in the stream
             // will run only after the event has "occurred" (i.e. data
             // product became available).
-            cudaCheck(cudaStreamWaitEvent(stream_.get(), other.event_.get(), 0),
+            cudaCheck(cudaStreamWaitEvent(space_->stream(), other.event_.get(), 0),
                       "Failed to make a stream to wait for an event");
           }
         }

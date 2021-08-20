@@ -11,8 +11,8 @@
 #include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
 #include "CUDACore/SharedStreamPtr.h"
-#include "CUDACore/StreamCache.h"
 #endif
+#include "KokkosCore/ExecSpaceCache.h"
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
@@ -28,10 +28,10 @@ namespace cms {
       template <typename ExecSpace>
       class ExecSpaceSpecific : public ExecSpaceSpecificBase {
       public:
-        ExecSpaceSpecific() = default;
+        ExecSpaceSpecific() : space_(getExecSpaceCache<ExecSpace>().get()) {}
         ~ExecSpaceSpecific() override = default;
 
-        std::unique_ptr<ExecSpaceSpecific> cloneShareStream() const {
+        std::unique_ptr<ExecSpaceSpecific> cloneShareExecSpace() const {
           return std::make_unique<ExecSpaceSpecific>(*this);
         }
 
@@ -39,57 +39,57 @@ namespace cms {
 
         void recordEvent() {}
         void enqueueCallback(edm::WaitingTaskWithArenaHolder withArenaHolder) {
-          space_.fence();
+          execSpace().fence();
           auto holder = withArenaHolder.makeWaitingTaskHolderAndRelease();
           holder.doneWaiting(nullptr);
         }
         void synchronizeWith(ExecSpaceSpecific const& other) const { other.execSpace().fence(); }
 
-        ExecSpace const& execSpace() const { return space_; }
+        ExecSpace const& execSpace() const { return space_->space(); }
 
       private:
-        ExecSpace space_;
+        std::shared_ptr<ExecSpaceWrapper<ExecSpace>> space_;
       };
 
 #ifdef KOKKOS_ENABLE_CUDA
       template <>
       class ExecSpaceSpecific<Kokkos::Cuda> : public ExecSpaceSpecificBase {
       public:
-        ExecSpaceSpecific() : ExecSpaceSpecific(cms::cuda::getStreamCache().get()) {}
-        explicit ExecSpaceSpecific(cms::cuda::SharedStreamPtr stream)
-            : ExecSpaceSpecific(stream, cms::cuda::getEventCache().get()) {}
-        explicit ExecSpaceSpecific(cms::cuda::SharedStreamPtr stream, cms::cuda::SharedEventPtr event)
-            : space_(stream.get()), stream_(std::move(stream)), event_(std::move(event)) {}
+        ExecSpaceSpecific() : ExecSpaceSpecific(getExecSpaceCache<Kokkos::Cuda>().get()) {}
+        explicit ExecSpaceSpecific(std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> execSpace)
+            : ExecSpaceSpecific(std::move(execSpace), cms::cuda::getEventCache().get()) {}
+        explicit ExecSpaceSpecific(std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> execSpace,
+                                   cms::cuda::SharedEventPtr event)
+            : space_(std::move(execSpace)), event_(std::move(event)) {}
 
         ~ExecSpaceSpecific() override = default;
 
-        std::unique_ptr<ExecSpaceSpecific> cloneShareStream() const {
-          return std::make_unique<ExecSpaceSpecific>(stream_);
+        std::unique_ptr<ExecSpaceSpecific> cloneShareExecSpace() const {
+          return std::make_unique<ExecSpaceSpecific>(space_);
         }
 
         std::unique_ptr<ExecSpaceSpecific> cloneShareAll() const {
-          return std::make_unique<ExecSpaceSpecific>(stream_, event_);
+          return std::make_unique<ExecSpaceSpecific>(space_, event_);
         }
 
         void recordEvent() {
           // Intentionally not checking the return value to avoid throwing
           // exceptions. If this call would fail, we should get failures
           // elsewhere as well.
-          cudaEventRecord(event_.get(), stream_.get());
+          cudaEventRecord(event_.get(), space_->stream());
         }
 
         void enqueueCallback(edm::WaitingTaskWithArenaHolder holder);
 
         void synchronizeWith(ExecSpaceSpecific const& other);
 
-        int device() const { return space_.cuda_device(); }
-        Kokkos::Cuda const& execSpace() const { return space_; }
+        int device() const { return space_->space().cuda_device(); }
+        Kokkos::Cuda const& execSpace() const { return space_->space(); }
 
       private:
         bool isAvailable() const;
 
-        Kokkos::Cuda space_;
-        cms::cuda::SharedStreamPtr stream_;
+        std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> space_;
         cms::cuda::SharedEventPtr event_;
       };
 #endif
