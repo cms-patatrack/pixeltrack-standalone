@@ -1,4 +1,5 @@
-//#include <iostream>
+#include <algorithm>
+#include <iostream>
 
 #include <tbb/task.h>
 
@@ -44,7 +45,7 @@ namespace edm {
 
   void StreamSchedule::runToCompletionAsync(WaitingTaskHolder h) {
     auto task =
-        make_functor_task(tbb::task::allocate_root(), [this, h]() mutable { processOneEventAsync(std::move(h)); });
+        make_functor_task(tbb::task::allocate_root(), [this, h]() mutable { processEventBatchAsync(std::move(h)); });
     if (streamId_ == 0) {
       tbb::task::spawn(*task);
     } else {
@@ -52,26 +53,26 @@ namespace edm {
     }
   }
 
-  void StreamSchedule::processOneEventAsync(WaitingTaskHolder h) {
-    auto event = source_->produce(streamId_, registry_);
-    if (event) {
-      // Pass the event object ownership to the "end-of-event" task
-      // Pass a non-owning pointer to the event to preceding tasks
-      //std::cout << "Begin processing event " << event->eventID() << std::endl;
-      auto eventPtr = event.get();
-      auto nextEventTask =
-          make_waiting_task(tbb::task::allocate_root(),
-                            [this, h = std::move(h), ev = std::move(event)](std::exception_ptr const* iPtr) mutable {
-                              ev.reset();
-                              if (iPtr) {
-                                h.doneWaiting(*iPtr);
-                              } else {
-                                for (auto const& worker : path_) {
-                                  worker->reset();
-                                }
-                                processOneEventAsync(std::move(h));
-                              }
-                            });
+  void StreamSchedule::processEventBatchAsync(WaitingTaskHolder h) {
+    auto events = source_->produce(streamId_, registry_);
+    if (not events.empty()) {
+      // Pass the event batch ownership to the "end-of-event" task
+      // Pass a non-owning event range to the preceding tasks
+      //std::cout << "Begin processing a batch of " << events.size() << " events starting from " << events.range().at(0).eventID() << std::endl;
+      auto eventsRange = events.range();
+      auto nextEventTask = make_waiting_task(
+          tbb::task::allocate_root(),
+          [this, h = std::move(h), events = std::move(events)](std::exception_ptr const* iPtr) mutable {
+            events.clear();
+            if (iPtr) {
+              h.doneWaiting(*iPtr);
+            } else {
+              for (auto const& worker : path_) {
+                worker->reset();
+              }
+              processEventBatchAsync(std::move(h));
+            }
+          });
       // To guarantee that the nextEventTask is spawned also in
       // absence of Workers, and also to prevent spawning it before
       // all workers have been processed (should not happen though)
@@ -79,10 +80,10 @@ namespace edm {
 
       for (auto iWorker = path_.rbegin(); iWorker != path_.rend(); ++iWorker) {
         //std::cout << "calling doWorkAsync for " << iWorker->get() << " with nextEventTask " << nextEventTask << std::endl;
-        (*iWorker)->doWorkAsync(*eventPtr, *eventSetup_, nextEventTask);
+        (*iWorker)->doWorkAsync(eventsRange, *eventSetup_, nextEventTask);
       }
     } else {
-      h.doneWaiting(std::exception_ptr{});
+      h.doneWaiting();
     }
   }
 

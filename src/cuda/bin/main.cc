@@ -22,7 +22,8 @@ namespace {
            "[--histogram] [--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
+        << " --numberOfStreams   Number of concurrent batch of events (default 0=numberOfThreads)\n"
+        << " --batchEvents       Number of events to process in a batch (default 1 for individual events)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
   int numberOfStreams = 0;
+  int batchEvents = 1;
   int maxEvents = -1;
   std::filesystem::path datadir;
   bool transfer = false;
@@ -54,6 +56,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--numberOfStreams") {
       ++i;
       numberOfStreams = std::stoi(*i);
+    } else if (*i == "--batchEvents") {
+      ++i;
+      batchEvents = std::stoul(*i);
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);
@@ -130,7 +135,7 @@ int main(int argc, char** argv) {
     }
   }
   edm::EventProcessor processor(
-      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+      batchEvents, maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
   maxEvents = processor.maxEvents();
 
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "

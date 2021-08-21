@@ -1,7 +1,8 @@
+//#include <iostream>
 #include "Framework/Worker.h"
 
 namespace edm {
-  void Worker::prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask) {
+  void Worker::prefetchAsync(EventRange events, EventSetup const& eventSetup, WaitingTask* iTask) {
     //std::cout << "prefetchAsync for " << this << " iTask " << iTask << std::endl;
     bool expected = false;
     if (prefetchRequested_.compare_exchange_strong(expected, true)) {
@@ -10,7 +11,7 @@ namespace edm {
       iTask->increment_ref_count();
       for (Worker* dep : itemsToGet_) {
         //std::cout << "calling doWorkAsync for " << dep << " with " << iTask << std::endl;
-        dep->doWorkAsync(event, eventSetup, iTask);
+        dep->doWorkAsync(events, eventSetup, iTask);
       }
 
       auto count = iTask->decrement_ref_count();

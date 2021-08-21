@@ -5,8 +5,10 @@
 #include <filesystem>
 #include <string>
 #include <memory>
+#include <vector>
 
 #include "Framework/Event.h"
+#include "Framework/EventBatch.h"
 #include "DataFormats/FEDRawDataCollection.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
@@ -15,14 +17,16 @@
 namespace edm {
   class Source {
   public:
-    explicit Source(int maxEvents, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
+    explicit Source(
+        int batchEvents, int maxEvents, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
 
     int maxEvents() const { return maxEvents_; }
 
     // thread safe
-    std::unique_ptr<Event> produce(int streamId, ProductRegistry const& reg);
+    EventBatch produce(int streamId, ProductRegistry const& reg);
 
   private:
+    int batchEvents_;
     int maxEvents_;
     std::atomic<int> numEvents_;
     EDPutTokenT<FEDRawDataCollection> const rawToken_;

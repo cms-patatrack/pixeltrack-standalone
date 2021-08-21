@@ -24,7 +24,7 @@ namespace edm {
 
   WaitingTaskWithArenaHolder::~WaitingTaskWithArenaHolder() {
     if (m_task) {
-      doneWaiting(std::exception_ptr{});
+      doneWaiting();
     }
   }
 
@@ -58,10 +58,7 @@ namespace edm {
   // into the correct arena of threads. Use of the arena allows doneWaiting
   // to be called from a thread outside the arena of threads that will manage
   // the task. doneWaiting can be called from a non-TBB thread.
-  void WaitingTaskWithArenaHolder::doneWaiting(std::exception_ptr iExcept) {
-    if (iExcept) {
-      m_task->dependentTaskFailed(iExcept);
-    }
+  void WaitingTaskWithArenaHolder::doneWaiting() {
     //enqueue can run the task before we finish
     // doneWaiting and some other thread might
     // try to reuse this object. Resetting
@@ -73,6 +70,17 @@ namespace edm {
       // the arena if there is not one already.
       m_arena->enqueue([task = task]() { tbb::task::spawn(*task); });
     }
+  }
+
+  // This spawns the task. The arena is needed to get the task spawned
+  // into the correct arena of threads. Use of the arena allows doneWaiting
+  // to be called from a thread outside the arena of threads that will manage
+  // the task. doneWaiting can be called from a non-TBB thread.
+  void WaitingTaskWithArenaHolder::doneWaiting(std::exception_ptr iExcept) {
+    if (iExcept) {
+      m_task->dependentTaskFailed(iExcept);
+    }
+    doneWaiting();
   }
 
   // This next function is useful if you know from the context that
