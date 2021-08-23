@@ -4,8 +4,9 @@
 #include <vector>
 
 // CMSSW includes
+#include "CUDACore/Context.h"
+#include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -16,7 +17,6 @@
 #include "DataFormats/FEDRawData.h"
 #include "DataFormats/FEDRawDataCollection.h"
 #include "DataFormats/SiPixelErrorCompact.h"
-#include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/EventSetup.h"
 #include "Framework/PluginFactory.h"
@@ -26,18 +26,14 @@
 #include "SiPixelClusterThresholds.h"
 #include "SiPixelRawToClusterGPUKernel.h"
 
-class SiPixelRawToClusterCUDA : public edm::EDProducerExternalWork {
+class SiPixelRawToClusterCUDA : public cms::cuda::SynchronizingEDProducer {
 public:
   explicit SiPixelRawToClusterCUDA(edm::ProductRegistry& reg);
   ~SiPixelRawToClusterCUDA() override = default;
 
 private:
-  void acquire(const edm::Event& iEvent,
-               const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-
-  cms::cuda::ContextState ctxState_;
+  void acquire(const edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::AcquireContext& ctx) override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext& ctx) override;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
@@ -72,9 +68,7 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
 
 void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
-                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
-
+                                      cms::cuda::AcquireContext& ctx) {
   auto const& hgpuMap = iSetup.get<SiPixelROCsStatusAndMappingWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
     throw std::runtime_error(
@@ -170,9 +164,9 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                              ctx.stream());
 }
 
-void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  cms::cuda::ScopedContextProduce ctx{ctxState_};
-
+void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent,
+                                      const edm::EventSetup& iSetup,
+                                      cms::cuda::ProduceContext& ctx) {
   auto tmp = gpuAlgo_.getResults();
   ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
   ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
