@@ -14,7 +14,8 @@ namespace cms {
   namespace cuda {
     namespace impl {
       class ScopedContextGetterBase;
-    }
+      class ContextGetterBase;
+    }  // namespace impl
 
     /**
      * The purpose of this class is to wrap CUDA data to edm::Event in a
@@ -43,6 +44,8 @@ namespace cms {
     private:
       friend class impl::ScopedContextGetterBase;
       friend class ScopedContextProduce;
+      friend class impl::ContextGetterBase;
+      friend class ProduceContext;
       friend class edm::Wrapper<Product<T>>;
 
       explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, T data)

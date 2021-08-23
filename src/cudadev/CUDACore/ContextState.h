@@ -26,6 +26,9 @@ namespace cms {
       friend class ScopedContextAcquire;
       friend class ScopedContextProduce;
       friend class ScopedContextTask;
+      friend class AcquireContext;
+      friend class ProduceContext;
+      friend class TaskContext;
 
       void set(int device, SharedStreamPtr stream) {
         throwIfStream();

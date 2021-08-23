@@ -11,7 +11,8 @@ namespace cms {
   namespace cuda {
     namespace impl {
       class ScopedContextBase;
-    }
+      class Context;
+    }  // namespace impl
 
     /**
      * Base class for all instantiations of CUDA<T> to hold the
@@ -61,6 +62,8 @@ namespace cms {
     private:
       friend class impl::ScopedContextBase;
       friend class ScopedContextProduce;
+      friend class impl::Context;
+      friend class ProduceContext;
 
       // The following function is intended to be used only from ScopedContext
       const SharedStreamPtr& streamPtr() const { return stream_; }
