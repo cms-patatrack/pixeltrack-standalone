@@ -1,27 +1,25 @@
 #include <cuda_runtime.h>
 
+#include "CUDACore/Context.h"
+#include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDACore/HostProduct.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
-#include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
 
 // Switch on to enable checks and printout for found tracks
 #undef PIXEL_DEBUG_PRODUCE
 
-class PixelTrackSoAFromCUDA : public edm::EDProducerExternalWork {
+class PixelTrackSoAFromCUDA : public cms::cuda::SynchronizingEDProducer {
 public:
   explicit PixelTrackSoAFromCUDA(edm::ProductRegistry& reg);
   ~PixelTrackSoAFromCUDA() override = default;
 
 private:
-  void acquire(edm::Event const& iEvent,
-               edm::EventSetup const& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
+  void acquire(edm::Event const& iEvent, edm::EventSetup const& iSetup, cms::cuda::AcquireContext& ctx) override;
+  void produce(edm::Event& iEvent, edm::EventSetup const& iSetup, cms::cuda::ProduceContext&) override;
 
   edm::EDGetTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenCUDA_;
   edm::EDPutTokenT<PixelTrackHeterogeneous> tokenSOA_;
@@ -35,15 +33,13 @@ PixelTrackSoAFromCUDA::PixelTrackSoAFromCUDA(edm::ProductRegistry& reg)
 
 void PixelTrackSoAFromCUDA::acquire(edm::Event const& iEvent,
                                     edm::EventSetup const& iSetup,
-                                    edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  cms::cuda::Product<PixelTrackHeterogeneous> const& inputDataWrapped = iEvent.get(tokenCUDA_);
-  cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
-  auto const& inputData = ctx.get(inputDataWrapped);
+                                    cms::cuda::AcquireContext& ctx) {
+  auto const& inputData = ctx.get(iEvent, tokenCUDA_);
 
   soa_ = inputData.toHostAsync(ctx.stream());
 }
 
-void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
+void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup, cms::cuda::ProduceContext&) {
 #ifdef PIXEL_DEBUG_PRODUCE
   auto const& tsoa = *soa_;
   auto maxTracks = tsoa.stride();

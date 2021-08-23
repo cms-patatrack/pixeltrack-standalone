@@ -1,23 +1,21 @@
+#include "CUDACore/Context.h"
+#include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "DataFormats/SiPixelDigisSoA.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
-#include "Framework/EDProducer.h"
 #include "Framework/PluginFactory.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDACore/host_unique_ptr.h"
 
-class SiPixelDigisSoAFromCUDA : public edm::EDProducerExternalWork {
+class SiPixelDigisSoAFromCUDA : public cms::cuda::SynchronizingEDProducer {
 public:
   explicit SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg);
   ~SiPixelDigisSoAFromCUDA() override = default;
 
 private:
-  void acquire(const edm::Event& iEvent,
-               const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  void acquire(const edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::AcquireContext& ctx) override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) override;
 
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
   edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
@@ -36,10 +34,7 @@ SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)
 
 void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
-                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  // Do the transfer in a CUDA stream parallel to the computation CUDA stream
-  cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder)};
-
+                                      cms::cuda::AcquireContext& ctx) {
   const auto& gpuDigis = ctx.get(iEvent, digiGetToken_);
 
   nDigis_ = gpuDigis.nDigis();
@@ -49,7 +44,7 @@ void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
   clus_ = gpuDigis.clusToHostAsync(ctx.stream());
 }
 
-void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) {
   // The following line copies the data from the pinned host memory to
   // regular host memory. In principle that feels unnecessary (why not
   // just use the pinned host memory?). There are a few arguments for

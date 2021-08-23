@@ -1,5 +1,6 @@
+#include "CUDACore/Context.h"
+#include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -8,22 +9,19 @@
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
-#include "Framework/EDProducer.h"
 
 #include "SimpleAtomicHisto.h"
 
 #include <map>
 #include <fstream>
 
-class HistoValidator : public edm::EDProducerExternalWork {
+class HistoValidator : public cms::cuda::SynchronizingEDProducer {
 public:
   explicit HistoValidator(edm::ProductRegistry& reg);
 
 private:
-  void acquire(const edm::Event& iEvent,
-               const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  void acquire(const edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::AcquireContext& ctx) override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) override;
   void endJob() override;
 
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
@@ -88,11 +86,7 @@ HistoValidator::HistoValidator(edm::ProductRegistry& reg)
       trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
       vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
 
-void HistoValidator::acquire(const edm::Event& iEvent,
-                             const edm::EventSetup& iSetup,
-                             edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  auto const& pdigis = iEvent.get(digiToken_);
-  cms::cuda::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
+void HistoValidator::acquire(const edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::AcquireContext& ctx) {
   auto const& digis = ctx.get(iEvent, digiToken_);
   auto const& clusters = ctx.get(iEvent, clusterToken_);
   auto const& hits = ctx.get(iEvent, hitToken_);
@@ -113,7 +107,7 @@ void HistoValidator::acquire(const edm::Event& iEvent,
   h_size = hits.sizeToHostAsync(ctx.stream());
 }
 
-void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) {
   histos["digi_n"].fill(nDigis);
   for (uint32_t i = 0; i < nDigis; ++i) {
     histos["digi_adc"].fill(h_adc[i]);

@@ -1,5 +1,5 @@
+#include "CUDACore/Context.h"
 #include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -63,24 +63,24 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   ss << "Event " << iEvent.eventID() << " ";
 
   {
-    auto const& pdigis = iEvent.get(digiToken_);
-    cms::cuda::ScopedContextProduce ctx{pdigis};
-    auto const& count = iEvent.get(digiClusterCountToken_);
-    auto const& digis = ctx.get(iEvent, digiToken_);
-    auto const& clusters = ctx.get(iEvent, clusterToken_);
+    cms::cuda::runProduce(iEvent.streamID(), [&](cms::cuda::ProduceContext& ctx) {
+      auto const& count = iEvent.get(digiClusterCountToken_);
+      auto const& digis = ctx.get(iEvent, digiToken_);
+      auto const& clusters = ctx.get(iEvent, clusterToken_);
 
-    if (digis.nModules() != count.nModules()) {
-      ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();
-      ok = false;
-    }
-    if (digis.nDigis() != count.nDigis()) {
-      ss << "\n N(digis) is " << digis.nDigis() << " expected " << count.nDigis();
-      ok = false;
-    }
-    if (clusters.nClusters() != count.nClusters()) {
-      ss << "\n N(clusters) is " << clusters.nClusters() << " expected " << count.nClusters();
-      ok = false;
-    }
+      if (digis.nModules() != count.nModules()) {
+        ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();
+        ok = false;
+      }
+      if (digis.nDigis() != count.nDigis()) {
+        ss << "\n N(digis) is " << digis.nDigis() << " expected " << count.nDigis();
+        ok = false;
+      }
+      if (clusters.nClusters() != count.nClusters()) {
+        ss << "\n N(clusters) is " << clusters.nClusters() << " expected " << count.nClusters();
+        ok = false;
+      }
+    });
   }
 
   {

@@ -1,6 +1,7 @@
 #include <cuda_runtime.h>
 
 #include "CUDADataFormats/BeamSpotCUDA.h"
+#include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -8,19 +9,17 @@
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
-#include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
 #include "CondFormats/PixelCPEFast.h"
 
 #include "PixelRecHitGPUKernel.h"
 
-class SiPixelRecHitCUDA : public edm::EDProducer {
+class SiPixelRecHitCUDA : public cms::cuda::EDProducer {
 public:
   explicit SiPixelRecHitCUDA(edm::ProductRegistry& reg);
   ~SiPixelRecHitCUDA() override = default;
 
 private:
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext& ctx) override;
 
   // The mess with inputs will be cleaned up when migrating to the new framework
   const edm::EDGetTokenT<cms::cuda::Product<BeamSpotCUDA>> tBeamSpot;
@@ -36,13 +35,10 @@ SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
       tokenDigi_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
       tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
 
-void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
+void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es, cms::cuda::ProduceContext& ctx) {
   PixelCPEFast const& fcpe = es.get<PixelCPEFast>();
 
-  auto const& pclusters = iEvent.get(token_);
-  cms::cuda::ScopedContextProduce ctx{pclusters};
-
-  auto const& clusters = ctx.get(pclusters);
+  auto const& clusters = ctx.get(iEvent, token_);
   auto const& digis = ctx.get(iEvent, tokenDigi_);
   auto const& bs = ctx.get(iEvent, tBeamSpot);
 

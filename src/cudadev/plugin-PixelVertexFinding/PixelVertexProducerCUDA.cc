@@ -6,7 +6,7 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
-#include "CUDACore/ScopedContext.h"
+#include "CUDACore/Context.h"
 
 #include "gpuVertexFinder.h"
 
@@ -58,14 +58,13 @@ PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
 }
 
 void PixelVertexProducerCUDA::produceOnGPU(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  auto const& ptracks = iEvent.get(tokenGPUTrack_);
+  cms::cuda::runProduce(iEvent.streamID(), [&](cms::cuda::ProduceContext& ctx) {
+    auto const* tracks = ctx.get(iEvent, tokenGPUTrack_).get();
 
-  cms::cuda::ScopedContextProduce ctx{ptracks};
-  auto const* tracks = ctx.get(ptracks).get();
+    assert(tracks);
 
-  assert(tracks);
-
-  ctx.emplace(iEvent, tokenGPUVertex_, gpuAlgo_.makeAsync(ctx.stream(), tracks, ptMin_));
+    ctx.emplace(iEvent, tokenGPUVertex_, gpuAlgo_.makeAsync(ctx.stream(), tracks, ptMin_));
+  });
 }
 
 void PixelVertexProducerCUDA::produceOnCPU(edm::Event& iEvent, const edm::EventSetup& iSetup) {
