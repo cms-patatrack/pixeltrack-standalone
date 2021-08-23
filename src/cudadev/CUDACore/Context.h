@@ -230,6 +230,27 @@ namespace cms::cuda {
                                              })});
     }
   }  // namespace impl
+
+  template <typename F>
+  void runAcquire(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder holder, ContextState& state, F func) {
+    AcquireContext context(streamID, std::move(holder), state);
+    func(context);
+    context.commit();
+  }
+
+  template <typename F>
+  void runProduce(edm::StreamID streamID, F func) {
+    ProduceContext context(streamID);
+    func(context);
+    context.commit();
+  }
+
+  template <typename F>
+  void runProduce(ContextState& state, F func) {
+    ProduceContext context(state);
+    func(context);
+    context.commit();
+  }
 }  // namespace cms::cuda
 
 #endif
