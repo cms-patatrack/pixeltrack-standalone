@@ -35,7 +35,7 @@ The application is designed to require minimal dependencies on the system. All p
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.10)    | CUDA 11.2                   | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+| Application  | CMake (>= 3.16)    | CUDA 11.2                   | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
 |--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
