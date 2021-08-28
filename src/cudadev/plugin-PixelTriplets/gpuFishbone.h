@@ -16,9 +16,7 @@
 
 namespace gpuPixelDoublets {
 
-  //  __device__
-  //  __forceinline__
-  __global__ void fishbone(GPUCACell::Hits const* __restrict__ hhp,
+  __global__ void fishbone(GPUCACell::Hits const* __restrict__ hits_p,
                            GPUCACell* cells,
                            uint32_t const* __restrict__ nCells,
                            GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
@@ -26,65 +24,75 @@ namespace gpuPixelDoublets {
                            bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
-    auto const& hh = *hhp;
+    auto const& hits = *hits_p;
 
-    // x run faster...
-    auto firstY = threadIdx.y + blockIdx.y * blockDim.y;
-    auto firstX = threadIdx.x;
+    // the x index runs faster
+    auto threadsPerHit = blockDim.x;
+    auto hitsPerBlock = blockDim.y;
+    auto numberOfBlocks = gridDim.y;
+    auto hitsPerGrid = numberOfBlocks * hitsPerBlock;
+    auto firstHit = threadIdx.y + blockIdx.y * hitsPerBlock;
+    auto firstThread = threadIdx.x;
 
-    float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
-    uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
+    float x[maxCellsPerHit];
+    float y[maxCellsPerHit];
+    float z[maxCellsPerHit];
+    float length2[maxCellsPerHit];
     uint32_t cc[maxCellsPerHit];
+    uint16_t detId[maxCellsPerHit];
 
-    for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
-      auto const& vc = isOuterHitOfCell[idy];
+    // outer loop: parallelize over the hits
+    for (int hit = firstHit; hit < (int)nHits; hit += hitsPerGrid) {
+      auto const& vc = isOuterHitOfCell[hit];
       auto size = vc.size();
       if (size < 2)
         continue;
+
       // if alligned kill one of the two.
       // in principle one could try to relax the cut (only in r-z?) for jumping-doublets
       auto const& c0 = cells[vc[0]];
-      auto xo = c0.outer_x(hh);
-      auto yo = c0.outer_y(hh);
-      auto zo = c0.outer_z(hh);
-      auto sg = 0;
-      for (int32_t ic = 0; ic < size; ++ic) {
-        auto& ci = cells[vc[ic]];
-        if (ci.unused())
+      auto xo = c0.outer_x(hits);
+      auto yo = c0.outer_y(hits);
+      auto zo = c0.outer_z(hits);
+      auto doublets = 0;
+      for (int32_t i = 0; i < size; ++i) {
+        auto& cell = cells[vc[i]];
+        if (cell.unused())
           continue;  // for triplets equivalent to next
-        if (checkTrack && ci.tracks().empty())
+        if (checkTrack && cell.tracks().empty())
           continue;
-        cc[sg] = vc[ic];
-        d[sg] = ci.inner_detIndex(hh);
-        x[sg] = ci.inner_x(hh) - xo;
-        y[sg] = ci.inner_y(hh) - yo;
-        z[sg] = ci.inner_z(hh) - zo;
-        n[sg] = x[sg] * x[sg] + y[sg] * y[sg] + z[sg] * z[sg];
-        ++sg;
+        cc[doublets] = vc[i];
+        detId[doublets] = cell.inner_detIndex(hits);
+        x[doublets] = cell.inner_x(hits) - xo;
+        y[doublets] = cell.inner_y(hits) - yo;
+        z[doublets] = cell.inner_z(hits) - zo;
+        length2[doublets] = x[doublets] * x[doublets] + y[doublets] * y[doublets] + z[doublets] * z[doublets];
+        ++doublets;
       }
-      if (sg < 2)
+      if (doublets < 2)
         continue;
-      // here we parallelize
-      for (int32_t ic = firstX; ic < sg - 1; ic += blockDim.x) {
-        auto& ci = cells[cc[ic]];
-        for (auto jc = ic + 1; jc < sg; ++jc) {
-          auto& cj = cells[cc[jc]];
-          // must be different detectors (in the same layer)
-          //        if (d[ic]==d[jc]) continue;
-          // || l[ic]!=l[jc]) continue;
-          auto cos12 = x[ic] * x[jc] + y[ic] * y[jc] + z[ic] * z[jc];
-          if (d[ic] != d[jc] && cos12 * cos12 >= 0.99999f * n[ic] * n[jc]) {
-            // alligned:  kill farthest  (prefer consecutive layers)
-            if (n[ic] > n[jc]) {
-              ci.kill();
+
+      // inner loop: parallelize over the doublets
+      for (int32_t i = firstThread; i < doublets - 1; i += threadsPerHit) {
+        auto& cell_i = cells[cc[i]];
+        for (auto j = i + 1; j < doublets; ++j) {
+          // must be different detectors (potentially in the same layer)
+          if (detId[i] == detId[j])
+            continue;
+          auto& cell_j = cells[cc[j]];
+          auto cos12 = x[i] * x[j] + y[i] * y[j] + z[i] * z[j];
+          if (cos12 * cos12 >= 0.99999f * length2[i] * length2[j]) {
+            // alligned: kill farthest (prefer consecutive layers)
+            if (length2[i] > length2[j]) {
+              cell_i.kill();
               break;
             } else {
-              cj.kill();
+              cell_j.kill();
             }
           }
-        }  //cj
-      }    // ci
-    }      // hits
+        }  // j
+      }    // i
+    }      // hit
   }
 }  // namespace gpuPixelDoublets
 
