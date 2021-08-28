@@ -16,6 +16,7 @@
 
 namespace gpuPixelDoublets {
 
+  template <int threadsPerHit>
   __global__ void fishbone(GPUCACell::Hits const* __restrict__ hits_p,
                            GPUCACell* cells,
                            uint32_t const* __restrict__ nCells,
@@ -26,13 +27,13 @@ namespace gpuPixelDoublets {
 
     auto const& hits = *hits_p;
 
-    // the x index runs faster
-    auto threadsPerHit = blockDim.x;
-    auto hitsPerBlock = blockDim.y;
-    auto numberOfBlocks = gridDim.y;
+    // blockDim must be a multiple of threadsPerHit
+    assert((blockDim.x / threadsPerHit > 0) && (blockDim.x % threadsPerHit == 0));
+    auto hitsPerBlock = blockDim.x / threadsPerHit;
+    auto numberOfBlocks = gridDim.x;
     auto hitsPerGrid = numberOfBlocks * hitsPerBlock;
-    auto firstHit = threadIdx.y + blockIdx.y * hitsPerBlock;
-    auto firstThread = threadIdx.x;
+    auto firstHit = (threadIdx.x + blockIdx.x * blockDim.x) / threadsPerHit;
+    auto firstThread = threadIdx.x % threadsPerHit;
 
     float x[maxCellsPerHit];
     float y[maxCellsPerHit];
