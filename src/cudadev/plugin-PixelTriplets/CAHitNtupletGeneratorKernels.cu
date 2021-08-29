@@ -65,9 +65,9 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   if (nhits > 1 && params_.earlyFishbone_) {
     constexpr int threadsPerHit = 16;
-    auto hitsPerBlock = 8;
+    constexpr int hitsPerBlock = 8;
     auto numberOfBlocks = (nhits + hitsPerBlock - 1) / hitsPerBlock;
-    gpuPixelDoublets::fishbone<threadsPerHit><<<numberOfBlocks, hitsPerBlock * threadsPerHit, 0, cudaStream>>>(
+    gpuPixelDoublets::fishbone<hitsPerBlock><<<numberOfBlocks, hitsPerBlock * threadsPerHit, 0, cudaStream>>>(
         hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
     cudaCheck(cudaGetLastError());
   }
@@ -114,9 +114,9 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   if (nhits > 1 && params_.lateFishbone_) {
     constexpr int threadsPerHit = 16;
-    auto hitsPerBlock = 8;
+    constexpr int hitsPerBlock = 8;
     auto numberOfBlocks = (nhits + hitsPerBlock - 1) / hitsPerBlock;
-    gpuPixelDoublets::fishbone<threadsPerHit><<<numberOfBlocks, hitsPerBlock * threadsPerHit, 0, cudaStream>>>(
+    gpuPixelDoublets::fishbone<hitsPerBlock><<<numberOfBlocks, hitsPerBlock * threadsPerHit, 0, cudaStream>>>(
         hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
     cudaCheck(cudaGetLastError());
   }

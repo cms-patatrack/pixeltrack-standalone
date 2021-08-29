@@ -16,7 +16,7 @@
 
 namespace gpuPixelDoublets {
 
-  template <int threadsPerHit>
+  template <int hitsPerBlock>
   __global__ void fishbone(GPUCACell::Hits const* __restrict__ hits_p,
                            GPUCACell* cells,
                            uint32_t const* __restrict__ nCells,
@@ -28,19 +28,29 @@ namespace gpuPixelDoublets {
     auto const& hits = *hits_p;
 
     // blockDim must be a multiple of threadsPerHit
-    assert((blockDim.x / threadsPerHit > 0) && (blockDim.x % threadsPerHit == 0));
-    auto hitsPerBlock = blockDim.x / threadsPerHit;
+    assert((blockDim.x / hitsPerBlock > 0) && (blockDim.x % hitsPerBlock == 0));
+    auto threadsPerHit = blockDim.x / hitsPerBlock;
     auto numberOfBlocks = gridDim.x;
     auto hitsPerGrid = numberOfBlocks * hitsPerBlock;
-    auto firstHit = (threadIdx.x + blockIdx.x * blockDim.x) / threadsPerHit;
-    auto firstThread = threadIdx.x % threadsPerHit;
+    auto hitInBlock = threadIdx.x / threadsPerHit;  // 0 .. hitsPerBlock-1
+    auto innerThread = threadIdx.x % threadsPerHit;
+    auto firstHit = hitInBlock + blockIdx.x * hitsPerBlock;
 
-    float x[maxCellsPerHit];
-    float y[maxCellsPerHit];
-    float z[maxCellsPerHit];
-    float length2[maxCellsPerHit];
-    uint32_t cc[maxCellsPerHit];
-    uint16_t detId[maxCellsPerHit];
+    // hitsPerBlock buffers in shared memory
+    __shared__ float s_x[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_y[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_z[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_length2[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint32_t s_cc[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint16_t s_detId[hitsPerBlock][maxCellsPerHit];
+
+    // buffer used by the current thread
+    float(&x)[maxCellsPerHit] = s_x[hitInBlock];
+    float(&y)[maxCellsPerHit] = s_y[hitInBlock];
+    float(&z)[maxCellsPerHit] = s_z[hitInBlock];
+    float(&length2)[maxCellsPerHit] = s_length2[hitInBlock];
+    uint32_t(&cc)[maxCellsPerHit] = s_cc[hitInBlock];
+    uint16_t(&detId)[maxCellsPerHit] = s_detId[hitInBlock];
 
     // outer loop: parallelize over the hits
     for (int hit = firstHit; hit < (int)nHits; hit += hitsPerGrid) {
@@ -55,7 +65,7 @@ namespace gpuPixelDoublets {
       auto xo = c0.outer_x(hits);
       auto yo = c0.outer_y(hits);
       auto zo = c0.outer_z(hits);
-      auto doublets = 0;
+      uint32_t doublets = 0;
       for (int32_t i = 0; i < size; ++i) {
         auto& cell = cells[vc[i]];
         if (cell.unused())
@@ -70,13 +80,14 @@ namespace gpuPixelDoublets {
         length2[doublets] = x[doublets] * x[doublets] + y[doublets] * y[doublets] + z[doublets] * z[doublets];
         ++doublets;
       }
+
       if (doublets < 2)
         continue;
 
       // inner loop: parallelize over the doublets
-      for (int32_t i = firstThread; i < doublets - 1; i += threadsPerHit) {
+      for (uint32_t i = innerThread; i < doublets - 1; i += threadsPerHit) {
         auto& cell_i = cells[cc[i]];
-        for (auto j = i + 1; j < doublets; ++j) {
+        for (uint32_t j = i + 1; j < doublets; ++j) {
           // must be different detectors (potentially in the same layer)
           if (detId[i] == detId[j])
             continue;
@@ -95,6 +106,7 @@ namespace gpuPixelDoublets {
       }    // i
     }      // hit
   }
+
 }  // namespace gpuPixelDoublets
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_gpuFishbone_h
