@@ -21,6 +21,9 @@
 #undef __forceinline__
 #define __forceinline__ inline __attribute__((always_inline))
 
+#undef __launch_bounds__
+#define __launch_bounds__(...)
+
 namespace cms {
   namespace cudacompat {
 
