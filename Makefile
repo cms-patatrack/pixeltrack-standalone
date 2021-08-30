@@ -208,7 +208,7 @@ endif
 ifdef KOKKOS_HOST_PARALLEL
   ifeq ($(KOKKOS_HOST_PARALLEL),PTHREAD)
     KOKKOS_CMAKEFLAGS += -DKokkos_ENABLE_PTHREAD=On
-    ifdef KOKKOS_PTHREAD_USE_HWLOC
+    ifndef KOKKOS_PTHREAD_DISABLE_HWLOC
       KOKKOS_CMAKEFLAGS += -DKokkos_ENABLE_HWLOC=On -DKokkos_HWLOC_DIR=$(HWLOC_BASE)
       KOKKOS_CXXFLAGS += $(HWLOC_CXXFLAGS)
       KOKKOS_LDFLAGS += $(HWLOC_LDFLAGS)
@@ -339,6 +339,7 @@ env.sh: Makefile
 ifeq ($(NEED_BOOST),true)
 	@echo -n '$(BOOST_BASE)/lib:'                                           >> $@
 endif
+	@echo -n '$(HWLOC_BASE)/lib:'                                           >> $@
 ifdef CUDA_BASE
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 endif
@@ -549,7 +550,7 @@ $(KOKKOS_BUILD):
 	mkdir -p $@
 
 ifeq ($(KOKKOS_HOST_PARALLEL),PTHREAD)
-ifdef KOKKOS_PTHREAD_USE_HWLOC
+ifndef KOKKOS_PTHREAD_DISABLE_HWLOC
 $(KOKKOS_MAKEFILE): $(HWLOC_BASE)
 endif
 endif
