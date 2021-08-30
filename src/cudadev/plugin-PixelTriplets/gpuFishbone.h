@@ -19,13 +19,14 @@ namespace cg = cooperative_groups;
 
 namespace gpuPixelDoublets {
 
-  template <int hitsPerBlock = 1, int threadsPerHit = 1>
-  __global__ void fishbone(GPUCACell::Hits const* __restrict__ hits_p,
-                           GPUCACell* cells,
-                           uint32_t const* __restrict__ nCells,
-                           GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
-                           uint32_t nHits,
-                           bool checkTrack) {
+  template <int hitsPerBlock, int threadsPerHit>
+  __global__ __launch_bounds__(hitsPerBlock* threadsPerHit) void fishbone(
+      GPUCACell::Hits const* __restrict__ hits_p,
+      GPUCACell* cells,
+      uint32_t const* __restrict__ nCells,
+      GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
+      uint32_t nHits,
+      bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
     auto const& hits = *hits_p;
