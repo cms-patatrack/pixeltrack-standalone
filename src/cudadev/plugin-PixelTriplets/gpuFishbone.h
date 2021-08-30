@@ -7,6 +7,9 @@
 #include <cstdio>
 #include <limits>
 
+#include <cooperative_groups.h>
+namespace cg = cooperative_groups;
+
 #include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/VecArray.h"
@@ -16,7 +19,7 @@
 
 namespace gpuPixelDoublets {
 
-  template <int hitsPerBlock>
+  template <int hitsPerBlock = 1, int threadsPerHit = 1>
   __global__ void fishbone(GPUCACell::Hits const* __restrict__ hits_p,
                            GPUCACell* cells,
                            uint32_t const* __restrict__ nCells,
@@ -27,13 +30,17 @@ namespace gpuPixelDoublets {
 
     auto const& hits = *hits_p;
 
-    // blockDim must be a multiple of threadsPerHit
-    assert((blockDim.x / hitsPerBlock > 0) && (blockDim.x % hitsPerBlock == 0));
-    auto threadsPerHit = blockDim.x / hitsPerBlock;
+    // blockDim must be hitsPerBlock times threadsPerHit
+    assert(blockDim.x == hitsPerBlock * threadsPerHit);
+
+    // partition the thread block into threadsPerHit-sized tiles
+    auto tile = cg::tiled_partition<threadsPerHit>(cg::this_thread_block());
+    assert(hitsPerBlock == tile.meta_group_size());
+
     auto numberOfBlocks = gridDim.x;
     auto hitsPerGrid = numberOfBlocks * hitsPerBlock;
-    auto hitInBlock = threadIdx.x / threadsPerHit;  // 0 .. hitsPerBlock-1
-    auto innerThread = threadIdx.x % threadsPerHit;
+    auto hitInBlock = tile.meta_group_rank();  // 0 .. hitsPerBlock-1
+    auto innerThread = tile.thread_rank();
     auto firstHit = hitInBlock + blockIdx.x * hitsPerBlock;
 
     // hitsPerBlock buffers in shared memory
@@ -70,7 +77,7 @@ namespace gpuPixelDoublets {
       if (innerThread == 0) {
         doublets = 0;
       }
-      __syncthreads();
+      tile.sync();
       for (int32_t i = innerThread; i < size; i += threadsPerHit) {
         auto& cell = cells[vc[i]];
         if (cell.unused())
@@ -86,7 +93,7 @@ namespace gpuPixelDoublets {
         length2[index] = x[index] * x[index] + y[index] * y[index] + z[index] * z[index];
       }
 
-      __syncthreads();
+      tile.sync();
       if (doublets < 2)
         continue;
 
