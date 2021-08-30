@@ -472,10 +472,10 @@ $(TBB_LIB): $(TBB_BASE) $(TBB_LIBDIR)
 external_eigen: $(EIGEN_BASE)
 
 $(EIGEN_BASE):
-	# from TensorFlow 2.4.1
-	git clone -b cms/master/011e0db31d1bed8b7f73662be6d57d9f30fa457a https://github.com/cms-externals/eigen-git-mirror.git $@
+	# from Eigen master branch as of 2021.08.18
+	git clone -b cms/master/82dd3710dac619448f50331c1d6a35da673f764a https://github.com/cms-externals/eigen-git-mirror.git $@
 	# include all Patatrack updates
-	cd $@ && git reset --hard 14ec43b998505b1294e300b1d1717cee901d5f02
+	cd $@ && git reset --hard 733e6166b2f8b4edd23da33985187fd60903e9ca
 
 # Boost
 .PHONY: external_boost
