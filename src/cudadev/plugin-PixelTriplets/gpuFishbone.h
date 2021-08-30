@@ -43,6 +43,7 @@ namespace gpuPixelDoublets {
     __shared__ float s_length2[hitsPerBlock][maxCellsPerHit];
     __shared__ uint32_t s_cc[hitsPerBlock][maxCellsPerHit];
     __shared__ uint16_t s_detId[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint32_t s_doublets[hitsPerBlock];
 
     // buffer used by the current thread
     float(&x)[maxCellsPerHit] = s_x[hitInBlock];
@@ -51,6 +52,7 @@ namespace gpuPixelDoublets {
     float(&length2)[maxCellsPerHit] = s_length2[hitInBlock];
     uint32_t(&cc)[maxCellsPerHit] = s_cc[hitInBlock];
     uint16_t(&detId)[maxCellsPerHit] = s_detId[hitInBlock];
+    uint32_t& doublets = s_doublets[hitInBlock];
 
     // outer loop: parallelize over the hits
     for (int hit = firstHit; hit < (int)nHits; hit += hitsPerGrid) {
@@ -65,22 +67,26 @@ namespace gpuPixelDoublets {
       auto xo = c0.outer_x(hits);
       auto yo = c0.outer_y(hits);
       auto zo = c0.outer_z(hits);
-      uint32_t doublets = 0;
-      for (int32_t i = 0; i < size; ++i) {
+      if (innerThread == 0) {
+        doublets = 0;
+      }
+      __syncthreads();
+      for (int32_t i = innerThread; i < size; i += threadsPerHit) {
         auto& cell = cells[vc[i]];
         if (cell.unused())
           continue;  // for triplets equivalent to next
         if (checkTrack && cell.tracks().empty())
           continue;
-        cc[doublets] = vc[i];
-        detId[doublets] = cell.inner_detIndex(hits);
-        x[doublets] = cell.inner_x(hits) - xo;
-        y[doublets] = cell.inner_y(hits) - yo;
-        z[doublets] = cell.inner_z(hits) - zo;
-        length2[doublets] = x[doublets] * x[doublets] + y[doublets] * y[doublets] + z[doublets] * z[doublets];
-        ++doublets;
+        auto index = atomicInc(&doublets, 0xFFFFFFFF);
+        cc[index] = vc[i];
+        detId[index] = cell.inner_detIndex(hits);
+        x[index] = cell.inner_x(hits) - xo;
+        y[index] = cell.inner_y(hits) - yo;
+        z[index] = cell.inner_z(hits) - zo;
+        length2[index] = x[index] * x[index] + y[index] * y[index] + z[index] * z[index];
       }
 
+      __syncthreads();
       if (doublets < 2)
         continue;
 
