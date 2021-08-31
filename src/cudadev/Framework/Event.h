@@ -9,7 +9,32 @@
 
 // type erasure
 namespace edm {
-  using StreamID = int;
+  class Event;
+
+  class StreamID {
+  public:
+    ~StreamID() = default;
+    StreamID() = delete;
+    StreamID(const StreamID&) = default;
+    StreamID& operator=(const StreamID&) = default;
+
+    bool operator==(const StreamID& iID) const { return iID.value_ == value_; }
+
+    operator unsigned int() const { return value_; }
+
+    /** \return value ranging from 0 to one less than max number of streams.
+     */
+    unsigned int value() const { return value_; }
+
+    static StreamID invalidStreamID() { return StreamID(0xFFFFFFFFU); }
+
+  private:
+    ///Only a Event is allowed to create one of these
+    friend class Event;
+    explicit StreamID(unsigned int iValue) : value_(iValue) {}
+
+    unsigned int value_;
+  };
 
   class WrapperBase {
   public:
