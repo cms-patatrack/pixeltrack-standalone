@@ -36,9 +36,9 @@ namespace {
 
 namespace cms::cuda {
   namespace impl {
-    Context::Context(edm::StreamID streamID) : currentDevice_(chooseDevice(streamID)) {
-      cudaCheck(cudaSetDevice(currentDevice_));
-    }
+    Context::Context(edm::StreamID streamID) : Context(chooseDevice(streamID)) {}
+
+    Context::Context(int device) : currentDevice_(device) { cudaCheck(cudaSetDevice(currentDevice_)); }
 
     Context::Context(int device, SharedStreamPtr stream) : currentDevice_(device), stream_(std::move(stream)) {
       cudaCheck(cudaSetDevice(currentDevice_));
@@ -81,17 +81,14 @@ namespace cms::cuda {
 
     ////////////////////
 
-    void ContextHolderHelper::enqueueCallback(int device, cudaStream_t stream) {
-      cudaCheck(cudaStreamAddCallback(stream, cudaContextCallback, new CallbackData{waitingTaskHolder_, device}, 0));
+    void ContextHolderHelper::enqueueCallback(cudaStream_t stream) {
+      cudaCheck(cudaStreamAddCallback(stream, cudaContextCallback, new CallbackData{waitingTaskHolder_, device_}, 0));
     }
   }  // namespace impl
 
   ////////////////////
 
-  void AcquireContext::commit() {
-    holderHelper_.enqueueCallback(device(), stream());
-    contextState_.set(device(), streamPtr());
-  }
+  void AcquireContext::commit() { holderHelper_.enqueueCallback(stream()); }
 
   ////////////////////
 
@@ -99,5 +96,5 @@ namespace cms::cuda {
 
   ////////////////////
 
-  void TaskContext::commit() { holderHelper_.enqueueCallback(device(), stream()); }
+  void TaskContext::commit() { holderHelper_.enqueueCallback(stream()); }
 }  // namespace cms::cuda

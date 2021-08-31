@@ -6,7 +6,6 @@
 #include "Framework/Event.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
-#include "CUDACore/ContextState.h"
 #include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
 #include "CUDACore/SharedStreamPtr.h"
@@ -49,6 +48,9 @@ namespace cms::cuda {
       // really matter between modules (or across TBB tasks).
       explicit Context(edm::StreamID streamID);
 
+      explicit Context(int device);
+
+      // meant only for testing
       explicit Context(int device, SharedStreamPtr stream);
 
       bool isInitialized() const { return bool(stream_); }
@@ -87,20 +89,21 @@ namespace cms::cuda {
 
     class ContextHolderHelper {
     public:
-      ContextHolderHelper(edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-          : waitingTaskHolder_{std::move(waitingTaskHolder)} {}
+      ContextHolderHelper(edm::WaitingTaskWithArenaHolder waitingTaskHolder, int device)
+          : waitingTaskHolder_{std::move(waitingTaskHolder)}, device_{device} {}
 
       template <typename F>
-      void pushNextTask(F&& f, ContextState const* state);
+      void pushNextTask(F&& f);
 
       void replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
         waitingTaskHolder_ = std::move(waitingTaskHolder);
       }
 
-      void enqueueCallback(int device, cudaStream_t stream);
+      void enqueueCallback(cudaStream_t stream);
 
     private:
       edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
+      int device_;
     };
   }  // namespace impl
 
@@ -113,15 +116,13 @@ namespace cms::cuda {
      */
   class AcquireContext : public impl::ContextGetterBase {
   public:
-    explicit AcquireContext(edm::StreamID streamID,
-                            edm::WaitingTaskWithArenaHolder waitingTaskHolder,
-                            ContextState& state)
-        : ContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)}, contextState_{state} {}
+    explicit AcquireContext(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+        : ContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder), device()} {}
     ~AcquireContext() = default;
 
     template <typename F>
     void pushNextTask(F&& f) {
-      holderHelper_.pushNextTask(std::forward<F>(f), contextState_);
+      holderHelper_.pushNextTask(std::forward<F>(f));
     }
 
     void replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
@@ -133,7 +134,6 @@ namespace cms::cuda {
 
   private:
     impl::ContextHolderHelper holderHelper_;
-    ContextState& contextState_;
   };
 
   /**
@@ -144,11 +144,7 @@ namespace cms::cuda {
    */
   class ProduceContext : public impl::ContextGetterBase {
   public:
-    /// Constructor to create a new CUDA stream (non-ExternalWork module)
     explicit ProduceContext(edm::StreamID streamID) : ContextGetterBase(streamID) {}
-
-    /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit ProduceContext(ContextState& state) : ContextGetterBase(state.device(), state.releaseStreamPtr()) {}
 
     ~ProduceContext() = default;
 
@@ -183,16 +179,14 @@ namespace cms::cuda {
   class TaskContext : public impl::Context {
   public:
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit TaskContext(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-        : Context(state->device(), state->streamPtr()),  // don't move, state is re-used afterwards
-          holderHelper_{std::move(waitingTaskHolder)},
-          contextState_{state} {}
+    explicit TaskContext(int device, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+        : Context(device), holderHelper_{std::move(waitingTaskHolder), device} {}
 
     ~TaskContext() = default;
 
     template <typename F>
     void pushNextTask(F&& f) {
-      holderHelper_.pushNextTask(std::forward<F>(f), contextState_);
+      holderHelper_.pushNextTask(std::forward<F>(f));
     }
 
     void replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
@@ -204,7 +198,6 @@ namespace cms::cuda {
 
   private:
     impl::ContextHolderHelper holderHelper_;
-    ContextState const* contextState_;
   };
 
   /**
@@ -221,19 +214,19 @@ namespace cms::cuda {
 
   namespace impl {
     template <typename F>
-    void ContextHolderHelper::pushNextTask(F&& f, ContextState const* state) {
-      replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{
-          edm::make_waiting_task_with_holder(tbb::task::allocate_root(),
-                                             std::move(waitingTaskHolder_),
-                                             [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
-                                               func(TaskContext{state, std::move(h)});
-                                             })});
+    void ContextHolderHelper::pushNextTask(F&& f) {
+      replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{edm::make_waiting_task_with_holder(
+          tbb::task::allocate_root(),
+          std::move(waitingTaskHolder_),
+          [device = device_, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
+            func(TaskContext{device, std::move(h)});
+          })});
     }
   }  // namespace impl
 
   template <typename F>
-  void runAcquire(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder holder, ContextState& state, F func) {
-    AcquireContext context(streamID, std::move(holder), state);
+  void runAcquire(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder holder, F func) {
+    AcquireContext context(streamID, std::move(holder));
     func(context);
     context.commit();
   }
@@ -241,13 +234,6 @@ namespace cms::cuda {
   template <typename F>
   void runProduce(edm::StreamID streamID, F func) {
     ProduceContext context(streamID);
-    func(context);
-    context.commit();
-  }
-
-  template <typename F>
-  void runProduce(ContextState& state, F func) {
-    ProduceContext context(state);
     func(context);
     context.commit();
   }

@@ -20,9 +20,6 @@ namespace cms::cuda {
 
     virtual void acquire(edm::Event const& event, edm::EventSetup const& eventSetup, AcquireContext& context) = 0;
     virtual void produce(edm::Event& event, edm::EventSetup const& eventSetup, ProduceContext& context) = 0;
-
-  private:
-    ContextState state_;
   };
 }  // namespace cms::cuda
 
