@@ -76,7 +76,7 @@ public:
     return cachedBytes_;
   }
 
-  // Allocate given number of bytes on the current device associated to queue
+  // Allocate given number of bytes on the given device associated to given queue
   void* allocate(DeviceType device, size_t bytes, QueueType queue) {
     if (bytes > maxBinBytes_) {
       throw std::runtime_error("Requested allocation size " + std::to_string(bytes) +
