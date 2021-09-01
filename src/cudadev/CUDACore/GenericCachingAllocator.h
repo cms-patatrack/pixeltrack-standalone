@@ -108,10 +108,9 @@ public:
       if (searchKey.ptr == nullptr) {
         // The allocation attempt failed: free all cached blocks on device and retry
         if (debug_) {
-          std::cout << "\t";
-          Traits::printDevice(std::cout, device)
-              << " failed to allocate " << searchKey.bytes << " bytes for queue " << searchKey.associatedQueue
-              << ", retrying after freeing cached allocations" << std::endl;
+          std::cout << "\t" << Traits::printDevice(device) << " failed to allocate " << searchKey.bytes
+                    << " bytes for queue " << searchKey.associatedQueue << ", retrying after freeing cached allocations"
+                    << std::endl;
         }
 
         freeCachedBlocksOnDevice(device);
@@ -129,10 +128,9 @@ public:
       }
 
       if (debug_) {
-        std::cout << "\t";
-        Traits::printDevice(std::cout, device)
-            << " allocated new block at " << searchKey.ptr << " (" << searchKey.bytes << " bytes associated with queue "
-            << searchKey.associatedQueue << ", event " << searchKey.readyEvent << "." << std::endl;
+        std::cout << "\t" << Traits::printDevice(device) << " allocated new block at " << searchKey.ptr << " ("
+                  << searchKey.bytes << " bytes associated with queue " << searchKey.associatedQueue << ", event "
+                  << searchKey.readyEvent << "." << std::endl;
       }
     }
 
@@ -174,14 +172,13 @@ public:
         cachedBytes_[device].free += searchKey.bytes;
 
         if (debug_) {
-          std::cout << "\t";
-          Traits::printDevice(std::cout, device)
-              << " returned " << searchKey.bytes << " bytes at " << ptr << " from associated queue "
-              << searchKey.associatedQueue << " , event " << searchKey.readyEvent << " .\n\t\t " << cachedBlocks_.size()
-              << " available "
-                 "blocks cached ("
-              << cachedBytes_[device].free << " bytes), " << liveBlocks_.size() << " live blocks outstanding. ("
-              << cachedBytes_[device].live << " bytes)" << std::endl;
+          std::cout << "\t" << Traits::printDevice(device) << " returned " << searchKey.bytes << " bytes at " << ptr
+                    << " from associated queue " << searchKey.associatedQueue << " , event " << searchKey.readyEvent
+                    << " .\n\t\t " << cachedBlocks_.size()
+                    << " available "
+                       "blocks cached ("
+                    << cachedBytes_[device].free << " bytes), " << liveBlocks_.size() << " live blocks outstanding. ("
+                    << cachedBytes_[device].live << " bytes)" << std::endl;
         }
       }
 
@@ -194,14 +191,13 @@ public:
       Traits::free(ptr);
       Traits::destroyEvent(searchKey.readyEvent);
       if (debug_) {
-        std::cout << "\t";
-        Traits::printDevice(std::cout, device)
-            << " freed " << searchKey.bytes << " bytes at " << ptr << " from associated queue "
-            << searchKey.associatedQueue << ", event " << searchKey.readyEvent << ".\n\t\t  " << cachedBlocks_.size()
-            << " available "
-               "blocks cached ("
-            << cachedBytes_[device].free << " bytes), " << liveBlocks_.size() << " live blocks ("
-            << cachedBytes_[device].live << " bytes) outstanding." << std::endl;
+        std::cout << "\t" << Traits::printDevice(device) << " freed " << searchKey.bytes << " bytes at " << ptr
+                  << " from associated queue " << searchKey.associatedQueue << ", event " << searchKey.readyEvent
+                  << ".\n\t\t  " << cachedBlocks_.size()
+                  << " available "
+                     "blocks cached ("
+                  << cachedBytes_[device].free << " bytes), " << liveBlocks_.size() << " live blocks ("
+                  << cachedBytes_[device].live << " bytes) outstanding." << std::endl;
       }
     }
   }
@@ -257,13 +253,12 @@ private:
         cachedBytes_[device].live += searchKey.bytesRequested;
 
         if (debug_) {
-          std::cout << "\t";
-          Traits::printDevice(std::cout, device)
-              << " reused cached block at " << searchKey.ptr << " (" << searchKey.bytes << "bytes) for queue "
-              << searchKey.associatedQueue << ", event " << searchKey.readyEvent
-              << " (previously "
-                 "associated with stream "
-              << iBlock->associatedQueue << " , event " << iBlock->readyEvent << ")." << std::endl;
+          std::cout << "\t" << Traits::printDevice(device) << " reused cached block at " << searchKey.ptr << " ("
+                    << searchKey.bytes << "bytes) for queue " << searchKey.associatedQueue << ", event "
+                    << searchKey.readyEvent
+                    << " (previously "
+                       "associated with stream "
+                    << iBlock->associatedQueue << " , event " << iBlock->readyEvent << ")." << std::endl;
         }
 
         cachedBlocks_.erase(iBlock);
@@ -286,13 +281,12 @@ private:
       cachedBytes_[device].free -= iBlock->bytes;
 
       if (debug_) {
-        std::cout << "\t";
-        Traits::printDevice(std::cout, device)
-            << " freed " << iBlock->bytes << " bytes.\n\t\t  " << cachedBlocks_.size() << " available blocks cached ("
-            << cachedBytes_[device].free << " bytes), " << liveBlocks_.size()
-            << " live blocks "
-               "("
-            << cachedBytes_[device].live << " bytes) outstanding." << std::endl;
+        std::cout << "\t" << Traits::printDevice(device) << " freed " << iBlock->bytes << " bytes.\n\t\t  "
+                  << cachedBlocks_.size() << " available blocks cached (" << cachedBytes_[device].free << " bytes), "
+                  << liveBlocks_.size()
+                  << " live blocks "
+                     "("
+                  << cachedBytes_[device].live << " bytes) outstanding." << std::endl;
       }
 
       iBlock = cachedBlocks_.erase(iBlock);
@@ -310,11 +304,10 @@ private:
       cachedBytes_[iBlock->device].free -= iBlock->bytes;
 
       if (debug_) {
-        std::cout << "\t";
-        Traits::printDevice(std::cout, iBlock->device)
-            << " freed " << iBlock->bytes << " bytes.\n\t\t  " << (cachedBlocks_.size() - 1)
-            << " available blocks cached (" << cachedBytes_[iBlock->device].free << " bytes), " << liveBlocks_.size()
-            << " live blocks (" << cachedBytes_[iBlock->device].live << " bytes) outstanding." << std::endl;
+        std::cout << "\t" << Traits::printDevice(iBlock->device) << " freed " << iBlock->bytes << " bytes.\n\t\t  "
+                  << (cachedBlocks_.size() - 1) << " available blocks cached (" << cachedBytes_[iBlock->device].free
+                  << " bytes), " << liveBlocks_.size() << " live blocks (" << cachedBytes_[iBlock->device].live
+                  << " bytes) outstanding." << std::endl;
       }
 
       cachedBlocks_.erase(iBlock);

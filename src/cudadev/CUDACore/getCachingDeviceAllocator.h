@@ -84,10 +84,13 @@ namespace cms::cuda::allocator {
 
     static void recordEvent(EventType e, QueueType queue) { cudaCheck(cudaEventRecord(e, queue)); }
 
-    static std::ostream& printDevice(std::ostream& os, DeviceType device) {
-      os << "Device " << device;
-      return os;
-    }
+    struct DevicePrinter {
+      DevicePrinter(DeviceType device) : device_(device) {}
+      void write(std::ostream& os) const { os << "Device " << device_; }
+      DeviceType device_;
+    };
+
+    static DevicePrinter printDevice(DeviceType device) { return DevicePrinter(device); }
 
     static void* allocate(size_t bytes) {
       void* ptr;
@@ -107,6 +110,11 @@ namespace cms::cuda::allocator {
 
     static void free(void* ptr) { cudaCheck(cudaFree(ptr)); }
   };
+
+  inline std::ostream& operator<<(std::ostream& os, DeviceTraits::DevicePrinter const& pr) {
+    pr.write(os);
+    return os;
+  }
 
   using CachingDeviceAllocator = GenericCachingAllocator<DeviceTraits>;
 

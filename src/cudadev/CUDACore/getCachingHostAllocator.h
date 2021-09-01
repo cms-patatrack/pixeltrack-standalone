@@ -56,10 +56,11 @@ namespace cms::cuda::allocator {
       return e;
     }
 
-    static std::ostream& printDevice(std::ostream& os, DeviceType dev) {
-      os << "Host";
-      return os;
-    }
+    struct DevicePrinter {
+      static void write(std::ostream& os) { os << "Host"; }
+    };
+
+    static DevicePrinter printDevice(DeviceType dev) { return DevicePrinter(); }
 
     static void* allocate(size_t bytes) {
       void* ptr;
@@ -79,6 +80,11 @@ namespace cms::cuda::allocator {
 
     static void free(void* ptr) { cudaCheck(cudaFreeHost(ptr)); }
   };
+
+  inline std::ostream& operator<<(std::ostream& os, HostTraits::DevicePrinter const& pr) {
+    pr.write(os);
+    return os;
+  }
 
   using CachingHostAllocator = GenericCachingAllocator<HostTraits>;
 
