@@ -10,7 +10,6 @@
 namespace cms {
   namespace cuda {
     namespace impl {
-      class ScopedContextBase;
       class Context;
     }  // namespace impl
 
@@ -44,13 +43,13 @@ namespace cms {
       int device() const { return device_; }
 
       // cudaStream_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
+      // mutable access is needed even if the cms::cuda::Context itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
       cudaStream_t stream() const { return stream_.get(); }
 
       // cudaEvent_t is a pointer to a thread-safe object, for which a
-      // mutable access is needed even if the cms::cuda::ScopedContext itself
+      // mutable access is needed even if the cms::cuda::Context itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
       cudaEvent_t event() const { return event_.get(); }
@@ -60,12 +59,10 @@ namespace cms {
           : stream_{std::move(stream)}, event_{std::move(event)}, device_{device} {}
 
     private:
-      friend class impl::ScopedContextBase;
-      friend class ScopedContextProduce;
       friend class impl::Context;
       friend class ProduceContext;
 
-      // The following function is intended to be used only from ScopedContext
+      // The following function is intended to be used only from Context
       const SharedStreamPtr& streamPtr() const { return stream_; }
 
       bool mayReuseStream() const {
