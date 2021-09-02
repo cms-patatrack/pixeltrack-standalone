@@ -40,18 +40,21 @@ namespace cms::cuda {
 
     Context::Context(int device) : currentDevice_(device) { cudaCheck(cudaSetDevice(currentDevice_)); }
 
-    Context::Context(int device, SharedStreamPtr stream) : currentDevice_(device), stream_(std::move(stream)) {
+    Context::Context(int device, SharedStreamPtr stream)
+        : currentDevice_(device), stream_(std::make_shared<impl::StreamSharingHelper>(std::move(stream))) {
       cudaCheck(cudaSetDevice(currentDevice_));
     }
 
-    void Context::initialize() { stream_ = getStreamCache().get(); }
+    void Context::initialize() { stream_ = std::make_shared<impl::StreamSharingHelper>(getStreamCache().get()); }
 
     void Context::initialize(const ProductBase& data) {
+      SharedStreamPtr stream;
       if (data.mayReuseStream()) {
-        stream_ = data.streamPtr();
+        stream = data.streamPtr();
       } else {
-        stream_ = getStreamCache().get();
+        stream = getStreamCache().get();
       }
+      stream_ = std::make_shared<impl::StreamSharingHelper>(std::move(stream));
     }
 
     ////////////////////

@@ -30,13 +30,13 @@ namespace cms::cuda {
         if (not isInitialized()) {
           initialize();
         }
-        return stream_.get();
+        return stream_->streamPtr().get();
       }
       const SharedStreamPtr& streamPtr() {
         if (not isInitialized()) {
           initialize();
         }
-        return stream_;
+        return stream_->streamPtr();
       }
 
     protected:
@@ -58,9 +58,16 @@ namespace cms::cuda {
       void initialize();
       void initialize(const ProductBase& data);
 
+      const std::shared_ptr<impl::StreamSharingHelper>& streamSharingHelper() {
+        if (not isInitialized()) {
+          initialize();
+        }
+        return stream_;
+      }
+
     private:
       int currentDevice_ = -1;
-      SharedStreamPtr stream_;
+      std::shared_ptr<impl::StreamSharingHelper> stream_;
     };
 
     class ContextGetterBase : public Context {
@@ -151,12 +158,12 @@ namespace cms::cuda {
     template <typename T>
     std::unique_ptr<Product<T>> wrap(T data) {
       // make_unique doesn't work because of private constructor
-      return std::unique_ptr<Product<T>>(new Product<T>(device(), streamPtr(), event_, std::move(data)));
+      return std::unique_ptr<Product<T>>(new Product<T>(device(), streamSharingHelper(), event_, std::move(data)));
     }
 
     template <typename T, typename... Args>
     auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
-      return iEvent.emplace(token, device(), streamPtr(), event_, std::forward<Args>(args)...);
+      return iEvent.emplace(token, device(), streamSharingHelper(), event_, std::forward<Args>(args)...);
     }
 
     // internal API
