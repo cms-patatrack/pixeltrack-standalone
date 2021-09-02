@@ -13,7 +13,6 @@ namespace edm {
 namespace cms {
   namespace cuda {
     namespace impl {
-      class ScopedContextGetterBase;
       class ContextGetterBase;
     }  // namespace impl
 
@@ -21,7 +20,7 @@ namespace cms {
      * The purpose of this class is to wrap CUDA data to edm::Event in a
      * way which forces correct use of various utilities.
      *
-     * The non-default construction has to be done with cms::cuda::ScopedContext
+     * The non-default construction has to be done with cms::cuda::Context
      * (in order to properly register the CUDA event).
      *
      * The default constructor is needed only for the ROOT dictionary generation.
@@ -42,8 +41,6 @@ namespace cms {
       Product& operator=(Product&&) = default;
 
     private:
-      friend class impl::ScopedContextGetterBase;
-      friend class ScopedContextProduce;
       friend class impl::ContextGetterBase;
       friend class ProduceContext;
       friend class edm::Wrapper<Product<T>>;
