@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_CUDACore_FwkContextBase_h
 #define HeterogeneousCore_CUDACore_FwkContextBase_h
 
+#include "CUDACore/Context.h"
 #include "CUDACore/ProductBase.h"
 #include "CUDACore/SharedStreamPtr.h"
 #include "Framework/Event.h"
@@ -30,6 +31,10 @@ namespace cms::cuda::impl {
       }
       return stream_->streamPtr();
     }
+
+    operator HostAllocatorContext() { return HostAllocatorContext(stream()); }
+    operator DeviceAllocatorContext() { return DeviceAllocatorContext(stream()); }
+    operator Context() { return Context(stream()); }
 
   protected:
     // The constructors set the current device, but the device
