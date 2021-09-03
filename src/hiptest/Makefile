@@ -48,7 +48,8 @@ $(1)_CUSRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cu)
 $(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
 $(1)_CUOBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_CUSRC:%=%.o))
 $(1)_DEP := $$($(1)_OBJ:$.o=$.d)
-ALL_DEPENDS += $$($(1)_DEP)
+$(1)_CUDEP := $$($(1)_CUOBJ:$.o=$.d)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_CUDEP)
 $(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
 PLUGINS += $$($(1)_LIB)
 endef
@@ -105,9 +106,17 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
 	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
+$(OBJ_DIR)/$(2)/%.cc.i: $(SRC_DIR)/$(2)/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -E $$< -o $$@
+
 $(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+
+$(OBJ_DIR)/$(2)/%.cu.i: $(SRC_DIR)/$(2)/%.cu
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) - $$< -o $$@
 
 ifeq ($$(filter $(1),$(LINK_WITH_HIPCC)),)
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
