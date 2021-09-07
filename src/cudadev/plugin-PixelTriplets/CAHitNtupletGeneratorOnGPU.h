@@ -37,7 +37,9 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d,
+                                          float bfield,
+                                          cms::cuda::Context const& ctx) const;
 
   PixelTrackHeterogeneous makeTuples(TrackingRecHit2DCPU const& hits_d, float bfield) const;
 

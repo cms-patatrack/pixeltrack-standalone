@@ -3,8 +3,9 @@
 
 #include <memory>
 #include <functional>
+#include <optional>
 
-#include "CUDACore/allocate_host.h"
+#include "CUDACore/Context.h"
 
 namespace cms {
   namespace cuda {
@@ -13,7 +14,12 @@ namespace cms {
         // Additional layer of types to distinguish from host::unique_ptr
         class HostDeleter {
         public:
-          void operator()(void *ptr) { cms::cuda::free_host(ptr); }
+          HostDeleter() = default;  // for edm::Wrapper
+          HostDeleter(HostAllocatorContext const &ctx) : ctx_(ctx) {}
+          void operator()(void *ptr) { ctx_->free_host(ptr); }
+
+        private:
+          std::optional<HostAllocatorContext> ctx_;
         };
       }  // namespace impl
 
@@ -38,20 +44,23 @@ namespace cms {
 
     // Allocate pinned host memory
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(cudaStream_t stream) {
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique(HostAllocatorContext const &ctx) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
-      void *mem = allocate_host(sizeof(T), stream);
-      return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem)};
+      void *mem = ctx.allocate_host(sizeof(T));
+      return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
+                                                                          host::impl::HostDeleter{ctx}};
     }
 
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(size_t n, cudaStream_t stream) {
+    typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique(
+        size_t n, HostAllocatorContext const &ctx) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
-      void *mem = allocate_host(n * sizeof(element_type), stream);
-      return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem)};
+      void *mem = ctx.allocate_host(n * sizeof(element_type));
+      return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem),
+                                                                                host::impl::HostDeleter{ctx}};
     }
 
     template <typename T, typename... Args>
@@ -59,17 +68,20 @@ namespace cms {
 
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
-    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(cudaStream_t stream) {
-      void *mem = allocate_host(sizeof(T), stream);
-      return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem)};
+    typename host::impl::make_host_unique_selector<T>::non_array make_host_unique_uninitialized(
+        HostAllocatorContext const &ctx) {
+      void *mem = ctx.allocate_host(sizeof(T));
+      return typename host::impl::make_host_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
+                                                                          host::impl::HostDeleter{ctx}};
     }
 
     template <typename T>
     typename host::impl::make_host_unique_selector<T>::unbounded_array make_host_unique_uninitialized(
-        size_t n, cudaStream_t stream) {
+        size_t n, HostAllocatorContext const &ctx) {
       using element_type = typename std::remove_extent<T>::type;
-      void *mem = allocate_host(n * sizeof(element_type), stream);
-      return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem)};
+      void *mem = ctx.allocate_host(n * sizeof(element_type));
+      return typename host::impl::make_host_unique_selector<T>::unbounded_array{reinterpret_cast<element_type *>(mem),
+                                                                                host::impl::HostDeleter{ctx}};
     }
 
     template <typename T, typename... Args>

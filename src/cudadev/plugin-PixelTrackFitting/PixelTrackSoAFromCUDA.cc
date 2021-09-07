@@ -35,7 +35,7 @@ void PixelTrackSoAFromCUDA::acquire(edm::Event const& iEvent,
                                     cms::cuda::AcquireContext& ctx) {
   auto const& inputData = ctx.get(iEvent, tokenCUDA_);
 
-  soa_ = inputData.toHostAsync(ctx.stream());
+  soa_ = inputData.toHostAsync(ctx);
 }
 
 void PixelTrackSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup, cms::cuda::ProduceContext&) {

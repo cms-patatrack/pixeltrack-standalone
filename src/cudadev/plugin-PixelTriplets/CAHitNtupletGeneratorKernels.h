@@ -180,8 +180,8 @@ public:
 
   void fillHitDetIndices(HitsView const* hv, TkSoA* tuples_d, cudaStream_t cudaStream);
 
-  void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream);
-  void allocateOnGPU(int32_t nHits, cudaStream_t stream);
+  void buildDoublets(HitsOnCPU const& hh, cms::cuda::Context const& ctx);
+  void allocateOnGPU(int32_t nHits, cms::cuda::Context const& ctx);
   void cleanup(cudaStream_t cudaStream);
 
   static void printCounters(Counters const* counters);

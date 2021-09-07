@@ -63,7 +63,7 @@ void PixelVertexProducerCUDA::produceOnGPU(edm::Event& iEvent, const edm::EventS
 
     assert(tracks);
 
-    ctx.emplace(iEvent, tokenGPUVertex_, gpuAlgo_.makeAsync(ctx.stream(), tracks, ptMin_));
+    ctx.emplace(iEvent, tokenGPUVertex_, gpuAlgo_.makeAsync(ctx, tracks, ptMin_));
   });
 }
 

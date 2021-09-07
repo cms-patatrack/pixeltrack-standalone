@@ -14,6 +14,7 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
 #include "CUDACore/requireDevices.h"
+#include "CUDACore/TestContext.h"
 #endif  // __CUDACC__
 
 // dirty, but works
@@ -39,14 +40,15 @@ int main(void) {
   auto h_clus = std::make_unique<int[]>(numElements);
 
 #ifdef __CUDACC__
-  auto d_id = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_x = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_adc = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_clus = cms::cuda::make_device_unique<int[]>(numElements, nullptr);
-  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules + 1, nullptr);
-  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, nullptr);
-  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, nullptr);
+  cms::cudatest::TestContext ctx;
+  auto d_id = cms::cuda::make_device_unique<uint16_t[]>(numElements, ctx);
+  auto d_x = cms::cuda::make_device_unique<uint16_t[]>(numElements, ctx);
+  auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, ctx);
+  auto d_adc = cms::cuda::make_device_unique<uint16_t[]>(numElements, ctx);
+  auto d_clus = cms::cuda::make_device_unique<int[]>(numElements, ctx);
+  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules + 1, ctx);
+  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, ctx);
+  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(maxNumModules, ctx);
 #else   // __CUDACC__
   auto h_moduleStart = std::make_unique<uint32_t[]>(maxNumModules + 1);
   auto h_clusInModule = std::make_unique<uint32_t[]>(maxNumModules);

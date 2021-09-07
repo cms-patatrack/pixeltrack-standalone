@@ -33,7 +33,7 @@ void PixelVertexSoAFromCUDA::acquire(edm::Event const& iEvent,
                                      cms::cuda::AcquireContext& ctx) {
   auto const& inputData = ctx.get(iEvent, tokenCUDA_);
 
-  m_soa = inputData.toHostAsync(ctx.stream());
+  m_soa = inputData.toHostAsync(ctx);
 }
 
 void PixelVertexSoAFromCUDA::produce(edm::Event& iEvent, edm::EventSetup const& iSetup, cms::cuda::ProduceContext&) {

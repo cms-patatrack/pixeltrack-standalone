@@ -137,7 +137,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 }
 
 template <>
-void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStream_t stream) {
+void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cms::cuda::Context const &ctx) {
   int32_t nhits = hh.nHits();
 
 #ifdef NTUPLE_DEBUG
@@ -150,13 +150,13 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
 #endif
 
   // in principle we can use "nhits" to heuristically dimension the workspace...
-  device_isOuterHitOfCell_ = cms::cuda::make_device_unique<GPUCACell::OuterHitOfCell[]>(std::max(1, nhits), stream);
+  device_isOuterHitOfCell_ = cms::cuda::make_device_unique<GPUCACell::OuterHitOfCell[]>(std::max(1, nhits), ctx);
   assert(device_isOuterHitOfCell_.get());
 
   cellStorage_ = cms::cuda::make_device_unique<unsigned char[]>(
       caConstants::maxNumOfActiveDoublets * sizeof(GPUCACell::CellNeighbors) +
           caConstants::maxNumOfActiveDoublets * sizeof(GPUCACell::CellTracks),
-      stream);
+      ctx);
   device_theCellNeighborsContainer_ = (GPUCACell::CellNeighbors *)cellStorage_.get();
   device_theCellTracksContainer_ = (GPUCACell::CellTracks *)(cellStorage_.get() + caConstants::maxNumOfActiveDoublets *
                                                                                       sizeof(GPUCACell::CellNeighbors));
@@ -165,16 +165,16 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
     int threadsPerBlock = 128;
     // at least one block!
     int blocks = (std::max(1, nhits) + threadsPerBlock - 1) / threadsPerBlock;
-    gpuPixelDoublets::initDoublets<<<blocks, threadsPerBlock, 0, stream>>>(device_isOuterHitOfCell_.get(),
-                                                                           nhits,
-                                                                           device_theCellNeighbors_.get(),
-                                                                           device_theCellNeighborsContainer_,
-                                                                           device_theCellTracks_.get(),
-                                                                           device_theCellTracksContainer_);
+    gpuPixelDoublets::initDoublets<<<blocks, threadsPerBlock, 0, ctx.stream()>>>(device_isOuterHitOfCell_.get(),
+                                                                                 nhits,
+                                                                                 device_theCellNeighbors_.get(),
+                                                                                 device_theCellNeighborsContainer_,
+                                                                                 device_theCellTracks_.get(),
+                                                                                 device_theCellTracksContainer_);
     cudaCheck(cudaGetLastError());
   }
 
-  device_theCells_ = cms::cuda::make_device_unique<GPUCACell[]>(params_.maxNumberOfDoublets_, stream);
+  device_theCells_ = cms::cuda::make_device_unique<GPUCACell[]>(params_.maxNumberOfDoublets_, ctx);
 
 #ifdef GPU_DEBUG
   cudaDeviceSynchronize();
@@ -201,18 +201,18 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
   int blocks = (4 * nhits + threadsPerBlock - 1) / threadsPerBlock;
   dim3 blks(1, blocks, 1);
   dim3 thrs(stride, threadsPerBlock, 1);
-  gpuPixelDoublets::getDoubletsFromHisto<<<blks, thrs, 0, stream>>>(device_theCells_.get(),
-                                                                    device_nCells_,
-                                                                    device_theCellNeighbors_.get(),
-                                                                    device_theCellTracks_.get(),
-                                                                    hh.view(),
-                                                                    device_isOuterHitOfCell_.get(),
-                                                                    nActualPairs,
-                                                                    params_.idealConditions_,
-                                                                    params_.doClusterCut_,
-                                                                    params_.doZ0Cut_,
-                                                                    params_.doPtCut_,
-                                                                    params_.maxNumberOfDoublets_);
+  gpuPixelDoublets::getDoubletsFromHisto<<<blks, thrs, 0, ctx.stream()>>>(device_theCells_.get(),
+                                                                          device_nCells_,
+                                                                          device_theCellNeighbors_.get(),
+                                                                          device_theCellTracks_.get(),
+                                                                          hh.view(),
+                                                                          device_isOuterHitOfCell_.get(),
+                                                                          nActualPairs,
+                                                                          params_.idealConditions_,
+                                                                          params_.doClusterCut_,
+                                                                          params_.doZ0Cut_,
+                                                                          params_.doPtCut_,
+                                                                          params_.maxNumberOfDoublets_);
   cudaCheck(cudaGetLastError());
 
 #ifdef GPU_DEBUG

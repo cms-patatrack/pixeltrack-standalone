@@ -32,7 +32,7 @@ BeamSpotToCUDA::BeamSpotToCUDA(edm::ProductRegistry& reg)
 void BeamSpotToCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext& ctx) {
   *bsHost = iSetup.get<BeamSpotPOD>();
 
-  BeamSpotCUDA bsDevice(ctx.stream());
+  BeamSpotCUDA bsDevice(ctx);
   cms::cuda::copyAsync(bsDevice.ptr(), bsHost, ctx.stream());
 
   ctx.emplace(iEvent, bsPutToken_, std::move(bsDevice));

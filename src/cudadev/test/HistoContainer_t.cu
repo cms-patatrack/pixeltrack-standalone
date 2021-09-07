@@ -8,6 +8,7 @@
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/requireDevices.h"
+#include "CUDACore/TestContext.h"
 
 using namespace cms::cuda;
 
@@ -15,10 +16,11 @@ template <typename T>
 void go() {
   std::mt19937 eng;
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
+  cms::cudatest::TestContext ctx;
 
   constexpr int N = 12000;
   T v[N];
-  auto v_d = make_device_unique<T[]>(N, nullptr);
+  auto v_d = make_device_unique<T[]>(N, ctx);
 
   cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
 
@@ -34,9 +36,9 @@ void go() {
   assert(Hist::totbins() == Hist::ctNOnes());
 
   Hist h;
-  auto h_d = make_device_unique<Hist[]>(1, nullptr);
+  auto h_d = make_device_unique<Hist[]>(1, ctx);
 
-  auto off_d = make_device_unique<uint32_t[]>(nParts + 1, nullptr);
+  auto off_d = make_device_unique<uint32_t[]>(nParts + 1, ctx);
 
   for (int it = 0; it < 5; ++it) {
     offsets[0] = 0;

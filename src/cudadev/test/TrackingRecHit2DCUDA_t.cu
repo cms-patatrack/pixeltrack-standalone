@@ -1,6 +1,7 @@
 #include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
+#include "CUDACore/TestContext.h"
 
 namespace testTrackingRecHit2D {
 
@@ -41,11 +42,12 @@ namespace testTrackingRecHit2D {
 int main() {
   cudaStream_t stream;
   cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+  cms::cudatest::TestContext ctx{stream};
 
   // inner scope to deallocate memory before destroying the stream
   {
     auto nHits = 200;
-    TrackingRecHit2DCUDA tkhit(nHits, nullptr, nullptr, stream);
+    TrackingRecHit2DCUDA tkhit(nHits, nullptr, nullptr, ctx);
 
     testTrackingRecHit2D::runKernels(tkhit.view());
   }

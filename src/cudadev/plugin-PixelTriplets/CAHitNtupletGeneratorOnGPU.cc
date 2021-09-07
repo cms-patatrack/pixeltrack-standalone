@@ -112,28 +112,28 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
 
 PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
                                                                     float bfield,
-                                                                    cudaStream_t stream) const {
-  PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(stream));
+                                                                    cms::cuda::Context const& ctx) const {
+  PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(ctx));
 
   auto* soa = tracks.get();
   assert(soa);
 
   CAHitNtupletGeneratorKernelsGPU kernels(m_params);
   kernels.setCounters(m_counters);
-  kernels.allocateOnGPU(hits_d.nHits(), stream);
+  kernels.allocateOnGPU(hits_d.nHits(), ctx);
 
-  kernels.buildDoublets(hits_d, stream);
-  kernels.launchKernels(hits_d, soa, stream);
-  kernels.fillHitDetIndices(hits_d.view(), soa, stream);  // in principle needed only if Hits not "available"
+  kernels.buildDoublets(hits_d, ctx);
+  kernels.launchKernels(hits_d, soa, ctx.stream());
+  kernels.fillHitDetIndices(hits_d.view(), soa, ctx.stream());  // in principle needed only if Hits not "available"
 
   HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
   fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
   if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
+    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, ctx);
   } else {
-    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
+    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, ctx);
   }
-  kernels.classifyTuples(hits_d, soa, stream);
+  kernels.classifyTuples(hits_d, soa, ctx.stream());
 
 #ifdef GPU_DEBUG
   cudaDeviceSynchronize();
@@ -152,9 +152,10 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
 
   CAHitNtupletGeneratorKernelsCPU kernels(m_params);
   kernels.setCounters(m_counters);
-  kernels.allocateOnGPU(hits_d.nHits(), nullptr);
+  cms::cuda::Context dummy{nullptr};
+  kernels.allocateOnGPU(hits_d.nHits(), dummy);
 
-  kernels.buildDoublets(hits_d, nullptr);
+  kernels.buildDoublets(hits_d, dummy);
   kernels.launchKernels(hits_d, soa, nullptr);
   kernels.fillHitDetIndices(hits_d.view(), soa, nullptr);  // in principle needed only if Hits not "available"
 

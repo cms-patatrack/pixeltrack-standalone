@@ -11,6 +11,7 @@
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/currentDevice.h"
+#include "CUDACore/TestContext.h"
 #endif
 
 #include "CUDACore/OneToManyAssoc.h"
@@ -141,7 +142,8 @@ __global__ void verifyFinal(Assoc const* __restrict__ la, int N) {
 template <typename T>
 auto make_unique(std::size_t size) {
 #ifdef __CUDACC__
-  return cms::cuda::make_device_unique<T>(size, 0);
+  cms::cudatest::TestContext ctx;
+  return cms::cuda::make_device_unique<T>(size, ctx);
 #else
   return std::make_unique<T>(size);
 #endif
@@ -219,7 +221,8 @@ int main() {
   auto a_d = make_unique<Assoc[]>(1);
   auto sa_d = make_unique<SmallAssoc[]>(1);
 #ifdef __CUDACC__
-  auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
+  cms::cudatest::TestContext ctx;
+  auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, ctx);
   assert(v_d.get());
   cudaCheck(cudaMemcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>), cudaMemcpyHostToDevice));
 #else

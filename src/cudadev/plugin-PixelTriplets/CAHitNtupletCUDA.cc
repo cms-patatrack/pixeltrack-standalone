@@ -35,7 +35,7 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es, cm
 
   auto const& hits = ctx.get(iEvent, tokenHitGPU_);
 
-  ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
+  ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx));
 }
 
 DEFINE_FWK_MODULE(CAHitNtupletCUDA);

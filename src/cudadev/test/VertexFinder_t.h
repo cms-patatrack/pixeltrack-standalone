@@ -7,6 +7,7 @@
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/launch.h"
+#include "CUDACore/TestContext.h"
 #ifdef USE_DBSCAN
 #include "plugin-PixelVertexFinding/gpuClusterTracksDBSCAN.h"
 #define CLUSTERIZE gpuVertexFinder::clusterTracksDBSCAN
@@ -114,8 +115,9 @@ int main() {
 #ifdef __CUDACC__
   cms::cudatest::requireDevices();
 
-  auto onGPU_d = cms::cuda::make_device_unique<gpuVertexFinder::ZVertices[]>(1, nullptr);
-  auto ws_d = cms::cuda::make_device_unique<gpuVertexFinder::WorkSpace[]>(1, nullptr);
+  cms::cudatest::TestContext ctx;
+  auto onGPU_d = cms::cuda::make_device_unique<gpuVertexFinder::ZVertices[]>(1, ctx);
+  auto ws_d = cms::cuda::make_device_unique<gpuVertexFinder::WorkSpace[]>(1, ctx);
 #else
   auto onGPU_d = std::make_unique<gpuVertexFinder::ZVertices>();
   auto ws_d = std::make_unique<gpuVertexFinder::WorkSpace>();

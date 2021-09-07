@@ -12,7 +12,9 @@ public:
   BeamSpotCUDA() = default;
 
   // constructor that allocates cached device memory on the given CUDA stream
-  BeamSpotCUDA(cudaStream_t stream) { data_d_ = cms::cuda::make_device_unique<BeamSpotPOD>(stream); }
+  BeamSpotCUDA(cms::cuda::DeviceAllocatorContext const& ctx) {
+    data_d_ = cms::cuda::make_device_unique<BeamSpotPOD>(ctx);
+  }
 
   // movable, non-copiable
   BeamSpotCUDA(BeamSpotCUDA const&) = delete;

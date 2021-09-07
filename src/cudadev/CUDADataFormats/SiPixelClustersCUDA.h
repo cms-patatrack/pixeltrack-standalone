@@ -10,7 +10,7 @@
 class SiPixelClustersCUDA {
 public:
   SiPixelClustersCUDA() = default;
-  explicit SiPixelClustersCUDA(size_t maxModules, cudaStream_t stream);
+  explicit SiPixelClustersCUDA(size_t maxModules, cms::cuda::Context const &ctx);
   ~SiPixelClustersCUDA() = default;
 
   SiPixelClustersCUDA(const SiPixelClustersCUDA &) = delete;

@@ -37,10 +37,10 @@ void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
   const auto& gpuDigis = ctx.get(iEvent, digiGetToken_);
 
   nDigis_ = gpuDigis.nDigis();
-  pdigi_ = gpuDigis.pdigiToHostAsync(ctx.stream());
-  rawIdArr_ = gpuDigis.rawIdArrToHostAsync(ctx.stream());
-  adc_ = gpuDigis.adcToHostAsync(ctx.stream());
-  clus_ = gpuDigis.clusToHostAsync(ctx.stream());
+  pdigi_ = gpuDigis.pdigiToHostAsync(ctx);
+  rawIdArr_ = gpuDigis.rawIdArrToHostAsync(ctx);
+  adc_ = gpuDigis.adcToHostAsync(ctx);
+  clus_ = gpuDigis.clusToHostAsync(ctx);
 }
 
 void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) {

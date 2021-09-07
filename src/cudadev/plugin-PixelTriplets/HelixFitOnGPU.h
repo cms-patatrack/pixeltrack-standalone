@@ -44,8 +44,14 @@ public:
   ~HelixFitOnGPU() { deallocateOnGPU(); }
 
   void setBField(double bField) { bField_ = bField; }
-  void launchRiemannKernels(HitsView const *hv, uint32_t nhits, uint32_t maxNumberOfTuples, cudaStream_t cudaStream);
-  void launchBrokenLineKernels(HitsView const *hv, uint32_t nhits, uint32_t maxNumberOfTuples, cudaStream_t cudaStream);
+  void launchRiemannKernels(HitsView const *hv,
+                            uint32_t nhits,
+                            uint32_t maxNumberOfTuples,
+                            cms::cuda::Context const &ctx);
+  void launchBrokenLineKernels(HitsView const *hv,
+                               uint32_t nhits,
+                               uint32_t maxNumberOfTuples,
+                               cms::cuda::Context const &ctx);
 
   void launchRiemannKernelsOnCPU(HitsView const *hv, uint32_t nhits, uint32_t maxNumberOfTuples);
   void launchBrokenLineKernelsOnCPU(HitsView const *hv, uint32_t nhits, uint32_t maxNumberOfTuples);

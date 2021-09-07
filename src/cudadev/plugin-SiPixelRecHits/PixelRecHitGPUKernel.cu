@@ -37,9 +37,9 @@ namespace pixelgpudetails {
                                                            SiPixelClustersCUDA const& clusters_d,
                                                            BeamSpotCUDA const& bs_d,
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                           cudaStream_t stream) const {
+                                                           cms::cuda::Context const& ctx) const {
     auto nHits = clusters_d.nClusters();
-    TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), stream);
+    TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), ctx);
 
     int threadsPerBlock = 128;
     int blocks = digis_d.nModules();  // active modules (with digis)
@@ -49,7 +49,7 @@ namespace pixelgpudetails {
 #endif
     // protect from empty events
     if (blocks) {
-      gpuPixelRecHits::getHits<<<blocks, threadsPerBlock, 0, stream>>>(
+      gpuPixelRecHits::getHits<<<blocks, threadsPerBlock, 0, ctx.stream()>>>(
           cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
@@ -59,11 +59,17 @@ namespace pixelgpudetails {
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
-      setHitsLayerStart<<<1, 32, 0, stream>>>(clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
+      setHitsLayerStart<<<1, 32, 0, ctx.stream()>>>(clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
       cudaCheck(cudaGetLastError());
 
-      cms::cuda::fillManyFromVector(
-          hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, hits_d.phiBinnerStorage(), stream);
+      cms::cuda::fillManyFromVector(hits_d.phiBinner(),
+                                    10,
+                                    hits_d.iphi(),
+                                    hits_d.hitsLayerStart(),
+                                    nHits,
+                                    256,
+                                    hits_d.phiBinnerStorage(),
+                                    ctx.stream());
       cudaCheck(cudaGetLastError());
 
 #ifdef GPU_DEBUG

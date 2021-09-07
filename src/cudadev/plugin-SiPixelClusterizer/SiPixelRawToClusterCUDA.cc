@@ -160,7 +160,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                              useQuality_,
                              includeErrors_,
                              false,  // debug
-                             ctx.stream());
+                             ctx);
 }
 
 void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent,

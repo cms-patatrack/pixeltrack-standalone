@@ -92,18 +92,18 @@ void HistoValidator::acquire(const edm::Event& iEvent, const edm::EventSetup& iS
 
   nDigis = digis.nDigis();
   nModules = digis.nModules();
-  h_adc = digis.adcToHostAsync(ctx.stream());
+  h_adc = digis.adcToHostAsync(ctx);
 
   nClusters = clusters.nClusters();
-  h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx.stream());
+  h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx);
   cudaCheck(cudaMemcpyAsync(
       h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaMemcpyDefault, ctx.stream()));
 
   nHits = hits.nHits();
-  h_localCoord = hits.localCoordToHostAsync(ctx.stream());
-  h_globalCoord = hits.globalCoordToHostAsync(ctx.stream());
-  h_charge = hits.chargeToHostAsync(ctx.stream());
-  h_size = hits.sizeToHostAsync(ctx.stream());
+  h_localCoord = hits.localCoordToHostAsync(ctx);
+  h_globalCoord = hits.globalCoordToHostAsync(ctx);
+  h_charge = hits.chargeToHostAsync(ctx);
+  h_size = hits.sizeToHostAsync(ctx);
 }
 
 void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, cms::cuda::ProduceContext&) {

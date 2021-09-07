@@ -11,7 +11,7 @@ void CAHitNtupletGeneratorKernelsCPU::fillHitDetIndices(HitsView const *hv, TkSo
 }
 
 template <>
-void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStream_t stream) {
+void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cms::cuda::Context const &ctx) {
   auto nhits = hh.nHits();
 
 #ifdef NTUPLE_DEBUG

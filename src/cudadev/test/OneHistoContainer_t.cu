@@ -9,6 +9,7 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
 #include "CUDACore/requireDevices.h"
+#include "CUDACore/TestContext.h"
 
 using namespace cms::cuda;
 
@@ -104,11 +105,12 @@ void go() {
   }
 
   std::uniform_int_distribution<T> rgen(rmin, rmax);
+  cms::cudatest::TestContext ctx;
 
   constexpr int N = 12000;
   T v[N];
 
-  auto v_d = make_device_unique<T[]>(N, nullptr);
+  auto v_d = make_device_unique<T[]>(N, ctx);
   assert(v_d.get());
 
   using Hist = HistoContainer<T, NBINS, N, S>;

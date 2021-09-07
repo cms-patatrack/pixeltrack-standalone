@@ -93,11 +93,11 @@ namespace gpuVertexFinder {
 #endif
 
 #ifdef __CUDACC__
-  ZVertexHeterogeneous Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
+  ZVertexHeterogeneous Producer::makeAsync(cms::cuda::Context const& ctx, TkSoA const* tksoa, float ptMin) const {
 #ifdef PIXVERTEX_DEBUG_PRODUCE
     std::cout << "producing Vertices on GPU" << std::endl;
 #endif  // PIXVERTEX_DEBUG_PRODUCE
-    ZVertexHeterogeneous vertices(cms::cuda::make_device_unique<ZVertexSoA>(stream));
+    ZVertexHeterogeneous vertices(cms::cuda::make_device_unique<ZVertexSoA>(ctx));
 #else
   ZVertexHeterogeneous Producer::make(TkSoA const* tksoa, float ptMin) const {
 #ifdef PIXVERTEX_DEBUG_PRODUCE
@@ -110,16 +110,16 @@ namespace gpuVertexFinder {
     assert(soa);
 
 #ifdef __CUDACC__
-    auto ws_d = cms::cuda::make_device_unique<WorkSpace>(stream);
+    auto ws_d = cms::cuda::make_device_unique<WorkSpace>(ctx);
 #else
     auto ws_d = std::make_unique<WorkSpace>();
 #endif
 
 #ifdef __CUDACC__
-    init<<<1, 1, 0, stream>>>(soa, ws_d.get());
+    init<<<1, 1, 0, ctx.stream()>>>(soa, ws_d.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-    loadTracks<<<numberOfBlocks, blockSize, 0, stream>>>(tksoa, soa, ws_d.get(), ptMin);
+    loadTracks<<<numberOfBlocks, blockSize, 0, ctx.stream()>>>(tksoa, soa, ws_d.get(), ptMin);
     cudaCheck(cudaGetLastError());
 #else
     init(soa, ws_d.get());
@@ -135,32 +135,33 @@ namespace gpuVertexFinder {
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
-      vertexFinderOneKernel<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderOneKernel<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
 #else
-      vertexFinderKernel1<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderKernel1<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       cudaCheck(cudaGetLastError());
       // one block per vertex...
-      splitVerticesKernel<<<numBlocks, threadsPerBlock, 0, stream>>>(soa, ws_d.get(), maxChi2ForSplit);
+      splitVerticesKernel<<<numBlocks, threadsPerBlock, 0, ctx.stream()>>>(soa, ws_d.get(), maxChi2ForSplit);
       cudaCheck(cudaGetLastError());
-      vertexFinderKernel2<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get());
+      vertexFinderKernel2<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get());
 #endif
     } else {  // five kernels
       if (useDensity_) {
-        clusterTracksByDensityKernel<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksByDensityKernel<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(
+            soa, ws_d.get(), minT, eps, errmax, chi2max);
       } else if (useDBSCAN_) {
-        clusterTracksDBSCAN<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksDBSCAN<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       } else if (useIterative_) {
-        clusterTracksIterative<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksIterative<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       }
       cudaCheck(cudaGetLastError());
-      fitVerticesKernel<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), maxChi2ForFirstFit);
+      fitVerticesKernel<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), maxChi2ForFirstFit);
       cudaCheck(cudaGetLastError());
       // one block per vertex...
-      splitVerticesKernel<<<numBlocks, threadsPerBlock, 0, stream>>>(soa, ws_d.get(), maxChi2ForSplit);
+      splitVerticesKernel<<<numBlocks, threadsPerBlock, 0, ctx.stream()>>>(soa, ws_d.get(), maxChi2ForSplit);
       cudaCheck(cudaGetLastError());
-      fitVerticesKernel<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get(), maxChi2ForFinalFit);
+      fitVerticesKernel<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get(), maxChi2ForFinalFit);
       cudaCheck(cudaGetLastError());
-      sortByPt2Kernel<<<1, maxThreadsForPrint, 0, stream>>>(soa, ws_d.get());
+      sortByPt2Kernel<<<1, maxThreadsForPrint, 0, ctx.stream()>>>(soa, ws_d.get());
     }
     cudaCheck(cudaGetLastError());
 #else  // __CUDACC__

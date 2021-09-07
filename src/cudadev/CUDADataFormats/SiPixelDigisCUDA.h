@@ -10,7 +10,7 @@
 class SiPixelDigisCUDA {
 public:
   SiPixelDigisCUDA() = default;
-  explicit SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream);
+  explicit SiPixelDigisCUDA(size_t maxFedWords, cms::cuda::Context const &ctx);
   ~SiPixelDigisCUDA() = default;
 
   SiPixelDigisCUDA(const SiPixelDigisCUDA &) = delete;
@@ -42,10 +42,10 @@ public:
   uint32_t const *pdigi() const { return pdigi_d.get(); }
   uint32_t const *rawIdArr() const { return rawIdArr_d.get(); }
 
-  cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+  cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cms::cuda::Context const &ctx) const;
+  cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cms::cuda::Context const &ctx) const;
+  cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cms::cuda::Context const &ctx) const;
+  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cms::cuda::Context const &ctx) const;
 
   class DeviceConstView {
   public:
