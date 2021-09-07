@@ -10,8 +10,7 @@
 #include "getCachingDeviceAllocator.h"
 
 namespace {
-  const size_t maxAllocationSize =
-      notcub::CachingDeviceAllocator::IntPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
+  const size_t maxAllocationSize = allocator::intPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
 }
 
 namespace cms::cuda {
@@ -22,7 +21,7 @@ namespace cms::cuda {
         throw std::runtime_error("Tried to allocate " + std::to_string(nbytes) +
                                  " bytes, but the allocator maximum is " + std::to_string(maxAllocationSize));
       }
-      cudaCheck(allocator::getCachingDeviceAllocator().DeviceAllocate(dev, &ptr, nbytes, stream));
+      ptr = allocator::getCachingDeviceAllocator().allocate(dev, nbytes, stream);
 #if CUDA_VERSION >= 11020
     } else if constexpr (allocator::policy == allocator::Policy::Asynchronous) {
       ScopedSetDevice setDeviceForThisScope(dev);
@@ -37,7 +36,7 @@ namespace cms::cuda {
 
   void free_device(int device, void *ptr, cudaStream_t stream) {
     if constexpr (allocator::policy == allocator::Policy::Caching) {
-      cudaCheck(allocator::getCachingDeviceAllocator().DeviceFree(device, ptr));
+      allocator::getCachingDeviceAllocator().free(device, ptr);
 #if CUDA_VERSION >= 11020
     } else if constexpr (allocator::policy == allocator::Policy::Asynchronous) {
       ScopedSetDevice setDeviceForThisScope(device);

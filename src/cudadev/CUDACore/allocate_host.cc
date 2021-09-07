@@ -6,8 +6,7 @@
 #include "getCachingHostAllocator.h"
 
 namespace {
-  const size_t maxAllocationSize =
-      notcub::CachingDeviceAllocator::IntPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
+  const size_t maxAllocationSize = allocator::intPow(cms::cuda::allocator::binGrowth, cms::cuda::allocator::maxBin);
 }
 
 namespace cms::cuda {
@@ -18,7 +17,7 @@ namespace cms::cuda {
         throw std::runtime_error("Tried to allocate " + std::to_string(nbytes) +
                                  " bytes, but the allocator maximum is " + std::to_string(maxAllocationSize));
       }
-      cudaCheck(allocator::getCachingHostAllocator().HostAllocate(&ptr, nbytes, stream));
+      ptr = allocator::getCachingHostAllocator().allocate(allocator::HostTraits::kHostDevice, nbytes, stream);
     } else {
       cudaCheck(cudaMallocHost(&ptr, nbytes));
     }
@@ -27,7 +26,7 @@ namespace cms::cuda {
 
   void free_host(void *ptr) {
     if constexpr (allocator::policy == allocator::Policy::Caching) {
-      cudaCheck(allocator::getCachingHostAllocator().HostFree(ptr));
+      allocator::getCachingHostAllocator().free(allocator::HostTraits::kHostDevice, ptr);
     } else {
       cudaCheck(cudaFreeHost(ptr));
     }
