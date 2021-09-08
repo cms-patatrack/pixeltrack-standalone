@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/threadfence.h"
 #include "Framework/CMSUnrollLoop.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
@@ -49,10 +50,10 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-      uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      assert(ws);
+      const int32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      const int32_t gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      const int32_t blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      ALPAKA_ASSERT_OFFLOAD(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
       ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
@@ -97,10 +98,10 @@ namespace cms {
 #endif
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
-      uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      assert(ws);
+      const int32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      const int32_t gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      const int32_t blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+      ALPAKA_ASSERT_OFFLOAD(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
       ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
@@ -135,43 +136,45 @@ namespace cms {
 
     // limited to 1024*1024 elements....
     template <typename T>
-    struct multiBlockPrefixScanFirstStep {
+    struct multiBlockPrefixScan {
       template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size) const {
-        uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-        uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-        uint32_t const blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t* pc) const {
+        const int32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        const int32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        const int32_t threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+        const int32_t blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        const int32_t threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+
+        // first each block does a scan of size 1024; (better be enough blocks....)
+        ALPAKA_ASSERT_OFFLOAD(gridDimension / threadDimension <= 1024);
 
         auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
-        // first each block does a scan of size 1024; (better be enough blocks....)
-#ifndef NDEBUG
-        uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-        ALPAKA_ASSERT_OFFLOAD(gridDimension / threadDimension <= 1024);
-#endif
         int off = blockDimension * blockIdx * threadDimension;
         if (size - off > 0)
           blockPrefixScan(acc, ci + off, co + off, std::min(int(blockDimension * threadDimension), size - off), ws);
-      }
-    };
 
-    // limited to 1024*1024 elements....
-    template <typename T>
-    struct multiBlockPrefixScanSecondStep {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
-        uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-        uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+        auto& isLastBlockDone = alpaka::declareSharedVar<bool, __COUNTER__>(acc);
+        if (0 == threadIdx) {
+          ::cms::alpakatools::threadfence(acc);
+          auto value = alpaka::atomicAdd(acc, pc, 1, alpaka::hierarchy::Blocks{});  // block counter
+          isLastBlockDone = (value == (gridDimension - 1));
+        }
 
-        uint32_t const threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+        alpaka::syncBlockThreads(acc);
 
-        auto* const psum(alpaka::getDynSharedMem<T>(acc));
+        if (!isLastBlockDone)
+          return;
 
-        // first each block does a scan of size 1024; (better be enough blocks....)
-        ALPAKA_ASSERT_OFFLOAD(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
+        ALPAKA_ASSERT_OFFLOAD(gridDimension == *pc);
+
+        auto& psum = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
+
+        ALPAKA_ASSERT_OFFLOAD(static_cast<int32_t>(blockDimension * threadDimension) >= gridDimension);
+
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
-          int index = +threadIdx * threadDimension + elemId;
+          int index = threadIdx * threadDimension + elemId;
 
-          if (index < numBlocks) {
+          if (index < gridDimension) {
             int lastElementOfPreviousBlockId = index * blockDimension * threadDimension - 1;
             psum[index] = (lastElementOfPreviousBlockId < size and lastElementOfPreviousBlockId >= 0)
                               ? co[lastElementOfPreviousBlockId]
@@ -180,9 +183,7 @@ namespace cms {
         }
 
         alpaka::syncBlockThreads(acc);
-
-        auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
-        blockPrefixScan(acc, psum, psum, numBlocks, ws);
+        blockPrefixScan(acc, psum, psum, gridDimension, ws);
 
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int first = threadIdx * threadDimension + elemId;
@@ -196,37 +197,5 @@ namespace cms {
 
   }  // namespace alpakatools
 }  // namespace cms
-
-namespace alpaka {
-  namespace traits {
-
-    //#############################################################################
-    //! The trait for getting the size of the block shared dynamic memory for a kernel.
-    template <typename T, typename TAcc>
-    struct BlockSharedMemDynSizeBytes<::cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> {
-      //-----------------------------------------------------------------------------
-      //! \return The size of the shared memory allocated for a block.
-      template <typename TVec>
-      ALPAKA_FN_HOST_ACC static auto getBlockSharedMemDynSizeBytes(
-          ::cms::alpakatools::multiBlockPrefixScanSecondStep<T> const& myKernel,
-          TVec const& blockThreadExtent,
-          TVec const& threadElemExtent,
-          T const* ci,
-          T* co,
-          int32_t size,
-          int32_t numBlocks) -> T {
-        alpaka::ignore_unused(myKernel);
-        alpaka::ignore_unused(blockThreadExtent);
-        alpaka::ignore_unused(threadElemExtent);
-        alpaka::ignore_unused(ci);
-        alpaka::ignore_unused(co);
-        alpaka::ignore_unused(size);
-
-        return static_cast<size_t>(numBlocks) * sizeof(T);
-      }
-    };
-
-  }  // namespace traits
-}  // namespace alpaka
 
 #endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
