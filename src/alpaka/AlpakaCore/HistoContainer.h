@@ -74,17 +74,15 @@ namespace cms {
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1D blocksPerGrid(nblocks);
 
+      auto d_pc = cms::alpakatools::allocDeviceBuf<int32_t>(1u);
+      int32_t *pc = alpaka::getPtrNative(d_pc);
+      alpaka::memset(queue, d_pc, 0, 1u);
+
       const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
-
-      const WorkDiv1D &workDivWith1Block =
-          cms::alpakatools::make_workdiv(Vec1D::all(1), threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
+                          workDiv, multiBlockPrefixScan<uint32_t>(), poff, poff, num_items, pc));
+      alpaka::wait(queue);
     }
 
     template <typename Histo, typename T>
