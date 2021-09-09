@@ -2,7 +2,8 @@
 #define HeterogeneousCore_CUDACore_stream_EDProducer_h
 
 #include "Framework/EDProducer.h"
-#include "CUDACore/Context.h"
+#include "CUDACore/AcquireContext.h"
+#include "CUDACore/ProduceContext.h"
 
 namespace cms::cuda {
   class EDProducer : public edm::EDProducer {

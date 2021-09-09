@@ -4,7 +4,6 @@
 #include <vector>
 
 // CMSSW includes
-#include "CUDACore/Context.h"
 #include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"

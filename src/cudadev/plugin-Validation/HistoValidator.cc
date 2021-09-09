@@ -1,4 +1,3 @@
-#include "CUDACore/Context.h"
 #include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"

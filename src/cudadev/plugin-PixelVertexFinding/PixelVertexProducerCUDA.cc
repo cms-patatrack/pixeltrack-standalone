@@ -1,12 +1,12 @@
 #include <cuda_runtime.h>
 
 #include "CUDACore/Product.h"
+#include "CUDACore/ProduceContext.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
-#include "CUDACore/Context.h"
 
 #include "gpuVertexFinder.h"
 
