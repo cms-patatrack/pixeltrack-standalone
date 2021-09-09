@@ -1,6 +1,5 @@
 #include <cuda_runtime.h>
 
-#include "CUDACore/Context.h"
 #include "CUDACore/EDProducer.h"
 #include "CUDACore/Product.h"
 #include "CUDACore/HostProduct.h"

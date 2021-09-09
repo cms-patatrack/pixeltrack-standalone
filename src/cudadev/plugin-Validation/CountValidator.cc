@@ -1,4 +1,4 @@
-#include "CUDACore/Context.h"
+#include "CUDACore/ProduceContext.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
