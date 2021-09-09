@@ -53,9 +53,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto offset =
           range.first + col * lengthOfColumnData + lengthOfAveragedDataInEachColumn * numberOfDataBlocksToSkip;
 
-      assert(offset < range.second);
-      assert(offset < 3088384);
-      assert(0 == offset % 2);
+      ALPAKA_ASSERT_OFFLOAD(offset < range.second);
+      ALPAKA_ASSERT_OFFLOAD(offset < 3088384);
+      ALPAKA_ASSERT_OFFLOAD(0 == offset % 2);
 
       auto s = v_pedestals[offset / 2];
 

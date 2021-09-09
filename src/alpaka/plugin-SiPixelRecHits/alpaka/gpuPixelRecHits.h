@@ -30,8 +30,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
         // not using views (passing a gazzilion of array pointers) seems to produce the fastest code (but it is harder to mantain)
 
-        assert(phits);
-        assert(cpeParams);
+        ALPAKA_ASSERT_OFFLOAD(phits);
+        ALPAKA_ASSERT_OFFLOAD(cpeParams);
 
         auto& hits = *phits;
 
@@ -78,7 +78,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           auto k = clusters.moduleStart(1 + blockIdx);
           while (digis.moduleInd(k) == InvId)
             ++k;
-          assert(digis.moduleInd(k) == me);
+          ALPAKA_ASSERT_OFFLOAD(digis.moduleInd(k) == me);
         }
 #endif
 
@@ -93,11 +93,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           int nClusInIter = std::min(MaxHitsInIter, endClus - startClus);
           int lastClus = startClus + nClusInIter;
-          assert(nClusInIter <= nclus);
-          assert(nClusInIter > 0);
-          assert(lastClus <= nclus);
+          ALPAKA_ASSERT_OFFLOAD(nClusInIter <= nclus);
+          ALPAKA_ASSERT_OFFLOAD(nClusInIter > 0);
+          ALPAKA_ASSERT_OFFLOAD(lastClus <= nclus);
 
-          assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
+          ALPAKA_ASSERT_OFFLOAD(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
           // init
           cms::alpakatools::for_each_element_in_block_strided(acc, nClusInIter, [&](uint32_t ic) {
@@ -136,8 +136,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             cl -= startClus;
-            assert(cl >= 0);
-            assert(cl < MaxHitsInIter);
+            ALPAKA_ASSERT_OFFLOAD(cl >= 0);
+            ALPAKA_ASSERT_OFFLOAD(cl < MaxHitsInIter);
             alpaka::atomicMin(acc, &clusParams.minRow[cl], x, alpaka::hierarchy::Blocks{});
             alpaka::atomicMax(acc, &clusParams.maxRow[cl], x, alpaka::hierarchy::Blocks{});
             alpaka::atomicMin(acc, &clusParams.minCol[cl], y, alpaka::hierarchy::Blocks{});
@@ -164,8 +164,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             if (cl < startClus || cl >= lastClus)
               continue;
             cl -= startClus;
-            assert(cl >= 0);
-            assert(cl < MaxHitsInIter);
+            ALPAKA_ASSERT_OFFLOAD(cl >= 0);
+            ALPAKA_ASSERT_OFFLOAD(cl < MaxHitsInIter);
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             const int32_t ch = std::min(digis.adc(i), pixmx);
@@ -193,8 +193,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             // TODO: was 'break', OTOH comment above says "should not happen", so hopefully 'return' is ok
             if (h >= TrackingRecHit2DSOAView::maxHits())
               return;  // overflow...
-            assert(h < hits.nHits());
-            assert(h < clusters.clusModuleStart(me + 1));
+            ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());
+            ALPAKA_ASSERT_OFFLOAD(h < clusters.clusModuleStart(me + 1));
 
             pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
             pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);

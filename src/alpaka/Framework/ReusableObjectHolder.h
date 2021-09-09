@@ -84,10 +84,10 @@ namespace edm {
     ReusableObjectHolder() : m_outstandingObjects(0) {}
     ReusableObjectHolder(ReusableObjectHolder&& iOther)
         : m_availableQueue(std::move(iOther.m_availableQueue)), m_outstandingObjects(0) {
-      assert(0 == iOther.m_outstandingObjects);
+      ALPAKA_ASSERT_OFFLOAD(0 == iOther.m_outstandingObjects);
     }
     ~ReusableObjectHolder() {
-      assert(0 == m_outstandingObjects);
+      ALPAKA_ASSERT_OFFLOAD(0 == m_outstandingObjects);
       std::unique_ptr<T, Deleter> item;
       while (m_availableQueue.try_pop(item)) {
         item.reset();
