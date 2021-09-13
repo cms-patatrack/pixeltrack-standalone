@@ -76,8 +76,8 @@ public:
     return cachedBytes_;
   }
 
-  // Allocate given number of bytes on the given device associated to given queue
-  void* allocate(DeviceType device, size_t bytes, QueueType queue) {
+  // Allocate given number of bytes on the current device associated to given queue
+  void* allocate(size_t bytes, QueueType queue) {
     if (bytes > maxBinBytes_) {
       throw std::runtime_error("Requested allocation size " + std::to_string(bytes) +
                                " bytes is too large for the caching allocator with maximum bin " +
@@ -85,10 +85,15 @@ public:
                                " bytes. You might want to increase the maximum bin size");
     }
 
+    // device where to record the event on
+    const DeviceType deviceEvent = Traits::currentDevice();
+    // device (bin) where to allocate the memory on
+    const DeviceType device = Traits::memoryDevice(deviceEvent);
+
     // Create a block descriptor for the requested allocation
     BlockDescriptor searchKey;
     searchKey.bytesRequested = bytes;
-    searchKey.device = device;
+    searchKey.device = deviceEvent;
     searchKey.associatedQueue = queue;
     if (bytes < minBinBytes_) {
       searchKey.bin = minBin_;
@@ -102,8 +107,6 @@ public:
 
     // allocate if necessary
     if (searchKey.ptr == nullptr) {
-      [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(device);
-
       searchKey.ptr = Traits::tryAllocate(searchKey.bytes);
       if (searchKey.ptr == nullptr) {
         // The allocation attempt failed: free all cached blocks on device and retry
@@ -113,7 +116,7 @@ public:
                     << std::endl;
         }
 
-        freeCachedBlocksOnDevice(device);
+        freeCachedBlocksOnDevice(deviceEvent);
 
         searchKey.ptr = Traits::allocate(searchKey.bytes);
       }
@@ -143,14 +146,20 @@ public:
     return searchKey.ptr;
   }
 
-  // Frees an allocation on a given device
-  void free(DeviceType device, void* ptr) {
+  // Frees an allocation
+  void free(DeviceType deviceEvent, void* ptr) {
     bool recache = false;
     BlockDescriptor searchKey;
-    searchKey.device = device;
+    searchKey.device = deviceEvent;
     searchKey.ptr = ptr;
 
-    [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(device);
+    // The deviceEvent argument is used as part of the search key to
+    // liveBlocks. Whether it is actually used (or makes sense)
+    // depends on the Traits class. The actual device where the event
+    // resides is really obtained from the live block itself. This
+    // variable points to the "memory device" that is derived from the
+    // "event device" of the live block.
+    DeviceType device;
 
     {
       std::scoped_lock lock(mutex_);
@@ -163,11 +172,13 @@ public:
       }
       searchKey = *iBlock;
       liveBlocks_.erase(iBlock);
+      device = Traits::memoryDevice(searchKey.device);
       cachedBytes_[device].live -= searchKey.bytes;
       cachedBytes_[device].liveRequested -= searchKey.bytesRequested;
 
       recache = (cachedBytes_[device].free + searchKey.bytes <= maxCachedBytes_);
       if (recache) {
+        Traits::recordEvent(searchKey.readyEvent, searchKey.associatedQueue);
         cachedBlocks_.insert(searchKey);
         cachedBytes_[device].free += searchKey.bytes;
 
@@ -179,13 +190,10 @@ public:
                     << " bytes)" << std::endl;
         }
       }
-
-      if (recache) {
-        Traits::recordEvent(searchKey.readyEvent, searchKey.associatedQueue);
-      }
     }
 
     if (not recache) {
+      auto scopedSetDevice = Traits::setDevice(searchKey.device);
       Traits::free(ptr);
       Traits::destroyEvent(searchKey.readyEvent);
       if (debug_) {
@@ -204,20 +212,19 @@ private:
     size_t bytes = 0;
     size_t bytesRequested = 0;  // for monitoring only
     unsigned int bin = 0;
+    // The device refers primarily to the device where the event has
+    // been recorded on. The Traits::memoryDevice() translates this
+    // number to the device where memory is allocated from.
     DeviceType device = Traits::kInvalidDevice;
     QueueType associatedQueue;
     EventType readyEvent;
 
     static bool PtrCompare(BlockDescriptor const& a, BlockDescriptor const& b) {
-      if (a.device == b.device)
-        return a.ptr < b.ptr;
-      return a.device < b.device;
+      return Traits::deviceCompare(a.device, b.device, [&a, &b]() { return a.ptr < b.ptr; });
     }
 
     static bool SizeCompare(BlockDescriptor const& a, BlockDescriptor const& b) {
-      if (a.device == b.device)
-        return a.bytes < b.bytes;
-      return a.device < b.device;
+      return Traits::deviceCompare(a.device, b.device, [&a, &b]() { return a.bytes < b.bytes; });
     }
   };
 
@@ -232,18 +239,19 @@ private:
       if (Traits::canReuseInQueue(searchKey.associatedQueue, iBlock->associatedQueue) or
           Traits::eventWorkHasCompleted(iBlock->readyEvent)) {
         // Reuse existing cache block. Insert into live blocks.
-        auto device = searchKey.device;
+        auto deviceEvent = searchKey.device;
         auto queue = searchKey.associatedQueue;
         searchKey = *iBlock;
         searchKey.associatedQueue = queue;
 
-        if (searchKey.device != device) {
-          searchKey.readyEvent = Traits::recreateEvent(searchKey.readyEvent, searchKey.device, device);
-          searchKey.device = device;
+        if (searchKey.device != deviceEvent) {
+          searchKey.readyEvent = Traits::recreateEvent(searchKey.readyEvent, searchKey.device, deviceEvent);
+          searchKey.device = deviceEvent;
         }
 
         liveBlocks_.insert(searchKey);
 
+        auto device = Traits::memoryDevice(deviceEvent);
         cachedBytes_[device].free -= searchKey.bytes;
         cachedBytes_[device].live += searchKey.bytes;
         cachedBytes_[device].live += searchKey.bytesRequested;
@@ -263,11 +271,12 @@ private:
     return nullptr;
   }
 
-  void freeCachedBlocksOnDevice(DeviceType device) {
+  void freeCachedBlocksOnDevice(DeviceType deviceEvent) {
     std::scoped_lock lock(mutex_);
 
     BlockDescriptor freeKey;
-    freeKey.device = device;
+    freeKey.device = deviceEvent;
+    auto const device = Traits::memoryDevice(deviceEvent);
     for (auto iBlock = cachedBlocks_.lower_bound(freeKey);
          iBlock != cachedBlocks_.end() and iBlock->device == device;) {
       Traits::free(iBlock->ptr);
@@ -293,12 +302,13 @@ private:
       [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(iBlock->device);
       Traits::free(iBlock->ptr);
       Traits::destroyEvent(iBlock->readyEvent);
-      cachedBytes_[iBlock->device].free -= iBlock->bytes;
+      auto const device = Traits::memoryDevice(iBlock->device);
+      cachedBytes_[device].free -= iBlock->bytes;
 
       if (debug_) {
-        std::cout << "\t" << Traits::printDevice(iBlock->device) << " freed " << iBlock->bytes << " bytes.\n\t\t  "
-                  << (cachedBlocks_.size() - 1) << " available blocks cached (" << cachedBytes_[iBlock->device].free
-                  << " bytes), " << liveBlocks_.size() << " live blocks (" << cachedBytes_[iBlock->device].live
+        std::cout << "\t" << Traits::printDevice(device) << " freed " << iBlock->bytes << " bytes.\n\t\t  "
+                  << (cachedBlocks_.size() - 1) << " available blocks cached (" << cachedBytes_[device].free
+                  << " bytes), " << liveBlocks_.size() << " live blocks (" << cachedBytes_[device].live
                   << " bytes) outstanding." << std::endl;
       }
 

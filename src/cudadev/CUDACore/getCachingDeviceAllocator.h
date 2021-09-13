@@ -64,9 +64,23 @@ namespace cms::cuda::allocator {
 
     static cms::cuda::ScopedSetDevice setDevice(DeviceType device) { return cms::cuda::ScopedSetDevice(device); }
 
+    static DeviceType memoryDevice(DeviceType deviceEvent) {
+      // For device allocator the device where the memory is allocated
+      // on is the same as the device where the event is recorded on.
+      return deviceEvent;
+    }
+
     static bool canReuseInDevice(DeviceType a, DeviceType b) { return a == b; }
 
     static bool canReuseInQueue(QueueType a, QueueType b) { return a == b; }
+
+    template <typename C>
+    static bool deviceCompare(DeviceType a_dev, DeviceType b_dev, C&& compare) {
+      if (a_dev == b_dev) {
+        return compare();
+      }
+      return a_dev < b_dev;
+    }
 
     static bool eventWorkHasCompleted(EventType e) { return cms::cuda::eventWorkHasCompleted(e); }
 
