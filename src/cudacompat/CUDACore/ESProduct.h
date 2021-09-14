@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "CUDACore/EventCache.h"
+#include "CUDACore/ScopedSetDevice.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/deviceCount.h"
 #include "CUDACore/currentDevice.h"
@@ -18,10 +19,15 @@ namespace cms {
     class ESProduct {
     public:
       ESProduct() : gpuDataPerDevice_(deviceCount()) {
-        for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-          gpuDataPerDevice_[i].m_event = getEventCache().get();
+        if (not gpuDataPerDevice_.empty()) {
+          cms::cuda::ScopedSetDevice scopedDevice;
+          for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
+            scopedDevice.set(i);
+            gpuDataPerDevice_[i].m_event = getEventCache().get();
+          }
         }
       }
+
       ~ESProduct() = default;
 
       // transferAsync should be a function of (T&, cudaStream_t)
@@ -29,12 +35,10 @@ namespace cms {
       // to the CUDA stream
       template <typename F>
       const T& dataForCurrentDeviceAsync(cudaStream_t cudaStream, F transferAsync) const {
-        auto device = currentDevice();
-
+        int device = currentDevice();
         auto& data = gpuDataPerDevice_[device];
 
-        // If GPU data has already been filled, we can return it
-        // immediately
+        // If the GPU data has already been filled, we can return it immediately
         if (not data.m_filled.load()) {
           // It wasn't, so need to fill it
           std::scoped_lock<std::mutex> lk{data.m_mutex};
@@ -102,4 +106,4 @@ namespace cms {
   }  // namespace cuda
 }  // namespace cms
 
-#endif
+#endif  // HeterogeneousCore_CUDACore_ESProduct_h
