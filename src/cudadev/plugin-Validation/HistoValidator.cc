@@ -162,7 +162,7 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
         histos["track_tip_zoom"].fill(tracks->tip(i));
         histos["track_zip"].fill(tracks->zip(i));
         histos["track_zip_zoom"].fill(tracks->zip(i));
-        histos["track_quality"].fill((uint8_t) tracks->quality(i));
+        histos["track_quality"].fill((uint8_t)tracks->quality(i));
       }
     }
 
