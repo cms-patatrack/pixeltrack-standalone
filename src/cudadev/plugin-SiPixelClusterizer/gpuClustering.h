@@ -218,7 +218,7 @@ namespace gpuClustering {
               auto l = nn[k][kk];
               auto m = l + firstPixel;
               assert(m != i);
-#if ! defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
+#if !defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
               auto old = atomicMin_block(&clusterId[m], clusterId[i]);
 #else
               auto old = atomicMin(&clusterId[m], clusterId[i]);
@@ -228,7 +228,7 @@ namespace gpuClustering {
                 // end the loop only if no changes were applied
                 more = true;
               }
-#if ! defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
+#if !defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
               atomicMin_block(&clusterId[i], old);
 #else
               atomicMin(&clusterId[i], old);

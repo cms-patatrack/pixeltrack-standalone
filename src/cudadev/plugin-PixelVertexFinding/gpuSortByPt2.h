@@ -46,7 +46,7 @@ namespace gpuVertexFinder {
     for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
       if (iv[i] > 9990)
         continue;
-#if ! defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
+#if !defined __CUDA_ARCH__ || __CUDA_ARCH__ >= 600
       atomicAdd_block(&ptv2[iv[i]], ptt2[i]);
 #else
       atomicAdd(&ptv2[iv[i]], ptt2[i]);

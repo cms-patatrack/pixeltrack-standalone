@@ -12,8 +12,7 @@ SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream)
       clus_d(cms::cuda::make_device_unique<int32_t[]>(maxFedWords, stream)),
       view_d(cms::cuda::make_device_unique<DeviceConstView>(stream)),
       pdigi_d(cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream)),
-      rawIdArr_d(cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream))
-{
+      rawIdArr_d(cms::cuda::make_device_unique<uint32_t[]>(maxFedWords, stream)) {
   auto view = cms::cuda::make_host_unique<DeviceConstView>(stream);
   view->xx_ = xx_d.get();
   view->yy_ = yy_d.get();

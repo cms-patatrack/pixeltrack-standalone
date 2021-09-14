@@ -13,7 +13,7 @@
 class SiPixelROCsStatusAndMappingWrapper {
 public:
   explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const &cablingMap,
-                                          std::vector<unsigned char> modToUnp);
+                                              std::vector<unsigned char> modToUnp);
   ~SiPixelROCsStatusAndMappingWrapper();
 
   bool hasQuality() const { return hasQuality_; }

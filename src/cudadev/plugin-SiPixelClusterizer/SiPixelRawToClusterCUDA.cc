@@ -61,8 +61,8 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
       isRun2_(true),
       includeErrors_(true),
       useQuality_(true),
-      clusterThresholds_{kSiPixelClusterThresholdsDefaultPhase1.layer1, kSiPixelClusterThresholdsDefaultPhase1.otherLayers}
-{
+      clusterThresholds_{kSiPixelClusterThresholdsDefaultPhase1.layer1,
+                         kSiPixelClusterThresholdsDefaultPhase1.otherLayers} {
   if (includeErrors_) {
     digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
   }
@@ -77,8 +77,9 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   auto const& hgpuMap = iSetup.get<SiPixelROCsStatusAndMappingWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
-    throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
-                             ") differs the one from SiPixelROCsStatusAndMappingWrapper. Please fix your configuration.");
+    throw std::runtime_error(
+        "UseQuality of the module (" + std::to_string(useQuality_) +
+        ") differs the one from SiPixelROCsStatusAndMappingWrapper. Please fix your configuration.");
   }
   // get the GPU product already here so that the async transfer can begin
   const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
