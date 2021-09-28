@@ -4,9 +4,10 @@
 #include "KokkosCore/hintLightWeight.h"
 
 namespace KOKKOS_NAMESPACE {
-  void CAHitNtupletGeneratorKernels::fillHitDetIndices(HitsView const *hv,
-                                                       const Kokkos::View<TkSoA, KokkosExecSpace, Restrict> &tracks_d,
-                                                       KokkosExecSpace const &execSpace) {
+  void CAHitNtupletGeneratorKernels::fillHitDetIndices(
+      HitsView const *hv,
+      const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
+      KokkosExecSpace const &execSpace) {
     Kokkos::parallel_for(
         hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitContainer::capacity())),
         KOKKOS_LAMBDA(size_t i) {
@@ -18,7 +19,7 @@ namespace KOKKOS_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::launchKernels(HitsOnCPU const &hh,
-                                                   const Kokkos::View<TkSoA, KokkosExecSpace, Restrict> &tracks_d,
+                                                   const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
                                                    KokkosExecSpace const &execSpace) {
     // these are pointer on GPU!
     auto *tuples_d = &tracks_d().hitIndices;
@@ -236,13 +237,13 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
     // in principle we can use "nhits" to heuristically dimension the workspace...
-    device_isOuterHitOfCell_ = Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosExecSpace, Restrict>(
+    device_isOuterHitOfCell_ = Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_isOuterHitOfCell_"), std::max(1U, nhits));
 
-    device_theCellNeighborsContainer_ = Kokkos::View<CAConstants::CellNeighbors *, KokkosExecSpace, Restrict>(
+    device_theCellNeighborsContainer_ = Kokkos::View<CAConstants::CellNeighbors *, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighborsContainer_"),
         CAConstants::maxNumOfActiveDoublets());
-    device_theCellTracksContainer_ = Kokkos::View<CAConstants::CellTracks *, KokkosExecSpace, Restrict>(
+    device_theCellTracksContainer_ = Kokkos::View<CAConstants::CellTracks *, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_theCellTracksContainer_"),
         CAConstants::maxNumOfActiveDoublets());
 
@@ -272,7 +273,7 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    device_theCells_ = Kokkos::View<GPUCACell *, KokkosExecSpace, Restrict>(
+    device_theCells_ = Kokkos::View<GPUCACell *, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_theCells_"), m_params.maxNumberOfDoublets_);
 
 #ifdef GPU_DEBUG
@@ -333,7 +334,7 @@ namespace KOKKOS_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::classifyTuples(HitsOnCPU const &hh,
-                                                    const Kokkos::View<TkSoA, KokkosExecSpace, Restrict> &tracks_d,
+                                                    const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
                                                     KokkosExecSpace const &execSpace) {
     // these are pointer on GPU!
     auto const *tuples_d = &tracks_d().hitIndices;
@@ -450,7 +451,7 @@ namespace KOKKOS_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::printCounters(
-      const Kokkos::View<Counters const, KokkosExecSpace, Restrict> &counters) {
+      const Kokkos::View<Counters const, KokkosDeviceMemSpace, Restrict> &counters) {
 #ifdef TODO
     kernel_printCounters<<<1, 1>>>(counters);
 #endif
@@ -461,26 +462,26 @@ namespace KOKKOS_NAMESPACE {
     // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
     //////////////////////////////////////////////////////////
 
-    device_theCellNeighbors_ = Kokkos::View<CAConstants::CellNeighborsVector, KokkosExecSpace, Restrict>(
+    device_theCellNeighbors_ = Kokkos::View<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighbors_"));
-    device_theCellTracks_ = Kokkos::View<CAConstants::CellTracksVector, KokkosExecSpace, Restrict>(
+    device_theCellTracks_ = Kokkos::View<CAConstants::CellTracksVector, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_theCellTracks_"));
 
     device_hitToTuple_ =
-        Kokkos::View<HitToTuple, KokkosExecSpace>(Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_"));
+        Kokkos::View<HitToTuple, KokkosDeviceMemSpace>(Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_"));
 
-    device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosExecSpace, Restrict>(
+    device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_tupleMultiplicity_"));
 
-    device_hitTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict>(
+    device_hitTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_hitTuple_apc_"));
-    device_hitToTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict>(
+    device_hitToTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict>(
         Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_apc_"));
-    device_nCells_ =
-        Kokkos::View<uint32_t, KokkosExecSpace, Restrict>(Kokkos::ViewAllocateWithoutInitializing("device_nCells_"));
-    device_tmws_ =
-        Kokkos::View<uint8_t *, KokkosExecSpace, Restrict>(Kokkos::ViewAllocateWithoutInitializing("device_tmws_"),
-                                                           std::max(TupleMultiplicity::wsSize(), HitToTuple::wsSize()));
+    device_nCells_ = Kokkos::View<uint32_t, KokkosDeviceMemSpace, Restrict>(
+        Kokkos::ViewAllocateWithoutInitializing("device_nCells_"));
+    device_tmws_ = Kokkos::View<uint8_t *, KokkosDeviceMemSpace, Restrict>(
+        Kokkos::ViewAllocateWithoutInitializing("device_tmws_"),
+        std::max(TupleMultiplicity::wsSize(), HitToTuple::wsSize()));
 
     Kokkos::deep_copy(execSpace, device_nCells_, 0);
 

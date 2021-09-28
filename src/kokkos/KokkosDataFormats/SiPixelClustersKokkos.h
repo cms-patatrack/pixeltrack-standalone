@@ -3,6 +3,7 @@
 
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/memoryTraits.h"
+#include "KokkosCore/ViewHelpers.h"
 
 template <typename MemorySpace>
 class SiPixelClustersKokkos {
@@ -38,6 +39,13 @@ public:
   Kokkos::View<uint32_t const *, MemorySpace> c_clusInModule() const { return clusInModule_d; }
   Kokkos::View<uint32_t const *, MemorySpace> c_moduleId() const { return moduleId_d; }
   Kokkos::View<uint32_t const *, MemorySpace> c_clusModuleStart() const { return clusModuleStart_d; }
+
+  template <typename ExecSpace>
+  auto clusInModuleToHostAsync(ExecSpace const &execSpace) const {
+    auto host = cms::kokkos::create_mirror_view(clusInModule_d);
+    Kokkos::deep_copy(execSpace, host, clusInModule_d);
+    return host;
+  }
 
   class DeviceConstView {
   public:

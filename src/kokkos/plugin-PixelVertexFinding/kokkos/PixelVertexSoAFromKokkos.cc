@@ -20,18 +20,18 @@ namespace KOKKOS_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    using VerticesExecSpace = Kokkos::View<ZVertexSoA, KokkosExecSpace>;
-    using VerticesHostSpace = VerticesExecSpace::HostMirror;
+    using VerticesDeviceMemSpace = Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace>;
+    using VerticesHostMemSpace = Kokkos::View<ZVertexSoA, KokkosHostMemSpace>;
 
-    edm::EDGetTokenT<cms::kokkos::Product<VerticesExecSpace>> tokenKokkos_;
-    edm::EDPutTokenT<VerticesHostSpace> tokenSOA_;
+    edm::EDGetTokenT<cms::kokkos::Product<VerticesDeviceMemSpace>> tokenKokkos_;
+    edm::EDPutTokenT<VerticesHostMemSpace> tokenSOA_;
 
-    VerticesHostSpace m_soa;
+    VerticesHostMemSpace m_soa;
   };
 
   PixelVertexSoAFromKokkos::PixelVertexSoAFromKokkos(edm::ProductRegistry& reg)
-      : tokenKokkos_(reg.consumes<cms::kokkos::Product<VerticesExecSpace>>()),
-        tokenSOA_(reg.produces<VerticesHostSpace>()) {}
+      : tokenKokkos_(reg.consumes<cms::kokkos::Product<VerticesDeviceMemSpace>>()),
+        tokenSOA_(reg.produces<VerticesHostMemSpace>()) {}
 
   void PixelVertexSoAFromKokkos::acquire(edm::Event const& iEvent,
                                          edm::EventSetup const& iSetup,
@@ -40,7 +40,7 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    m_soa = VerticesHostSpace("vertices");
+    m_soa = VerticesHostMemSpace("vertices");
     Kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
   }
 

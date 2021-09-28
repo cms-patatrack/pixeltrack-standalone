@@ -3,6 +3,7 @@
 
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/memoryTraits.h"
+#include "KokkosCore/ViewHelpers.h"
 
 template <typename MemorySpace>
 class SiPixelDigisKokkos {
@@ -57,7 +58,7 @@ public:
 
   template <typename ExecSpace>
   auto adcToHostAsync(ExecSpace const& execSpace) const {
-    auto host = Kokkos::create_mirror_view(adc_d);
+    auto host = cms::kokkos::create_mirror_view(adc_d);
     Kokkos::deep_copy(execSpace, host, adc_d);
     return host;
   }

@@ -14,8 +14,8 @@ namespace KOKKOS_NAMESPACE {
 
     template <typename Hist>
     KOKKOS_INLINE_FUNCTION void clusterTracksDBSCAN(
-        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -213,9 +213,9 @@ namespace KOKKOS_NAMESPACE {
         printf("found %d proto vertices\n", foundClusters[0]);
     }
 
-    template <typename ExecSpace>
-    void clusterTracksDBSCANHost(const Kokkos::View<ZVertices, ExecSpace, Restrict>& vdata,
-                                 const Kokkos::View<WorkSpace, ExecSpace, Restrict>& vws,
+    template <typename MemSpace, typename ExecSpace>
+    void clusterTracksDBSCANHost(const Kokkos::View<ZVertices, MemSpace, Restrict>& vdata,
+                                 const Kokkos::View<WorkSpace, MemSpace, Restrict>& vws,
                                  int minT,       // min number of neighbours to be "seed"
                                  float eps,      // max absolute distance to cluster
                                  float errmax,   // max error to be "seed"

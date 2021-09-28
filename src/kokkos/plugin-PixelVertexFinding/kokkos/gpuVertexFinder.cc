@@ -7,14 +7,16 @@
 #include "gpuSplitVertices.h"
 
 #include "KokkosCore/hintLightWeight.h"
+#include "KokkosCore/ViewHelpers.h"
 
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
-    KOKKOS_INLINE_FUNCTION void loadTracks(const Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace, Restrict>& tracks,
-                                           const Kokkos::View<ZVertexSoA, KokkosExecSpace, Restrict>& soa,
-                                           const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& ws,
-                                           const float ptMin,
-                                           const size_t idx) {
+    KOKKOS_INLINE_FUNCTION void loadTracks(
+        const Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace, Restrict>& tracks,
+        const Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace, Restrict>& soa,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& ws,
+        const float ptMin,
+        const size_t idx) {
       auto nHits = tracks().nHits(idx);
       if (nHits == 0)
         return;  // this is a guard: maybe we need to move to nTracks...
@@ -46,9 +48,10 @@ namespace KOKKOS_NAMESPACE {
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
     void vertexFinderOneKernel(
-        const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
-        const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
-        const typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror& hdata,
+        const Kokkos::View<gpuVertexFinder::ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+        const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
+        const Kokkos::View<gpuVertexFinder::ZVertices,
+                           typename cms::kokkos::MemSpaceTraits<KokkosDeviceMemSpace>::HostSpace>& hdata,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -75,8 +78,8 @@ namespace KOKKOS_NAMESPACE {
       sortByPt2Host(vdata, vws, hdata, execSpace, teamPolicy);
     }
 #else
-    void vertexFinderKernel1(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
-                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
+    void vertexFinderKernel1(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
                              int minT,       // min number of neighbours to be "seed"
                              float eps,      // max absolute distance to cluster
                              float errmax,   // max error to be "seed"
@@ -93,9 +96,10 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    void vertexFinderKernel2(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
-                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
-                             typename Kokkos::View<gpuVertexFinder::ZVertices, KokkosExecSpace>::HostMirror hdata,
+    void vertexFinderKernel2(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+                             const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
+                             Kokkos::View<gpuVertexFinder::ZVertices,
+                                          typename cms::kokkos::MemSpaceTraits<KokkosDeviceMemSpace>::HostSpace> hdata,
                              KokkosExecSpace const& execSpace,
                              Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
       Kokkos::parallel_for(
@@ -110,15 +114,15 @@ namespace KOKKOS_NAMESPACE {
     }
 #endif
 
-    Kokkos::View<ZVertexSoA, KokkosExecSpace> Producer::make(
-        Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace, Restrict> const& tksoa,
+    Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace> Producer::make(
+        Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace, Restrict> const& tksoa,
         float ptMin,
         KokkosExecSpace const& execSpace) const {
       // std::cout << "producing Vertices on GPU" << std::endl;
-      Kokkos::View<ZVertexSoA, KokkosExecSpace, Restrict> vertices_d(
+      Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace, Restrict> vertices_d(
           Kokkos::ViewAllocateWithoutInitializing("vertices"));
-      auto vertices_h = Kokkos::create_mirror_view(vertices_d);
-      Kokkos::View<WorkSpace, KokkosExecSpace, Restrict> workspace_d(
+      auto vertices_h = cms::kokkos::create_mirror_view(vertices_d);
+      Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict> workspace_d(
           Kokkos::ViewAllocateWithoutInitializing("workspace"));
 
       using TeamPolicy = Kokkos::TeamPolicy<KokkosExecSpace>;

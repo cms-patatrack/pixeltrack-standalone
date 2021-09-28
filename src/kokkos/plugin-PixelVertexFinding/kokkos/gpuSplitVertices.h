@@ -9,8 +9,8 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_FORCEINLINE_FUNCTION void splitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-                                                   const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+    KOKKOS_FORCEINLINE_FUNCTION void splitVertices(const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+                                                   const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
                                                    float maxChi2,
                                                    const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
@@ -147,8 +147,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     KOKKOS_FORCEINLINE_FUNCTION void splitVerticesKernel(
-        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
         float maxChi2,
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       splitVertices(vdata, vws, maxChi2, team_member);

@@ -4,6 +4,19 @@
 #include <Kokkos_Core.hpp>
 #include "KokkosCore/kokkosConfigCommon.h"
 
+namespace cms::kokkos {
+  template <typename Space>
+  struct MemSpaceTraits {
+    using HostSpace = Kokkos::HostSpace;
+  };
+#ifdef KOKKOS_ENABLE_CUDA
+  template <>
+  struct MemSpaceTraits<Kokkos::CudaSpace> {
+    using HostSpace = Kokkos::CudaHostPinnedSpace;
+  };
+#endif
+}  // namespace cms::kokkos
+
 #ifdef KOKKOS_BACKEND_SERIAL
 using KokkosExecSpace = Kokkos::Serial;
 #define KOKKOS_NAMESPACE kokkos_serial
@@ -19,6 +32,9 @@ using KokkosExecSpace = Kokkos::Experimental::HIP;
 #else
 #error "Unsupported Kokkos backend"
 #endif
+
+using KokkosDeviceMemSpace = KokkosExecSpace::memory_space;
+using KokkosHostMemSpace = cms::kokkos::MemSpaceTraits<KokkosDeviceMemSpace>::HostSpace;
 
 // this is meant mostly for unit tests
 template <typename ExecSpace>

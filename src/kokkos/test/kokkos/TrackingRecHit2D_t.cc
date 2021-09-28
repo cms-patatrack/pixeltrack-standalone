@@ -61,7 +61,7 @@ int main() {
     Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosExecSpace> _cpeParams("cpeparams");
     Kokkos::View<uint32_t*, KokkosExecSpace> _hitsModuleStart("hitsmodulestart", 1);
 
-    TrackingRecHit2DKokkos<KokkosExecSpace> tkhit(nHits, _cpeParams, _hitsModuleStart, KokkosExecSpace());
+    TrackingRecHit2DKokkos<KokkosDeviceMemSpace> tkhit(nHits, _cpeParams, _hitsModuleStart, KokkosExecSpace());
 
     testTrackingRecHit2DKokkos::runKernels<KokkosExecSpace>(tkhit.mView());
   }

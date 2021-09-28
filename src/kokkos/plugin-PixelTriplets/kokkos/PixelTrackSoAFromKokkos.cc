@@ -19,18 +19,18 @@ namespace KOKKOS_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    using TracksExecSpace = Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>;
-    using TracksHostSpace = TracksExecSpace::HostMirror;
+    using TracksDeviceMemSpace = Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace>;
+    using TracksHostMemSpace = Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>;
 
-    edm::EDGetTokenT<cms::kokkos::Product<TracksExecSpace>> tokenKokkos_;
-    edm::EDPutTokenT<TracksHostSpace> tokenSOA_;
+    edm::EDGetTokenT<cms::kokkos::Product<TracksDeviceMemSpace>> tokenKokkos_;
+    edm::EDPutTokenT<TracksHostMemSpace> tokenSOA_;
 
-    TracksHostSpace m_soa;
+    TracksHostMemSpace m_soa;
   };
 
   PixelTrackSoAFromKokkos::PixelTrackSoAFromKokkos(edm::ProductRegistry& reg)
-      : tokenKokkos_(reg.consumes<cms::kokkos::Product<TracksExecSpace>>()),
-        tokenSOA_(reg.produces<TracksHostSpace>()) {}
+      : tokenKokkos_(reg.consumes<cms::kokkos::Product<TracksDeviceMemSpace>>()),
+        tokenSOA_(reg.produces<TracksHostMemSpace>()) {}
 
   void PixelTrackSoAFromKokkos::acquire(edm::Event const& iEvent,
                                         edm::EventSetup const& iSetup,
@@ -39,7 +39,7 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    m_soa = TracksHostSpace("tracks");
+    m_soa = TracksHostMemSpace("tracks");
     Kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
   }
 

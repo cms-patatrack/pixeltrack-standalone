@@ -20,9 +20,9 @@ namespace KOKKOS_NAMESPACE {
   namespace gpuPixelDoublets {
     KOKKOS_INLINE_FUNCTION void fishbone(
         TrackingRecHit2DSOAView const* __restrict__ hhp,
-        const Kokkos::View<GPUCACell*, KokkosExecSpace, Restrict>& cells,
-        const Kokkos::View<uint32_t, KokkosExecSpace, Restrict>& nCells,  // not used
-        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosExecSpace, Restrict>& isOuterHitOfCell,
+        const Kokkos::View<GPUCACell*, KokkosDeviceMemSpace, Restrict>& cells,
+        const Kokkos::View<uint32_t, KokkosDeviceMemSpace, Restrict>& nCells,  // not used
+        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosDeviceMemSpace, Restrict>& isOuterHitOfCell,
         uint32_t nHits,
         bool checkTrack,
         const uint32_t stride,

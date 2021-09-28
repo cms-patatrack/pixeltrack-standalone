@@ -24,7 +24,7 @@ namespace KOKKOS_NAMESPACE {
   class CAHitNtupletGeneratorOnGPU {
   public:
     using HitsOnGPU = TrackingRecHit2DSOAView;
-    using HitsOnCPU = TrackingRecHit2DKokkos<KokkosExecSpace>;
+    using HitsOnCPU = TrackingRecHit2DKokkos<KokkosDeviceMemSpace>;
     using hindex_type = TrackingRecHit2DSOAView::hindex_type;
 
     using Quality = pixelTrack::Quality;
@@ -41,8 +41,10 @@ namespace KOKKOS_NAMESPACE {
 
     ~CAHitNtupletGeneratorOnGPU();
 
-    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> makeTuples(
-        TrackingRecHit2DKokkos<KokkosExecSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) const;
+    Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> makeTuples(
+        TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d,
+        float bfield,
+        KokkosExecSpace const& execSpace) const;
 
   private:
 #ifdef TODO
@@ -55,7 +57,7 @@ namespace KOKKOS_NAMESPACE {
 
     Params m_params;
 
-    Kokkos::View<Counters, KokkosExecSpace> m_counters;
+    Kokkos::View<Counters, KokkosDeviceMemSpace> m_counters;
   };
 }  // namespace KOKKOS_NAMESPACE
 

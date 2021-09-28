@@ -17,18 +17,18 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   private:
-    edm::EDPutTokenT<cms::kokkos::Product<BeamSpotKokkos<KokkosExecSpace>>> bsPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<BeamSpotKokkos<KokkosDeviceMemSpace>>> bsPutToken_;
     // remove bsHost for now
     // typename Kokkos::View<BeamSpotPOD, KokkosExecSpace>::HostMirror bsHost;
   };
 
   BeamSpotToKokkos::BeamSpotToKokkos(edm::ProductRegistry& reg)
-      : bsPutToken_{reg.produces<cms::kokkos::Product<BeamSpotKokkos<KokkosExecSpace>>>()} {}
+      : bsPutToken_{reg.produces<cms::kokkos::Product<BeamSpotKokkos<KokkosDeviceMemSpace>>>()} {}
 
   void BeamSpotToKokkos::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
     cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx;
-    BeamSpotKokkos<KokkosExecSpace> bs{&bsRaw, ctx.execSpace()};
+    BeamSpotKokkos<KokkosDeviceMemSpace> bs{&bsRaw, ctx.execSpace()};
 
     ctx.emplace(iEvent, bsPutToken_, std::move(bs));
   }

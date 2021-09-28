@@ -19,14 +19,14 @@ namespace KOKKOS_NAMESPACE {
 
   namespace pixelgpudetails {
 
-    TrackingRecHit2DKokkos<KokkosExecSpace> PixelRecHitGPUKernel::makeHitsAsync(
-        SiPixelDigisKokkos<KokkosExecSpace> const& digis_d,
-        SiPixelClustersKokkos<KokkosExecSpace> const& clusters_d,
-        BeamSpotKokkos<KokkosExecSpace> const& bs_d,
-        Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, KokkosExecSpace> const& cpeParams,
+    TrackingRecHit2DKokkos<KokkosDeviceMemSpace> PixelRecHitGPUKernel::makeHitsAsync(
+        SiPixelDigisKokkos<KokkosDeviceMemSpace> const& digis_d,
+        SiPixelClustersKokkos<KokkosDeviceMemSpace> const& clusters_d,
+        BeamSpotKokkos<KokkosDeviceMemSpace> const& bs_d,
+        Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, KokkosDeviceMemSpace> const& cpeParams,
         KokkosExecSpace const& execSpace) const {
       auto nHits = clusters_d.nClusters();
-      TrackingRecHit2DKokkos<KokkosExecSpace> hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), execSpace);
+      TrackingRecHit2DKokkos<KokkosDeviceMemSpace> hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), execSpace);
 
       auto nDigis = digis_d.nDigis();
       auto digisView = digis_d.view();

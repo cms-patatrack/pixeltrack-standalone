@@ -8,14 +8,14 @@ namespace KOKKOS_NAMESPACE {
                                            uint32_t maxNumberOfTuples,
                                            KokkosExecSpace const &execSpace) {
     //  Fit internals
-    Kokkos::View<double *, KokkosExecSpace> hitsGPU("hitsGPU",
-                                                    maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
-    Kokkos::View<float *, KokkosExecSpace> hits_geGPU("hits_geGPU",
-                                                      maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
-    Kokkos::View<double *, KokkosExecSpace> fast_fit_resultsGPU("fast_fit_resultsGPU",
-                                                                maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
-    Kokkos::View<Rfit::circle_fit *, KokkosExecSpace> circle_fit_resultsGPU("circle_fit_resultsGPU",
-                                                                            maxNumberOfConcurrentFits_);
+    Kokkos::View<double *, KokkosDeviceMemSpace> hitsGPU("hitsGPU",
+                                                         maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
+    Kokkos::View<float *, KokkosDeviceMemSpace> hits_geGPU("hits_geGPU",
+                                                           maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
+    Kokkos::View<double *, KokkosDeviceMemSpace> fast_fit_resultsGPU(
+        "fast_fit_resultsGPU", maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
+    Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit_resultsGPU("circle_fit_resultsGPU",
+                                                                                 maxNumberOfConcurrentFits_);
 
     // avoid capturing this by the lambdas
     auto const bField = bField_;
