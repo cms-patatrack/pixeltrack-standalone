@@ -10,6 +10,9 @@ import subprocess
 import collections
 import multiprocessing
 
+# Make CUDA_VISIBLE_DEVICES order match to nvidia-smi
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+
 # Number of events for each application
 n_events_unit = 1000
 n_blocks_per_stream = {
@@ -27,6 +30,52 @@ background_events_per_thread = 30*3600*8
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")
 
 Measurement = collections.namedtuple("Measurement", ["events", "time", "throughput"])
+GPU = collections.namedtuple("GPU", ["id", "name", "driver_version"])
+GPUStatus = collections.namedtuple("GPUStatus", ["utilization", "temperature", "power", "clock"])
+
+class Monitor:
+    def __init__(self, opts, cudaDevices=[]):
+        self._intervalSeconds = opts.monitorSeconds
+        self._monitorMemory = opts.monitorMemory
+        self._monitorCuda = opts.monitorCuda
+
+        self._timeStamp = []
+        self._dataMemory = []
+        self._dataCuda = {x: [] for x in cudaDevices}
+
+    def setIntervalSeconds(self, interval):
+        self._intervalSeconds = interval
+
+    def intervalSeconds(self):
+        return self._intervalSeconds
+
+    def snapshot(self, pid=None, cudaDevices=[]):
+        if self._intervalSeconds is None:
+            return
+        self._timeStamp.append(time.strftime("%y-%m-%d %H:%M:%S"))
+
+        if self._monitorMemory:
+            rss = processRss(pid) if pid is not None else 0
+            self._dataMemory.append(dict(rss=rss))
+
+        if self._monitorCuda:
+            for dev in cudaDevices:
+                data = {}
+                data.update(cudaDeviceStatus(dev)._asdict())
+                mem = cudaDeviceProcessMemory(dev, pid) if pid is not None else 0
+                data["proc_mem_use"] = mem
+                self._dataCuda[dev].append(data)
+
+    def toArrays(self):
+        data = {}
+        if self._intervalSeconds is not None:
+            data["time"] = self._timeStamp
+            if self._monitorMemory:
+                data["host"] = self._dataMemory
+            if self._monitorCuda:
+                data["cuda"] = self._dataCuda
+        return data
+
 
 def printMessage(*args):
     print(time.strftime("%y-%m-%d %H:%M:%S"), *args)
@@ -46,7 +95,53 @@ def partition_cores(cores, nth):
 
     return (cores[0:nth], cores[nth:])
 
-def _run(processUntil, nstr, cores_main, opts, logfilename):
+def listCudaDevices():
+    try:
+        p = subprocess.Popen(["nvidia-smi", "--query-gpu=index,name,driver_version", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    except FileNotFoundError:
+        return []
+    output = p.communicate()[0]
+    ret = {}
+    for line in output.split("\n"):
+        if line:
+            s = line.split(",")
+            gpu = GPU(*[x.strip().rstrip() for x in s])
+            ret[gpu.id] = gpu
+    return ret
+
+def cudaDeviceStatus(dev):
+    p = subprocess.Popen(["nvidia-smi", "--id="+dev, "--query-gpu=utilization.gpu,temperature.gpu,power.draw,clocks.sm", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    output = p.communicate()[0]
+    s = output.rstrip().split(",")
+    def convert(s):
+        try:
+            return float(s)
+        except ValueError:
+            return s
+    return GPUStatus(*[convert(x.strip().rstrip()) for x in s])
+
+def cudaDeviceProcessMemory(dev, pid):
+    """In MB"""
+    p = subprocess.Popen(["nvidia-smi", "--id="+dev, "--query-compute-apps=pid,used_gpu_memory", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    output = p.communicate()[0]
+    for line in output.split("\n"):
+        if line:
+            s = line.split(",")
+            if s[0].strip().rstrip() == str(pid):
+                return float(s[1].strip().rstrip())
+    return 0
+
+def processRss(pid):
+    """In MB"""
+    # from https://stackoverflow.com/a/48397534
+    with open("/proc/{}/status".format(pid)) as f:
+        content = f.read()
+    if not "VmRSS:" in content:
+        return 0
+    memusage = content.split('VmRSS:')[1].split('\n')[0][:-3]
+    return float(memusage.strip())/1024.0
+
+def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices=[]):
     nth = len(cores_main)
     with open(logfilename, "w") as logfile:
         taskset = []
@@ -61,15 +156,29 @@ def _run(processUntil, nstr, cores_main, opts, logfilename):
         if opts.dryRun:
             print(" ".join(taskset+command))
             return (0, 0)
-        p = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
-        try:
-            p.wait()
-        except KeyboardInterrupt:
+        env = None
+        if len(cudaDevices) > 0:
+            visibleDevices = ",".join(opts.cudaDevices)
+            logfile.write("export CUDA_DEVICE_ORDER=PCI_BUS_ID\n")
+            logfile.write("export CUDA_VISIBLE_DEVICES="+visibleDevices+"\n")
+            logfile.flush()
+            env = dict(os.environ, CUDA_VISIBLE_DEVICES=visibleDevices)
+        p = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True, env=env)
+        monitor.snapshot(pid=p.pid, cudaDevices=cudaDevices)
+        while True:
             try:
-                p.terminate()
-            except OSError:
-                pass
-            p.wait()
+                p.wait(timeout=monitor.intervalSeconds())
+                monitor.snapshot(cudaDevices=cudaDevices)
+            except subprocess.TimeoutExpired:
+                monitor.snapshot(pid=p.pid, cudaDevices=cudaDevices)
+                continue
+            except KeyboardInterrupt:
+                try:
+                    p.terminate()
+                except OSError:
+                    pass
+                p.wait()
+            break
         if p.returncode != 0:
             raise Exception("Got return code %d, see output in the log file %s" % (p.returncode, logfilename))
     with open(logfilename) as logfile:
@@ -109,6 +218,11 @@ def main(opts):
     ncores = multiprocessing.cpu_count()
     if opts.fill > 0:
         ncores = opts.fill
+
+    cudaDevices = listCudaDevices()
+    print("Found {} devices".format(len(cudaDevices)))
+    for i, d in cudaDevices.items():
+        print(" {} {} driver {}".format(i, d.name, d.driver_version))
 
     if len(opts.tasksetCores) > 0:
         cores = opts.tasksetCores[:]
@@ -168,17 +282,19 @@ def main(opts):
         nev = -1
         if opts.runForMinutes >= 0:
             mins = opts.runForMinutes
-            run = lambda postfix: runMinutes(mins, nstr, cores_main, opts, opts.output+postfix)
+            def run(postfix, **kwargs): return runMinutes(mins, nstr, cores_main, opts, opts.output+postfix, **kwargs)
         else:
             if opts.maxStreamsToAddEvents > 0 and nstr > opts.maxStreamsToAddEvents:
                 nev = nev_per_stream * opts.maxStreamsToAddEvents
             else:
                 nev = nev_per_stream*nstr
-            run = lambda postfix: runEvents(nev, nstr, cores_main, opts, opts.output+postfix)
+            def run(postfix, **kwargs): return runEvents(nev, nstr, cores_main, opts, opts.output+postfix, **kwargs)
 
         if opts.warmup:
           printMessage("Warming up")
-          run("_warmup.txt")
+          wmon = Monitor(opts)
+          wmon.setIntervalSeconds(None)
+          run("_warmup.txt", monitor=wmon)
           print()
           opts.warmup = False
 
@@ -198,13 +314,16 @@ def main(opts):
                     msg += " minutes {}".format(mins)
                 if opts.taskset:
                     msg += ", running on cores " + ",".join(cores_main)
+                if len(opts.cudaDevices) > 0:
+                    msg += ", running on devices " + ",".join(opts.cudaDevices)
                 printMessage(msg)
                 throughputs = []
                 for i in range(opts.repeat):
                     tryAgain = opts.tryAgain
                     while tryAgain > 0:
                         try:
-                            measurement = run("_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i))
+                            monitor = Monitor(opts, cudaDevices=opts.cudaDevices)
+                            measurement = run("_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i), monitor=monitor, cudaDevices=opts.cudaDevices)
                             break
                         except Exception as e:
                             tryAgain -= 1
@@ -226,13 +345,20 @@ def main(opts):
             if opts.dryRun:
                 continue
             throughputs.append(measurement.throughput)
-            data["results"].append(dict(
+            d = dict(
                 hostname=hostname,
                 threads=nth,
                 streams=nstr,
                 events=measurement.events,
                 throughput=measurement.throughput,
-            ))
+            )
+            if monitor.intervalSeconds() is not None:
+                d["monitor"]=monitor.toArrays()
+            if len(opts.cudaDevices) > 0:
+                d["cudaDevices"] = {
+                    x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
+                }
+            data["results"].append(d)
             # Save results after each test
             with open(outputJson, "w") as out:
                 json.dump(data, out, indent=2)
@@ -251,7 +377,7 @@ def main(opts):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a scan of a given test program")
+    parser = argparse.ArgumentParser(description="Run a scan of a given test program.\nNote that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices instead.")
     parser.add_argument("program", type=str,
                         help="Path to the test program to run")
 
@@ -294,6 +420,17 @@ if __name__ == "__main__":
                             help="Launch serial program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
     fill_group.add_argument("--bkgNice", type=int, default=None,
                             help="If given, use this 'nice' level for the background program")
+    fill_group.add_argument("--cudaDevices", type=str, default="",
+                            help="Comma-separeted list of CUDA devices (as in nvidia-smi) to use (default empty is to use all devices).")
+
+    monitor_group = parser.add_argument_group("Monitoring arguments",
+                                              description="These arguments can be used to enable various monitoring of the program being tested. The data is stored in the result JSON file.")
+    monitor_group.add_argument("--monitorSeconds", type=int, default=-1,
+                               help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
+    monitor_group.add_argument("--monitorMemory", action="store_true",
+                               help="Enable monitoring of host memory")
+    monitor_group.add_argument("--monitorCuda", action="store_true",
+                               help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
 
     parser.add_argument("--tryAgain", type=int, default=1,
                         help="In case of failure on a point, try again at most this many times (default: 1)")
@@ -322,5 +459,8 @@ if __name__ == "__main__":
             parser.error("--runForMinutes and --eventsPerStream can not be used together")
         if opts.maxStreamsToAddEvents >= 0:
             parser.error("--runForMinutes and --maxStreamsToAddEvents can not be used together")
+    opts.cudaDevices = opts.cudaDevices.split(",") if opts.cudaDevices != "" else []
+    if opts.monitorSeconds < 0:
+        opts.monitorSeconds = None
 
     main(opts)
