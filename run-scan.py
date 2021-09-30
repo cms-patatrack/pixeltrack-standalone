@@ -214,6 +214,22 @@ def launchBackground(opts, cores_bkg, logfile):
     serial = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
     return serial
 
+def getEventsPerStream(program, opts):
+    ret = opts.eventsPerStream
+    if ret is None and opts.runForMinutes < 0:
+        tmp = n_blocks_per_stream.get(os.path.basename(program), None)
+        if tmp is None:
+            raise Exception("No default number of event blocks for program %s, and --eventsPerStream was not given" % program)
+        if isinstance(tmp, dict):
+            if "--transfer" in opts.args:
+                eventBlocksPerStream = tmp["transfer"]
+            else:
+                eventBlocksPerStream = tmp[""]
+        else:
+            eventBlocksPerStream = tmp
+        return eventBlocksPerStream * n_events_unit
+    return ret
+
 def main(opts):
     ncores = multiprocessing.cpu_count()
     if opts.fill > 0:
@@ -239,19 +255,7 @@ def main(opts):
     if len(opts.numStreams) > 0:
         n_streams_threads = [(s, t) for t in nthreads for s in opts.numStreams]
 
-    nev_per_stream = opts.eventsPerStream
-    if nev_per_stream is None and opts.runForMinutes < 0:
-        tmp = n_blocks_per_stream.get(os.path.basename(opts.program), None)
-        if tmp is None:
-            raise Exception("No default number of event blocks for program %s, and --eventsPerStream was not given" % opts.program)
-        if isinstance(tmp, dict):
-            if "--transfer" in opts.args:
-                eventBlocksPerStream = tmp["transfer"]
-            else:
-                eventBlocksPerStream = tmp[""]
-        else:
-            eventBlocksPerStream = tmp
-        nev_per_stream = eventBlocksPerStream * n_events_unit
+    nev_per_stream = getEventsPerStream(opts.program, opts)
 
     data = dict(
         program=opts.program,
@@ -376,11 +380,7 @@ def main(opts):
             break
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a scan of a given test program.\nNote that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices instead.")
-    parser.add_argument("program", type=str,
-                        help="Path to the test program to run")
-
+def addCommonArguments(parser):
     output_group = parser.add_argument_group("JSON output arguments")
     output_group.add_argument("-o", "--output", type=str, default="result",
                               help="Prefix of output JSON and log files. If the output JSON file exists, it will be updated (see also --overwrite) (default: 'result')")
@@ -388,6 +388,38 @@ if __name__ == "__main__":
                               help="Overwrite the output JSON instead of updating it")
     output_group.add_argument("--append", action="store_true",
                               help="Append new (stream, threads) results insteads of ignoring already existing point")
+
+    monitor_group = parser.add_argument_group("Monitoring arguments",
+                                              description="These arguments can be used to enable various monitoring of the program being tested. The data is stored in the result JSON file.")
+    monitor_group.add_argument("--monitorSeconds", type=int, default=-1,
+                               help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
+    monitor_group.add_argument("--monitorMemory", action="store_true",
+                               help="Enable monitoring of host memory")
+    monitor_group.add_argument("--monitorCuda", action="store_true",
+                               help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
+
+    parser.add_argument("--tryAgain", type=int, default=1,
+                        help="In case of failure on a point, try again at most this many times (default: 1)")
+    parser.add_argument("--warmup", action="store_true",
+                        help="Run the command once before starting the profiling")
+    parser.add_argument("--dryRun", action="store_true",
+                        help="Print out commands, don't actually run anything")
+
+def parseCommonArguments(parser):
+    opts = parser.parse_args()
+    if opts.monitorSeconds < 0:
+        opts.monitorSeconds = None
+
+    return opts
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="""Run a scan of a given test program.
+Note that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices instead.
+""")
+    parser.add_argument("program", type=str,
+                        help="Path to the test program to run.")
+
+    addCommonArguments(parser)
 
     scan_group = parser.add_argument_group("Scan arguments")
     scan_group.add_argument("--repeat", type=int, default=1,
@@ -423,25 +455,9 @@ if __name__ == "__main__":
     fill_group.add_argument("--cudaDevices", type=str, default="",
                             help="Comma-separeted list of CUDA devices (as in nvidia-smi) to use (default empty is to use all devices).")
 
-    monitor_group = parser.add_argument_group("Monitoring arguments",
-                                              description="These arguments can be used to enable various monitoring of the program being tested. The data is stored in the result JSON file.")
-    monitor_group.add_argument("--monitorSeconds", type=int, default=-1,
-                               help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
-    monitor_group.add_argument("--monitorMemory", action="store_true",
-                               help="Enable monitoring of host memory")
-    monitor_group.add_argument("--monitorCuda", action="store_true",
-                               help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
-
-    parser.add_argument("--tryAgain", type=int, default=1,
-                        help="In case of failure on a point, try again at most this many times (default: 1)")
-    parser.add_argument("--warmup", action="store_true",
-                        help="Run the command once before starting the profiling")
-    parser.add_argument("--dryRun", action="store_true",
-                        help="Print out commands, don't actually run anything")
-
     parser.add_argument("args", nargs=argparse.REMAINDER)
 
-    opts = parser.parse_args()
+    opts = parseCommonArguments(parser)
     if opts.minThreads <= 0:
         parser.error("minThreads must be > 0, got %d" % opts.minThreads)
     if opts.maxThreads <= 0 and opts.maxThreads != -1:
@@ -460,7 +476,5 @@ if __name__ == "__main__":
         if opts.maxStreamsToAddEvents >= 0:
             parser.error("--runForMinutes and --maxStreamsToAddEvents can not be used together")
     opts.cudaDevices = opts.cudaDevices.split(",") if opts.cudaDevices != "" else []
-    if opts.monitorSeconds < 0:
-        opts.monitorSeconds = None
 
     main(opts)
