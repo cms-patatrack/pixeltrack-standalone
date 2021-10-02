@@ -6,9 +6,5 @@
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 
 using ZVertexHeterogeneous = HeterogeneousSoA<ZVertexSoA>;
-#ifndef __CUDACC__
-#include "CUDACore/Product.h"
-using ZVertexCUDAProduct = cms::cuda::Product<ZVertexHeterogeneous>;
-#endif
 
 #endif

@@ -1,12 +1,8 @@
-#include <cuda_runtime.h>
-
-#include "CUDACore/Product.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
-#include "CUDACore/ScopedContext.h"
 
 #include "gpuVertexFinder.h"
 
@@ -18,10 +14,6 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  bool m_OnGPU;
-
-  edm::EDGetTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenGPUTrack_;
-  edm::EDPutTokenT<ZVertexCUDAProduct> tokenGPUVertex_;
   edm::EDGetTokenT<PixelTrackHeterogeneous> tokenCPUTrack_;
   edm::EDPutTokenT<ZVertexHeterogeneous> tokenCPUVertex_;
 
@@ -32,8 +24,7 @@ private:
 };
 
 PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
-    : m_OnGPU(false),
-      m_gpuAlgo(true,   // oneKernel
+    : m_gpuAlgo(true,   // oneKernel
                 true,   // useDensity
                 false,  // useDBSCAN
                 false,  // useIterative
@@ -44,29 +35,13 @@ PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
                 ),
       m_ptMin(0.5)  // 0.5 GeV
 {
-  if (m_OnGPU) {
-    tokenGPUTrack_ = reg.consumes<cms::cuda::Product<PixelTrackHeterogeneous>>();
-    tokenGPUVertex_ = reg.produces<ZVertexCUDAProduct>();
-  } else {
-    tokenCPUTrack_ = reg.consumes<PixelTrackHeterogeneous>();
-    tokenCPUVertex_ = reg.produces<ZVertexHeterogeneous>();
-  }
+  tokenCPUTrack_ = reg.consumes<PixelTrackHeterogeneous>();
+  tokenCPUVertex_ = reg.produces<ZVertexHeterogeneous>();
 }
 
 void PixelVertexProducerCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  if (m_OnGPU) {
-    auto const& ptracks = iEvent.get(tokenGPUTrack_);
-
-    cms::cuda::ScopedContextProduce ctx{ptracks};
-    auto const* tracks = ctx.get(ptracks).get();
-
-    assert(tracks);
-
-    ctx.emplace(iEvent, tokenGPUVertex_, m_gpuAlgo.makeAsync(ctx.stream(), tracks, m_ptMin));
-
-  } else {
-    auto const* tracks = iEvent.get(tokenCPUTrack_).get();
-    assert(tracks);
+  auto const* tracks = iEvent.get(tokenCPUTrack_).get();
+  assert(tracks);
 
     /*
     auto const & tsoa = *tracks;
@@ -83,8 +58,7 @@ void PixelVertexProducerCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
     std::cout << "found " << nt << " tracks in cpu SoA for Vertexing at " << tracks << std::endl;
     */
 
-    iEvent.emplace(tokenCPUVertex_, m_gpuAlgo.make(tracks, m_ptMin));
-  }
+  iEvent.emplace(tokenCPUVertex_, m_gpuAlgo.make(tracks, m_ptMin));
 }
 
 DEFINE_FWK_MODULE(PixelVertexProducerCUDA);

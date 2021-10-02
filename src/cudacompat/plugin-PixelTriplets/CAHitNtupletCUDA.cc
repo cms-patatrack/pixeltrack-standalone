@@ -3,7 +3,6 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
-#include "CUDACore/ScopedContext.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"

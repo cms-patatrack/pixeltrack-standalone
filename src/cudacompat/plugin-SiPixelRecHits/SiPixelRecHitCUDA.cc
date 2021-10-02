@@ -8,7 +8,6 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
 #include "CondFormats/PixelCPEFast.h"
 
 #include "PixelRecHits.h"  // TODO : spit product from kernel

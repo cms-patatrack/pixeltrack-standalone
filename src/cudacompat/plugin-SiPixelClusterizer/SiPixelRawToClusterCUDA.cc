@@ -12,7 +12,6 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
 
 #include "ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
@@ -29,7 +28,6 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  cms::cuda::ContextState ctxState_;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
   edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
