@@ -29,6 +29,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     in.read(reinterpret_cast<char *>(&commonParams), sizeof(pixelCPEforGPU::CommonParams));
     auto commonParams_h{cms::alpakatools::createHostView<pixelCPEforGPU::CommonParams>(&commonParams, 1u)};
     auto commonParams_d{cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(1u)};
+    alpaka::prepareForAsyncCopy(commonParams_d);
     alpaka::memcpy(queue, commonParams_d, commonParams_h, 1u);
 
     unsigned int ndetParams;
@@ -39,18 +40,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     in.read(reinterpret_cast<char *>(detParams.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
     auto detParams_h{cms::alpakatools::createHostView<pixelCPEforGPU::DetParams>(detParams.data(), ndetParams)};
     auto detParams_d{cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(ndetParams)};
+    alpaka::prepareForAsyncCopy(detParams_d);
     alpaka::memcpy(queue, detParams_d, detParams_h, ndetParams);
 
     pixelCPEforGPU::AverageGeometry averageGeometry;
     in.read(reinterpret_cast<char *>(&averageGeometry), sizeof(pixelCPEforGPU::AverageGeometry));
     auto averageGeometry_h{cms::alpakatools::createHostView<pixelCPEforGPU::AverageGeometry>(&averageGeometry, 1u)};
     auto averageGeometry_d{cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(1u)};
+    alpaka::prepareForAsyncCopy(averageGeometry_d);
     alpaka::memcpy(queue, averageGeometry_d, averageGeometry_h, 1u);
 
     pixelCPEforGPU::LayerGeometry layerGeometry;
     in.read(reinterpret_cast<char *>(&layerGeometry), sizeof(pixelCPEforGPU::LayerGeometry));
     auto layerGeometry_h{cms::alpakatools::createHostView<pixelCPEforGPU::LayerGeometry>(&layerGeometry, 1u)};
     auto layerGeometry_d{cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(1u)};
+    alpaka::prepareForAsyncCopy(layerGeometry_d);
     alpaka::memcpy(queue, layerGeometry_d, layerGeometry_h, 1u);
 
     pixelCPEforGPU::ParamsOnGPU params;
@@ -60,9 +64,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     params.m_averageGeometry = alpaka::getPtrNative(averageGeometry_d);
     auto params_h{cms::alpakatools::createHostView<pixelCPEforGPU::ParamsOnGPU>(&params, 1u)};
     auto params_d{cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(1u)};
+    alpaka::prepareForAsyncCopy(params_d);
     alpaka::memcpy(queue, params_d, params_h, 1u);
-
-    alpaka::wait(queue);
 
     eventSetup.put(std::make_unique<PixelCPEFast>(std::move(commonParams_d),
                                                   std::move(detParams_d),

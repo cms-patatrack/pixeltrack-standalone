@@ -1,3 +1,4 @@
+
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
@@ -7,6 +8,8 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "CondFormats/PixelCPEFast.h"
+#include "Framework/PluginFactory.h"
+#include "AlpakaCore/ScopedContext.h"
 
 #include "PixelRecHits.h"  // TODO : spit product from kernel
 
@@ -51,7 +54,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     // TO DO: Async: Would need to add a queue as a parameter, not async for now!
-    iEvent.emplace(tokenHit_, gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params()));
+    cms::alpakatools::ScopedContextProduce ctx{ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent.streamID()};
+    ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device,
+                iEvent,
+                tokenHit_,
+                gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

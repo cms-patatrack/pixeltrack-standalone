@@ -48,18 +48,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto ped_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::DecodingStructure>(
         reinterpret_cast<SiPixelGainForHLTonGPU::DecodingStructure*>(gainData.data()), numDecodingStructures)};
     auto ped_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::DecodingStructure>(numDecodingStructures)};
+    alpaka::prepareForAsyncCopy(ped_d);
     alpaka::memcpy(queue, ped_d, ped_h, numDecodingStructures);
 
     auto rangeAndCols_h{
         cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::RangeAndCols>(gain.rangeAndCols, 2000u)};
     auto rangeAndCols_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::RangeAndCols>(2000u)};
+    alpaka::prepareForAsyncCopy(rangeAndCols_d);
     alpaka::memcpy(queue, rangeAndCols_d, rangeAndCols_h, 2000u);
 
     auto fields_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::Fields>(&gain.fields_, 1u)};
     auto fields_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(1u)};
+    alpaka::prepareForAsyncCopy(fields_d);
     alpaka::memcpy(queue, fields_d, fields_h, 1u);
-
-    alpaka::wait(queue);
 
     eventSetup.put(
         std::make_unique<SiPixelGainForHLTonGPU>(std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
