@@ -11,7 +11,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class SiPixelDigiErrorsAlpaka {
   public:
     SiPixelDigiErrorsAlpaka() = default;
-    explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors)
+    explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
         : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(maxFedWords)},
           error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
           error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
@@ -21,10 +21,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(perror_h->empty());
       ALPAKA_ASSERT_OFFLOAD(perror_h->capacity() == static_cast<int>(maxFedWords));
 
-      // TO DO: nothing really async in here for now... Pass the queue in constructor argument instead, and don't wait anymore!
-      Queue queue(device);
       alpaka::memcpy(queue, error_d, error_h, 1u);
-      alpaka::wait(queue);
     }
     ~SiPixelDigiErrorsAlpaka() = default;
 

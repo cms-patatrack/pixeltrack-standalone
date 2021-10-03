@@ -1,3 +1,4 @@
+
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 

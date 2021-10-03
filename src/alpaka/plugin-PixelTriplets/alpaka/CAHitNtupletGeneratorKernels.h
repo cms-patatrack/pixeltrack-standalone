@@ -155,7 +155,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using TkSoA = pixelTrack::TrackSoA;
     using HitContainer = pixelTrack::HitContainer;
 
-    CAHitNtupletGeneratorKernels(Params const& params, uint32_t nhits)
+    CAHitNtupletGeneratorKernels(Params const& params, uint32_t nhits, Queue& queue)
         : m_params(params),
           //////////////////////////////////////////////////////////
           // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
@@ -185,8 +185,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           device_hitTuple_apc_{cms::alpakatools::allocDeviceBuf<cms::alpakatools::AtomicPairCounter>(1u)},
           device_hitToTuple_apc_{cms::alpakatools::allocDeviceBuf<cms::alpakatools::AtomicPairCounter>(1u)},
           device_nCells_{cms::alpakatools::allocDeviceBuf<uint32_t>(1u)} {
-      Queue queue(device);
-
       alpaka::memset(queue, counters_, 0, 1u);
 
       alpaka::memset(queue, device_nCells_, 0, 1u);

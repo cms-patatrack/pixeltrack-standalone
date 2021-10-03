@@ -6,6 +6,7 @@
 #include "CAHitNtupletGeneratorOnGPU.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaCore/ScopedContext.h"
 
 #include "AlpakaCore/alpakaCommon.h"
 
@@ -35,8 +36,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto const& hits = iEvent.get(tokenHitGPU_);
 
-    Queue queue(device);
-    iEvent.emplace(tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, queue));
+    cms::alpakatools::ScopedContextProduce ctx{ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent.streamID()};
+    ctx.emplace(
+        ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

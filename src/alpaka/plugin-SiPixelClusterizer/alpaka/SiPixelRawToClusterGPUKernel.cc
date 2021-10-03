@@ -561,7 +561,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+        digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors), queue);
       }
       clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
 
@@ -604,7 +604,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         digis_d.pdigi(),
                                                         digis_d.rawIdArr(),
                                                         digis_d.moduleInd(),
-                                                        digiErrors_d.error(),
+                                                        digiErrors_d->error(),
                                                         useQualityInfo,
                                                         includeErrors,
                                                         debug));
