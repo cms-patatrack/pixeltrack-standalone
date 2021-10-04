@@ -50,26 +50,8 @@ __global__ void testTSSoA(TS* pts, int n) {
   }
 }
 
-#ifdef __CUDACC__
-#include "CUDACore/requireDevices.h"
-#include "CUDACore/cudaCheck.h"
-#endif
-
 int main() {
-#ifdef __CUDACC__
-  cms::cudatest::requireDevices();
-#endif
-
   TS ts;
 
-#ifdef __CUDACC__
-  TS* ts_d;
-  cudaCheck(cudaMalloc(&ts_d, sizeof(TS)));
-  testTSSoA<<<1, 64>>>(ts_d, 128);
-  cudaCheck(cudaGetLastError());
-  cudaCheck(cudaMemcpy(&ts, ts_d, sizeof(TS), cudaMemcpyDefault));
-  cudaCheck(cudaDeviceSynchronize());
-#else
   testTSSoA(&ts, 128);
-#endif
 }

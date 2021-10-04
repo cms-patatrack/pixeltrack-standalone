@@ -5,7 +5,6 @@
 #include <random>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
 

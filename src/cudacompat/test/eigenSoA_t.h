@@ -58,16 +58,7 @@ __global__ void testBasicSoA(float* p) {
 #include <memory>
 #include <random>
 
-#ifdef __CUDACC__
-#include "CUDACore/requireDevices.h"
-#include "CUDACore/cudaCheck.h"
-#endif
-
 int main() {
-#ifdef __CUDACC__
-  cms::cudatest::requireDevices();
-#endif
-
   float p[1024];
 
   std::uniform_real_distribution<float> rgen(0.01, 0.99);
@@ -79,17 +70,7 @@ int main() {
     assert(p[i] > 0 && p[i] < 1.);
 
   std::cout << p[0] << std::endl;
-#ifdef __CUDACC__
-  float* p_d;
-  cudaCheck(cudaMalloc(&p_d, 1024 * 4));
-  cudaCheck(cudaMemcpy(p_d, p, 1024 * 4, cudaMemcpyDefault));
-  testBasicSoA<<<1, 1024>>>(p_d);
-  cudaCheck(cudaGetLastError());
-  cudaCheck(cudaMemcpy(p, p_d, 1024 * 4, cudaMemcpyDefault));
-  cudaCheck(cudaDeviceSynchronize());
-#else
   testBasicSoA(p);
-#endif
 
   std::cout << p[0] << std::endl;
 
