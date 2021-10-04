@@ -1,4 +1,4 @@
-cudacompat_EXTERNAL_DEPENDS := TBB CUDA EIGEN BOOST BACKTRACE
+cudacompat_EXTERNAL_DEPENDS := TBB EIGEN BOOST BACKTRACE
 BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats
