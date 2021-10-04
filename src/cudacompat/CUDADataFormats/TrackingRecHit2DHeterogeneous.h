@@ -59,7 +59,6 @@ private:
   int16_t* m_iphi;
 };
 
-#include "CUDACore/copyAsync.h"
 template <typename Traits>
 TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nHits,
                                                                      pixelCPEforGPU::ParamsOnGPU const* cpeParams,
