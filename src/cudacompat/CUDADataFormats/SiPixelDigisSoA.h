@@ -2,7 +2,6 @@
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigisSoA_h
 
 #include "CUDACore/cudaCompat.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
 
 #include <memory>
 
@@ -49,7 +48,25 @@ public:
   uint32_t const *c_pdigi() const { return pdigi_d.get(); }
   uint32_t const *c_rawIdArr() const { return rawIdArr_d.get(); }
 
-  using DeviceConstView = SiPixelDigisCUDA::DeviceConstView;
+  class DeviceConstView {
+  public:
+    // DeviceConstView() = default;
+
+    __device__ __forceinline__ uint16_t xx(int i) const { return __ldg(xx_ + i); }
+    __device__ __forceinline__ uint16_t yy(int i) const { return __ldg(yy_ + i); }
+    __device__ __forceinline__ uint16_t adc(int i) const { return __ldg(adc_ + i); }
+    __device__ __forceinline__ uint16_t moduleInd(int i) const { return __ldg(moduleInd_ + i); }
+    __device__ __forceinline__ int32_t clus(int i) const { return __ldg(clus_ + i); }
+
+    friend class SiPixelDigisSoA;
+
+    // private:
+    uint16_t const *xx_;
+    uint16_t const *yy_;
+    uint16_t const *adc_;
+    uint16_t const *moduleInd_;
+    int32_t const *clus_;
+  };
 
   const DeviceConstView *view() const { return view_d.get(); }
 

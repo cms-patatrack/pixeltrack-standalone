@@ -82,56 +82,15 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
          "h5");
 #endif
 
-  if (m_params.onGPU_) {
-    cudaCheck(cudaMalloc(&m_counters, sizeof(Counters)));
-    cudaCheck(cudaMemset(m_counters, 0, sizeof(Counters)));
-  } else {
-    m_counters = new Counters();
-    memset(m_counters, 0, sizeof(Counters));
-  }
+  m_counters = new Counters();
+  memset(m_counters, 0, sizeof(Counters));
 }
 
 CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
-  if (m_params.onGPU_) {
-    if (m_params.doStats_) {
-      // crash on multi-gpu processes
-      CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
-    }
-    cudaFree(m_counters);
-  } else {
-    if (m_params.doStats_) {
-      CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
-    }
-    delete m_counters;
+  if (m_params.doStats_) {
+    CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
   }
-}
-
-PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
-                                                                    float bfield,
-                                                                    cudaStream_t stream) const {
-  PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(stream));
-
-  auto* soa = tracks.get();
-
-  CAHitNtupletGeneratorKernelsGPU kernels(m_params);
-  kernels.counters_ = m_counters;
-
-  kernels.allocateOnGPU(stream);
-
-  kernels.buildDoublets(hits_d, stream);
-  kernels.launchKernels(hits_d, soa, stream);
-  kernels.fillHitDetIndices(hits_d.view(), soa, stream);  // in principle needed only if Hits not "available"
-
-  HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
-  fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
-  if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
-  } else {
-    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
-  }
-  kernels.classifyTuples(hits_d, soa, stream);
-
-  return tracks;
+  delete m_counters;
 }
 
 PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DCPU const& hits_d, float bfield) const {
