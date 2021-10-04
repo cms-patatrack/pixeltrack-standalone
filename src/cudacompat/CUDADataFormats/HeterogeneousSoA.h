@@ -2,6 +2,7 @@
 #define CUDADataFormatsCommonHeterogeneousSoA_H
 
 #include <cassert>
+#include <memory>
 
 // a heterogeneous unique pointer...
 template <typename T>
