@@ -1,5 +1,3 @@
-#include "CUDACore/cudaCheck.h"
-
 #include "gpuClusterTracksByDensity.h"
 #include "gpuClusterTracksDBSCAN.h"
 #include "gpuClusterTracksIterative.h"

@@ -9,7 +9,6 @@
 
 #include <cuda_runtime.h>
 
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"
 

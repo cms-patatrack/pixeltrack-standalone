@@ -1,7 +1,5 @@
 #include "CAHitNtupletGeneratorKernels.h"
 
-#include "CUDACore/cudaCheck.h"
-
 template <>
 void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
   //////////////////////////////////////////////////////////
