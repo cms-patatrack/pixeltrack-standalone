@@ -3,8 +3,6 @@
 
 #include "gpuPixelDoubletsAlgos.h"
 
-#define CONSTANT_VAR __constant__
-
 namespace gpuPixelDoublets {
 
   constexpr int nPairs = 13 + 2 + 4;
@@ -13,7 +11,7 @@ namespace gpuPixelDoublets {
   // start constants
   // clang-format off
 
-  CONSTANT_VAR const uint8_t layerPairs[2 * nPairs] = {
+  constexpr uint8_t layerPairs[2 * nPairs] = {
       0, 1, 0, 4, 0, 7,              // BPIX1 (3)
       1, 2, 1, 4, 1, 7,              // BPIX2 (5)
       4, 5, 7, 8,                    // FPIX1 (8)
@@ -27,7 +25,7 @@ namespace gpuPixelDoublets {
   constexpr int16_t phi0p06 = 626;  // round(625.82270...) = phi2short(0.06);
   constexpr int16_t phi0p07 = 730;  // round(730.12648...) = phi2short(0.07);
 
-  CONSTANT_VAR const int16_t phicuts[nPairs]{phi0p05,
+  constexpr int16_t phicuts[nPairs]{phi0p05,
                                              phi0p07,
                                              phi0p07,
                                              phi0p05,
@@ -48,11 +46,11 @@ namespace gpuPixelDoublets {
                                              phi0p05};
   //   phi0p07, phi0p07, phi0p06,phi0p06, phi0p06,phi0p06};  // relaxed cuts
 
-  CONSTANT_VAR float const minz[nPairs] = {
+  constexpr float minz[nPairs] = {
       -20., 0., -30., -22., 10., -30., -70., -70., -22., 15., -30, -70., -70., -20., -22., 0, -30., -70., -70.};
-  CONSTANT_VAR float const maxz[nPairs] = {
+  constexpr float maxz[nPairs] = {
       20., 30., 0., 22., 30., -10., 70., 70., 22., 30., -15., 70., 70., 20., 22., 30., 0., 70., 70.};
-  CONSTANT_VAR float const maxr[nPairs] = {
+  constexpr float maxr[nPairs] = {
       20., 9., 9., 20., 7., 7., 5., 5., 20., 6., 6., 5., 5., 20., 20., 9., 9., 9., 9.};
 
   // end constants
