@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
 
 #include "CUDACore/cuda_assert.h"
+#include "CUDACore/cudaCompat.h"
 
 #include "choleskyInversion.h"
 #include "FitResult.h"

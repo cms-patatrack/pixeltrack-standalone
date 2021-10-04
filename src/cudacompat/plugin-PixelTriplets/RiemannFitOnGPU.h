@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-#include <cuda_runtime.h>
+#include "CUDACore/cudaCompat.h"
 
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "CUDACore/cuda_assert.h"
