@@ -578,8 +578,8 @@ namespace KOKKOS_NAMESPACE {
 
       digis_d = SiPixelDigisKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d = SiPixelDigiErrorsKokkos<KokkosExecSpace>(
-            pixelgpudetails::MAX_FED_WORDS, std::move(errors), KokkosExecSpace());
+        digiErrors_d =
+            SiPixelDigiErrorsKokkos<KokkosExecSpace>(pixelgpudetails::MAX_FED_WORDS, std::move(errors), execSpace);
       }
       clusters_d = SiPixelClustersKokkos<KokkosExecSpace>(::gpuClustering::MaxNumModules);
 

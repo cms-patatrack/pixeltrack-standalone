@@ -5,8 +5,18 @@ else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
   kokkos_EXTERNAL_DEPENDS += HIP
 endif
 BeamSpotProducer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats
+KokkosCore_DEPENDS := Framework
 PixelTriplets_DEPENDS := Framework KokkosCore KokkosDataFormats
 PixelVertexFinding_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats
 SiPixelClusterizer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats
 SiPixelRecHits_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats CondFormats
 Validation_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats
+ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
+  BeamSpotProducer_DEPENDS += CUDACore
+  KokkosCore_DEPENDS += CUDACore
+  PixelTriplets_DEPENDS += CUDACore
+  PixelVertexFinding_DEPENDS += CUDACore
+  SiPixelClusterizer_DEPENDS += CUDACore
+  SiPixelRecHits_DEPENDS += CUDACore
+  Validation_DEPENDS += CUDACore
+endif

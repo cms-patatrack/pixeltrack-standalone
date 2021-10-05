@@ -8,6 +8,8 @@
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/Product.h"
+#include "KokkosCore/ScopedContext.h"
 
 namespace KOKKOS_NAMESPACE {
   class CAHitNtupletKokkos : public edm::EDProducer {
@@ -18,23 +20,25 @@ namespace KOKKOS_NAMESPACE {
   private:
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-    edm::EDGetTokenT<TrackingRecHit2DKokkos<KokkosExecSpace>> tokenHitGPU_;
-    edm::EDPutTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>> tokenTrackGPU_;
+    edm::EDGetTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>> tokenHitGPU_;
+    edm::EDPutTokenT<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>>> tokenTrackGPU_;
 
     CAHitNtupletGeneratorOnGPU gpuAlgo_;
   };
 
   CAHitNtupletKokkos::CAHitNtupletKokkos(edm::ProductRegistry& reg)
-      : tokenHitGPU_{reg.consumes<TrackingRecHit2DKokkos<KokkosExecSpace>>()},
-        tokenTrackGPU_{reg.produces<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>>()},
+      : tokenHitGPU_{reg.consumes<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>>()},
+        tokenTrackGPU_{reg.produces<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>>>()},
         gpuAlgo_(reg) {}
 
   void CAHitNtupletKokkos::produce(edm::Event& iEvent, const edm::EventSetup& es) {
     auto bf = 0.0114256972711507;  // 1/fieldInGeV
 
-    auto const& hits = iEvent.get(tokenHitGPU_);
+    auto const& phits = iEvent.get(tokenHitGPU_);
+    cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{phits};
+    auto const& hits = ctx.get(phits);
 
-    iEvent.emplace(tokenTrackGPU_, gpuAlgo_.makeTuples(hits, bf, KokkosExecSpace()));
+    ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuples(hits, bf, ctx.execSpace()));
   }
 }  // namespace KOKKOS_NAMESPACE
 

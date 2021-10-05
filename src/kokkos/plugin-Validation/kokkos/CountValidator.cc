@@ -1,4 +1,6 @@
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/Product.h"
+#include "KokkosCore/ScopedContext.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "KokkosDataFormats/SiPixelClustersKokkos.h"
 #include "KokkosDataFormats/SiPixelDigisKokkos.h"
@@ -30,8 +32,8 @@ namespace KOKKOS_NAMESPACE {
     edm::EDGetTokenT<TrackCount> trackCountToken_;
     edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-    edm::EDGetTokenT<SiPixelDigisKokkos<KokkosExecSpace>> digiToken_;
-    edm::EDGetTokenT<SiPixelClustersKokkos<KokkosExecSpace>> clusterToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterToken_;
     edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror> trackToken_;
     edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror> vertexToken_;
 
@@ -53,8 +55,8 @@ namespace KOKKOS_NAMESPACE {
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
         vertexCountToken_(reg.consumes<VertexCount>()),
-        digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
-        clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>()),
+        digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
+        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
         trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
         vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
 
@@ -69,8 +71,10 @@ namespace KOKKOS_NAMESPACE {
 
     {
       auto const& count = iEvent.get(digiClusterCountToken_);
-      auto const& digis = iEvent.get(digiToken_);
-      auto const& clusters = iEvent.get(clusterToken_);
+      auto const& pdigis = iEvent.get(digiToken_);
+      cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{pdigis};
+      auto const& digis = ctx.get(pdigis);
+      auto const& clusters = ctx.get(iEvent, clusterToken_);
 
       if (digis.nModules() != count.nModules()) {
         ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();

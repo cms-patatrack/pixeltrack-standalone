@@ -1,3 +1,6 @@
+#include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/Product.h"
+#include "KokkosCore/ScopedContext.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "KokkosDataFormats/SiPixelClustersKokkos.h"
 #include "KokkosDataFormats/SiPixelDigisKokkos.h"
@@ -14,24 +17,42 @@
 #include <fstream>
 
 namespace KOKKOS_NAMESPACE {
-  class HistoValidator : public edm::EDProducer {
+  class HistoValidator : public edm::EDProducerExternalWork {
   public:
     explicit HistoValidator(edm::ProductRegistry& reg);
 
   private:
-#ifdef TODO
     void acquire(const edm::Event& iEvent,
                  const edm::EventSetup& iSetup,
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-#endif
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
     void endJob() override;
 
-    edm::EDGetTokenT<SiPixelDigisKokkos<KokkosExecSpace>> digiToken_;
-    edm::EDGetTokenT<SiPixelClustersKokkos<KokkosExecSpace>> clusterToken_;
-    edm::EDGetTokenT<TrackingRecHit2DKokkos<KokkosExecSpace>> hitToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>> hitToken_;
     edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror> trackToken_;
     edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror> vertexToken_;
+
+    uint32_t nDigis;
+    uint32_t nModules;
+    uint32_t nClusters;
+    uint32_t nHits;
+
+    Kokkos::View<uint16_t const*, KokkosExecSpace>::HostMirror h_adc;
+    Kokkos::View<uint32_t const*, KokkosExecSpace>::HostMirror h_clusInModule;
+
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_lx;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_ly;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_lex;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_ley;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gx;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gy;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gz;
+    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gr;
+    Kokkos::View<int32_t const*, KokkosExecSpace>::HostMirror h_charge;
+    Kokkos::View<int16_t const*, KokkosExecSpace>::HostMirror h_sizex;
+    Kokkos::View<int16_t const*, KokkosExecSpace>::HostMirror h_sizey;
 
     static std::map<std::string, SimpleAtomicHisto> histos;
   };
@@ -72,51 +93,57 @@ namespace KOKKOS_NAMESPACE {
       {"vertex_pt2", SimpleAtomicHisto(100, 0, 4000)}};
 
   HistoValidator::HistoValidator(edm::ProductRegistry& reg)
-      : digiToken_(reg.consumes<SiPixelDigisKokkos<KokkosExecSpace>>()),
-        clusterToken_(reg.consumes<SiPixelClustersKokkos<KokkosExecSpace>>()),
-        hitToken_(reg.consumes<TrackingRecHit2DKokkos<KokkosExecSpace>>()),
+      : digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
+        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
+        hitToken_(reg.consumes<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>>()),
         trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
         vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
 
-  void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    auto const& digis = iEvent.get(digiToken_);
-    auto const& clusters = iEvent.get(clusterToken_);
-    auto const& hits = iEvent.get(hitToken_);
+  void HistoValidator::acquire(const edm::Event& iEvent,
+                               const edm::EventSetup& iSetup,
+                               edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+    auto const& pdigis = iEvent.get(digiToken_);
+    cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{pdigis, std::move(waitingTaskHolder)};
+    auto const& digis = ctx.get(pdigis);
+    auto const& clusters = ctx.get(iEvent, clusterToken_);
+    auto const& hits = ctx.get(iEvent, hitToken_);
 
-    auto const nDigis = digis.nDigis();
-    auto const nModules = digis.nModules();
-    auto const h_adc = digis.adcToHostAsync(KokkosExecSpace());
+    nDigis = digis.nDigis();
+    nModules = digis.nModules();
+    h_adc = digis.adcToHostAsync(ctx.execSpace());
 
-    auto const nClusters = clusters.nClusters();
+    nClusters = clusters.nClusters();
     auto const d_clusInModule = clusters.clusInModule();
-    auto h_clusInModule = Kokkos::create_mirror_view(d_clusInModule);
-    Kokkos::deep_copy(KokkosExecSpace(), h_clusInModule, d_clusInModule);
+    h_clusInModule = Kokkos::create_mirror_view(d_clusInModule);
+    Kokkos::deep_copy(ctx.execSpace(), h_clusInModule, d_clusInModule);
 
-    auto const nHits = hits.nHits();
-    auto const h_lx = hits.xlToHostAsync(KokkosExecSpace());
-    auto const h_ly = hits.ylToHostAsync(KokkosExecSpace());
-    auto const h_lex = hits.xerrToHostAsync(KokkosExecSpace());
-    auto const h_ley = hits.yerrToHostAsync(KokkosExecSpace());
-    auto const h_gx = hits.xgToHostAsync(KokkosExecSpace());
-    auto const h_gy = hits.ygToHostAsync(KokkosExecSpace());
-    auto const h_gz = hits.zgToHostAsync(KokkosExecSpace());
-    auto const h_gr = hits.rgToHostAsync(KokkosExecSpace());
-    auto const h_charge = hits.chargeToHostAsync(KokkosExecSpace());
-    auto const h_sizex = hits.xsizeToHostAsync(KokkosExecSpace());
-    auto const h_sizey = hits.ysizeToHostAsync(KokkosExecSpace());
+    nHits = hits.nHits();
+    h_lx = hits.xlToHostAsync(ctx.execSpace());
+    h_ly = hits.ylToHostAsync(ctx.execSpace());
+    h_lex = hits.xerrToHostAsync(ctx.execSpace());
+    h_ley = hits.yerrToHostAsync(ctx.execSpace());
+    h_gx = hits.xgToHostAsync(ctx.execSpace());
+    h_gy = hits.ygToHostAsync(ctx.execSpace());
+    h_gz = hits.zgToHostAsync(ctx.execSpace());
+    h_gr = hits.rgToHostAsync(ctx.execSpace());
+    h_charge = hits.chargeToHostAsync(ctx.execSpace());
+    h_sizex = hits.xsizeToHostAsync(ctx.execSpace());
+    h_sizey = hits.ysizeToHostAsync(ctx.execSpace());
+  }
 
-    KokkosExecSpace().fence();
-
+  void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     histos["digi_n"].fill(nDigis);
     for (uint32_t i = 0; i < nDigis; ++i) {
       histos["digi_adc"].fill(h_adc(i));
     }
     histos["module_n"].fill(nModules);
+    //h_adc.reset();
 
     histos["cluster_n"].fill(nClusters);
     for (uint32_t i = 0; i < nModules; ++i) {
       histos["cluster_per_module_n"].fill(h_clusInModule(i));
     }
+    //h_clusInModule.reset();
 
     histos["hit_n"].fill(nHits);
     for (uint32_t i = 0; i < nHits; ++i) {
@@ -132,6 +159,19 @@ namespace KOKKOS_NAMESPACE {
       histos["hit_sizex"].fill(h_sizex(i));
       histos["hit_sizey"].fill(h_sizey(i));
     }
+    /*
+    h_lx.reset();
+    h_ly.reset();
+    h_lex.reset();
+    h_ley.reset();
+    h_gx.reset();
+    h_gy.reset();
+    h_gz.reset();
+    h_gr.reset();
+    h_charge.reset();
+    h_sizex.reset();
+    h_sizey.reset();
+    */
 
     {
       auto const& tracks = iEvent.get(trackToken_);
