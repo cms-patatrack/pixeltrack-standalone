@@ -20,7 +20,7 @@ namespace cms {
     public:
       ESProduct() : gpuDataPerDevice_(deviceCount()) {
         if (not gpuDataPerDevice_.empty()) {
-          cms::cuda::ScopedSetDevice scopedDevice;
+          cms::hip::ScopedSetDevice scopedDevice;
           for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
             scopedDevice.set(i);
             gpuDataPerDevice_[i].m_event = getEventCache().get();
