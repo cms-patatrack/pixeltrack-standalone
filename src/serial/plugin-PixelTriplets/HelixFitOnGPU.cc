@@ -1,4 +1,3 @@
-#include "CUDACore/cudaCheck.h"
 #include "HelixFitOnGPU.h"
 
 void HelixFitOnGPU::allocateOnGPU(Tuples const *tuples,

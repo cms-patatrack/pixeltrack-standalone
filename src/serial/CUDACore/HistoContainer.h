@@ -2,15 +2,12 @@
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
 #include <algorithm>
-#ifndef __CUDA_ARCH__
 #include <atomic>
-#endif  // __CUDA_ARCH__
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
 #include "CUDACore/AtomicPairCounter.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 #include "CUDACore/cudastdAlgorithm.h"
 #include "CUDACore/prefixScan.h"
@@ -60,11 +57,7 @@ namespace cms {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
-#ifdef __CUDACC__
-      cudaCheck(cudaMemsetAsync(poff, 0, size, stream));
-#else
       ::memset(poff, 0, size);
-#endif
     }
 
     template <typename Histo>
@@ -74,17 +67,7 @@ namespace cms {
                                                               = cudaStreamDefault
 #endif
     ) {
-#ifdef __CUDACC__
-      uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
-      int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
-      auto nthreads = 1024;
-      auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks, stream>>>(
-          poff, poff, Histo::totbins(), ppsws);
-      cudaCheck(cudaGetLastError());
-#else
       h->finalize();
-#endif
     }
 
     template <typename Histo, typename T>
@@ -100,18 +83,9 @@ namespace cms {
 #endif
     ) {
       launchZero(h, stream);
-#ifdef __CUDACC__
-      auto nblocks = (totSize + nthreads - 1) / nthreads;
-      countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-      cudaCheck(cudaGetLastError());
-      launchFinalize(h, stream);
-      fillFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
-      cudaCheck(cudaGetLastError());
-#else
       countFromVector(h, nh, v, offsets);
       h->finalize();
       fillFromVector(h, nh, v, offsets);
-#endif
     }
 
     template <typename Assoc>

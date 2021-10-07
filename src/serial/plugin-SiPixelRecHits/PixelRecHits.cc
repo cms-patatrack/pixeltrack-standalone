@@ -39,7 +39,6 @@ namespace pixelgpudetails {
 
     if (digis_d.nModules())  // protect from empty events
       gpuPixelRecHits::getHits(cpeParams, &bs_d, digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
-    cudaCheck(cudaGetLastError());
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
