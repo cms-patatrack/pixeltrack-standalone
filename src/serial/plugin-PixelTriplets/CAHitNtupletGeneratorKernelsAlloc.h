@@ -3,11 +3,7 @@
 #include "CUDACore/cudaCheck.h"
 
 template <>
-#ifdef __CUDACC__
-void CAHitNtupletGeneratorKernelsGPU::allocateOnGPU(cudaStream_t stream) {
-#else
 void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
-#endif
   //////////////////////////////////////////////////////////
   // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
   //////////////////////////////////////////////////////////
@@ -25,15 +21,7 @@ void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
   device_hitToTuple_apc_ = (cms::cuda::AtomicPairCounter*)device_storage_.get() + 1;
   device_nCells_ = (uint32_t*)(device_storage_.get() + 2);
 
-  if
-#ifndef __CUDACC__
-      constexpr
-#endif
-      (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
-    cudaCheck(cudaMemsetAsync(device_nCells_, 0, sizeof(uint32_t), stream));
-  } else {
-    *device_nCells_ = 0;
-  }
+  *device_nCells_ = 0;
   cms::cuda::launchZero(device_tupleMultiplicity_.get(), stream);
   cms::cuda::launchZero(device_hitToTuple_.get(), stream);  // we may wish to keep it in the edm...
 }

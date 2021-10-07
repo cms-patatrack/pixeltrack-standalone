@@ -36,16 +36,6 @@ public:
   auto phiBinner() { return m_hist; }
   auto iphi() { return m_iphi; }
 
-  // only the local coord and detector index
-  cms::cuda::host::unique_ptr<float[]> localCoordToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
-
-  // for validation
-  cms::cuda::host::unique_ptr<float[]> globalCoordToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int32_t[]> chargeToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int16_t[]> sizeToHostAsync(cudaStream_t stream) const;
-
 private:
   static constexpr uint32_t n16 = 4;
   static constexpr uint32_t n32 = 9;
@@ -70,8 +60,6 @@ private:
 };
 
 #include "CUDACore/copyAsync.h"
-#include "CUDACore/cudaCheck.h"
-
 template <typename Traits>
 TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nHits,
                                                                      pixelCPEforGPU::ParamsOnGPU const* cpeParams,
@@ -89,15 +77,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
 
   // if empy do not bother
   if (0 == nHits) {
-    if
-#ifndef __CUDACC__
-        constexpr
-#endif
-        (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
-      cms::cuda::copyAsync(m_view, view, stream);
-    } else {
-      m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-    }
+    m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
     return;
   }
 
@@ -136,20 +116,9 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
 
   // transfer view
-  if
-#ifndef __CUDACC__
-      constexpr
-#endif
-      (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
-    cms::cuda::copyAsync(m_view, view, stream);
-  } else {
-    m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-  }
+  m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
 }
 
-using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::GPUTraits>;
-using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous<cms::cudacompat::GPUTraits>;
 using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::CPUTraits>;
-using TrackingRecHit2DHost = TrackingRecHit2DHeterogeneous<cms::cudacompat::HostTraits>;
 
 #endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
