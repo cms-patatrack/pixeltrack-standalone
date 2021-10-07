@@ -3,7 +3,6 @@
 
 #include <cassert>
 
-#include "CUDACore/copyAsync.h"
 // a heterogeneous unique pointer...
 template <typename T>
 class HeterogeneousSoA {
