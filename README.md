@@ -41,7 +41,7 @@ In addition, the individual programs assume the following be found from the syst
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudadev`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cudauvm`    |                    | :heavy_check_mark:          |                        |                                                                                                                  |
-| `cudacompat` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `cudacompat` |                    |                             |                        |                                                                                                                  |
 | `hiptest`    |                    |                             | :heavy_check_mark:     |                                                                                                                  |
 | `hip`        |                    |                             | :heavy_check_mark:     |                                                                                                                  |
 | `kokkostest` | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
@@ -261,7 +261,10 @@ make cudauvm ... USER_CXXFLAGS="-DCUDAUVM_MANAGED_TEMPORARY"
 
 #### `cudacompat`
 
-This program is a fork of `cuda` by extending the use of `cudaCompat` to clustering and RecHits. The aim is to run the same code on CPU. Currently, however, the program requires a GPU because of (still) using pinned host memory in a few places. In the future the program could be extended to provide both CUDA and CPU flavors.
+This program is a fork of `cuda` by extending the use of `cudaCompat`
+to clustering and RecHits. The aim is to run the same code on CPU. In
+the future the program could be extended (or a separate program could
+be created) to provide both CUDA and CPU flavors.
 
 The program contains the changes from following external PRs on top of `cuda`
 * [cms-patatrack/cmssw#586](https://github.com/cms-patatrack/cmssw/pull/586)
