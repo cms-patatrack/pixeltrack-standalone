@@ -61,8 +61,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // link to default empty
       theOuterNeighbors = &cellNeighbors[0];
       theTracks = &cellTracks[0];
-      assert(outerNeighbors().empty());
-      assert(tracks().empty());
+      ALPAKA_ASSERT_OFFLOAD(outerNeighbors().empty());
+      ALPAKA_ASSERT_OFFLOAD(tracks().empty());
     }
 
     template <typename T_Acc>
@@ -341,7 +341,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // than a threshold
 
       tmpNtuplet.push_back_unsafe(theDoubletId);
-      assert(tmpNtuplet.size() <= 4);
+      ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() <= 4);
 
       bool last = true;
       for (int j = 0; j < outerNeighbors().size(); ++j) {
@@ -376,7 +376,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         }
       }
       tmpNtuplet.pop_back();
-      assert(tmpNtuplet.size() < 4);
+      ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() < 4);
     }
 
   private:

@@ -36,12 +36,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   uint32_t offset) const {
       constexpr uint32_t hitsInFit = N;
 
-      assert(hitsInFit <= nHits);
+      ALPAKA_ASSERT_OFFLOAD(hitsInFit <= nHits);
 
-      assert(hhp);
-      assert(pfast_fit);
-      assert(foundNtuplets);
-      assert(tupleMultiplicity);
+      ALPAKA_ASSERT_OFFLOAD(hhp);
+      ALPAKA_ASSERT_OFFLOAD(pfast_fit);
+      ALPAKA_ASSERT_OFFLOAD(foundNtuplets);
+      ALPAKA_ASSERT_OFFLOAD(tupleMultiplicity);
 
       // look in bin for this hit multiplicity
 #ifdef BROKENLINE_DEBUG
@@ -60,9 +60,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         // get it from the ntuple container (one to one to helix)
         auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
-        assert(tkid < foundNtuplets->nbins());
+        ALPAKA_ASSERT_OFFLOAD(tkid < foundNtuplets->nbins());
 
-        assert(foundNtuplets->size(tkid) == nHits);
+        ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(tkid) == nHits);
 
         Rfit::Map3xNd<N> hits(phits + local_idx);
         Rfit::Map4d fast_fit(pfast_fit + local_idx);
@@ -111,10 +111,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         BrokenLine::BL_Fast_fit(hits, fast_fit);
 
         // no NaN here....
-        assert(fast_fit(0) == fast_fit(0));
-        assert(fast_fit(1) == fast_fit(1));
-        assert(fast_fit(2) == fast_fit(2));
-        assert(fast_fit(3) == fast_fit(3));
+        ALPAKA_ASSERT_OFFLOAD(fast_fit(0) == fast_fit(0));
+        ALPAKA_ASSERT_OFFLOAD(fast_fit(1) == fast_fit(1));
+        ALPAKA_ASSERT_OFFLOAD(fast_fit(2) == fast_fit(2));
+        ALPAKA_ASSERT_OFFLOAD(fast_fit(3) == fast_fit(3));
       });
 
     }  // kernel operator()
@@ -132,10 +132,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   double *__restrict__ pfast_fit,
                                   uint32_t nHits,
                                   uint32_t offset) const {
-      assert(N <= nHits);
+      ALPAKA_ASSERT_OFFLOAD(N <= nHits);
 
-      assert(results);
-      assert(pfast_fit);
+      ALPAKA_ASSERT_OFFLOAD(results);
+      ALPAKA_ASSERT_OFFLOAD(pfast_fit);
 
       // same as above...
 

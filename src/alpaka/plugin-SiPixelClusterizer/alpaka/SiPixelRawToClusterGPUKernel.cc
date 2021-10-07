@@ -483,13 +483,13 @@ namespace pixelgpudetails {
     ALPAKA_FN_ACC void operator()(const T_Acc &acc,
                                   uint32_t const *__restrict__ cluStart,
                                   uint32_t *__restrict__ moduleStart) const {
-      assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
+      ALPAKA_ASSERT_OFFLOAD(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
 
 #ifndef NDEBUG
       const uint32_t blockIdxLocal(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      assert(0 == blockIdxLocal);
+      ALPAKA_ASSERT_OFFLOAD(0 == blockIdxLocal);
       const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-      assert(1 == gridDimension);
+      ALPAKA_ASSERT_OFFLOAD(1 == gridDimension);
 #endif
 
       // limit to MaxHitsInModule;
@@ -507,17 +507,17 @@ namespace pixelgpudetails {
       alpaka::syncBlockThreads(acc);
 
 #ifdef GPU_DEBUG
-      assert(0 == moduleStart[0]);
+      ALPAKA_ASSERT_OFFLOAD(0 == moduleStart[0]);
       auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart[0]);
-      assert(c0 == moduleStart[1]);
-      assert(moduleStart[1024] >= moduleStart[1023]);
-      assert(moduleStart[1025] >= moduleStart[1024]);
-      assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
+      ALPAKA_ASSERT_OFFLOAD(c0 == moduleStart[1]);
+      ALPAKA_ASSERT_OFFLOAD(moduleStart[1024] >= moduleStart[1023]);
+      ALPAKA_ASSERT_OFFLOAD(moduleStart[1025] >= moduleStart[1024]);
+      ALPAKA_ASSERT_OFFLOAD(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
       //for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
       cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
         if (0 != i)
-          assert(moduleStart[i] >= moduleStart[i - i]);
+          ALPAKA_ASSERT_OFFLOAD(moduleStart[i] >= moduleStart[i - i]);
         // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
         // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
         if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
@@ -578,7 +578,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const WorkDiv1 &workDiv =
             cms::alpakatools::make_workdiv(Vec1::all(blocks), Vec1::all(threadsPerBlockOrElementsPerThread));
 
-        assert(0 == wordCounter % 2);
+        ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
         auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.

@@ -91,7 +91,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // for GPU
       // first 150 index stores the fedId and next 150 will store the
       // start index of word in that fed
-      assert(fedId >= 1200);
+      ALPAKA_ASSERT_OFFLOAD(fedId >= 1200);
       fedCounter++;
 
       // get event data for this fed
@@ -131,7 +131,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const uint32_t* bw = (const uint32_t*)(header + 1);
       const uint32_t* ew = (const uint32_t*)(trailer);
 
-      assert(0 == (ew - bw) % 2);
+      ALPAKA_ASSERT_OFFLOAD(0 == (ew - bw) % 2);
       wordFedAppender_->initializeWordFed(fedId, wordCounterGPU, bw, (ew - bw));
       wordCounterGPU += (ew - bw);
 

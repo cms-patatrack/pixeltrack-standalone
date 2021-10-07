@@ -85,10 +85,10 @@ namespace cms {
       auto& ibs = alpaka::declareSharedVar<int, __COUNTER__>(acc);
       auto& p = alpaka::declareSharedVar<int, __COUNTER__>(acc);
 
-      assert(size > 0);
+      ALPAKA_ASSERT_OFFLOAD(size > 0);
 
       const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
-      assert(blockDimension >= sb);
+      ALPAKA_ASSERT_OFFLOAD(blockDimension >= sb);
 
       // bool debug = false; // threadIdx.x==0 && blockIdx.x==5;
 
@@ -190,7 +190,7 @@ namespace cms {
     */
 
         alpaka::syncBlockThreads(acc);
-        assert(c[0] == 0);
+        ALPAKA_ASSERT_OFFLOAD(c[0] == 0);
 
         // swap (local, ok)
         auto t = j;
@@ -204,7 +204,7 @@ namespace cms {
       }
 
       if ((w != 8) && (0 == (NS & 1)))
-        assert(j == ind);  // w/d is even so ind is correct
+        ALPAKA_ASSERT_OFFLOAD(j == ind);  // w/d is even so ind is correct
 
       if (j != ind)  // odd...
         cms::alpakatools::for_each_element_in_block_strided(acc, size, [&](uint32_t i) { ind[i] = ind2[i]; });

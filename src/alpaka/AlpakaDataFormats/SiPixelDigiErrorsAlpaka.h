@@ -18,8 +18,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           formatterErrors_h{std::move(errors)} {
       auto perror_h = alpaka::getPtrNative(error_h);
       perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));
-      assert(perror_h->empty());
-      assert(perror_h->capacity() == static_cast<int>(maxFedWords));
+      ALPAKA_ASSERT_OFFLOAD(perror_h->empty());
+      ALPAKA_ASSERT_OFFLOAD(perror_h->capacity() == static_cast<int>(maxFedWords));
 
       // TO DO: nothing really async in here for now... Pass the queue in constructor argument instead, and don't wait anymore!
       Queue queue(device);

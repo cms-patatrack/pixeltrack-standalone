@@ -73,7 +73,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     CellNeighbors* cellNeighborsContainer,
                                     CellTracksVector* cellTracks,
                                     CellTracks* cellTracksContainer) const {
-        assert(isOuterHitOfCell);
+        ALPAKA_ASSERT_OFFLOAD(isOuterHitOfCell);
         cms::alpakatools::for_each_element_in_grid_strided(
             acc, nHits, [&](uint32_t i) { isOuterHitOfCell[i].reset(); });
 
@@ -83,11 +83,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
           auto i = cellNeighbors->extend(
               acc);  // NB: Increases cellNeighbors size by 1, returns previous size which should be 0.
-          assert(0 == i);
+          ALPAKA_ASSERT_OFFLOAD(0 == i);
           (*cellNeighbors)[0].reset();
           auto ii =
               cellTracks->extend(acc);  // NB: Increases cellTracks size by 1, returns previous size which should be 0.
-          assert(0 == ii);
+          ALPAKA_ASSERT_OFFLOAD(0 == ii);
           (*cellTracks)[0].reset();
         }
       }  // initDoublets kernel operator()

@@ -52,8 +52,8 @@ namespace cms {
       uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
-      assert(size <= 1024);
-      assert(0 == blockDimension % 32);
+      ALPAKA_ASSERT_OFFLOAD(size <= 1024);
+      ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
       auto mask = __ballot_sync(0xffffffff, first < size);
       auto laneId = blockThreadIdx & 0x1f;
@@ -61,7 +61,7 @@ namespace cms {
       for (auto i = first; i < size; i += blockDimension) {
         warpPrefixScan(laneId, ci, co, i, mask);
         auto warpId = i / 32;
-        assert(warpId < 32);
+        ALPAKA_ASSERT_OFFLOAD(warpId < 32);
         if (31 == laneId)
           ws[warpId] = co[i];
         mask = __ballot_sync(mask, i + blockDimension < size);
@@ -100,8 +100,8 @@ namespace cms {
       uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
-      assert(size <= 1024);
-      assert(0 == blockDimension % 32);
+      ALPAKA_ASSERT_OFFLOAD(size <= 1024);
+      ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
       auto mask = __ballot_sync(0xffffffff, first < size);
       auto laneId = blockThreadIdx & 0x1f;
@@ -109,7 +109,7 @@ namespace cms {
       for (auto i = first; i < size; i += blockDimension) {
         warpPrefixScan(laneId, c, i, mask);
         auto warpId = i / 32;
-        assert(warpId < 32);
+        ALPAKA_ASSERT_OFFLOAD(warpId < 32);
         if (31 == laneId)
           ws[warpId] = c[i];
         mask = __ballot_sync(mask, i + blockDimension < size);
@@ -145,7 +145,7 @@ namespace cms {
         // first each block does a scan of size 1024; (better be enough blocks....)
 #ifndef NDEBUG
         uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
-        assert(gridDimension / threadDimension <= 1024);
+        ALPAKA_ASSERT_OFFLOAD(gridDimension / threadDimension <= 1024);
 #endif
         int off = blockDimension * blockIdx * threadDimension;
         if (size - off > 0)
@@ -166,7 +166,7 @@ namespace cms {
         auto* const psum(alpaka::getDynSharedMem<T>(acc));
 
         // first each block does a scan of size 1024; (better be enough blocks....)
-        assert(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
+        ALPAKA_ASSERT_OFFLOAD(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
 

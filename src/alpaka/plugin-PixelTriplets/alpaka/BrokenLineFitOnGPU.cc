@@ -8,7 +8,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                               uint32_t hitsInFit,
                                               uint32_t maxNumberOfTuples,
                                               Queue& queue) {
-    assert(tuples_d);
+    ALPAKA_ASSERT_OFFLOAD(tuples_d);
 
     const auto blockSize = 64;
     const auto numberOfBlocks = (maxNumberOfConcurrentFits_ + blockSize - 1) / blockSize;

@@ -66,8 +66,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                apc->get().n,
                nHits);
         if (apc->get().m < CAConstants::maxNumberOfQuadruplets()) {
-          assert(foundNtuplets->size(apc->get().m) == 0);
-          assert(foundNtuplets->size() == apc->get().n);
+          ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(apc->get().m) == 0);
+          ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size() == apc->get().n);
         }
       }
 
@@ -75,9 +75,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cms::alpakatools::for_each_element_in_grid_strided(acc, ntNbins, [&](uint32_t idx) {
         if (foundNtuplets->size(idx) > 5)
           printf("ERROR %d, %d\n", idx, foundNtuplets->size(idx));
-        assert(foundNtuplets->size(idx) < 6);
+        ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(idx) < 6);
         for (auto ih = foundNtuplets->begin(idx); ih != foundNtuplets->end(idx); ++ih)
-          assert(*ih < nHits);
+          ALPAKA_ASSERT_OFFLOAD(*ih < nHits);
       });
 #endif
 
@@ -145,7 +145,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       constexpr auto dup = trackQuality::dup;
       // constexpr auto loose = trackQuality::loose;
 
-      assert(nCells);
+      ALPAKA_ASSERT_OFFLOAD(nCells);
       const auto ntNCells = (*nCells);
       cms::alpakatools::for_each_element_in_grid_strided(acc, ntNCells, [&](uint32_t idx) {
         auto const &thisCell = cells[idx];
@@ -182,7 +182,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       constexpr auto dup = trackQuality::dup;
       constexpr auto loose = trackQuality::loose;
 
-      assert(nCells);
+      ALPAKA_ASSERT_OFFLOAD(nCells);
 
       cms::alpakatools::for_each_element_in_grid_strided(acc, (*nCells), [&](uint32_t idx) {
         auto const &thisCell = cells[idx];
@@ -329,7 +329,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             stack.reset();
             thisCell.find_ntuplets(
                 acc, hh, cells, *cellTracks, *foundNtuplets, *apc, quality, stack, minHitsPerNtuplet, pid < 3);
-            assert(stack.empty());
+            ALPAKA_ASSERT_OFFLOAD(stack.empty());
             // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());
           }
         }
@@ -361,10 +361,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cms::alpakatools::for_each_element_in_grid_strided(acc, foundNtuplets->nbins(), [&](uint32_t it) {
         auto nhits = foundNtuplets->size(it);
         if (nhits >= 3 && quality[it] != trackQuality::dup) {
-          assert(quality[it] == trackQuality::bad);
+          ALPAKA_ASSERT_OFFLOAD(quality[it] == trackQuality::bad);
           if (nhits > 5)
             printf("wrong mult %d %d\n", it, nhits);
-          assert(nhits < 8);
+          ALPAKA_ASSERT_OFFLOAD(nhits < 8);
           tupleMultiplicity->countDirect(acc, nhits);
         }
       });
@@ -380,10 +380,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       cms::alpakatools::for_each_element_in_grid_strided(acc, foundNtuplets->nbins(), [&](uint32_t it) {
         auto nhits = foundNtuplets->size(it);
         if (nhits >= 3 && quality[it] != trackQuality::dup) {
-          assert(quality[it] == trackQuality::bad);
+          ALPAKA_ASSERT_OFFLOAD(quality[it] == trackQuality::bad);
           if (nhits > 5)
             printf("wrong mult %d %d\n", it, nhits);
-          assert(nhits < 8);
+          ALPAKA_ASSERT_OFFLOAD(nhits < 8);
           tupleMultiplicity->fillDirect(acc, nhits, it);
         }
       });
@@ -405,7 +405,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // if duplicate: not even fit
         // mark doublets as bad
         if (quality[it] != trackQuality::dup && nhits >= 3) {
-          assert(quality[it] == trackQuality::bad);
+          ALPAKA_ASSERT_OFFLOAD(quality[it] == trackQuality::bad);
 
           // if the fit has any invalid parameters, mark it as bad
           bool isNaN = false;
@@ -522,7 +522,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto nhits = hh.nHits();
 #endif
       cms::alpakatools::for_each_element_in_grid_strided(acc, tuples->size(), [&](uint32_t idx) {
-        assert(tuples->bins[idx] < nhits);
+        ALPAKA_ASSERT_OFFLOAD(tuples->bins[idx] < nhits);
         hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
       });
     }
