@@ -12,6 +12,7 @@ import multiprocessing
 
 # Make CUDA_VISIBLE_DEVICES order match to nvidia-smi
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # Number of events for each application
 n_events_unit = 1000
