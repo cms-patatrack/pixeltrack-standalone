@@ -11,12 +11,13 @@
 
 namespace edm {
   EventProcessor::EventProcessor(int maxEvents,
+                                 int runForMinutes,
                                  int numberOfStreams,
                                  std::vector<std::string> const& path,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
                                  bool validation)
-      : source_(maxEvents, registry_, datadir, validation) {
+      : source_(maxEvents, runForMinutes, registry_, datadir, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
@@ -30,6 +31,7 @@ namespace edm {
   }
 
   void EventProcessor::runToCompletion() {
+    source_.startProcessing();
 #ifdef KOKKOS_ENABLE_THREADS
     for (auto& s : schedules_) {
       s.runToCompletion();
