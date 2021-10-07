@@ -3,7 +3,7 @@
 
 #include <utility>
 
-#include <cuda_runtime.h>
+#include "CUDACore/cudaCompat.h"
 
 // reimplementation of std algorithms able to compile with CUDA and run on GPUs,
 // mostly by declaringthem constexpr

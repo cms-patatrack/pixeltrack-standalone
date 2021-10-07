@@ -1,7 +1,7 @@
 #ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 
-#include <cuda_runtime.h>
+#include "CUDACore/cudaCompat.h"
 
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/HistoContainer.h"

@@ -9,8 +9,6 @@
 
 #include <tbb/task_scheduler_init.h>
 
-#include <cuda_runtime.h>
-
 #include "EventProcessor.h"
 
 namespace {
@@ -79,15 +77,6 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-
-  // TODO: remove when can run without a GPU
-  int numberOfDevices;
-  auto status = cudaGetDeviceCount(&numberOfDevices);
-  if (cudaSuccess != status) {
-    std::cout << "Failed to initialize the CUDA runtime";
-    return EXIT_FAILURE;
-  }
-  std::cout << "Found " << numberOfDevices << " devices" << std::endl;
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;

@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
-#include <cuda_runtime.h>
+#include "CUDACore/cudaCompat.h"
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"

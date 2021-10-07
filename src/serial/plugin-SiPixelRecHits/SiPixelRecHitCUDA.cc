@@ -1,5 +1,3 @@
-#include <cuda_runtime.h>
-
 #include "CUDADataFormats/SiPixelClustersSoA.h"
 #include "CUDADataFormats/SiPixelDigisSoA.h"
 #include "CUDADataFormats/TrackingRecHit2DHeterogeneous.h"

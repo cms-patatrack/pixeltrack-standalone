@@ -7,7 +7,7 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
-#include <cuda_runtime.h>
+#include "CUDACore/cudaCompat.h"
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/VecArray.h"
