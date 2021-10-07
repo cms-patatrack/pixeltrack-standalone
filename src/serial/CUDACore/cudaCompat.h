@@ -11,18 +11,23 @@
 #include <cstdint>
 #include <cstring>
 
-// include the CUDA runtime header to define some of the attributes, types and sybols also on the CPU
-#include <cuda_runtime.h>
-
 // make sure function are inlined to avoid multiple definition
-#undef __global__
 #define __global__ inline __attribute__((always_inline))
 
-#undef __forceinline__
 #define __forceinline__ inline __attribute__((always_inline))
+
+#define __host__
+#define __device__
+#define __shared__
+
+using cudaStream_t = void*;
+constexpr cudaStream_t cudaStreamDefault = nullptr;
 
 namespace cms {
   namespace cudacompat {
+    struct dim3 {
+      uint32_t x, y, z;
+    };
 
     const dim3 threadIdx = {0, 0, 0};
     const dim3 blockDim = {1, 1, 1};
@@ -86,6 +91,8 @@ namespace cms {
 
 // make the cudacompat implementation available in the global namespace
 using namespace cms::cudacompat;
+
+
 
 #endif  // __CUDACC__
 
