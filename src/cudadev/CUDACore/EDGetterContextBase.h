@@ -1,9 +1,11 @@
 #ifndef HeterogeneousCore_CUDACore_EDGetterContextBase_h
 #define HeterogeneousCore_CUDACore_EDGetterContextBase_h
 
+#include "CUDACore/ESProductNew.h"
 #include "CUDACore/FwkContextBase.h"
 #include "CUDACore/Product.h"
 #include "Framework/EDGetToken.h"
+#include "Framework/EventSetup.h"
 
 namespace cms::cuda::impl {
   /**
@@ -24,6 +26,11 @@ namespace cms::cuda::impl {
     template <typename T>
     const T& get(const edm::Event& iEvent, edm::EDGetTokenT<Product<T>> token) {
       return get(iEvent.get(token));
+    }
+
+    template <typename T>
+    const T& getData(const edm::EventSetup& iSetup) {
+      return iSetup.get<cms::cudaNew::ESProduct<T>>().get(device(), stream());
     }
 
   protected:
