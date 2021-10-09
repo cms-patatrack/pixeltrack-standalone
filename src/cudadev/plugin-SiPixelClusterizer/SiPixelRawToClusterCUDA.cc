@@ -68,15 +68,15 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
 void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
                                       cms::cuda::AcquireContext& ctx) {
-  auto const& hgpuMap = iSetup.get<SiPixelROCsStatusAndMappingWrapper>();
+  auto const& hgpuMap = ctx.getData<SiPixelROCsStatusAndMappingWrapper>(iSetup);
   if (hgpuMap.hasQuality() != useQuality_) {
     throw std::runtime_error(
         "UseQuality of the module (" + std::to_string(useQuality_) +
         ") differs the one from SiPixelROCsStatusAndMappingWrapper. Please fix your configuration.");
   }
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
-  const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
+  const auto* gpuMap = hgpuMap.getSiPixelROCsStatusAndMapping();
+  const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAll();
 
   const auto* gpuGains = ctx.getData<SiPixelGainCalibrationForHLTGPU>(iSetup).get();
 
