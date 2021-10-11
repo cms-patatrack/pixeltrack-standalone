@@ -3,39 +3,31 @@
 
 #include <utility>
 
-#include "CUDACore/ESProduct.h"
-#include "CUDACore/HostAllocator.h"
 #include "CondFormats/pixelCPEforGPU.h"
+#include "CUDACore/device_unique_ptr.h"
+#include "CUDACore/host_unique_ptr.h"
 
 class PixelCPEFast {
 public:
-  PixelCPEFast(std::string const &path);
+  PixelCPEFast(cms::cuda::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> gpuData,
+               cms::cuda::device::unique_ptr<pixelCPEforGPU::CommonParams> commonParams,
+               cms::cuda::device::unique_ptr<pixelCPEforGPU::DetParams[]> detParams,
+               cms::cuda::device::unique_ptr<pixelCPEforGPU::LayerGeometry> layerGeometry,
+               cms::cuda::device::unique_ptr<pixelCPEforGPU::AverageGeometry> averageGeometry)
+      : gpuData_(std::move(gpuData)),
+        commonParams_(std::move(commonParams)),
+        detParams_(std::move(detParams)),
+        layerGeometry_(std::move(layerGeometry)),
+        averageGeometry_(std::move(averageGeometry)) {}
 
-  ~PixelCPEFast() = default;
-
-  // The return value can only be used safely in kernels launched on
-  // the same cudaStream, or after cudaStreamSynchronize.
-  const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(cudaStream_t cudaStream) const;
-
-  pixelCPEforGPU::ParamsOnGPU const &getCPUProduct() const { return cpuData_; }
+  const pixelCPEforGPU::ParamsOnGPU *params() const { return gpuData_.get(); }
 
 private:
-  // allocate this with posix malloc to be compatible with the cpu workflow
-  std::vector<pixelCPEforGPU::DetParams> detParamsGPU_;
-  pixelCPEforGPU::CommonParams commonParamsGPU_;
-  pixelCPEforGPU::LayerGeometry layerGeometry_;
-  pixelCPEforGPU::AverageGeometry averageGeometry_;
-  pixelCPEforGPU::ParamsOnGPU cpuData_;
-
-  struct GPUData {
-    ~GPUData();
-    // not needed if not used on CPU...
-    pixelCPEforGPU::ParamsOnGPU paramsOnGPU_h;
-    pixelCPEforGPU::ParamsOnGPU *paramsOnGPU_d = nullptr;  // copy of the above on the Device
-  };
-  cms::cuda::ESProduct<GPUData> gpuData_;
-
-  void fillParamsForGpu();
+  cms::cuda::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> gpuData_;
+  cms::cuda::device::unique_ptr<pixelCPEforGPU::CommonParams> commonParams_;
+  cms::cuda::device::unique_ptr<pixelCPEforGPU::DetParams[]> detParams_;
+  cms::cuda::device::unique_ptr<pixelCPEforGPU::LayerGeometry> layerGeometry_;
+  cms::cuda::device::unique_ptr<pixelCPEforGPU::AverageGeometry> averageGeometry_;
 };
 
 #endif  // RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h

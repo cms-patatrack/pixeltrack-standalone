@@ -2,6 +2,7 @@
 
 #include "CUDADataFormats/BeamSpotCUDA.h"
 #include "CUDACore/EDProducer.h"
+#include "CUDACore/ESProductNew.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -36,14 +37,13 @@ SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
       tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
 
 void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es, cms::cuda::ProduceContext& ctx) {
-  PixelCPEFast const& fcpe = es.get<PixelCPEFast>();
+  PixelCPEFast const& fcpe = ctx.getData<PixelCPEFast>(es);
 
   auto const& clusters = ctx.get(iEvent, token_);
   auto const& digis = ctx.get(iEvent, tokenDigi_);
   auto const& bs = ctx.get(iEvent, tBeamSpot);
 
-  ctx.emplace(
-      iEvent, tokenHit_, gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.getGPUProductAsync(ctx.stream()), ctx));
+  ctx.emplace(iEvent, tokenHit_, gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params(), ctx));
 }
 
 DEFINE_FWK_MODULE(SiPixelRecHitCUDA);
