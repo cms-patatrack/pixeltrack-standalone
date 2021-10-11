@@ -22,4 +22,5 @@
 /fwtest
 /kokkos
 /kokkostest
+/serial
 /sycltest

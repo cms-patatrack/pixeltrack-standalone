@@ -17,6 +17,7 @@ n_blocks_per_stream = {
     "cudadev": {"": 100, "transfer": 100},
     "cudauvm": {"": 100, "transfer": 100},
     "cudacompat": {"": 8},
+    "serial": {"": 8},
 }
 
 # 30 ev/s * 8 hours should the sufficent and fit into signed int for ~2k threads
@@ -80,7 +81,7 @@ def launchBackground(opts, cores_bkg, logfile):
         return None
     nev = background_events_per_thread * nth
     taskset = []
-    exe = os.path.join(os.path.dirname(opts.program), "cudacompat")
+    exe = os.path.join(os.path.dirname(opts.program), "serial")
     command = [exe, "--maxEvents", str(nev), "--numberOfThreads", str(nth)]
     if opts.taskset:
         taskset = ["taskset", "-c", ",".join(cores_bkg)]
@@ -93,8 +94,8 @@ def launchBackground(opts, cores_bkg, logfile):
     if opts.dryRun:
         print(" ".join(taskset+command))
         return None
-    cudacompat = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
-    return cudacompat
+    serial = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
+    return serial
 
 def main(opts):
     ncores = multiprocessing.cpu_count()
@@ -168,7 +169,7 @@ def main(opts):
         with open(opts.output+"_log_nstr{}_nth{}_bkg.txt".format(nstr, nth), "w") as bkglogfile:
             backgroundJob = launchBackground(opts, cores_bkg, bkglogfile)
             if backgroundJob is not None:
-                msg = "Background cudacompat pid {}".format(backgroundJob.pid)
+                msg = "Background serial pid {}".format(backgroundJob.pid)
                 if opts.taskset:
                     msg +=", running on cores " + ",".join(cores_bkg)
                 printMessage(msg)
@@ -195,7 +196,7 @@ def main(opts):
                             print("--------------------")
             finally:
                 if backgroundJob is not None:
-                    printMessage("Run complete, terminating background cudacompat")
+                    printMessage("Run complete, terminating background serial")
                     try:
                         backgroundJob.terminate()
                     except OSError:
@@ -244,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--tasksetCores", type=str, default="",
                         help="Comma-separated list of cores to be used for taskset in that order. Default (empty) is to use range(0, N(cores))")
     parser.add_argument("--fill", type=int, default=-1,
-                        help="Launch cudacompat program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
+                        help="Launch serial program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
     parser.add_argument("--bkgNice", type=int, default=None,
                         help="If given, use this 'nice' level for the background program")
     parser.add_argument("--minThreads", type=int, default=1,

@@ -8,6 +8,7 @@
   * [Additional make targets](#additional-make-targets)
   * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
     * [`fwtest`](#fwtest)
+    * [`serial`](#serial)
     * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
@@ -61,6 +62,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | Application  | [TBB](https://github.com/intel/tbb) | [Eigen](http://eigen.tuxfamily.org/) | [Kokkos](https://github.com/kokkos/kokkos) | [Boost](https://www.boost.org/) (1) | [Alpaka](https://github.com/alpaka-group/alpaka) | [libbacktrace](https://github.com/ianlancetaylor/libbacktrace) | [hwloc](https://www.open-mpi.org/projects/hwloc/) |
 |--------------|-------------------------------------|--------------------------------------|--------------------------------------------|-------------------------------------|--------------------------------------------------|----------------------------------------------------------------|---------------------------------------------------|
 | `fwtest`     | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |                                                                |                                                   |
+| `serial`     | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 | `cudatest`   | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 | `cuda`       | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 | `cudadev`    | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
@@ -90,11 +92,12 @@ downloaded automatically during the build process.
 | Application  | Description                      | Framework          | Device framework   | Test code          | Raw2Cluster        | RecHit             | Pixel tracking     | Vertex             | Transfers to CPU   | Validation code    | Validated          |
 |--------------|----------------------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|--------------------|
 | `fwtest`     | Framework test                   | :heavy_check_mark: |                    | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `serial`     | CPU version (via `cudaCompat`)   | :heavy_check_mark: |                    |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudatest`   | CUDA FW test                     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `cuda`       | CUDA version (frozen)            | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudadev`    | CUDA version (development)       | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | `cudauvm`    | CUDA version with managed memory | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| `cudacompat` | CPU version (with `cudaCompat`)  | :heavy_check_mark: | :heavy_check_mark: |                    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| `cudacompat` | `cudaCompat` version             | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :heavy_check_mark: |
 | `hiptest`    | HIP FW test                      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `hip`        | HIP version                      | :heavy_check_mark: | :heavy_check_mark: |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
 | `kokkostest` | Kokkos FW test                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
@@ -170,6 +173,14 @@ The printouts can be disabled at compile with with
 ```
 make fwtest ... USER_CXXFLAGS="-DFWTEST_SILENT"
 ```
+
+#### `serial`
+
+This program is a fork of `cudacompat` by removing all dependencies to
+CUDA in order to be a "pure CPU" version. Note that the name refers to
+(the absence of) intra-algorithm parallelization and is thus
+comparable to the Serial backend of Alpaka or Kokkos. The event-level
+parallelism is implemented as in `fwtest`.
 
 #### `cudatest`
 
