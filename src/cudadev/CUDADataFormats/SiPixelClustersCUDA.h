@@ -4,12 +4,22 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
 #include "CUDACore/cudaCompat.h"
+#include "DataFormats/SoAStore.h"
 
 #include <cuda_runtime.h>
 
 class SiPixelClustersCUDA {
 public:
-  SiPixelClustersCUDA() = default;
+  generate_SoA_store(DeviceStore,
+    SoA_column(uint32_t, moduleStart),  // index of the first pixel of each module
+    SoA_column(uint32_t, clusInModule), // number of clusters found in each module
+    SoA_column(uint32_t, moduleId),     // module id of each module
+
+    // originally from rechits
+    SoA_column(uint32_t, clusModuleStart) // index of the first cluster of each module
+  );
+
+  explicit SiPixelClustersCUDA();
   explicit SiPixelClustersCUDA(size_t maxModules, cudaStream_t stream);
   ~SiPixelClustersCUDA() = default;
 
@@ -22,41 +32,21 @@ public:
 
   uint32_t nClusters() const { return nClusters_h; }
 
-  uint32_t *moduleStart() { return moduleStart_d.get(); }
-  uint32_t *clusInModule() { return clusInModule_d.get(); }
-  uint32_t *moduleId() { return moduleId_d.get(); }
-  uint32_t *clusModuleStart() { return clusModuleStart_d.get(); }
+  uint32_t *moduleStart() { return deviceStore_.moduleStart(); }
+  uint32_t *clusInModule() { return deviceStore_.clusInModule(); }
+  uint32_t *moduleId() { return deviceStore_.moduleId(); }
+  uint32_t *clusModuleStart() { return deviceStore_.clusModuleStart(); }
 
-  uint32_t const *moduleStart() const { return moduleStart_d.get(); }
-  uint32_t const *clusInModule() const { return clusInModule_d.get(); }
-  uint32_t const *moduleId() const { return moduleId_d.get(); }
-  uint32_t const *clusModuleStart() const { return clusModuleStart_d.get(); }
+  uint32_t const *moduleStart() const { return deviceStore_.moduleStart(); }
+  uint32_t const *clusInModule() const { return deviceStore_.clusInModule(); }
+  uint32_t const *moduleId() const { return deviceStore_.moduleId(); }
+  uint32_t const *clusModuleStart() const { return deviceStore_.clusModuleStart(); }
 
-  class DeviceConstView {
-  public:
-    __device__ __forceinline__ uint32_t moduleStart(int i) const { return __ldg(moduleStart_ + i); }
-    __device__ __forceinline__ uint32_t clusInModule(int i) const { return __ldg(clusInModule_ + i); }
-    __device__ __forceinline__ uint32_t moduleId(int i) const { return __ldg(moduleId_ + i); }
-    __device__ __forceinline__ uint32_t clusModuleStart(int i) const { return __ldg(clusModuleStart_ + i); }
-
-    uint32_t const *moduleStart_;
-    uint32_t const *clusInModule_;
-    uint32_t const *moduleId_;
-    uint32_t const *clusModuleStart_;
-  };
-
-  DeviceConstView *view() const { return view_d.get(); }
+  const DeviceStore store() const { return deviceStore_; }
 
 private:
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleStart_d;   // index of the first pixel of each module
-  cms::cuda::device::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
-
-  // originally from rechits
-  cms::cuda::device::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
-
-  cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
-
+  cms::cuda::device::unique_ptr<std::byte[]> data_d;         // Single SoA storage
+  DeviceStore deviceStore_;
   uint32_t nClusters_h = 0;
 };
 

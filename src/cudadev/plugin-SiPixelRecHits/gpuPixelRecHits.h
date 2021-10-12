@@ -18,7 +18,7 @@ namespace gpuPixelRecHits {
                           BeamSpotPOD const* __restrict__ bs,
                           SiPixelDigisCUDA::DeviceConstView const* __restrict__ pdigis,
                           int numElements,
-                          SiPixelClustersCUDA::DeviceConstView const* __restrict__ pclusters,
+                          SiPixelClustersCUDA::DeviceStore const pclusters,
                           TrackingRecHit2DSOAView* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
@@ -31,7 +31,7 @@ namespace gpuPixelRecHits {
     auto& hits = *phits;
 
     auto const digis = *pdigis;  // the copy is intentional!
-    auto const& clusters = *pclusters;
+    auto const& clusters = pclusters;
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
     if (0 == blockIdx.x) {
@@ -62,8 +62,8 @@ namespace gpuPixelRecHits {
     // as usual one block per module
     __shared__ ClusParams clusParams;
 
-    auto me = clusters.moduleId(blockIdx.x);
-    int nclus = clusters.clusInModule(me);
+    auto me = clusters[blockIdx.x].moduleId();
+    int nclus = clusters[me].clusInModule();
 
     if (0 == nclus)
       return;
@@ -108,7 +108,7 @@ namespace gpuPixelRecHits {
       __syncthreads();
 
       // one thread per "digi"
-      auto first = clusters.moduleStart(1 + blockIdx.x) + threadIdx.x;
+      auto first = clusters[1 + blockIdx.x].moduleStart() + threadIdx.x;
       for (int i = first; i < numElements; i += blockDim.x) {
         auto id = digis.moduleInd(i);
         if (id == invalidModuleId)
@@ -164,12 +164,12 @@ namespace gpuPixelRecHits {
 
       // next one cluster per thread...
 
-      first = clusters.clusModuleStart(me) + startClus;
+      first = clusters[me].clusModuleStart() + startClus;
       for (int ic = threadIdx.x; ic < nClusInIter; ic += blockDim.x) {
         auto h = first + ic;  // output index in global memory
 
         assert(h < hits.nHits());
-        assert(h < clusters.clusModuleStart(me + 1));
+        assert(h < clusters[me + 1].clusModuleStart());
 
         pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
         pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
