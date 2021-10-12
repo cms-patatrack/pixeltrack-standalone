@@ -31,16 +31,14 @@ namespace cms::cuda {
     return ptr;
   }
 
-  void free_device(int device, void *ptr, cudaStream_t stream) {
+  void free_device(void *ptr, cudaStream_t stream) {
     if constexpr (allocator::policy == allocator::Policy::Caching) {
-      allocator::getCachingDeviceAllocator().free(device, ptr);
+      allocator::getCachingDeviceAllocator().free(ptr);
 #if CUDA_VERSION >= 11020
     } else if constexpr (allocator::policy == allocator::Policy::Asynchronous) {
-      ScopedSetDevice setDeviceForThisScope(device);
       cudaCheck(cudaFreeAsync(ptr, stream));
 #endif
     } else {
-      ScopedSetDevice setDeviceForThisScope(device);
       cudaCheck(cudaFree(ptr));
     }
   }

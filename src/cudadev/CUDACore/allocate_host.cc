@@ -26,7 +26,7 @@ namespace cms::cuda {
 
   void free_host(void *ptr) {
     if constexpr (allocator::policy == allocator::Policy::Caching) {
-      allocator::getCachingHostAllocator().free(allocator::HostTraits::kHostDevice, ptr);
+      allocator::getCachingHostAllocator().free(ptr);
     } else {
       cudaCheck(cudaFreeHost(ptr));
     }

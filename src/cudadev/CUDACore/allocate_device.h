@@ -9,7 +9,7 @@ namespace cms {
     void *allocate_device(size_t nbytes, cudaStream_t stream);
 
     // Free device memory (to be called from unique_ptr)
-    void free_device(int device, void *ptr, cudaStream_t stream);
+    void free_device(void *ptr, cudaStream_t stream);
   }  // namespace cuda
 }  // namespace cms
 

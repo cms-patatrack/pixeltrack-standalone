@@ -147,17 +147,14 @@ public:
   }
 
   // Frees an allocation
-  void free(DeviceType deviceEvent, void* ptr) {
+  void free(void* ptr) {
     bool recache = false;
     BlockDescriptor searchKey;
-    searchKey.device = deviceEvent;
+    searchKey.device = Traits::kInvalidDevice;  // The search into liveBlocks is determined only by ptr.
     searchKey.ptr = ptr;
 
-    // The deviceEvent argument is used as part of the search key to
-    // liveBlocks. Whether it is actually used (or makes sense)
-    // depends on the Traits class. The actual device where the event
-    // resides is really obtained from the live block itself. This
-    // variable points to the "memory device" that is derived from the
+    // The device where the event resides is then from the live block itself.
+    // This variable points to the "memory device" that is derived from the
     // "event device" of the live block.
     DeviceType device;
 
@@ -193,7 +190,6 @@ public:
     }
 
     if (not recache) {
-      auto scopedSetDevice = Traits::setDevice(searchKey.device);
       Traits::free(ptr);
       Traits::destroyEvent(searchKey.readyEvent);
       if (debug_) {
@@ -220,7 +216,8 @@ private:
     EventType readyEvent;
 
     static bool PtrCompare(BlockDescriptor const& a, BlockDescriptor const& b) {
-      return Traits::deviceCompare(a.device, b.device, [&a, &b]() { return a.ptr < b.ptr; });
+      // All supported backends are assumed to support unified addressing across all devices
+      return a.ptr < b.ptr;
     }
 
     static bool SizeCompare(BlockDescriptor const& a, BlockDescriptor const& b) {
@@ -317,8 +314,8 @@ private:
   }
 
   using Compare = typename std::add_pointer<bool(BlockDescriptor const&, BlockDescriptor const&)>::type;
-  using CachedBlocks = std::multiset<BlockDescriptor, Compare>;  // ordered by size
-  using BusyBlocks = std::multiset<BlockDescriptor, Compare>;    // ordered by ptr
+  using CachedBlocks = std::multiset<BlockDescriptor, Compare>;  // ordered by device and size
+  using BusyBlocks = std::set<BlockDescriptor, Compare>;         // ordered by ptr
 
   mutable std::mutex mutex_;
 
