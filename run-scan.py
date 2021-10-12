@@ -6,6 +6,7 @@ import json
 import time
 import socket
 import argparse
+import statistics
 import subprocess
 import collections
 import multiprocessing
@@ -372,9 +373,12 @@ def main(opts):
                     backgroundJob.wait()
 
         thr = 0
+        stdev = 0
         if len(throughputs) > 0:
-            thr = sum(throughputs)/len(throughputs)
-        printMessage("Number of streams %d threads %d, average throughput %f" % (nstr, nth, thr))
+            thr = statistics.mean(throughputs)
+            if len(throughputs) > 1:
+                stdev = statistics.stdev(throughputs)
+        printMessage("Number of streams {} threads {}, average throughput {} stdev {}".format(nstr, nth, thr, stdev))
         print()
         if stop:
             print("Reached max wall time of %d s, stopping scan" % opts.stopAfterWallTime)
