@@ -2,8 +2,9 @@
 #define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 
 #include <cstdint>
-#include "CUDACore/CMSUnrollLoop.h"
+
 #include "AlpakaCore/alpakaConfig.h"
+#include "Framework/CMSUnrollLoop.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
