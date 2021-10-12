@@ -338,6 +338,30 @@ def main(opts):
                             print("--------------------")
                             print(str(e))
                             print("--------------------")
+
+                    if opts.dryRun:
+                        continue
+                    throughputs.append(measurement.throughput)
+                    d = dict(
+                        hostname=hostname,
+                        threads=nth,
+                        streams=nstr,
+                        events=measurement.events,
+                        throughput=measurement.throughput,
+                    )
+                    if monitor.intervalSeconds() is not None:
+                        d["monitor"]=monitor.toArrays()
+                    if len(opts.cudaDevices) > 0:
+                        d["cudaDevices"] = {
+                            x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
+                        }
+                    data["results"].append(d)
+                    # Save results after each test
+                    with open(outputJson, "w") as out:
+                        json.dump(data, out, indent=2)
+                    if opts.stopAfterWallTime > 0 and measurement.time > opts.stopAfterWallTime:
+                        stop = True
+                        break
             finally:
                 if backgroundJob is not None:
                     printMessage("Run complete, terminating background serial")
@@ -346,30 +370,6 @@ def main(opts):
                     except OSError:
                         pass
                     backgroundJob.wait()
-
-            if opts.dryRun:
-                continue
-            throughputs.append(measurement.throughput)
-            d = dict(
-                hostname=hostname,
-                threads=nth,
-                streams=nstr,
-                events=measurement.events,
-                throughput=measurement.throughput,
-            )
-            if monitor.intervalSeconds() is not None:
-                d["monitor"]=monitor.toArrays()
-            if len(opts.cudaDevices) > 0:
-                d["cudaDevices"] = {
-                    x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
-                }
-            data["results"].append(d)
-            # Save results after each test
-            with open(outputJson, "w") as out:
-                json.dump(data, out, indent=2)
-            if opts.stopAfterWallTime > 0 and measurement.time > opts.stopAfterWallTime:
-                stop = True
-                break
 
         thr = 0
         if len(throughputs) > 0:
