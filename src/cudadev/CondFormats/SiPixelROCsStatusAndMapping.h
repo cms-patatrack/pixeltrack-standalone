@@ -1,6 +1,8 @@
 #ifndef CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
 #define CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
 
+#include "DataFormats/SoAStore.h"
+
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
   // Update the number FED based on maximum fed found in the cabling map
@@ -11,15 +13,15 @@ namespace pixelgpudetails {
   constexpr unsigned int MAX_SIZE_BYTE_BOOL = MAX_SIZE * sizeof(unsigned char);
 }  // namespace pixelgpudetails
 
-struct SiPixelROCsStatusAndMapping {
-  alignas(128) unsigned int fed[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int link[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int roc[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int rawId[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int rocInDet[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int moduleId[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned char badRocs[pixelgpudetails::MAX_SIZE];
-  alignas(128) unsigned int size = 0;
-};
+generate_SoA_store(SiPixelROCsStatusAndMapping,
+  SoA_column(unsigned int, fed),
+  SoA_column(unsigned int, link),
+  SoA_column(unsigned int, roc),
+  SoA_column(unsigned int, rawId),
+  SoA_column(unsigned int, rocInDet),
+  SoA_column(unsigned int, moduleId),
+  SoA_column(unsigned char, badRocs),
+  SoA_scalar(unsigned int, size)
+);
 
 #endif  // CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h

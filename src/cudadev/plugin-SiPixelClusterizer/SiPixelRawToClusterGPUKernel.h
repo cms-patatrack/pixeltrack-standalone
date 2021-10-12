@@ -44,12 +44,6 @@ namespace pixelgpudetails {
 
   const uint32_t MAX_WORD = 2000;
 
-  struct DetIdGPU {
-    uint32_t rawId;
-    uint32_t rocInDet;
-    uint32_t moduleId;
-  };
-
   struct Pixel {
     uint32_t row;
     uint32_t col;
@@ -141,7 +135,7 @@ namespace pixelgpudetails {
 
     void makeClustersAsync(bool isRun2,
                            const SiPixelClusterThresholds clusterThresholds,
-                           const SiPixelROCsStatusAndMapping* cablingMap,
+                           const SiPixelROCsStatusAndMapping &cablingMap,
                            const unsigned char* modToUnp,
                            const SiPixelGainForHLTonGPU* gains,
                            const WordFedAppender& wordFed,
