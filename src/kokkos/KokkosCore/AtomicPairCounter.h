@@ -11,7 +11,7 @@ namespace cms {
     public:
       using c_type = unsigned long long int;
 
-      KOKKOS_INLINE_FUNCTION AtomicPairCounter() {}
+      KOKKOS_INLINE_FUNCTION AtomicPairCounter() { counter.ac = 0; }
       KOKKOS_INLINE_FUNCTION AtomicPairCounter(c_type i) { counter.ac = i; }
 
       KOKKOS_INLINE_FUNCTION AtomicPairCounter& operator=(c_type i) {
