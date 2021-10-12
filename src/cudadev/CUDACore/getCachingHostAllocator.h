@@ -19,8 +19,6 @@ namespace cms::cuda::allocator {
 
     static DeviceType currentDevice() { return cms::cuda::currentDevice(); }
 
-    static cms::cuda::ScopedSetDevice setDevice(DeviceType device) { return cms::cuda::ScopedSetDevice(device); }
-
     static DeviceType memoryDevice(DeviceType deviceEvent) {
       // For host allocator the "current device" refers to the GPU for
       // which the event has been recorded. The "device" where the

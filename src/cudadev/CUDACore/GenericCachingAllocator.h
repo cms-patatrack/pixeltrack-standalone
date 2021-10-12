@@ -296,7 +296,6 @@ private:
 
     while (not cachedBlocks_.empty()) {
       auto iBlock = cachedBlocks_.begin();
-      [[maybe_unused]] auto scopedSetDevice = Traits::setDevice(iBlock->device);
       Traits::free(iBlock->ptr);
       Traits::destroyEvent(iBlock->readyEvent);
       auto const device = Traits::memoryDevice(iBlock->device);

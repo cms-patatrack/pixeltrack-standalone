@@ -11,7 +11,6 @@
 #include "CUDACore/deviceCount.h"
 #include "CUDACore/eventWorkHasCompleted.h"
 #include "CUDACore/GenericCachingAllocator.h"
-#include "CUDACore/ScopedSetDevice.h"
 
 namespace cms::cuda::allocator {
   // Use caching or not
@@ -61,8 +60,6 @@ namespace cms::cuda::allocator {
     static constexpr DeviceType kInvalidDevice = -1;
 
     static DeviceType currentDevice() { return cms::cuda::currentDevice(); }
-
-    static cms::cuda::ScopedSetDevice setDevice(DeviceType device) { return cms::cuda::ScopedSetDevice(device); }
 
     static DeviceType memoryDevice(DeviceType deviceEvent) {
       // For device allocator the device where the memory is allocated
