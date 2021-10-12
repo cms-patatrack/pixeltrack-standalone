@@ -30,8 +30,10 @@ void SiPixelROCsStatusAndMappingWrapperESProducer::produce(edm::EventSetup& even
   {
     std::ifstream in(data_ / "cablingMap.bin", std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
-    SiPixelROCsStatusAndMapping obj;
-    in.read(reinterpret_cast<char*>(&obj), sizeof(SiPixelROCsStatusAndMapping));
+    // We use default alignment
+    auto objBuffer = std::make_unique<std::byte[]>(SiPixelROCsStatusAndMapping::computeDataSize(pixelgpudetails::MAX_SIZE));
+    SiPixelROCsStatusAndMapping obj(objBuffer.get(), pixelgpudetails::MAX_SIZE);
+    in.read(reinterpret_cast<char *>(obj.soaMetadata().data()), obj.soaMetadata().byteSize());
     unsigned int modToUnpDefSize;
     in.read(reinterpret_cast<char*>(&modToUnpDefSize), sizeof(unsigned int));
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
