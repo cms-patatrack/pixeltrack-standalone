@@ -6,7 +6,7 @@ namespace testTrackingRecHit2D {
 
   __global__ void fill(TrackingRecHit2DSOAView* phits) {
     assert(phits);
-    auto& hits = *phits;
+    [[maybe_unused]] auto& hits = *phits;
     assert(hits.nHits() == 200);
 
     int i = threadIdx.x;
@@ -16,7 +16,7 @@ namespace testTrackingRecHit2D {
 
   __global__ void verify(TrackingRecHit2DSOAView const* phits) {
     assert(phits);
-    auto const& hits = *phits;
+    [[maybe_unused]] auto const& hits = *phits;
     assert(hits.nHits() == 200);
 
     int i = threadIdx.x;
