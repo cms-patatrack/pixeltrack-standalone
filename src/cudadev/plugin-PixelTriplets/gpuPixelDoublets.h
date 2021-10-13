@@ -99,7 +99,7 @@ namespace gpuPixelDoublets {
                                 uint32_t* nCells,
                                 CellNeighborsVector* cellNeighbors,
                                 CellTracksVector* cellTracks,
-                                TrackingRecHit2DSOAView const* __restrict__ hhp,
+                                TrackingRecHit2DSOAStore const* __restrict__ hhp,
                                 GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                 int nActualPairs,
                                 bool ideal_cond,

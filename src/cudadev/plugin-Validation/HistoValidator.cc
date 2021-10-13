@@ -38,10 +38,7 @@ private:
   uint32_t nHits;
   cms::cuda::host::unique_ptr<uint16_t[]> h_adc;
   cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
-  cms::cuda::host::unique_ptr<float[]> h_localCoord;
-  cms::cuda::host::unique_ptr<float[]> h_globalCoord;
-  cms::cuda::host::unique_ptr<int32_t[]> h_charge;
-  cms::cuda::host::unique_ptr<int16_t[]> h_size;
+  TrackingRecHit2DHostSOAView h_hits;
 
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
@@ -107,10 +104,7 @@ void HistoValidator::acquire(const edm::Event& iEvent,
       h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaMemcpyDefault, ctx.stream()));
 
   nHits = hits.nHits();
-  h_localCoord = hits.localCoordToHostAsync(ctx.stream());
-  h_globalCoord = hits.globalCoordToHostAsync(ctx.stream());
-  h_charge = hits.chargeToHostAsync(ctx.stream());
-  h_size = hits.sizeToHostAsync(ctx.stream());
+  h_hits = hits.hitsToHostAsync(ctx.stream());
 }
 
 void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -129,23 +123,19 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
   histos["hit_n"].fill(nHits);
   for (uint32_t i = 0; i < nHits; ++i) {
-    histos["hit_lx"].fill(h_localCoord[i]);
-    histos["hit_ly"].fill(h_localCoord[i + nHits]);
-    histos["hit_lex"].fill(h_localCoord[i + 2 * nHits]);
-    histos["hit_ley"].fill(h_localCoord[i + 3 * nHits]);
-    histos["hit_gx"].fill(h_globalCoord[i]);
-    histos["hit_gy"].fill(h_globalCoord[i + nHits]);
-    histos["hit_gz"].fill(h_globalCoord[i + 2 * nHits]);
-    histos["hit_gr"].fill(h_globalCoord[i + 3 * nHits]);
-    histos["hit_charge"].fill(h_charge[i]);
-    histos["hit_sizex"].fill(h_size[i]);
-    histos["hit_sizey"].fill(h_size[i + nHits]);
+    histos["hit_lx"].fill(h_hits[i].xLocal());
+    histos["hit_ly"].fill(h_hits[i].yLocal());
+    histos["hit_lex"].fill(h_hits[i].xerrLocal());
+    histos["hit_ley"].fill(h_hits[i].yerrLocal());
+    histos["hit_gx"].fill(h_hits[i].xGlobal());
+    histos["hit_gy"].fill(h_hits[i].yGlobal());
+    histos["hit_gz"].fill(h_hits[i].zGlobal());
+    histos["hit_gr"].fill(h_hits[i].rGlobal());
+    histos["hit_charge"].fill(h_hits[i].charge());
+    histos["hit_sizex"].fill(h_hits[i].clusterSizeX());
+    histos["hit_sizey"].fill(h_hits[i].clusterSizeY());
   }
-  h_localCoord.reset();
-  h_globalCoord.reset();
-  h_charge.reset();
-  h_size.reset();
-
+  h_hits.reset();
   {
     auto const& tracks = iEvent.get(trackToken_);
 

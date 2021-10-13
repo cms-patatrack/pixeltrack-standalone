@@ -29,7 +29,7 @@ public:
   using CellNeighborsVector = caConstants::CellNeighborsVector;
   using CellTracksVector = caConstants::CellTracksVector;
 
-  using Hits = TrackingRecHit2DSOAView;
+  using Hits = TrackingRecHit2DSOAStore;
   using hindex_type = Hits::hindex_type;
 
   using TmpTuple = cms::cuda::VecArray<uint32_t, 6>;
@@ -54,8 +54,8 @@ public:
     theUsed_ = 0;
 
     // optimization that depends on access pattern
-    theInnerZ = hh.zGlobal(innerHitId);
-    theInnerR = hh.rGlobal(innerHitId);
+    theInnerZ = hh[innerHitId].zGlobal();
+    theInnerR = hh[innerHitId].rGlobal();
 
     // link to default empty
     theOuterNeighbors = &cellNeighbors[0];
@@ -109,22 +109,22 @@ public:
   __device__ __forceinline__ CellTracks const& tracks() const { return *theTracks; }
   __device__ __forceinline__ CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
   __device__ __forceinline__ CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
-  __device__ __forceinline__ float inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
-  __device__ __forceinline__ float outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
-  __device__ __forceinline__ float inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
-  __device__ __forceinline__ float outer_y(Hits const& hh) const { return hh.yGlobal(theOuterHitId); }
+  __device__ __forceinline__ float inner_x(Hits const& hh) const { return hh[theInnerHitId].xGlobal(); }
+  __device__ __forceinline__ float outer_x(Hits const& hh) const { return hh[theOuterHitId].xGlobal(); }
+  __device__ __forceinline__ float inner_y(Hits const& hh) const { return hh[theInnerHitId].yGlobal(); }
+  __device__ __forceinline__ float outer_y(Hits const& hh) const { return hh[theOuterHitId].yGlobal(); }
   __device__ __forceinline__ float inner_z(Hits const& hh) const { return theInnerZ; }
   // { return hh.zGlobal(theInnerHitId); } // { return theInnerZ; }
-  __device__ __forceinline__ float outer_z(Hits const& hh) const { return hh.zGlobal(theOuterHitId); }
+  __device__ __forceinline__ float outer_z(Hits const& hh) const { return hh[theOuterHitId].zGlobal(); }
   __device__ __forceinline__ float inner_r(Hits const& hh) const { return theInnerR; }
   // { return hh.rGlobal(theInnerHitId); } // { return theInnerR; }
-  __device__ __forceinline__ float outer_r(Hits const& hh) const { return hh.rGlobal(theOuterHitId); }
+  __device__ __forceinline__ float outer_r(Hits const& hh) const { return hh[theOuterHitId].rGlobal(); }
 
-  __device__ __forceinline__ auto inner_iphi(Hits const& hh) const { return hh.iphi(theInnerHitId); }
-  __device__ __forceinline__ auto outer_iphi(Hits const& hh) const { return hh.iphi(theOuterHitId); }
+  __device__ __forceinline__ auto inner_iphi(Hits const& hh) const { return hh[theInnerHitId].iphi(); }
+  __device__ __forceinline__ auto outer_iphi(Hits const& hh) const { return hh[theOuterHitId].iphi(); }
 
-  __device__ __forceinline__ float inner_detIndex(Hits const& hh) const { return hh.detectorIndex(theInnerHitId); }
-  __device__ __forceinline__ float outer_detIndex(Hits const& hh) const { return hh.detectorIndex(theOuterHitId); }
+  __device__ __forceinline__ float inner_detIndex(Hits const& hh) const { return hh[theInnerHitId].detectorIndex(); }
+  __device__ __forceinline__ float outer_detIndex(Hits const& hh) const { return hh[theOuterHitId].detectorIndex(); }
 
   constexpr unsigned int inner_hit_id() const { return theInnerHitId; }
   constexpr unsigned int outer_hit_id() const { return theOuterHitId; }

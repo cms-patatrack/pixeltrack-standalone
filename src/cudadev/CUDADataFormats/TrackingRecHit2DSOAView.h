@@ -7,12 +7,14 @@
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cudaCompat.h"
 #include "Geometry/phase1PixelTopology.h"
+#include "DataFormats/SoAStore.h"
+#include "DataFormats/SoAView.h"
 
 namespace pixelCPEforGPU {
   struct ParamsOnGPU;
 }
 
-class TrackingRecHit2DSOAView {
+class TrackingRecHit2DSOAStore {
 public:
   using hindex_type = uint32_t;  // if above is <=2^32
 
@@ -22,40 +24,84 @@ public:
 
   template <typename>
   friend class TrackingRecHit2DHeterogeneous;
-
+  
   __device__ __forceinline__ uint32_t nHits() const { return m_nHits; }
 
-  __device__ __forceinline__ float& xLocal(int i) { return m_xl[i]; }
-  __device__ __forceinline__ float xLocal(int i) const { return __ldg(m_xl + i); }
-  __device__ __forceinline__ float& yLocal(int i) { return m_yl[i]; }
-  __device__ __forceinline__ float yLocal(int i) const { return __ldg(m_yl + i); }
+  // Our arrays do not require specific alignment as access will not be coalesced in the current implementation
+  // Sill, we need the 32 bits integers to be aligned, so we simply declare the SoA with the 32 bits fields first
+  // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte 
+  // alignment of 1)
+  generate_SoA_store(HitsStore,
+    // 32 bits section
+    // local coord
+    SoA_column(float, xLocal),
+    SoA_column(float, yLocal),
+    SoA_column(float, xerrLocal),
+    SoA_column(float, yerrLocal),
+    
+    // global coord
+    SoA_column(float, xGlobal),
+    SoA_column(float, yGlobal),
+    SoA_column(float, zGlobal),
+    SoA_column(float, rGlobal),
+    // global coordinates continue in the 16 bits section
 
-  __device__ __forceinline__ float& xerrLocal(int i) { return m_xerr[i]; }
-  __device__ __forceinline__ float xerrLocal(int i) const { return __ldg(m_xerr + i); }
-  __device__ __forceinline__ float& yerrLocal(int i) { return m_yerr[i]; }
-  __device__ __forceinline__ float yerrLocal(int i) const { return __ldg(m_yerr + i); }
-
-  __device__ __forceinline__ float& xGlobal(int i) { return m_xg[i]; }
-  __device__ __forceinline__ float xGlobal(int i) const { return __ldg(m_xg + i); }
-  __device__ __forceinline__ float& yGlobal(int i) { return m_yg[i]; }
-  __device__ __forceinline__ float yGlobal(int i) const { return __ldg(m_yg + i); }
-  __device__ __forceinline__ float& zGlobal(int i) { return m_zg[i]; }
-  __device__ __forceinline__ float zGlobal(int i) const { return __ldg(m_zg + i); }
-  __device__ __forceinline__ float& rGlobal(int i) { return m_rg[i]; }
-  __device__ __forceinline__ float rGlobal(int i) const { return __ldg(m_rg + i); }
-
-  __device__ __forceinline__ int16_t& iphi(int i) { return m_iphi[i]; }
-  __device__ __forceinline__ int16_t iphi(int i) const { return __ldg(m_iphi + i); }
-
-  __device__ __forceinline__ int32_t& charge(int i) { return m_charge[i]; }
-  __device__ __forceinline__ int32_t charge(int i) const { return __ldg(m_charge + i); }
-  __device__ __forceinline__ int16_t& clusterSizeX(int i) { return m_xsize[i]; }
-  __device__ __forceinline__ int16_t clusterSizeX(int i) const { return __ldg(m_xsize + i); }
-  __device__ __forceinline__ int16_t& clusterSizeY(int i) { return m_ysize[i]; }
-  __device__ __forceinline__ int16_t clusterSizeY(int i) const { return __ldg(m_ysize + i); }
-  __device__ __forceinline__ uint16_t& detectorIndex(int i) { return m_detInd[i]; }
-  __device__ __forceinline__ uint16_t detectorIndex(int i) const { return __ldg(m_detInd + i); }
-
+    // cluster properties
+    SoA_column(int32_t, charge),
+          
+    // 16 bits section (and cluster properties immediately continued)
+    SoA_column(int16_t, clusterSizeX),
+    SoA_column(int16_t, clusterSizeY)
+  );
+  
+  generate_SoA_store(SupportObjectsStore,
+    // This is the end of the data which is transferred to host. The following columns are supporting 
+    // objects, not transmitted 
+    
+    // Supporting data (32 bits aligned)
+    SoA_column(TrackingRecHit2DSOAStore::PhiBinner::index_type, phiBinnerStorage),
+          
+    // global coordinates (not transmitted)
+    SoA_column(int16_t, iphi),
+          
+    // cluster properties (not transmitted)
+    SoA_column(uint16_t, detectorIndex)
+  );
+  
+  generate_SoA_view(HitsAndSupportView,
+    SoA_view_store_list(
+      SoA_view_store(HitsStore, hitsStore),
+      SoA_view_store(SupportObjectsStore, supportObjectsStore)
+    ),
+    SoA_view_value_list(
+      SoA_view_value(hitsStore, xLocal, xLocal),
+      SoA_view_value(hitsStore, yLocal, yLocal),
+      SoA_view_value(hitsStore, xerrLocal, xerrLocal),
+      SoA_view_value(hitsStore, yerrLocal, yerrLocal),
+      
+      SoA_view_value(hitsStore, xGlobal, xGlobal),
+      SoA_view_value(hitsStore, yGlobal, yGlobal),
+      SoA_view_value(hitsStore, zGlobal, zGlobal),
+      SoA_view_value(hitsStore, rGlobal, rGlobal),
+      
+      SoA_view_value(hitsStore, charge, charge),
+      SoA_view_value(hitsStore, clusterSizeX, clusterSizeX),
+      SoA_view_value(hitsStore, clusterSizeY, clusterSizeY),
+      
+      SoA_view_value(supportObjectsStore, phiBinnerStorage, phiBinnerStorage),
+      SoA_view_value(supportObjectsStore, iphi, iphi),
+      SoA_view_value(supportObjectsStore, detectorIndex, detectorIndex)
+    )
+  );
+  
+  // Shortcut operator saving the explicit calls to view in usage.
+  __device__ __forceinline__ HitsAndSupportView::element operator[] (size_t index) { 
+    return m_hitsAndSupportView[index]; 
+  }
+  __device__ __forceinline__ const HitsAndSupportView::const_element operator[] (size_t index) const { 
+    return m_hitsAndSupportView[index];
+  }
+  
   __device__ __forceinline__ pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
 
   __device__ __forceinline__ uint32_t hitsModuleStart(int i) const { return __ldg(m_hitsModuleStart + i); }
@@ -70,21 +116,14 @@ public:
   __device__ __forceinline__ AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
 
 private:
-  // local coord
-  float *m_xl, *m_yl;
-  float *m_xerr, *m_yerr;
-
-  // global coord
-  float *m_xg, *m_yg, *m_zg, *m_rg;
-  int16_t* m_iphi;
-
-  // cluster properties
-  int32_t* m_charge;
-  int16_t* m_xsize;
-  int16_t* m_ysize;
-  uint16_t* m_detInd;
-
-  // supporting objects
+  // hits store
+  HitsStore m_hitsStore;
+  // supporting objects store
+  SupportObjectsStore m_supportObjectsStore;
+  // Global view simplifying usage
+  HitsAndSupportView m_hitsAndSupportView;
+  
+  // individually defined supporting objects
   // m_averageGeometry is corrected for beam spot, not sure where to host it otherwise
   AverageGeometry* m_averageGeometry;              // owned by TrackingRecHit2DHeterogeneous
   pixelCPEforGPU::ParamsOnGPU const* m_cpeParams;  // forwarded from setup, NOT owned

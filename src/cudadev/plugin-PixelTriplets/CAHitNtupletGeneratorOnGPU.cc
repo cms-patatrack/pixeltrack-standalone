@@ -124,14 +124,14 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecH
 
   kernels.buildDoublets(hits_d, stream);
   kernels.launchKernels(hits_d, soa, stream);
-  kernels.fillHitDetIndices(hits_d.view(), soa, stream);  // in principle needed only if Hits not "available"
+  kernels.fillHitDetIndices(hits_d.store(), soa, stream);  // in principle needed only if Hits not "available"
 
   HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
   fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
   if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
+    fitter.launchRiemannKernels(hits_d.store(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
   } else {
-    fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
+    fitter.launchBrokenLineKernels(hits_d.store(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets, stream);
   }
   kernels.classifyTuples(hits_d, soa, stream);
 
@@ -156,7 +156,7 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
 
   kernels.buildDoublets(hits_d, nullptr);
   kernels.launchKernels(hits_d, soa, nullptr);
-  kernels.fillHitDetIndices(hits_d.view(), soa, nullptr);  // in principle needed only if Hits not "available"
+  kernels.fillHitDetIndices(hits_d.store(), soa, nullptr);  // in principle needed only if Hits not "available"
 
   if (0 == hits_d.nHits())
     return tracks;
@@ -166,9 +166,9 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
   fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
 
   if (m_params.useRiemannFit_) {
-    fitter.launchRiemannKernelsOnCPU(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
+    fitter.launchRiemannKernelsOnCPU(hits_d.store(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
   } else {
-    fitter.launchBrokenLineKernelsOnCPU(hits_d.view(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
+    fitter.launchBrokenLineKernelsOnCPU(hits_d.store(), hits_d.nHits(), caConstants::maxNumberOfQuadruplets);
   }
 
   kernels.classifyTuples(hits_d, soa, nullptr);

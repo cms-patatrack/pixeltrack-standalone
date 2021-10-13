@@ -28,7 +28,7 @@ namespace gpuPixelDoublets {
                                                     uint32_t* nCells,
                                                     CellNeighborsVector* cellNeighbors,
                                                     CellTracksVector* cellTracks,
-                                                    TrackingRecHit2DSOAView const& __restrict__ hh,
+                                                    TrackingRecHit2DSOAStore const& __restrict__ hh,
                                                     GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                                     int16_t const* __restrict__ phicuts,
                                                     float const* __restrict__ minz,
@@ -50,7 +50,7 @@ namespace gpuPixelDoublets {
 
     bool isOuterLadder = ideal_cond;
 
-    using PhiBinner = TrackingRecHit2DSOAView::PhiBinner;
+    using PhiBinner = TrackingRecHit2DSOAStore::PhiBinner;
 
     auto const& __restrict__ phiBinner = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
@@ -104,7 +104,7 @@ namespace gpuPixelDoublets {
       assert(i < offsets[inner + 1]);
 
       // found hit corresponding to our cuda thread, now do the job
-      auto mi = hh.detectorIndex(i);
+      auto mi = hh[i].detectorIndex();
       if (mi > gpuClustering::maxNumModules)
         continue;  // invalid
 
@@ -114,7 +114,7 @@ namespace gpuPixelDoublets {
       if ( ((inner<3) & (outer>3)) && bpos!=fpos) continue;
       */
 
-      auto mez = hh.zGlobal(i);
+      auto mez = hh[i].zGlobal();
 
       if (mez < minz[pairLayerId] || mez > maxz[pairLayerId])
         continue;
@@ -127,7 +127,7 @@ namespace gpuPixelDoublets {
         isOuterLadder = ideal_cond ? true : 0 == (mi / 8) % 2;  // only for B1/B2/B3 B4 is opposite, FPIX:noclue...
 
         // in any case we always test mes>0 ...
-        mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;
+        mes = inner > 0 || isOuterLadder ? hh[i].clusterSizeY() : -1;
 
         if (inner == 0 && outer > 3)  // B1 and F1
           if (mes > 0 && mes < minYsizeB1)
@@ -136,8 +136,8 @@ namespace gpuPixelDoublets {
           if (mes > 0 && mes < minYsizeB2)
             continue;
       }
-      auto mep = hh.iphi(i);
-      auto mer = hh.rGlobal(i);
+      auto mep = hh[i].iphi();
+      auto mer = hh[i].rGlobal();
 
       // all cuts: true if fails
       constexpr float z0cut = 12.f;      // cm
@@ -148,26 +148,26 @@ namespace gpuPixelDoublets {
       auto ptcut = [&](int j, int16_t idphi) {
         auto r2t4 = minRadius2T4;
         auto ri = mer;
-        auto ro = hh.rGlobal(j);
+        auto ro = hh[j].rGlobal();
         auto dphi = short2phi(idphi);
         return dphi * dphi * (r2t4 - ri * ro) > (ro - ri) * (ro - ri);
       };
       auto z0cutoff = [&](int j) {
-        auto zo = hh.zGlobal(j);
-        auto ro = hh.rGlobal(j);
+        auto zo = hh[j].zGlobal();
+        auto ro = hh[j].rGlobal();
         auto dr = ro - mer;
         return dr > maxr[pairLayerId] || dr < 0 || std::abs((mez * ro - mer * zo)) > z0cut * dr;
       };
 
       auto zsizeCut = [&](int j) {
         auto onlyBarrel = outer < 4;
-        auto so = hh.clusterSizeY(j);
+        auto so = hh[j].clusterSizeY();
         auto dy = inner == 0 ? maxDYsize12 : maxDYsize;
         // in the barrel cut on difference in size
         // in the endcap on the prediction on the first layer (actually in the barrel only: happen to be safe for endcap as well)
         // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
-        auto zo = hh.zGlobal(j);
-        auto ro = hh.rGlobal(j);
+        auto zo = hh[j].zGlobal();
+        auto ro = hh[j].rGlobal();
         return onlyBarrel ? mes > 0 && so > 0 && std::abs(so - mes) > dy
                           : (inner < 4) && mes > 0 &&
                                 std::abs(mes - int(std::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
@@ -199,14 +199,14 @@ namespace gpuPixelDoublets {
           auto oi = __ldg(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
-          auto mo = hh.detectorIndex(oi);
+          auto mo = hh[oi].detectorIndex();
           if (mo > gpuClustering::maxNumModules)
             continue;  //    invalid
 
           if (doZ0Cut && z0cutoff(oi))
             continue;
 
-          auto mop = hh.iphi(oi);
+          auto mop = hh[oi].iphi();
           uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
           if (idphi > iphicut)
             continue;
