@@ -19,9 +19,9 @@ namespace edm {
 
 class CAHitNtupletGeneratorOnGPU {
 public:
-  using HitsOnGPU = TrackingRecHit2DSOAView;
+  using HitsOnGPU = TrackingRecHit2DSOAStore;
   using HitsOnCPU = TrackingRecHit2DCUDA;
-  using hindex_type = TrackingRecHit2DSOAView::hindex_type;
+  using hindex_type = TrackingRecHit2DSOAStore::hindex_type;
 
   using Quality = pixelTrack::Quality;
   using OutputSoA = pixelTrack::TrackSoA;

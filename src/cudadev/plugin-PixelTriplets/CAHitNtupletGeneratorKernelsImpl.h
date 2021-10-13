@@ -20,7 +20,7 @@
 #include "gpuFishbone.h"
 #include "gpuPixelDoublets.h"
 
-using HitsOnGPU = TrackingRecHit2DSOAView;
+using HitsOnGPU = TrackingRecHit2DSOAStore;
 using HitsOnCPU = TrackingRecHit2DCUDA;
 
 using HitToTuple = caConstants::HitToTuple;
@@ -448,7 +448,7 @@ __global__ void kernel_fillHitInTracks(HitContainer const *__restrict__ tuples,
 }
 
 __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples,
-                                         TrackingRecHit2DSOAView const *__restrict__ hhp,
+                                         TrackingRecHit2DSOAStore const *__restrict__ hhp,
                                          HitContainer *__restrict__ hitDetIndices) {
   int first = blockDim.x * blockIdx.x + threadIdx.x;
   // copy offsets
@@ -460,7 +460,7 @@ __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples
   auto nhits = hh.nHits();
   for (int idx = first, ntot = tuples->size(); idx < ntot; idx += gridDim.x * blockDim.x) {
     assert(tuples->content[idx] < nhits);
-    hitDetIndices->content[idx] = hh.detectorIndex(tuples->content[idx]);
+    hitDetIndices->content[idx] = hh[tuples->content[idx]].detectorIndex();
   }
 }
 
@@ -477,7 +477,7 @@ __global__ void kernel_doStatsForHitInTracks(CAHitNtupletGeneratorKernelsGPU::Hi
   }
 }
 
-__global__ void kernel_sharedHitCleaner(TrackingRecHit2DSOAView const *__restrict__ hhp,
+__global__ void kernel_sharedHitCleaner(TrackingRecHit2DSOAStore const *__restrict__ hhp,
                                         HitContainer const *__restrict__ ptuples,
                                         TkSoA const *__restrict__ ptracks,
                                         Quality *__restrict__ quality,
@@ -539,7 +539,7 @@ __global__ void kernel_sharedHitCleaner(TrackingRecHit2DSOAView const *__restric
   }  // loop over hits
 }
 
-__global__ void kernel_print_found_ntuplets(TrackingRecHit2DSOAView const *__restrict__ hhp,
+__global__ void kernel_print_found_ntuplets(TrackingRecHit2DSOAStore const *__restrict__ hhp,
                                             HitContainer const *__restrict__ ptuples,
                                             TkSoA const *__restrict__ ptracks,
                                             Quality const *__restrict__ quality,

@@ -25,8 +25,8 @@ namespace cAHitNtupletGenerator {
     unsigned long long nZeroTrackCells;
   };
 
-  using HitsView = TrackingRecHit2DSOAView;
-  using HitsOnGPU = TrackingRecHit2DSOAView;
+  using HitsView = TrackingRecHit2DSOAStore;
+  using HitsOnGPU = TrackingRecHit2DSOAStore;
 
   using HitToTuple = caConstants::HitToTuple;
   using TupleMultiplicity = caConstants::TupleMultiplicity;
@@ -157,8 +157,8 @@ public:
   template <typename T>
   using unique_ptr = typename Traits::template unique_ptr<T>;
 
-  using HitsView = TrackingRecHit2DSOAView;
-  using HitsOnGPU = TrackingRecHit2DSOAView;
+  using HitsView = TrackingRecHit2DSOAStore;
+  using HitsOnGPU = TrackingRecHit2DSOAStore;
   using HitsOnCPU = TrackingRecHit2DHeterogeneous<Traits>;
 
   using HitToTuple = caConstants::HitToTuple;

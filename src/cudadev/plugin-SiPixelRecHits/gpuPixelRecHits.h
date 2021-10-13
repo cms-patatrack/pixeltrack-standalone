@@ -19,7 +19,7 @@ namespace gpuPixelRecHits {
                           SiPixelDigisCUDA::DevicePixelView pdigis,
                           int numElements,
                           SiPixelClustersCUDA::DeviceStore const pclusters,
-                          TrackingRecHit2DSOAView* phits) {
+                          TrackingRecHit2DSOAStore* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
     // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -37,7 +37,7 @@ namespace gpuPixelRecHits {
     if (0 == blockIdx.x) {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
-      for (int il = threadIdx.x, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
+      for (int il = threadIdx.x, nl = TrackingRecHit2DSOAStore::AverageGeometry::numberOfLaddersInBarrel; il < nl;
            il += blockDim.x) {
         agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
         agc.ladderX[il] = ag.ladderX[il] - bs->x;
@@ -175,18 +175,18 @@ namespace gpuPixelRecHits {
         pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
 
         // store it
-        hits.charge(h) = clusParams.charge[ic];
-        hits.detectorIndex(h) = me;
+        hits[h].charge = clusParams.charge[ic];
+        hits[h].detectorIndex = me;
 
         float xl, yl;
-        hits.xLocal(h) = xl = clusParams.xpos[ic];
-        hits.yLocal(h) = yl = clusParams.ypos[ic];
+        hits[h].xLocal = xl = clusParams.xpos[ic];
+        hits[h].yLocal = yl = clusParams.ypos[ic];
 
-        hits.clusterSizeX(h) = clusParams.xsize[ic];
-        hits.clusterSizeY(h) = clusParams.ysize[ic];
+        hits[h].clusterSizeX = clusParams.xsize[ic];
+        hits[h].clusterSizeY = clusParams.ysize[ic];
 
-        hits.xerrLocal(h) = clusParams.xerr[ic] * clusParams.xerr[ic];
-        hits.yerrLocal(h) = clusParams.yerr[ic] * clusParams.yerr[ic];
+        hits[h].xerrLocal = clusParams.xerr[ic] * clusParams.xerr[ic];
+        hits[h].yerrLocal = clusParams.yerr[ic] * clusParams.yerr[ic];
 
         // keep it local for computations
         float xg, yg, zg;
@@ -197,12 +197,12 @@ namespace gpuPixelRecHits {
         yg -= bs->y;
         zg -= bs->z;
 
-        hits.xGlobal(h) = xg;
-        hits.yGlobal(h) = yg;
-        hits.zGlobal(h) = zg;
+        hits[h].xGlobal = xg;
+        hits[h].yGlobal = yg;
+        hits[h].zGlobal = zg;
 
-        hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
-        hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
+        hits[h].rGlobal = std::sqrt(xg * xg + yg * yg);
+        hits[h].iphi = unsafe_atan2s<7>(yg, xg);
       }
       __syncthreads();
     }  // end loop on batches

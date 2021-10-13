@@ -4,7 +4,7 @@
 
 namespace testTrackingRecHit2D {
 
-  __global__ void fill(TrackingRecHit2DSOAView* phits) {
+  __global__ void fill(TrackingRecHit2DSOAStore* phits) {
     assert(phits);
     [[maybe_unused]] auto& hits = *phits;
     assert(hits.nHits() == 200);
@@ -14,7 +14,7 @@ namespace testTrackingRecHit2D {
       return;
   }
 
-  __global__ void verify(TrackingRecHit2DSOAView const* phits) {
+  __global__ void verify(TrackingRecHit2DSOAStore const* phits) {
     assert(phits);
     [[maybe_unused]] auto const& hits = *phits;
     assert(hits.nHits() == 200);
@@ -24,7 +24,7 @@ namespace testTrackingRecHit2D {
       return;
   }
 
-  void runKernels(TrackingRecHit2DSOAView* hits) {
+  void runKernels(TrackingRecHit2DSOAStore* hits) {
     assert(hits);
     fill<<<1, 1024>>>(hits);
     verify<<<1, 1024>>>(hits);
@@ -34,7 +34,7 @@ namespace testTrackingRecHit2D {
 
 namespace testTrackingRecHit2D {
 
-  void runKernels(TrackingRecHit2DSOAView* hits);
+  void runKernels(TrackingRecHit2DSOAStore* hits);
 
 }
 
@@ -47,7 +47,7 @@ int main() {
     auto nHits = 200;
     TrackingRecHit2DCUDA tkhit(nHits, nullptr, nullptr, stream);
 
-    testTrackingRecHit2D::runKernels(tkhit.view());
+    testTrackingRecHit2D::runKernels(tkhit.store());
   }
 
   cudaCheck(cudaStreamDestroy(stream));
