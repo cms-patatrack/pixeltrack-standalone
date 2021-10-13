@@ -16,7 +16,7 @@ namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisCUDA::DeviceConstView const* __restrict__ pdigis,
+                          SiPixelDigisCUDA::DevicePixelView pdigis,
                           int numElements,
                           SiPixelClustersCUDA::DeviceStore const pclusters,
                           TrackingRecHit2DSOAView* phits) {
@@ -30,7 +30,7 @@ namespace gpuPixelRecHits {
 
     auto& hits = *phits;
 
-    auto const digis = *pdigis;  // the copy is intentional!
+    auto const digis = pdigis;  // the copy is intentional!
     auto const& clusters = pclusters;
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
@@ -110,19 +110,19 @@ namespace gpuPixelRecHits {
       // one thread per "digi"
       auto first = clusters[1 + blockIdx.x].moduleStart() + threadIdx.x;
       for (int i = first; i < numElements; i += blockDim.x) {
-        auto id = digis.moduleInd(i);
+        auto id = digis[i].moduleInd();
         if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
-        auto cl = digis.clus(i);
+        auto cl = digis[i].clus();
         if (cl < startClus || cl >= lastClus)
           continue;
         cl -= startClus;
         assert(cl >= 0);
         assert(cl < MaxHitsInIter);
-        auto x = digis.xx(i);
-        auto y = digis.yy(i);
+        auto x = digis[i].xx();
+        auto y = digis[i].yy();
         atomicMin(&clusParams.minRow[cl], x);
         atomicMax(&clusParams.maxRow[cl], x);
         atomicMin(&clusParams.minCol[cl], y);
@@ -135,20 +135,20 @@ namespace gpuPixelRecHits {
       //auto pixmx = cpeParams->detParams(me).pixmx;
       auto pixmx = std::numeric_limits<uint16_t>::max();
       for (int i = first; i < numElements; i += blockDim.x) {
-        auto id = digis.moduleInd(i);
+        auto id = digis[i].moduleInd();
         if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
-        auto cl = digis.clus(i);
+        auto cl = digis[i].clus();
         if (cl < startClus || cl >= lastClus)
           continue;
         cl -= startClus;
         assert(cl >= 0);
         assert(cl < MaxHitsInIter);
-        auto x = digis.xx(i);
-        auto y = digis.yy(i);
-        auto ch = std::min(digis.adc(i), pixmx);
+        auto x = digis[i].xx();
+        auto y = digis[i].yy();
+        auto ch = std::min(digis[i].adc(), pixmx);
         atomicAdd(&clusParams.charge[cl], ch);
         if (clusParams.minRow[cl] == x)
           atomicAdd(&clusParams.q_f_X[cl], ch);
