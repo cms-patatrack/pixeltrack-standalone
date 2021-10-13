@@ -13,14 +13,18 @@ namespace cms::cuda::allocator {
     using DeviceType = int;
     using QueueType = cudaStream_t;
     using EventType = cudaEvent_t;
-    struct Dummy {};
 
     static constexpr DeviceType kInvalidDevice = -1;
     static constexpr DeviceType kHostDevice = 0;
 
     static DeviceType currentDevice() { return cms::cuda::currentDevice(); }
 
-    static Dummy setDevice(DeviceType device) { return {}; }
+    static DeviceType memoryDevice(DeviceType deviceEvent) {
+      // For host allocator the "current device" refers to the GPU for
+      // which the event has been recorded. The "device" where the
+      // memory is allocated on is always 0.
+      return kHostDevice;
+    }
 
     static bool canReuseInDevice(DeviceType a, DeviceType b) {
       // Pinned host memory can be reused in any device, but in case of
@@ -32,6 +36,11 @@ namespace cms::cuda::allocator {
       // For pinned host memory a freed block without completed event
       // can not be re-used even for operations in the same queue
       return false;
+    }
+
+    template <typename C>
+    static bool deviceCompare(DeviceType a_dev, DeviceType b_dev, C&& compare) {
+      return compare();
     }
 
     static bool eventWorkHasCompleted(EventType e) { return cms::cuda::eventWorkHasCompleted(e); }

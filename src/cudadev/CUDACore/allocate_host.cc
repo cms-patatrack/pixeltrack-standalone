@@ -17,7 +17,7 @@ namespace cms::cuda {
         throw std::runtime_error("Tried to allocate " + std::to_string(nbytes) +
                                  " bytes, but the allocator maximum is " + std::to_string(maxAllocationSize));
       }
-      ptr = allocator::getCachingHostAllocator().allocate(allocator::HostTraits::kHostDevice, nbytes, stream);
+      ptr = allocator::getCachingHostAllocator().allocate(nbytes, stream);
     } else {
       cudaCheck(cudaMallocHost(&ptr, nbytes));
     }
@@ -26,7 +26,7 @@ namespace cms::cuda {
 
   void free_host(void *ptr) {
     if constexpr (allocator::policy == allocator::Policy::Caching) {
-      allocator::getCachingHostAllocator().free(allocator::HostTraits::kHostDevice, ptr);
+      allocator::getCachingHostAllocator().free(ptr);
     } else {
       cudaCheck(cudaFreeHost(ptr));
     }
