@@ -7,7 +7,6 @@
 
 #include "Framework/ReusableObjectHolder.h"
 #include "AlpakaCore/SharedStreamPtr.h"
-#include "alpakaQueueHelper.h"
 #include "AlpakaCore/currentDevice.h"
 #include "AlpakaCore/deviceCount.h"
 #include "AlpakaCore/ScopedSetDevice.h"
@@ -26,8 +25,7 @@ namespace cms {
       template <typename T_Acc>
       ALPAKA_FN_HOST SharedStreamPtr get(T_Acc acc) {
         const auto dev = currentDevice();
-        return cache_[dev].makeOrGet(
-            [dev, acc]() { return std::make_unique<Queue>(createQueueNonBlocking<T_Acc>(acc)); });
+        return cache_[dev].makeOrGet([dev, acc]() { return std::make_unique<Queue>(acc); });
       }
 
     private:
