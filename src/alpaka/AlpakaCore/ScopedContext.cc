@@ -10,7 +10,7 @@ namespace {
 namespace cms::alpakatools {
   namespace impl {
     void ScopedContextGetterBase::synchronizeStreams(int dataDevice,
-                                                     Queue dataStream,
+                                                     Queue& dataStream,
                                                      bool available,
                                                      alpaka::Event<cms::alpakatools::Queue> dataEvent) {
       if (dataDevice != device()) {
@@ -32,7 +32,7 @@ namespace cms::alpakatools {
       }
     }
 
-    void ScopedContextHolderHelper::enqueueCallback(int device, Queue stream) {
+    void ScopedContextHolderHelper::enqueueCallback(int device, Queue& stream) {
       alpaka::enqueue(stream, [this, device]() {
         auto data = new CallbackData{waitingTaskHolder_, device};
         std::unique_ptr<CallbackData> guard{reinterpret_cast<CallbackData*>(data)};

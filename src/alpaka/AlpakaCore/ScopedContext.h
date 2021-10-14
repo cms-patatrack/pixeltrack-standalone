@@ -94,7 +94,7 @@ namespace cms {
         template <typename... Args>
         ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-        void synchronizeStreams(int dataDevice, Queue dataStream, bool available, alpaka::Event<Queue> dataEvent);
+        void synchronizeStreams(int dataDevice, Queue& dataStream, bool available, alpaka::Event<Queue> dataEvent);
       };
 
       class ScopedContextHolderHelper {
@@ -109,7 +109,7 @@ namespace cms {
           waitingTaskHolder_ = std::move(waitingTaskHolder);
         }
 
-        void enqueueCallback(int device, Queue stream);
+        void enqueueCallback(int device, Queue& stream);
 
       private:
         edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
