@@ -83,9 +83,20 @@ namespace alpaka_omp4_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 
+// convert the macro argument to a null-terminated quoted string
+#define STRINGIFY_(ARG) #ARG
+#define STRINGIFY(ARG) STRINGIFY_(ARG)
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using Device = alpaka::Dev<Acc1D>;      // these are independent from the dimensionality
-  using Platform = alpaka::Pltf<Device>;  //
+  // these are independent from the dimensionality
+  using Device = alpaka::Dev<Acc1D>;
+  using Platform = alpaka::Pltf<Device>;
+  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
+                STRINGIFY(alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
+                    alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
+  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
+                STRINGIFY(alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
+                    alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
 
   template <class TData>
   using AlpakaAccBuf1D = alpaka::Buf<Acc1D, TData, Dim1D, Idx>;
