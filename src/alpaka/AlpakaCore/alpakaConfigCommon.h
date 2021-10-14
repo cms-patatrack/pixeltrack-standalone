@@ -10,24 +10,24 @@ namespace alpaka_common {
   using DevHost = alpaka::DevCpu;
   using PltfHost = alpaka::Pltf<DevHost>;
 
-  using Dim1 = alpaka::DimInt<1u>;
-  using Dim2 = alpaka::DimInt<2u>;
+  using Dim1D = alpaka::DimInt<1u>;
+  using Dim2D = alpaka::DimInt<2u>;
 
   template <typename TDim>
   using Vec = alpaka::Vec<TDim, Idx>;
-  using Vec1 = Vec<Dim1>;
-  using Vec2 = Vec<Dim2>;
+  using Vec1D = Vec<Dim1D>;
+  using Vec2D = Vec<Dim2D>;
 
   template <typename TDim>
   using WorkDiv = alpaka::WorkDivMembers<TDim, Idx>;
-  using WorkDiv1 = WorkDiv<Dim1>;
-  using WorkDiv2 = WorkDiv<Dim2>;
+  using WorkDiv1D = WorkDiv<Dim1D>;
+  using WorkDiv2D = WorkDiv<Dim2D>;
 
   template <typename TData>
-  using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1, Idx>;
+  using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1D, Idx>;
 
   template <typename TData>
-  using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>;
+  using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1D, Idx>;
 }  // namespace alpaka_common
 
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE

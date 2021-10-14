@@ -4,7 +4,7 @@
 #include "AlpakaCore/alpakaConfigAcc.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  extern const DevAcc1 device;
+  extern const Device device;
 }
 
 #endif  // ALPAKADEVICEACC_H

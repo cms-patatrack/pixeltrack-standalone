@@ -10,7 +10,7 @@
 
 template <typename T>
 void go(const DevHost& host,
-        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1& device,
+        const ALPAKA_ACCELERATOR_NAMESPACE::Device& device,
         ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
   std::mt19937 eng;
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
@@ -163,7 +163,7 @@ void go(const DevHost& host,
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::Device device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);

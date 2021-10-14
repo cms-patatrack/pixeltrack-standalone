@@ -69,7 +69,7 @@ namespace cms {
                                                                              const Idx elementIdxShift,
                                                                              const unsigned int dimIndex = 0u) {
       // Check dimension
-      //static_assert(alpaka::Dim<TAcc>::value == Dim1::value,
+      //static_assert(alpaka::Dim<TAcc>::value == Dim1D::value,
       //              "Accelerator and maxNumberOfElements need to have same dimension.");
       auto [firstElementIdxLocal, endElementIdxLocal] = element_index_range_in_block(acc, elementIdxShift, dimIndex);
 

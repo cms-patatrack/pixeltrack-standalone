@@ -70,20 +70,20 @@ namespace cms {
       const int num_items = Histo::totbins();
 
       const unsigned int nthreads = 1024;
-      const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
+      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
-      const Vec1 blocksPerGrid(nblocks);
+      const Vec1D blocksPerGrid(nblocks);
 
-      const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                           workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
-      const WorkDiv1 &workDivWith1Block =
-          cms::alpakatools::make_workdiv(Vec1::all(1), threadsPerBlockOrElementsPerThread);
+      const WorkDiv1D &workDivWith1Block =
+          cms::alpakatools::make_workdiv(Vec1D::all(1), threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
               workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
     }
 
@@ -99,18 +99,18 @@ namespace cms {
       launchZero(h, queue);
 
       const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
-      const Vec1 blocksPerGrid(nblocks);
-      const Vec1 threadsPerBlockOrElementsPerThread(nthreads);
-      const WorkDiv1 &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const Vec1D blocksPerGrid(nblocks);
+      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
+      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDiv, countFromVector(), h, nh, v, offsets));
+          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, countFromVector(), h, nh, v, offsets));
       launchFinalize(h, queue);
 
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDiv, fillFromVector(), h, nh, v, offsets));
+          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, fillFromVector(), h, nh, v, offsets));
     }
 
     struct finalizeBulk {

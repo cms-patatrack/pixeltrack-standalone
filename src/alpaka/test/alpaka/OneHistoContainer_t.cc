@@ -111,7 +111,7 @@ struct mykernel {
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
 void go(const DevHost& host,
-        const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1& device,
+        const ALPAKA_ACCELERATOR_NAMESPACE::Device& device,
         ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
   std::mt19937 eng;
 
@@ -143,11 +143,11 @@ void go(const DevHost& host,
 
     alpaka::memcpy(queue, v_dbuf, v_hbuf, N);
 
-    const Vec1& threadsPerBlockOrElementsPerThread(Vec1::all(256));
-    const Vec1& blocksPerGrid(Vec1::all(1));
-    const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D::all(256));
+    const Vec1D& blocksPerGrid(Vec1D::all(1));
+    const WorkDiv1D& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                    alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                         workDiv, mykernel<NBINS, S, DELTA>(), alpaka::getPtrNative(v_dbuf), N));
   }
   alpaka::wait(queue);
@@ -155,7 +155,7 @@ void go(const DevHost& host,
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::Device device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   go<int16_t>(host, device, queue);

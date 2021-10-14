@@ -16,7 +16,7 @@ namespace cms {
 
     template <typename TData>
     auto createHostView(TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<DevHost, TData, Dim1, Idx>(data, host, extent);
+      return alpaka::ViewPlainPtr<DevHost, TData, Dim1D, Idx>(data, host, extent);
     }
 
     template <typename TData>
@@ -26,13 +26,13 @@ namespace cms {
 
     template <typename TData>
     auto createDeviceView(const TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, const TData, Dim1, Idx>(
+      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::Device, const TData, Dim1D, Idx>(
           data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
     template <typename TData>
     auto createDeviceView(TData* data, const Extent& extent) {
-      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1, TData, Dim1, Idx>(
+      return alpaka::ViewPlainPtr<ALPAKA_ACCELERATOR_NAMESPACE::Device, TData, Dim1D, Idx>(
           data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
