@@ -16,7 +16,8 @@ namespace cms {
 #else
     using Queue = alpaka::QueueCpuBlocking;
 #endif
-    using SharedEventPtr = std::shared_ptr<std::remove_pointer_t<alpaka::Event<Queue>>>;
+    using Event = alpaka::Event<Queue>;
+    using SharedEventPtr = std::shared_ptr<Event>;
   }  // namespace alpakatools
 }  // namespace cms
 

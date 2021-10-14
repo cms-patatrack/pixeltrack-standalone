@@ -12,7 +12,6 @@
 #include "AlpakaCore/currentDevice.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
 #include "AlpakaCore/ScopedSetDevice.h"
-#include "alpakaEventHelper.h"
 
 class CUDAService;
 
@@ -20,8 +19,6 @@ namespace cms {
   namespace alpakatools {
     class EventCache {
     public:
-      using BareEvent = SharedEventPtr::element_type;
-
       EventCache();
 
       // Gets a (cached) CUDA event for the current device. The event
@@ -60,31 +57,13 @@ namespace cms {
 
       template <typename T_Acc>
       SharedEventPtr makeOrGet(int dev, T_Acc acc) {
-        return cache_[dev].makeOrGet([dev, acc]() {
-          auto event = cms::alpakatools::createEvent<T_Acc>(acc);
-          return std::unique_ptr<BareEvent, Deleter>(event, Deleter{dev});
-        });
+        return cache_[dev].makeOrGet([dev, acc]() { return std::make_unique<Event>(acc); });
       }
 
       // not thread safe, intended to be called only from CUDAService destructor
       void clear();
 
-      class Deleter {
-      public:
-        Deleter() = default;
-        Deleter(int d) : device_{d} {}
-        void operator()(alpaka::Event<Queue>* event) const {
-          if (device_ != -1) {
-            cms::alpakatools::ScopedSetDevice deviceGuard{device_};
-            // event->~(alpaka::Event<Queue>(acc));  //TODO destructor of event
-          }
-        }
-
-      private:
-        int device_ = -1;
-      };
-
-      std::vector<edm::ReusableObjectHolder<BareEvent, Deleter>> cache_;
+      std::vector<edm::ReusableObjectHolder<Event>> cache_;
     };
 
     // Gets the global instance of a EventCache
