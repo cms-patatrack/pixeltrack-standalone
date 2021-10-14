@@ -122,29 +122,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       const uint32_t blockSize = 128;
       const uint32_t numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-      const WorkDiv1 loadTracksWorkDiv =
-          cms::alpakatools::make_workdiv(Vec1::all(numberOfBlocks), Vec1::all(blockSize));
-      alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
+      const WorkDiv1D loadTracksWorkDiv =
+          cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
-      const WorkDiv1 finderSorterWorkDiv = cms::alpakatools::make_workdiv(Vec1::all(1), Vec1::all(1024 - 256));
-      const WorkDiv1 splitterFitterWorkDiv = cms::alpakatools::make_workdiv(Vec1::all(1024), Vec1::all(128));
+      const WorkDiv1D finderSorterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1), Vec1D::all(1024 - 256));
+      const WorkDiv1D splitterFitterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1024), Vec1D::all(128));
 
       if (oneKernel_) {
         // implemented only for density clustesrs
 #ifndef THREE_KERNELS
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(
+                        alpaka::createTaskKernel<Acc1D>(
                             finderSorterWorkDiv, vertexFinderOneKernel(), soa, ws_d, minT, eps, errmax, chi2max));
 
 #else
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(
+                        alpaka::createTaskKernel<Acc1D>(
                             finderSorterWorkDiv, vertexFinderKernel1(), soa, ws_d, minT, eps, errmax, chi2max));
         // one block per vertex...
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(splitterFitterWorkDiv, splitVerticesKernel(), soa, ws_d, 9.f));
+                        alpaka::createTaskKernel<Acc1D>(splitterFitterWorkDiv, splitVerticesKernel(), soa, ws_d, 9.f));
 
-        alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(finderSorterWorkDiv, vertexFinderKernel2(), soa, ws_d));
+        alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, vertexFinderKernel2(), soa, ws_d));
 #endif
 
       } else {  // five kernels
@@ -152,28 +152,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (useDensity_) {
           alpaka::enqueue(
               queue,
-              alpaka::createTaskKernel<Acc1>(
+              alpaka::createTaskKernel<Acc1D>(
                   finderSorterWorkDiv, clusterTracksByDensityKernel(), soa, ws_d, minT, eps, errmax, chi2max));
         } else if (useDBSCAN_) {
           alpaka::enqueue(queue,
-                          alpaka::createTaskKernel<Acc1>(
+                          alpaka::createTaskKernel<Acc1D>(
                               finderSorterWorkDiv, clusterTracksDBSCAN(), soa, ws_d, minT, eps, errmax, chi2max));
         } else if (useIterative_) {
           alpaka::enqueue(queue,
-                          alpaka::createTaskKernel<Acc1>(
+                          alpaka::createTaskKernel<Acc1D>(
                               finderSorterWorkDiv, clusterTracksIterative(), soa, ws_d, minT, eps, errmax, chi2max));
         }
 
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(finderSorterWorkDiv, fitVerticesKernel(), soa, ws_d, 50.));
+                        alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, fitVerticesKernel(), soa, ws_d, 50.));
         // one block per vertex...
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(splitterFitterWorkDiv, splitVerticesKernel(), soa, ws_d, 9.f));
+                        alpaka::createTaskKernel<Acc1D>(splitterFitterWorkDiv, splitVerticesKernel(), soa, ws_d, 9.f));
 
         alpaka::enqueue(queue,
-                        alpaka::createTaskKernel<Acc1>(finderSorterWorkDiv, fitVerticesKernel(), soa, ws_d, 5000.));
+                        alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, fitVerticesKernel(), soa, ws_d, 5000.));
 
-        alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(finderSorterWorkDiv, sortByPt2Kernel(), soa, ws_d));
+        alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, sortByPt2Kernel(), soa, ws_d));
       }
 
       alpaka::wait(queue);

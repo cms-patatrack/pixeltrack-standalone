@@ -133,7 +133,7 @@ struct verifyBulk {
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::Device device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;
@@ -188,25 +188,26 @@ int main() {
   alpaka::memset(queue, a_dbuf, 0, 1u);
 
   const unsigned int nThreads = 256;
-  const Vec1 threadsPerBlockOrElementsPerThread(nThreads);
+  const Vec1D threadsPerBlockOrElementsPerThread(nThreads);
   const unsigned int nBlocks4N = (4 * N + nThreads - 1) / nThreads;
-  const Vec1 blocksPerGrid4N(nBlocks4N);
-  const WorkDiv1& workDiv4N = cms::alpakatools::make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
+  const Vec1D blocksPerGrid4N(nBlocks4N);
+  const WorkDiv1D& workDiv4N = cms::alpakatools::make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
 
   launchZero(alpaka::getPtrNative(a_dbuf), queue);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv4N, count(), alpaka::getPtrNative(v_dbuf), alpaka::getPtrNative(a_dbuf), N));
 
   cms::alpakatools::launchFinalize(alpaka::getPtrNative(a_dbuf), queue);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                      WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)}, verify(), alpaka::getPtrNative(a_dbuf)));
+  alpaka::enqueue(
+      queue,
+      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+          WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verify(), alpaka::getPtrNative(a_dbuf)));
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv4N, fill(), alpaka::getPtrNative(v_dbuf), alpaka::getPtrNative(a_dbuf), N));
 
   auto la_hbuf = alpaka::allocBuf<Assoc, Idx>(host, 1u);
@@ -236,25 +237,25 @@ int main() {
   alpaka::memset(queue, dc_dbuf, 0, 1u);
 
   const unsigned int nBlocks = (N + nThreads - 1) / nThreads;
-  const Vec1 blocksPerGrid(nBlocks);
-  const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const Vec1D blocksPerGrid(nBlocks);
+  const WorkDiv1D& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDiv,
-                                                                               fillBulk(),
-                                                                               alpaka::getPtrNative(dc_dbuf),
-                                                                               alpaka::getPtrNative(v_dbuf),
-                                                                               alpaka::getPtrNative(a_dbuf),
-                                                                               N));
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv,
+                                                                                fillBulk(),
+                                                                                alpaka::getPtrNative(dc_dbuf),
+                                                                                alpaka::getPtrNative(v_dbuf),
+                                                                                alpaka::getPtrNative(a_dbuf),
+                                                                                N));
 
   alpaka::enqueue(
       queue,
-      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
           workDiv, cms::alpakatools::finalizeBulk(), alpaka::getPtrNative(dc_dbuf), alpaka::getPtrNative(a_dbuf)));
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                      WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)},
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                      WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)},
                       verifyBulk(),
                       alpaka::getPtrNative(a_dbuf),
                       alpaka::getPtrNative(dc_dbuf)));
@@ -271,21 +272,21 @@ int main() {
   alpaka::memset(queue, sa_dbuf, 0, 1u);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDiv,
-                                                                               fillBulk(),
-                                                                               alpaka::getPtrNative(dc_dbuf),
-                                                                               alpaka::getPtrNative(v_dbuf),
-                                                                               alpaka::getPtrNative(sa_dbuf),
-                                                                               N));
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv,
+                                                                                fillBulk(),
+                                                                                alpaka::getPtrNative(dc_dbuf),
+                                                                                alpaka::getPtrNative(v_dbuf),
+                                                                                alpaka::getPtrNative(sa_dbuf),
+                                                                                N));
 
   alpaka::enqueue(
       queue,
-      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
           workDiv, cms::alpakatools::finalizeBulk(), alpaka::getPtrNative(dc_dbuf), alpaka::getPtrNative(sa_dbuf)));
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
-                      WorkDiv1{Vec1::all(1u), Vec1::all(1u), Vec1::all(1u)},
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                      WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)},
                       verifyBulk(),
                       alpaka::getPtrNative(sa_dbuf),
                       alpaka::getPtrNative(dc_dbuf)));
@@ -317,27 +318,27 @@ int main() {
   launchZero(alpaka::getPtrNative(m2_dbuf), queue);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv4N, countMulti(), alpaka::getPtrNative(v_dbuf), alpaka::getPtrNative(m1_dbuf), N));
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv4N, countMultiLocal(), alpaka::getPtrNative(v_dbuf), alpaka::getPtrNative(m2_dbuf), N));
 
-  const Vec1 blocksPerGridTotBins(1u);
-  const Vec1 threadsPerBlockOrElementsPerThreadTotBins(Multiplicity::totbins());
-  const WorkDiv1& workDivTotBins =
+  const Vec1D blocksPerGridTotBins(1u);
+  const Vec1D threadsPerBlockOrElementsPerThreadTotBins(Multiplicity::totbins());
+  const WorkDiv1D& workDivTotBins =
       cms::alpakatools::make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDivTotBins, verifyMulti(), alpaka::getPtrNative(m1_dbuf), alpaka::getPtrNative(m2_dbuf)));
 
   cms::alpakatools::launchFinalize(alpaka::getPtrNative(m1_dbuf), queue);
   cms::alpakatools::launchFinalize(alpaka::getPtrNative(m2_dbuf), queue);
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(
+                  alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDivTotBins, verifyMulti(), alpaka::getPtrNative(m1_dbuf), alpaka::getPtrNative(m2_dbuf)));
 
   alpaka::wait(queue);

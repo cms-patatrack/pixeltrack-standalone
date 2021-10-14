@@ -18,7 +18,7 @@
 
 int main(void) {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ALPAKA_ACCELERATOR_NAMESPACE::DevAcc1 device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::PltfAcc1>(0u));
+  const ALPAKA_ACCELERATOR_NAMESPACE::Device device(alpaka::getDevByIdx<ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
   ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
 
   constexpr unsigned int numElements = 256 * 2000;
@@ -250,23 +250,23 @@ int main(void) {
     // COUNT MODULES
     const int blocksPerGridCountModules =
         (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-    const WorkDiv1& workDivCountModules = cms::alpakatools::make_workdiv(Vec1::all(blocksPerGridCountModules),
-                                                                         Vec1::all(threadsPerBlockOrElementsPerThread));
+    const WorkDiv1D& workDivCountModules = cms::alpakatools::make_workdiv(
+        Vec1D::all(blocksPerGridCountModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
     alpaka::enqueue(
         queue,
-        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivCountModules,
-                                                                     gpuClustering::countModules(),
-                                                                     alpaka::getPtrNative(d_id_buf),
-                                                                     alpaka::getPtrNative(d_moduleStart_buf),
-                                                                     alpaka::getPtrNative(d_clus_buf),
-                                                                     n));
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivCountModules,
+                                                                      gpuClustering::countModules(),
+                                                                      alpaka::getPtrNative(d_id_buf),
+                                                                      alpaka::getPtrNative(d_moduleStart_buf),
+                                                                      alpaka::getPtrNative(d_clus_buf),
+                                                                      n));
 
     // FIND CLUSTER
-    const WorkDiv1& workDivMaxNumModules = cms::alpakatools::make_workdiv(
-        Vec1::all(gpuClustering::MaxNumModules), Vec1::all(threadsPerBlockOrElementsPerThread));
+    const WorkDiv1D& workDivMaxNumModules = cms::alpakatools::make_workdiv(
+        Vec1D::all(gpuClustering::MaxNumModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
@@ -274,16 +274,16 @@ int main(void) {
 
     alpaka::enqueue(
         queue,
-        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
-                                                                     gpuClustering::findClus(),
-                                                                     alpaka::getPtrNative(d_id_buf),
-                                                                     alpaka::getPtrNative(d_x_buf),
-                                                                     alpaka::getPtrNative(d_y_buf),
-                                                                     alpaka::getPtrNative(d_moduleStart_buf),
-                                                                     alpaka::getPtrNative(d_clusInModule_buf),
-                                                                     alpaka::getPtrNative(d_moduleId_buf),
-                                                                     alpaka::getPtrNative(d_clus_buf),
-                                                                     n));
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
+                                                                      gpuClustering::findClus(),
+                                                                      alpaka::getPtrNative(d_id_buf),
+                                                                      alpaka::getPtrNative(d_x_buf),
+                                                                      alpaka::getPtrNative(d_y_buf),
+                                                                      alpaka::getPtrNative(d_moduleStart_buf),
+                                                                      alpaka::getPtrNative(d_clusInModule_buf),
+                                                                      alpaka::getPtrNative(d_moduleId_buf),
+                                                                      alpaka::getPtrNative(d_clus_buf),
+                                                                      n));
     alpaka::memcpy(queue, h_nModules_buf, d_moduleStart_buf, 1u);
 
     auto h_nclus_buf = alpaka::allocBuf<uint32_t, Idx>(host, gpuClustering::MaxNumModules);
@@ -309,15 +309,15 @@ int main(void) {
     // CLUSTER CHARGE CUT
     alpaka::enqueue(
         queue,
-        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1>(workDivMaxNumModules,
-                                                                     gpuClustering::clusterChargeCut(),
-                                                                     alpaka::getPtrNative(d_id_buf),
-                                                                     alpaka::getPtrNative(d_adc_buf),
-                                                                     alpaka::getPtrNative(d_moduleStart_buf),
-                                                                     alpaka::getPtrNative(d_clusInModule_buf),
-                                                                     alpaka::getPtrNative(d_moduleId_buf),
-                                                                     alpaka::getPtrNative(d_clus_buf),
-                                                                     n));
+        alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
+                                                                      gpuClustering::clusterChargeCut(),
+                                                                      alpaka::getPtrNative(d_id_buf),
+                                                                      alpaka::getPtrNative(d_adc_buf),
+                                                                      alpaka::getPtrNative(d_moduleStart_buf),
+                                                                      alpaka::getPtrNative(d_clusInModule_buf),
+                                                                      alpaka::getPtrNative(d_moduleId_buf),
+                                                                      alpaka::getPtrNative(d_clus_buf),
+                                                                      n));
     alpaka::memcpy(queue, h_id_buf, d_id_buf, n);
     alpaka::memcpy(queue, h_clus_buf, d_clus_buf, n);
     alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, gpuClustering::MaxNumModules);

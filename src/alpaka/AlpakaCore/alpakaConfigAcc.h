@@ -7,8 +7,8 @@
 #define ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
-  using Acc1 = alpaka::AccGpuCudaRt<Dim1, Extent>;
-  using Acc2 = alpaka::AccGpuCudaRt<Dim2, Extent>;
+  using Acc1D = alpaka::AccGpuCudaRt<Dim1D, Extent>;
+  using Acc2D = alpaka::AccGpuCudaRt<Dim2D, Extent>;
   using Queue = alpaka::QueueCudaRtNonBlocking;
 }  // namespace alpaka_cuda_async
 
@@ -23,8 +23,8 @@ namespace alpaka_cuda_async {
 #define ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
-  using Acc1 = alpaka::AccCpuSerial<Dim1, Extent>;
-  using Acc2 = alpaka::AccCpuSerial<Dim2, Extent>;
+  using Acc1D = alpaka::AccCpuSerial<Dim1D, Extent>;
+  using Acc2D = alpaka::AccCpuSerial<Dim2D, Extent>;
   using Queue = alpaka::QueueCpuBlocking;
 }  // namespace alpaka_serial_sync
 
@@ -39,8 +39,8 @@ namespace alpaka_serial_sync {
 #define ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
-  using Acc1 = alpaka::AccCpuTbbBlocks<Dim1, Extent>;
-  using Acc2 = alpaka::AccCpuTbbBlocks<Dim2, Extent>;
+  using Acc1D = alpaka::AccCpuTbbBlocks<Dim1D, Extent>;
+  using Acc2D = alpaka::AccCpuTbbBlocks<Dim2D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_tbb_async
 
@@ -55,8 +55,8 @@ namespace alpaka_tbb_async {
 #define ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 namespace alpaka_omp2_async {
   using namespace alpaka_common;
-  using Acc1 = alpaka::AccCpuOmp2Blocks<Dim1, Extent>;
-  using Acc2 = alpaka::AccCpuOmp2Blocks<Dim2, Extent>;
+  using Acc1D = alpaka::AccCpuOmp2Blocks<Dim1D, Extent>;
+  using Acc2D = alpaka::AccCpuOmp2Blocks<Dim2D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp2_async
 
@@ -71,8 +71,8 @@ namespace alpaka_omp2_async {
 #define ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 namespace alpaka_omp4_async {
   using namespace alpaka_common;
-  using Acc1 = alpaka::AccCpuOmp4<Dim1, Extent>;
-  using Acc2 = alpaka::AccCpuOmp4<Dim2, Extent>;
+  using Acc1D = alpaka::AccCpuOmp4<Dim1D, Extent>;
+  using Acc2D = alpaka::AccCpuOmp4<Dim2D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp4_async
 
@@ -83,26 +83,35 @@ namespace alpaka_omp4_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
 #endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
 
+// convert the macro argument to a null-terminated quoted string
+#define STRINGIFY_(ARG) #ARG
+#define STRINGIFY(ARG) STRINGIFY_(ARG)
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using DevAcc1 = alpaka::Dev<Acc1>;
-  using DevAcc2 = alpaka::Dev<Acc2>;
-  using PltfAcc1 = alpaka::Pltf<DevAcc1>;
-  using PltfAcc2 = alpaka::Pltf<DevAcc2>;
+  // these are independent from the dimensionality
+  using Device = alpaka::Dev<Acc1D>;
+  using Platform = alpaka::Pltf<Device>;
+  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
+                STRINGIFY(alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
+                    alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
+  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
+                STRINGIFY(alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
+                    alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
 
   template <class TData>
-  using AlpakaAccBuf1 = alpaka::Buf<Acc1, TData, Dim1, Idx>;
+  using AlpakaAccBuf1D = alpaka::Buf<Acc1D, TData, Dim1D, Idx>;
 
   template <class TData>
-  using AlpakaAccBuf2 = alpaka::Buf<Acc2, TData, Dim2, Idx>;
+  using AlpakaAccBuf2D = alpaka::Buf<Acc2D, TData, Dim2D, Idx>;
 
   template <typename TData>
-  using AlpakaDeviceBuf = AlpakaAccBuf1<TData>;
+  using AlpakaDeviceBuf = AlpakaAccBuf1D<TData>;
 
   template <typename TData>
-  using AlpakaDeviceView = alpaka::ViewPlainPtr<DevAcc1, TData, Dim1, Idx>;
+  using AlpakaDeviceView = alpaka::ViewPlainPtr<Device, TData, Dim1D, Idx>;
 
   template <typename TData>
-  using AlpakaDeviceSubView = alpaka::ViewSubView<DevAcc1, TData, Dim1, Idx>;
+  using AlpakaDeviceSubView = alpaka::ViewSubView<Device, TData, Dim1D, Idx>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // alpakaConfigAcc_h_
