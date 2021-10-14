@@ -94,7 +94,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     PixelTrackAlpaka tracks{cms::alpakatools::allocDeviceBuf<pixelTrack::TrackSoA>(1u)};
     auto* soa = alpaka::getPtrNative(tracks);
 
-    CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits());
+    CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits(), queue);
     kernels.buildDoublets(hits_d, queue);
     kernels.launchKernels(hits_d, soa, queue);
     kernels.fillHitDetIndices(hits_d.view(), soa, queue);  // in principle needed only if Hits not "available"

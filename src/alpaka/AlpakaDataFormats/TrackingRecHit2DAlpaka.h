@@ -14,7 +14,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     explicit TrackingRecHit2DAlpaka(uint32_t nHits,
                                     const pixelCPEforGPU::ParamsOnGPU* cpeParams,
-                                    const uint32_t* hitsModuleStart)
+                                    const uint32_t* hitsModuleStart,
+                                    Queue& queue)
         : m_nHits(nHits),
           // NON-OWNING DEVICE POINTERS:
           m_hitsModuleStart(hitsModuleStart),
@@ -52,30 +53,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       view.m_cpeParams = cpeParams;
 
       // Raw pointers to data owned here in TrackingRecHit2DAlpaka object:
-#define SET(name) view.name = alpaka::getPtrNative(name)
-      SET(m_xl);
-      SET(m_yl);
-      SET(m_xerr);
-      SET(m_yerr);
-      SET(m_xg);
-      SET(m_yg);
-      SET(m_zg);
-      SET(m_rg);
-      SET(m_iphi);
-      SET(m_charge);
-      SET(m_xsize);
-      SET(m_ysize);
-      SET(m_detInd);
-      SET(m_averageGeometry);
-      SET(m_hitsLayerStart);
-      SET(m_hist);
-#undef SET
+      view.m_xl = alpaka::getPtrNative(m_xl);
+      view.m_yl = alpaka::getPtrNative(m_yl);
+      view.m_xerr = alpaka::getPtrNative(m_xerr);
+      view.m_yerr = alpaka::getPtrNative(m_yerr);
+      view.m_xg = alpaka::getPtrNative(m_xg);
+      view.m_yg = alpaka::getPtrNative(m_yg);
+      view.m_zg = alpaka::getPtrNative(m_zg);
+      view.m_rg = alpaka::getPtrNative(m_rg);
+      view.m_iphi = alpaka::getPtrNative(m_iphi);
+      view.m_charge = alpaka::getPtrNative(m_charge);
+      view.m_xsize = alpaka::getPtrNative(m_xsize);
+      view.m_ysize = alpaka::getPtrNative(m_ysize);
+      view.m_detInd = alpaka::getPtrNative(m_detInd);
+      view.m_averageGeometry = alpaka::getPtrNative(m_averageGeometry);
+      view.m_hitsLayerStart = alpaka::getPtrNative(m_hitsLayerStart);
+      view.m_hist = alpaka::getPtrNative(m_hist);
 
       // SoA view on device:
-      Queue queue(device);
       auto view_h{cms::alpakatools::createHostView<TrackingRecHit2DSOAView>(&view, 1u)};
       alpaka::memcpy(queue, m_view, view_h, 1u);
-      alpaka::wait(queue);
     }
 
     ~TrackingRecHit2DAlpaka() = default;

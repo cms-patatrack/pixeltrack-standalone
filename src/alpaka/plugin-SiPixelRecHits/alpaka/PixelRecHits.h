@@ -26,7 +26,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       TrackingRecHit2DAlpaka makeHitsAsync(SiPixelDigisAlpaka const& digis_d,
                                            SiPixelClustersAlpaka const& clusters_d,
                                            BeamSpotAlpaka const& bs_d,
-                                           pixelCPEforGPU::ParamsOnGPU const* cpeParams) const;
+                                           pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                           Queue& queue) const;
     };
   }  // namespace pixelgpudetails
 

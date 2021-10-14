@@ -58,7 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device,
                 iEvent,
                 tokenHit_,
-                gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params()));
+                gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params(), ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
