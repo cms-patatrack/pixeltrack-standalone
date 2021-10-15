@@ -323,7 +323,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // trying to free the track building process from hardcoded layers, leaving
     // the visit of the graph based on the neighborhood connections between cells.
-    template <typename T_Acc>
+    template <int DEPTH, typename T_Acc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void find_ntuplets(const T_Acc& acc,
                                                       Hits const& hh,
                                                       GPUCACell* __restrict__ cells,
@@ -334,49 +334,54 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       TmpTuple& tmpNtuplet,
                                                       const unsigned int minHitsPerNtuplet,
                                                       bool startAt0) const {
-      // the building process for a track ends if:
-      // it has no right neighbor
-      // it has no compatible neighbor
-      // the ntuplets is then saved if the number of hits it contains is greater
-      // than a threshold
+      if constexpr (DEPTH == 0) {
+        printf("ERROR: GPUCACell::find_ntuplets reached full depth!\n");
+        ALPAKA_ASSERT_OFFLOAD(false);
+      } else {
+        // the building process for a track ends if:
+        // it has no right neighbor
+        // it has no compatible neighbor
+        // the ntuplets is then saved if the number of hits it contains is greater
+        // than a threshold
 
-      tmpNtuplet.push_back_unsafe(theDoubletId);
-      ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() <= 4);
+        tmpNtuplet.push_back_unsafe(theDoubletId);
+        ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() <= 4);
 
-      bool last = true;
-      for (int j = 0; j < outerNeighbors().size(); ++j) {
-        auto otherCell = outerNeighbors()[j];
-        if (cells[otherCell].theDoubletId < 0)
-          continue;  // killed by earlyFishbone
-        last = false;
-        cells[otherCell].find_ntuplets(
-            acc, hh, cells, cellTracks, foundNtuplets, apc, quality, tmpNtuplet, minHitsPerNtuplet, startAt0);
-      }
-      if (last) {  // if long enough save...
-        if ((unsigned int)(tmpNtuplet.size()) >= minHitsPerNtuplet - 1) {
+        bool last = true;
+        for (int j = 0; j < outerNeighbors().size(); ++j) {
+          auto otherCell = outerNeighbors()[j];
+          if (cells[otherCell].theDoubletId < 0)
+            continue;  // killed by earlyFishbone
+          last = false;
+          cells[otherCell].find_ntuplets<DEPTH - 1>(
+              acc, hh, cells, cellTracks, foundNtuplets, apc, quality, tmpNtuplet, minHitsPerNtuplet, startAt0);
+        }
+        if (last) {  // if long enough save...
+          if ((unsigned int)(tmpNtuplet.size()) >= minHitsPerNtuplet - 1) {
 #ifdef ONLY_TRIPLETS_IN_HOLE
-          // triplets accepted only pointing to the hole
-          if (tmpNtuplet.size() >= 3 || (startAt0 && hole4(hh, cells[tmpNtuplet[0]])) ||
-              ((!startAt0) && hole0(hh, cells[tmpNtuplet[0]])))
+            // triplets accepted only pointing to the hole
+            if (tmpNtuplet.size() >= 3 || (startAt0 && hole4(hh, cells[tmpNtuplet[0]])) ||
+                ((!startAt0) && hole0(hh, cells[tmpNtuplet[0]])))
 #endif
-          {
-            hindex_type hits[6];
-            auto nh = 0U;
-            for (auto c : tmpNtuplet) {
-              hits[nh++] = cells[c].theInnerHitId;
-            }
-            hits[nh] = theOuterHitId;
-            auto it = foundNtuplets.bulkFill(acc, apc, hits, tmpNtuplet.size() + 1);
-            if (it >= 0) {  // if negative is overflow....
-              for (auto c : tmpNtuplet)
-                cells[c].addTrack(acc, it, cellTracks);
-              quality[it] = bad;  // initialize to bad
+            {
+              hindex_type hits[6];
+              auto nh = 0U;
+              for (auto c : tmpNtuplet) {
+                hits[nh++] = cells[c].theInnerHitId;
+              }
+              hits[nh] = theOuterHitId;
+              auto it = foundNtuplets.bulkFill(acc, apc, hits, tmpNtuplet.size() + 1);
+              if (it >= 0) {  // if negative is overflow....
+                for (auto c : tmpNtuplet)
+                  cells[c].addTrack(acc, it, cellTracks);
+                quality[it] = bad;  // initialize to bad
+              }
             }
           }
         }
+        tmpNtuplet.pop_back();
+        ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() < 4);
       }
-      tmpNtuplet.pop_back();
-      ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() < 4);
     }
 
   private:
@@ -394,7 +399,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     hindex_type theInnerHitId;
     hindex_type theOuterHitId;
   };
-
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_GPUCACell_h

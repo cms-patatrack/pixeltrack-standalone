@@ -293,7 +293,7 @@ namespace KOKKOS_NAMESPACE {
     if (doit) {
       GPUCACell::TmpTuple stack;
       stack.reset();
-      thisCell.find_ntuplets(
+      thisCell.find_ntuplets<6>(
           hh, cells.data(), cellTracks(), *foundNtuplets, apc(), quality, stack, minHitsPerNtuplet, pid < 3);
       assert(stack.empty());
       // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());

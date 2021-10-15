@@ -327,7 +327,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (doit) {
             GPUCACell::TmpTuple stack;
             stack.reset();
-            thisCell.find_ntuplets(
+            thisCell.find_ntuplets<6>(
                 acc, hh, cells, *cellTracks, *foundNtuplets, *apc, quality, stack, minHitsPerNtuplet, pid < 3);
             ALPAKA_ASSERT_OFFLOAD(stack.empty());
             // printf("in %d found quadruplets: %d\n", cellIndex, apc->get());
