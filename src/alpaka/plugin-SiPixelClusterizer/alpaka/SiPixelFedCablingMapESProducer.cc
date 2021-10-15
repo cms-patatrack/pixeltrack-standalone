@@ -42,6 +42,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::prepareForAsyncCopy(modToUnp_d);
     alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
 
+    alpaka::wait(queue);
+
     eventSetup.put(std::make_unique<AlpakaDeviceBuf<unsigned char>>(std::move(modToUnp_d)));
   }
 

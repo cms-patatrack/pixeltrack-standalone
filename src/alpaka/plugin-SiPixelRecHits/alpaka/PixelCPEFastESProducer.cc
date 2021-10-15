@@ -67,6 +67,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::prepareForAsyncCopy(params_d);
     alpaka::memcpy(queue, params_d, params_h, 1u);
 
+    alpaka::wait(queue);
+
     eventSetup.put(std::make_unique<PixelCPEFast>(std::move(commonParams_d),
                                                   std::move(detParams_d),
                                                   std::move(layerGeometry_d),

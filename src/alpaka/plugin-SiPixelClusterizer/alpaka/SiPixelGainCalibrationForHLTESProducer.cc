@@ -62,6 +62,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::prepareForAsyncCopy(fields_d);
     alpaka::memcpy(queue, fields_d, fields_h, 1u);
 
+    alpaka::wait(queue);
+
     eventSetup.put(
         std::make_unique<SiPixelGainForHLTonGPU>(std::move(ped_d), std::move(rangeAndCols_d), std::move(fields_d)));
   }
