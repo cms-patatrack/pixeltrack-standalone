@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/ProductBase.h"
 
 namespace edm {
@@ -10,17 +11,17 @@ namespace edm {
   class Wrapper;
 }
 
-namespace cms {
-  namespace alpakatools {
-    namespace impl {
-      class ScopedContextGetterBase;
-    }
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
-    /**
+  namespace impl {
+    class ScopedContextGetterBase;
+  }
+
+  /**
      * The purpose of this class is to wrap CUDA data to edm::Event in a
      * way which forces correct use of various utilities.
      *
-     * The non-default construction has to be done with cms::alpakatools::ScopedContext
+     * The non-default construction has to be done with ::cms::alpakatools::ScopedContext
      * (in order to properly register the CUDA event).
      *
      * The default constructor is needed only for the ROOT dictionary generation.
@@ -30,31 +31,31 @@ namespace cms {
      * it. Here is a somewhat natural place. If overhead is too much, we
      * can use them only where synchronization between streams is needed.
      */
-    template <typename T>
-    class Product : public ProductBase {
-    public:
-      Product() = default;  // Needed only for ROOT dictionary generation
+  template <typename T>
+  class Product : public ProductBase {
+  public:
+    Product() = default;  // Needed only for ROOT dictionary generation
 
-      Product(const Product&) = delete;
-      Product& operator=(const Product&) = delete;
-      Product(Product&&) = default;
-      Product& operator=(Product&&) = default;
+    Product(const Product&) = delete;
+    Product& operator=(const Product&) = delete;
+    Product(Product&&) = default;
+    Product& operator=(Product&&) = default;
 
-    private:
-      friend class impl::ScopedContextGetterBase;
-      friend class ScopedContextProduce;
-      friend class edm::Wrapper<Product<T>>;
+  private:
+    friend class impl::ScopedContextGetterBase;
+    friend class ScopedContextProduce;
+    friend class edm::Wrapper<Product<T>>;
 
-      explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, T data)
-          : ProductBase(device, std::move(stream), std::move(event)), data_(std::move(data)) {}
+    explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, T data)
+        : ProductBase(device, std::move(stream), std::move(event)), data_(std::move(data)) {}
 
-      template <typename... Args>
-      explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, Args&&... args)
-          : ProductBase(device, std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
+    template <typename... Args>
+    explicit Product(int device, SharedStreamPtr stream, SharedEventPtr event, Args&&... args)
+        : ProductBase(device, std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
 
-      T data_;  //!
-    };
-  }  // namespace alpakatools
-}  // namespace cms
+    T data_;  //!
+  };
 
-#endif
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // AlpakaDataFormats_Common_Product_h

@@ -170,7 +170,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       };
 
       SiPixelRawToClusterGPUKernel()
-          : nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(2u)},
+          : nModules_Clusters_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(2u)},
             digis_d{SiPixelDigisAlpaka(0u)},
             clusters_d{SiPixelClustersAlpaka(0u)} {};
 

@@ -1,10 +1,12 @@
 #ifndef HeterogenousCore_AlpakaUtilities_deviceCount_h
 #define HeterogenousCore_AlpakaUtilities_deviceCount_h
 
-namespace cms {
-  namespace alpakatools {
-    int deviceCount();
-  }  // namespace alpakatools
-}  // namespace cms
+#include "AlpakaCore/alpakaConfig.h"
 
-#endif
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
+  int deviceCount();
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // HeterogenousCore_AlpakaUtilities_deviceCount_h

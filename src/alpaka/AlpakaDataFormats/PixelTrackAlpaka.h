@@ -1,10 +1,9 @@
 #ifndef CUDADataFormatsTrackTrackHeterogeneous_H
 #define CUDADataFormatsTrackTrackHeterogeneous_H
 
-#include "AlpakaDataFormats/TrajectoryStateSoA.h"
 #include "AlpakaCore/HistoContainer.h"
-
 #include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaDataFormats/TrajectoryStateSoA.h"
 
 namespace trackQuality {
   enum Quality : uint8_t { bad = 0, dup, loose, strict, tight, highPurity };
@@ -17,7 +16,7 @@ public:
 
   using Quality = trackQuality::Quality;
   using hindex_type = uint16_t;
-  using HitContainer = cms::alpakatools::OneToManyAssoc<hindex_type, S, 5 * S>;
+  using HitContainer = ::cms::alpakatools::OneToManyAssoc<hindex_type, S, 5 * S>;
 
   // Always check quality is at least loose!
   // CUDA does not support enums  in __lgc ...

@@ -12,9 +12,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelDigiErrorsAlpaka() = default;
     explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
-        : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(maxFedWords)},
-          error_d{cms::alpakatools::allocDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
-          error_h{cms::alpakatools::allocHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
+        : data_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<PixelErrorCompact>(maxFedWords)},
+          error_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<
+              ::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
+          error_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<
+              ::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
           formatterErrors_h{std::move(errors)} {
       auto perror_h = alpaka::getPtrNative(error_h);
       perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));
@@ -32,13 +34,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-    cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return alpaka::getPtrNative(error_d); }
-    cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return alpaka::getPtrNative(error_d); }
-    cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return alpaka::getPtrNative(error_d); }
+    ::cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return alpaka::getPtrNative(error_d); }
+    ::cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return alpaka::getPtrNative(error_d); }
+    ::cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return alpaka::getPtrNative(error_d); }
 
 #ifdef TODO
     using HostDataError =
-        std::pair<cms::alpakatools::SimpleVector<PixelErrorCompact>, AlpakaHostBuf<PixelErrorCompact>>;
+        std::pair<::cms::alpakatools::SimpleVector<PixelErrorCompact>, AlpakaHostBuf<PixelErrorCompact>>;
     HostDataError dataErrorToHostAsync(cudaStream_t stream) const;
 
     void copyErrorToHostAsync(cudaStream_t stream);
@@ -46,8 +48,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     AlpakaDeviceBuf<PixelErrorCompact> data_d;
-    AlpakaDeviceBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>> error_d;
-    AlpakaHostBuf<cms::alpakatools::SimpleVector<PixelErrorCompact>> error_h;
+    AlpakaDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>> error_d;
+    AlpakaHostBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>> error_h;
     PixelFormatterErrors formatterErrors_h;
   };
 

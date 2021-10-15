@@ -29,8 +29,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     pixelCPEforGPU::ParamsOnGPU const *params() const { return alpaka::getPtrNative(m_params); }
 
     template <typename T_Acc, typename Data>
-    cms::alpakatools::ESProduct<Data> getGPUData(T_Acc acc) {
-      cms::alpakatools::ESProduct<Data> gpuData_(acc);
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<Data> getGPUData(T_Acc acc) {
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<Data> gpuData_(acc);
       return gpuData_;
     }
 
@@ -43,20 +43,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       const auto &data = gpuData_.dataForCurrentDeviceAsync(queue, [this](GPUData &data, Queue queue) {
         // and now copy to device...
-        auto cParams = cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(1u);
+        auto cParams =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::CommonParams>(1u);
         data.h_paramsOnGPU.m_commonParams = alpaka::getPtrNative(cParams);
 
         uint32_t size_detParams = alpaka::extent::getExtentVec(this->m_detParams)[0u];
-        auto detParams = cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(size_detParams);
+        auto detParams =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::DetParams>(size_detParams);
         data.h_paramsOnGPU.m_detParams = alpaka::getPtrNative(detParams);
 
-        auto avgGeom = cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(1u);
+        auto avgGeom =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(1u);
         data.h_paramsOnGPU.m_averageGeometry = alpaka::getPtrNative(avgGeom);
 
-        auto layerGeom = cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(1u);
+        auto layerGeom =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(1u);
         data.h_paramsOnGPU.m_layerGeometry = alpaka::getPtrNative(layerGeom);
 
-        auto parGPU = cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(1u);
+        auto parGPU = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(1u);
         data.d_paramsOnGPU = alpaka::getPtrNative(parGPU);
 
         alpaka::prepareForAsyncCopy(cParams);
@@ -94,7 +98,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         }
       }
     };
-    //cms::alpakatools::ESProduct<GPUData> gpuData_;
+
+    //::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<GPUData> gpuData_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

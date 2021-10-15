@@ -33,7 +33,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-    cms::alpakatools::ContextState ctxState_;
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ContextState ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
     edm::EDPutTokenT<SiPixelDigisAlpaka> digiPutToken_;
@@ -140,7 +140,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     }  // end of for loop
 
-    cms::alpakatools::ScopedContextProduce ctx{ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent.streamID()};
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                                                                               iEvent.streamID()};
     gpuAlgo_.makeClustersAsync(isRun2_,
                                gpuMap,
                                gpuModulesToUnpack,
@@ -155,10 +156,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                ctx.stream());
 
     auto tmp = gpuAlgo_.getResults();
-    ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiPutToken_, std::move(tmp.first));
-    ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, clusterPutToken_, std::move(tmp.second));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiPutToken_, std::move(tmp.first));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, clusterPutToken_, std::move(tmp.second));
     if (includeErrors_) {
-      ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
+      ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
     }
   }
 

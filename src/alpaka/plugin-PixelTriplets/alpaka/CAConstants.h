@@ -46,22 +46,22 @@ namespace CAConstants {
   using tindex_type = uint16_t;  //  for tuples
 
 #ifndef ONLY_PHICUT
-  using CellNeighbors = cms::alpakatools::VecArray<uint32_t, 36>;
-  using CellTracks = cms::alpakatools::VecArray<tindex_type, 48>;
+  using CellNeighbors = ::cms::alpakatools::VecArray<uint32_t, 36>;
+  using CellTracks = ::cms::alpakatools::VecArray<tindex_type, 48>;
 #else
-  using CellNeighbors = cms::alpakatools::VecArray<uint32_t, 64>;
-  using CellTracks = cms::alpakatools::VecArray<tindex_type, 64>;
+  using CellNeighbors = ::cms::alpakatools::VecArray<uint32_t, 64>;
+  using CellTracks = ::cms::alpakatools::VecArray<tindex_type, 64>;
 #endif
 
-  using CellNeighborsVector = cms::alpakatools::SimpleVector<CellNeighbors>;
-  using CellTracksVector = cms::alpakatools::SimpleVector<CellTracks>;
+  using CellNeighborsVector = ::cms::alpakatools::SimpleVector<CellNeighbors>;
+  using CellTracksVector = ::cms::alpakatools::SimpleVector<CellTracks>;
 
-  using OuterHitOfCell = cms::alpakatools::VecArray<uint32_t, maxCellsPerHit()>;
+  using OuterHitOfCell = ::cms::alpakatools::VecArray<uint32_t, maxCellsPerHit()>;
 
-  using TuplesContainer = cms::alpakatools::OneToManyAssoc<hindex_type, maxTuples(), 5 * maxTuples()>;
-  using HitToTuple = cms::alpakatools::
+  using TuplesContainer = ::cms::alpakatools::OneToManyAssoc<hindex_type, maxTuples(), 5 * maxTuples()>;
+  using HitToTuple = ::cms::alpakatools::
       OneToManyAssoc<tindex_type, pixelGPUConstants::maxNumberOfHits, 4 * maxTuples()>;  // 3.5 should be enough
-  using TupleMultiplicity = cms::alpakatools::OneToManyAssoc<tindex_type, 8, maxTuples()>;
+  using TupleMultiplicity = ::cms::alpakatools::OneToManyAssoc<tindex_type, 8, maxTuples()>;
 
 }  // namespace CAConstants
 

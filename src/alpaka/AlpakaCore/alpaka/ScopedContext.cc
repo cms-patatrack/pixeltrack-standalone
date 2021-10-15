@@ -1,3 +1,4 @@
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/ScopedContext.h"
 
 namespace {
@@ -7,12 +8,13 @@ namespace {
   };
 }  // namespace
 
-namespace cms::alpakatools {
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
   namespace impl {
     void ScopedContextGetterBase::synchronizeStreams(int dataDevice,
-                                                     Queue& dataStream,
+                                                     ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& dataStream,
                                                      bool available,
-                                                     alpaka::Event<cms::alpakatools::Queue> dataEvent) {
+                                                     alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue> dataEvent) {
       if (dataDevice != device()) {
         // Eventually replace with prefetch to current device (assuming unified memory works)
         // If we won't go to unified memory, need to figure out something else...
@@ -32,7 +34,7 @@ namespace cms::alpakatools {
       }
     }
 
-    void ScopedContextHolderHelper::enqueueCallback(int device, Queue& stream) {
+    void ScopedContextHolderHelper::enqueueCallback(int device, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream) {
       alpaka::enqueue(stream, [this, device]() {
         auto data = new CallbackData{waitingTaskHolder_, device};
         std::unique_ptr<CallbackData> guard{reinterpret_cast<CallbackData*>(data)};
@@ -65,11 +67,12 @@ namespace cms::alpakatools {
     // exceptions. If this call would fail, we should get failures
     // elsewhere as well.
     //cudaEventRecord(event_.get(), stream());
-    //alpaka::enqueue(stream(), getEvent(ALPAKA_ACCELERATOR_NAMESPACE::Device).get());
+    //alpaka::enqueue(stream(), getEvent(::ALPAKA_ACCELERATOR_NAMESPACE::Device).get());
     //TODO
   }
 
   ////////////////////
 
   ScopedContextTask::~ScopedContextTask() { holderHelper_.enqueueCallback(device(), stream()); }
-}  // namespace cms::alpakatools
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

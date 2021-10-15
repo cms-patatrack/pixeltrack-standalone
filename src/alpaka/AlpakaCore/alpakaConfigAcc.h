@@ -92,11 +92,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using Device = alpaka::Dev<Acc1D>;
   using Platform = alpaka::Pltf<Device>;
   static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
+                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
+                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
   static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
+                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+
+  using Event = alpaka::Event<Queue>;
 
   template <class TData>
   using AlpakaAccBuf1D = alpaka::Buf<Acc1D, TData, Dim1D, Idx>;

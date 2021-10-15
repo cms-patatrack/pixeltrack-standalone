@@ -3,19 +3,13 @@
 
 #include <memory>
 #include <type_traits>
-#include "AlpakaCore/alpakaConfigCommon.h"
 
-namespace cms {
-  namespace alpakatools {
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    using Queue = alpaka::QueueCudaRtNonBlocking;
-#elif defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
-    using Queue = alpaka::QueueCpuNonBlocking;
-#else
-    using Queue = alpaka::QueueCpuBlocking;
-#endif
-    using SharedStreamPtr = std::shared_ptr<Queue>;
-  }  // namespace alpakatools
-}  // namespace cms
+#include "AlpakaCore/alpakaConfig.h"
+
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
+  using SharedStreamPtr = std::shared_ptr<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>;
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif
