@@ -72,9 +72,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             hits_d.phiBinner(), 10, hits_d.c_iphi(), hits_d.c_hitsLayerStart(), nHits, 256, queue);
       }
 
-      #ifdef GPU_DEBUG
+#ifdef GPU_DEBUG
       alpaka::wait(queue);
-      #endif
+#endif
 
       return hits_d;
     }

@@ -41,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     class DeviceConstView {
     public:
-      // TO DO: removed __ldg, check impact on perf with src/cuda.
+      // TO DO: removed __ldg, check impact on perf
       ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t moduleStart(int i) const { return moduleStart_[i]; }
       ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t clusInModule(int i) const { return clusInModule_[i]; }
       ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t moduleId(int i) const { return moduleId_[i]; }
