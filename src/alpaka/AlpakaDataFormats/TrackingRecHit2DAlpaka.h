@@ -73,6 +73,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // SoA view on device:
       auto view_h{cms::alpakatools::createHostView<TrackingRecHit2DSOAView>(&view, 1u)};
       alpaka::memcpy(queue, m_view, view_h, 1u);
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+      // FIXME: this is necessary when using the TBB backend, otherwise the next "kernel" using these data will crash.
+      // We do not know why it is necessary, nor why it has to be here and not right after the call to this constructor.
+      alpaka::wait(queue);
+#endif
     }
 
     ~TrackingRecHit2DAlpaka() = default;
