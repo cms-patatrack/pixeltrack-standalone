@@ -16,8 +16,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static constexpr uint32_t maxHits() { return gpuClustering::MaxNumClusters; }
     using hindex_type = uint16_t;  // if above is <=2^16
 
-    using Hist =
-        cms::alpakatools::HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
+    using Hist = ::cms::alpakatools::
+        HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
 
     using AverageGeometry = phase1PixelTopology::AverageGeometry;
 

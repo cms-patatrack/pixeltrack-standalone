@@ -47,43 +47,44 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
       const auto nt = Rfit::maxNumberOfConcurrentFits();
-      cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t local_idx) {
-        auto tuple_idx = local_idx + offset;
-        if (tuple_idx >= tupleMultiplicity->size(nHits))
-          return;
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+          acc, nt, [&](uint32_t local_idx) {
+            auto tuple_idx = local_idx + offset;
+            if (tuple_idx >= tupleMultiplicity->size(nHits))
+              return;
 
-        // get it from the ntuple container (one to one to helix)
-        auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
-        ALPAKA_ASSERT_OFFLOAD(tkid < foundNtuplets->nbins());
+            // get it from the ntuple container (one to one to helix)
+            auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
+            ALPAKA_ASSERT_OFFLOAD(tkid < foundNtuplets->nbins());
 
-        ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(tkid) == nHits);
+            ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(tkid) == nHits);
 
-        Rfit::Map3xNd<N> hits(phits + local_idx);
-        Rfit::Map4d fast_fit(pfast_fit + local_idx);
-        Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
+            Rfit::Map3xNd<N> hits(phits + local_idx);
+            Rfit::Map4d fast_fit(pfast_fit + local_idx);
+            Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
 
-        // Prepare data structure
-        auto const *hitId = foundNtuplets->begin(tkid);
-        for (unsigned int i = 0; i < hitsInFit; ++i) {
-          auto hit = hitId[i];
-          // printf("Hit global: %f,%f,%f\n", hhp->xg_d[hit],hhp->yg_d[hit],hhp->zg_d[hit]);
-          float ge[6];
-          hhp->cpeParams()
-              .detParams(hhp->detectorIndex(hit))
-              .frame.toGlobal(hhp->xerrLocal(hit), 0, hhp->yerrLocal(hit), ge);
-          // printf("Error: %d: %f,%f,%f,%f,%f,%f\n",hhp->detInd_d[hit],ge[0],ge[1],ge[2],ge[3],ge[4],ge[5]);
+            // Prepare data structure
+            auto const *hitId = foundNtuplets->begin(tkid);
+            for (unsigned int i = 0; i < hitsInFit; ++i) {
+              auto hit = hitId[i];
+              // printf("Hit global: %f,%f,%f\n", hhp->xg_d[hit],hhp->yg_d[hit],hhp->zg_d[hit]);
+              float ge[6];
+              hhp->cpeParams()
+                  .detParams(hhp->detectorIndex(hit))
+                  .frame.toGlobal(hhp->xerrLocal(hit), 0, hhp->yerrLocal(hit), ge);
+              // printf("Error: %d: %f,%f,%f,%f,%f,%f\n",hhp->detInd_d[hit],ge[0],ge[1],ge[2],ge[3],ge[4],ge[5]);
 
-          hits.col(i) << hhp->xGlobal(hit), hhp->yGlobal(hit), hhp->zGlobal(hit);
-          hits_ge.col(i) << ge[0], ge[1], ge[2], ge[3], ge[4], ge[5];
-        }
-        Rfit::Fast_fit(hits, fast_fit);
+              hits.col(i) << hhp->xGlobal(hit), hhp->yGlobal(hit), hhp->zGlobal(hit);
+              hits_ge.col(i) << ge[0], ge[1], ge[2], ge[3], ge[4], ge[5];
+            }
+            Rfit::Fast_fit(hits, fast_fit);
 
-        // no NaN here....
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(0) == fast_fit(0));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(1) == fast_fit(1));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(2) == fast_fit(2));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(3) == fast_fit(3));
-      });
+            // no NaN here....
+            ALPAKA_ASSERT_OFFLOAD(fast_fit(0) == fast_fit(0));
+            ALPAKA_ASSERT_OFFLOAD(fast_fit(1) == fast_fit(1));
+            ALPAKA_ASSERT_OFFLOAD(fast_fit(2) == fast_fit(2));
+            ALPAKA_ASSERT_OFFLOAD(fast_fit(3) == fast_fit(3));
+          });
 
     }  // kernel operator()
   };   // struct
@@ -107,28 +108,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // look in bin for this hit multiplicity
       const auto nt = Rfit::maxNumberOfConcurrentFits();
-      cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t local_idx) {
-        auto tuple_idx = local_idx + offset;
-        if (tuple_idx >= tupleMultiplicity->size(nHits))
-          return;
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+          acc, nt, [&](uint32_t local_idx) {
+            auto tuple_idx = local_idx + offset;
+            if (tuple_idx >= tupleMultiplicity->size(nHits))
+              return;
 
-        Rfit::Map3xNd<N> hits(phits + local_idx);
-        Rfit::Map4d fast_fit(pfast_fit_input + local_idx);
-        Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
+            Rfit::Map3xNd<N> hits(phits + local_idx);
+            Rfit::Map4d fast_fit(pfast_fit_input + local_idx);
+            Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
 
-        Rfit::VectorNd<N> rad = (hits.block(0, 0, 2, N).colwise().norm());
+            Rfit::VectorNd<N> rad = (hits.block(0, 0, 2, N).colwise().norm());
 
-        Rfit::Matrix2Nd<N> hits_cov = Rfit::Matrix2Nd<N>::Zero();
-        Rfit::loadCovariance2D(hits_ge, hits_cov);
+            Rfit::Matrix2Nd<N> hits_cov = Rfit::Matrix2Nd<N>::Zero();
+            Rfit::loadCovariance2D(hits_ge, hits_cov);
 
-        circle_fit[local_idx] = Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit, rad, B, true);
+            circle_fit[local_idx] = Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit, rad, B, true);
 
 #ifdef RIEMANN_DEBUG
 //    auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
 //  printf("kernelCircleFit circle.par(0,1,2): %d %f,%f,%f\n", tkid,
 //         circle_fit[local_idx].par(0), circle_fit[local_idx].par(1), circle_fit[local_idx].par(2));
 #endif
-      });
+          });
 
     }  // kernel operator()
   };   // struct
@@ -154,47 +156,48 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // look in bin for this hit multiplicity
       const auto nt = Rfit::maxNumberOfConcurrentFits();
-      cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t local_idx) {
-        auto tuple_idx = local_idx + offset;
-        if (tuple_idx >= tupleMultiplicity->size(nHits))
-          return;
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+          acc, nt, [&](uint32_t local_idx) {
+            auto tuple_idx = local_idx + offset;
+            if (tuple_idx >= tupleMultiplicity->size(nHits))
+              return;
 
-        // get it for the ntuple container (one to one to helix)
-        auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
+            // get it for the ntuple container (one to one to helix)
+            auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
 
-        Rfit::Map3xNd<N> hits(phits + local_idx);
-        Rfit::Map4d fast_fit(pfast_fit_input + local_idx);
-        Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
+            Rfit::Map3xNd<N> hits(phits + local_idx);
+            Rfit::Map4d fast_fit(pfast_fit_input + local_idx);
+            Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
 
-        auto const &line_fit = Rfit::Line_fit(hits, hits_ge, circle_fit[local_idx], fast_fit, B, true);
+            auto const &line_fit = Rfit::Line_fit(hits, hits_ge, circle_fit[local_idx], fast_fit, B, true);
 
-        Rfit::fromCircleToPerigee(circle_fit[local_idx]);
+            Rfit::fromCircleToPerigee(circle_fit[local_idx]);
 
-        results->stateAtBS.copyFromCircle(
-            circle_fit[local_idx].par, circle_fit[local_idx].cov, line_fit.par, line_fit.cov, 1.f / float(B), tkid);
-        results->pt(tkid) = B / std::abs(circle_fit[local_idx].par(2));
-        results->eta(tkid) = asinhf(line_fit.par(0));
-        results->chi2(tkid) = (circle_fit[local_idx].chi2 + line_fit.chi2) / (2 * N - 5);
+            results->stateAtBS.copyFromCircle(
+                circle_fit[local_idx].par, circle_fit[local_idx].cov, line_fit.par, line_fit.cov, 1.f / float(B), tkid);
+            results->pt(tkid) = B / std::abs(circle_fit[local_idx].par(2));
+            results->eta(tkid) = asinhf(line_fit.par(0));
+            results->chi2(tkid) = (circle_fit[local_idx].chi2 + line_fit.chi2) / (2 * N - 5);
 
 #ifdef RIEMANN_DEBUG
-        printf("kernelLineFit size %d for %d hits circle.par(0,1,2): %d %f,%f,%f\n",
-               N,
-               nHits,
-               tkid,
-               circle_fit[local_idx].par(0),
-               circle_fit[local_idx].par(1),
-               circle_fit[local_idx].par(2));
-        printf("kernelLineFit line.par(0,1): %d %f,%f\n", tkid, line_fit.par(0), line_fit.par(1));
-        printf("kernelLineFit chi2 cov %f/%f %e,%e,%e,%e,%e\n",
-               circle_fit[local_idx].chi2,
-               line_fit.chi2,
-               circle_fit[local_idx].cov(0, 0),
-               circle_fit[local_idx].cov(1, 1),
-               circle_fit[local_idx].cov(2, 2),
-               line_fit.cov(0, 0),
-               line_fit.cov(1, 1));
+            printf("kernelLineFit size %d for %d hits circle.par(0,1,2): %d %f,%f,%f\n",
+                   N,
+                   nHits,
+                   tkid,
+                   circle_fit[local_idx].par(0),
+                   circle_fit[local_idx].par(1),
+                   circle_fit[local_idx].par(2));
+            printf("kernelLineFit line.par(0,1): %d %f,%f\n", tkid, line_fit.par(0), line_fit.par(1));
+            printf("kernelLineFit chi2 cov %f/%f %e,%e,%e,%e,%e\n",
+                   circle_fit[local_idx].chi2,
+                   line_fit.chi2,
+                   circle_fit[local_idx].cov(0, 0),
+                   circle_fit[local_idx].cov(1, 1),
+                   circle_fit[local_idx].cov(2, 2),
+                   line_fit.cov(0, 0),
+                   line_fit.cov(1, 1));
 #endif
-      });
+          });
 
     }  // kernel operator()
   };   // struct

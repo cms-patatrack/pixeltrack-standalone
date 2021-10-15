@@ -18,7 +18,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     edm::EDPutTokenT<BeamSpotAlpaka> bsPutToken_;
     // TO DO: Add implementation of cms::alpaka::Product?
-    // const edm::EDPutTokenT<cms::alpaka::Product<BeamSpotAlpaka>> bsPutToken_;
+    // const edm::EDPutTokenT<::cms::alpaka::Product<BeamSpotAlpaka>> bsPutToken_;
   };
 
   BeamSpotToAlpaka::BeamSpotToAlpaka(edm::ProductRegistry& reg) : bsPutToken_{reg.produces<BeamSpotAlpaka>()} {}
@@ -27,9 +27,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
 
     // TO DO: Add inter-event parallelization. cms::alpaka::ScopedContextProduce?
-    cms::alpakatools::ScopedContextProduce ctx{ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent.streamID()};
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                                                                               iEvent.streamID()};
     BeamSpotAlpaka bsDevice(&bsRaw, ctx.stream());
-    ctx.emplace(ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, bsPutToken_, std::move(bsDevice));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, bsPutToken_, std::move(bsDevice));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

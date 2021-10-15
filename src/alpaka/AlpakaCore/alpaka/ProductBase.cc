@@ -1,7 +1,8 @@
 #include "AlpakaCore/ProductBase.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
 
-namespace cms::alpakatools {
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
   bool ProductBase::isAvailable() const {
     // if default-constructed, the product is not available
     if (not event_) {
@@ -26,4 +27,5 @@ namespace cms::alpakatools {
       alpaka::wait(*(event_.get()));
     }
   }
-}  // namespace cms::alpakatools
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

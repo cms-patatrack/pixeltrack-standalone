@@ -9,13 +9,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelDigisAlpaka() = default;
     explicit SiPixelDigisAlpaka(size_t maxFedWords)
-        : xx_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
-          yy_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
-          adc_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
-          moduleInd_d{cms::alpakatools::allocDeviceBuf<uint16_t>(maxFedWords)},
-          clus_d{cms::alpakatools::allocDeviceBuf<int32_t>(maxFedWords)},
-          pdigi_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxFedWords)},
-          rawIdArr_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxFedWords)} {}
+        : xx_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint16_t>(maxFedWords)},
+          yy_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint16_t>(maxFedWords)},
+          adc_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint16_t>(maxFedWords)},
+          moduleInd_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint16_t>(maxFedWords)},
+          clus_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int32_t>(maxFedWords)},
+          pdigi_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(maxFedWords)},
+          rawIdArr_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(maxFedWords)} {}
     ~SiPixelDigisAlpaka() = default;
 
     SiPixelDigisAlpaka(const SiPixelDigisAlpaka &) = delete;
@@ -57,7 +57,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // TO DO: nothing async in here for now... Pass the queue as argument instead, and don't wait anymore!
     auto adcToHostAsync(Queue &queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<uint16_t>(nDigis());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint16_t>(nDigis());
       alpaka::memcpy(queue, ret, adc_d, nDigis());
       return ret;
     }

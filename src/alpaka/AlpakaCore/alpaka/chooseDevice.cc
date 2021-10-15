@@ -1,7 +1,9 @@
-#include "chooseDevice.h"
-#include "deviceCount.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/chooseDevice.h"
+#include "AlpakaCore/deviceCount.h"
 
-namespace cms::alpakatools {
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
   int chooseDevice(edm::StreamID id) {
     // For startes we "statically" assign the device based on
     // edm::Stream number. This is suboptimal if the number of
@@ -9,6 +11,7 @@ namespace cms::alpakatools {
     // (and even then there is no load balancing).
 
     // TODO: improve the "assignment" logic
-    return id % cms::alpakatools::deviceCount();
+    return id % ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount();
   }
-}  // namespace cms::alpakatools
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

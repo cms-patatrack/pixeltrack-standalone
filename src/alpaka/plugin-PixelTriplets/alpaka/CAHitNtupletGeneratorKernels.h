@@ -23,8 +23,8 @@ namespace cAHitNtupletGenerator {
     unsigned long long nZeroTrackCells;
   };
 
-  using HitsView = ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
-  using HitsOnGPU = ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
+  using HitsView = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
+  using HitsOnGPU = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
 
   using HitToTuple = CAConstants::HitToTuple;
   using TupleMultiplicity = CAConstants::TupleMultiplicity;
@@ -160,31 +160,43 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           //////////////////////////////////////////////////////////
           // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
           //////////////////////////////////////////////////////////
-          counters_{cms::alpakatools::allocDeviceBuf<Counters>(1u)},
+          counters_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<Counters>(1u)},
 
-          device_hitToTuple_{cms::alpakatools::allocDeviceBuf<HitToTuple>(1u)},
-          device_tupleMultiplicity_{cms::alpakatools::allocDeviceBuf<TupleMultiplicity>(1u)},
+          device_hitToTuple_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<HitToTuple>(1u)},
+          device_tupleMultiplicity_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<TupleMultiplicity>(1u)},
 
-          device_theCells_{cms::alpakatools::allocDeviceBuf<GPUCACell>(params.maxNumberOfDoublets_)},
+          device_theCells_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<GPUCACell>(params.maxNumberOfDoublets_)},
           // in principle we can use "nhits" to heuristically dimension the workspace...
-          device_isOuterHitOfCell_{cms::alpakatools::allocDeviceBuf<GPUCACell::OuterHitOfCell>(std::max(1U, nhits))},
+          device_isOuterHitOfCell_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<GPUCACell::OuterHitOfCell>(
+                  std::max(1U, nhits))},
 
-          device_theCellNeighbors_{cms::alpakatools::allocDeviceBuf<CAConstants::CellNeighborsVector>(1u)},
-          device_theCellTracks_{cms::alpakatools::allocDeviceBuf<CAConstants::CellTracksVector>(1u)},
+          device_theCellNeighbors_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<CAConstants::CellNeighborsVector>(1u)},
+          device_theCellTracks_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<CAConstants::CellTracksVector>(1u)},
 
-          //cellStorage_{cms::alpakatools::allocDeviceBuf<unsigned char>(CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
+          //cellStorage_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<unsigned char>(CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
           device_theCellNeighborsContainer_{
-              cms::alpakatools::allocDeviceBuf<CAConstants::CellNeighbors>(CAConstants::maxNumOfActiveDoublets())},
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<CAConstants::CellNeighbors>(
+                  CAConstants::maxNumOfActiveDoublets())},
           device_theCellTracksContainer_{
-              cms::alpakatools::allocDeviceBuf<CAConstants::CellTracks>(CAConstants::maxNumOfActiveDoublets())},
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<CAConstants::CellTracks>(
+                  CAConstants::maxNumOfActiveDoublets())},
 
-          //device_storage_{cms::alpakatools::allocDeviceBuf<cms::cuda::AtomicPairCounter::c_type>(3u)},
-          //device_hitTuple_apc_ = (cms::cuda::AtomicPairCounter*)device_storage_.get()},
-          //device_hitToTuple_apc_ = (cms::cuda::AtomicPairCounter*)device_storage_.get() + 1;
+          //device_storage_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<::ALPAKA_ACCELERATOR_NAMESPACE::cmscuda::AtomicPairCounter::c_type>(3u)},
+          //device_hitTuple_apc_ = (::cms::alpakatools::AtomicPairCounter*)device_storage_.get()},
+          //device_hitToTuple_apc_ = (::cms::alpakatools::AtomicPairCounter*)device_storage_.get() + 1;
           //device_nCells_ = (uint32_t*)(device_storage_.get() + 2)},
-          device_hitTuple_apc_{cms::alpakatools::allocDeviceBuf<cms::alpakatools::AtomicPairCounter>(1u)},
-          device_hitToTuple_apc_{cms::alpakatools::allocDeviceBuf<cms::alpakatools::AtomicPairCounter>(1u)},
-          device_nCells_{cms::alpakatools::allocDeviceBuf<uint32_t>(1u)} {
+          device_hitTuple_apc_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(
+                  1u)},
+          device_hitToTuple_apc_{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(
+                  1u)},
+          device_nCells_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(1u)} {
       alpaka::memset(queue, counters_, 0, 1u);
 
       alpaka::memset(queue, device_nCells_, 0, 1u);
@@ -238,11 +250,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     AlpakaDeviceBuf<CAConstants::CellNeighbors> device_theCellNeighborsContainer_;  // Was non-owning in legacy!
     AlpakaDeviceBuf<CAConstants::CellTracks> device_theCellTracksContainer_;        // Was non-owning in legacy!
 
-    // AlpakaDeviceBuf<cms::alpakatools::AtomicPairCounter::c_type> device_storage_; // NB: In legacy
+    // AlpakaDeviceBuf<::cms::alpakatools::AtomicPairCounter::c_type> device_storage_; // NB: In legacy
     // NB: Here, data from device_storage_ (legacy) directly owned by the following:
-    AlpakaDeviceBuf<cms::alpakatools::AtomicPairCounter> device_hitTuple_apc_;    // Was non-owning in legacy!
-    AlpakaDeviceBuf<cms::alpakatools::AtomicPairCounter> device_hitToTuple_apc_;  // Was non-owning in legacy!
-    AlpakaDeviceBuf<uint32_t> device_nCells_;                                     // Was non-owning in legacy!
+    AlpakaDeviceBuf<::cms::alpakatools::AtomicPairCounter> device_hitTuple_apc_;    // Was non-owning in legacy!
+    AlpakaDeviceBuf<::cms::alpakatools::AtomicPairCounter> device_hitToTuple_apc_;  // Was non-owning in legacy!
+    AlpakaDeviceBuf<uint32_t> device_nCells_;                                       // Was non-owning in legacy!
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

@@ -51,9 +51,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& tracksBuf = iEvent.get(tokenTrack_);
     auto const tracks = alpaka::getPtrNative(tracksBuf);
 
-    cms::alpakatools::ScopedContextProduce ctx{ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent.streamID()};
-    ctx.emplace(
-        ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, tokenVertex_, m_gpuAlgo.makeAsync(tracks, m_ptMin, ctx.stream()));
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                                                                               iEvent.streamID()};
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                iEvent,
+                tokenVertex_,
+                m_gpuAlgo.makeAsync(tracks, m_ptMin, ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

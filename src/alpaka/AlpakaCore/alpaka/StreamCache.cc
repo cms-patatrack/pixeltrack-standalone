@@ -1,9 +1,10 @@
 #include "AlpakaCore/StreamCache.h"
 
-namespace cms::alpakatools {
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
   // StreamCache should be constructed by the first call to
   // getStreamCache() only if we have CUDA devices present
-  StreamCache::StreamCache() : cache_(cms::alpakatools::deviceCount()) {}
+  StreamCache::StreamCache() : cache_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount()) {}
 
   void StreamCache::clear() {
     // Reset the contents of the caches, but leave an
@@ -12,7 +13,7 @@ namespace cms::alpakatools {
     // StreamCache lives through multiple tests (and go through
     // multiple shutdowns of the framework).
     cache_.clear();
-    cache_.resize(cms::alpakatools::deviceCount());
+    cache_.resize(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount());
   }
 
   StreamCache& getStreamCache() {
@@ -20,4 +21,5 @@ namespace cms::alpakatools {
     static StreamCache cache;
     return cache;
   }
-}  // namespace cms::alpakatools
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

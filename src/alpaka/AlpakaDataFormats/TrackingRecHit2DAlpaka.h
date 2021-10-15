@@ -20,24 +20,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // NON-OWNING DEVICE POINTERS:
           m_hitsModuleStart(hitsModuleStart),
           // OWNING DEVICE POINTERS:
-          m_xl{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_yl{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_xerr{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_yerr{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_xg{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_yg{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_zg{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_rg{cms::alpakatools::allocDeviceBuf<float>(nHits)},
-          m_iphi{cms::alpakatools::allocDeviceBuf<int16_t>(nHits)},
-          m_charge{cms::alpakatools::allocDeviceBuf<int32_t>(nHits)},
-          m_xsize{cms::alpakatools::allocDeviceBuf<int16_t>(nHits)},
-          m_ysize{cms::alpakatools::allocDeviceBuf<int16_t>(nHits)},
-          m_detInd{cms::alpakatools::allocDeviceBuf<uint16_t>(nHits)},
-          m_averageGeometry{cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView::AverageGeometry>(1u)},
-          m_hitsLayerStart{cms::alpakatools::allocDeviceBuf<uint32_t>(nHits)},
-          m_hist{cms::alpakatools::allocDeviceBuf<Hist>(1u)},
+          m_xl{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_yl{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_xerr{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_yerr{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_xg{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_yg{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_zg{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_rg{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(nHits)},
+          m_iphi{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int16_t>(nHits)},
+          m_charge{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int32_t>(nHits)},
+          m_xsize{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int16_t>(nHits)},
+          m_ysize{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int16_t>(nHits)},
+          m_detInd{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint16_t>(nHits)},
+          m_averageGeometry{
+              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<TrackingRecHit2DSOAView::AverageGeometry>(
+                  1u)},
+          m_hitsLayerStart{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(nHits)},
+          m_hist{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<Hist>(1u)},
           // SOA view:
-          m_view{cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView>(1u)} {
+          m_view{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<TrackingRecHit2DSOAView>(1u)} {
       // the hits are actually accessed in order only in building
       // if ordering is relevant they may have to be stored phi-ordered by layer or so
       // this will break 1to1 correspondence with cluster and module locality
@@ -71,7 +73,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       view.m_hist = alpaka::getPtrNative(m_hist);
 
       // SoA view on device:
-      auto view_h{cms::alpakatools::createHostView<TrackingRecHit2DSOAView>(&view, 1u)};
+      auto view_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createHostView<TrackingRecHit2DSOAView>(&view, 1u)};
       alpaka::memcpy(queue, m_view, view_h, 1u);
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
       // FIXME: this is necessary when using the TBB backend, otherwise the next "kernel" using these data will crash.
@@ -100,57 +102,57 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const* c_iphi() const { return alpaka::getPtrNative(m_iphi); }
 
     auto xlToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_xl, nHits());
       return ret;
     }
     auto ylToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_yl, nHits());
       return ret;
     }
     auto xerrToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_xerr, nHits());
       return ret;
     }
     auto yerrToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_yerr, nHits());
       return ret;
     }
     auto xgToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_xg, nHits());
       return ret;
     }
     auto ygToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_yg, nHits());
       return ret;
     }
     auto zgToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_zg, nHits());
       return ret;
     }
     auto rgToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<float>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<float>(nHits());
       alpaka::memcpy(queue, ret, m_rg, nHits());
       return ret;
     }
     auto chargeToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<int32_t>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<int32_t>(nHits());
       alpaka::memcpy(queue, ret, m_charge, nHits());
       return ret;
     }
     auto xsizeToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<int16_t>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<int16_t>(nHits());
       alpaka::memcpy(queue, ret, m_xsize, nHits());
       return ret;
     }
     auto ysizeToHostAsync(Queue& queue) const {
-      auto ret = cms::alpakatools::allocHostBuf<int16_t>(nHits());
+      auto ret = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<int16_t>(nHits());
       alpaka::memcpy(queue, ret, m_ysize, nHits());
       return ret;
     }

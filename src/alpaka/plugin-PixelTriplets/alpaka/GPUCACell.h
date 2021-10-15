@@ -30,10 +30,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    using Hits = ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
+    using Hits = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
     using hindex_type = Hits::hindex_type;
 
-    using TmpTuple = cms::alpakatools::VecArray<uint32_t, 6>;
+    using TmpTuple = ::cms::alpakatools::VecArray<uint32_t, 6>;
 
     using HitContainer = pixelTrack::HitContainer;
     using Quality = trackQuality::Quality;
@@ -87,7 +87,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      cms::alpakatools::threadfence(acc);
+      ::cms::alpakatools::threadfence(acc);
 
       return outerNeighbors().push_back(acc, t);
     }
@@ -114,7 +114,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      cms::alpakatools::threadfence(acc);
+      ::cms::alpakatools::threadfence(acc);
 
       return tracks().push_back(acc, t);
     }
@@ -329,7 +329,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       GPUCACell* __restrict__ cells,
                                                       CellTracksVector& cellTracks,
                                                       HitContainer& foundNtuplets,
-                                                      cms::alpakatools::AtomicPairCounter& apc,
+                                                      ::cms::alpakatools::AtomicPairCounter& apc,
                                                       Quality* __restrict__ quality,
                                                       TmpTuple& tmpNtuplet,
                                                       const unsigned int minHitsPerNtuplet,

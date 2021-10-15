@@ -6,98 +6,99 @@
 #include <mutex>
 #include <vector>
 
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
 #include "AlpakaCore/currentDevice.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
 
-namespace cms {
-  namespace alpakatools {
-    template <typename T>
-    class ESProduct {
-    public:
-      template <typename T_Acc>
-      ESProduct(T_Acc acc) : gpuDataPerDevice_(cms::alpakatools::deviceCount()) {
-        for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-          gpuDataPerDevice_[i].m_event = getEventCache().get(acc);
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+
+  template <typename T>
+  class ESProduct {
+  public:
+    template <typename T_Acc>
+    ESProduct(T_Acc acc) : gpuDataPerDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount()) {
+      for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
+        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::getEventCache().get(acc);
+      }
+    }
+
+    ~ESProduct() = default;
+
+    // transferAsync should be a function of (T&, cudaStream_t)
+    // which enqueues asynchronous transfers (possibly kernels as well)
+    // to the CUDA stream
+    template <typename F>
+    const T& dataForCurrentDeviceAsync(::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue, F transferAsync) const {
+      auto device = currentDevice();
+      auto& data = gpuDataPerDevice_[device];
+
+      // If GPU data has already been filled, we can return it
+      // immediately
+      if (not data.m_filled.load()) {
+        // It wasn't, so need to fill it
+        std::scoped_lock<std::mutex> lk{data.m_mutex};
+
+        if (data.m_filled.load()) {
+          // Other thread marked it filled while we were locking the mutex, so we're free to return it
+          return data.m_data;
+        }
+
+        if (data.m_fillingStream != nullptr) {
+          // Someone else is filling
+
+          // Check first if the recorded event has occurred
+          if (eventWorkHasCompleted(data.m_event.get())) {
+            // It was, so data is accessible from all CUDA streams on
+            // the device. Set the 'filled' for all subsequent calls and
+            // return the value
+            auto should_be_false = data.m_filled.exchange(true);
+            assert(not should_be_false);
+            data.m_fillingStream = nullptr;
+          } else if (data.m_fillingStream != queue) {
+            // Filling is still going on. For other CUDA stream, add
+            // wait on the CUDA stream and return the value. Subsequent
+            // work queued on the stream will wait for the event to
+            // occur (i.e. transfer to finish).
+            alpaka::wait(queue, data.m_event.get());
+          }
+          // else: filling is still going on. But for the same CUDA
+          // stream (which would be a bit strange but fine), we can just
+          // return as all subsequent work should be enqueued to the
+          // same CUDA stream (or stream to be explicitly synchronized
+          // by the caller)
+        } else {
+          // Now we can be sure that the data is not yet on the GPU, and
+          // this thread is the first to try that.
+          transferAsync(data.m_data, queue);
+          assert(data.m_fillingStream == nullptr);
+          data.m_fillingStream = queue;
+          // Record in the cudaStream an event to mark the readiness of the
+          // EventSetup data on the GPU, so other streams can check for it
+          alpaka::enqueue(queue, data.m_event.get());
+          // Now the filling has been enqueued to the cudaStream, so we
+          // can return the GPU data immediately, since all subsequent
+          // work must be either enqueued to the cudaStream, or the cudaStream
+          // must be synchronized by the caller
         }
       }
 
-      ~ESProduct() = default;
+      return data.m_data;
+    }
 
-      // transferAsync should be a function of (T&, cudaStream_t)
-      // which enqueues asynchronous transfers (possibly kernels as well)
-      // to the CUDA stream
-      template <typename F>
-      const T& dataForCurrentDeviceAsync(Queue queue, F transferAsync) const {
-        auto device = currentDevice();
-        auto& data = gpuDataPerDevice_[device];
-
-        // If GPU data has already been filled, we can return it
-        // immediately
-        if (not data.m_filled.load()) {
-          // It wasn't, so need to fill it
-          std::scoped_lock<std::mutex> lk{data.m_mutex};
-
-          if (data.m_filled.load()) {
-            // Other thread marked it filled while we were locking the mutex, so we're free to return it
-            return data.m_data;
-          }
-
-          if (data.m_fillingStream != nullptr) {
-            // Someone else is filling
-
-            // Check first if the recorded event has occurred
-            if (eventWorkHasCompleted(data.m_event.get())) {
-              // It was, so data is accessible from all CUDA streams on
-              // the device. Set the 'filled' for all subsequent calls and
-              // return the value
-              auto should_be_false = data.m_filled.exchange(true);
-              assert(not should_be_false);
-              data.m_fillingStream = nullptr;
-            } else if (data.m_fillingStream != queue) {
-              // Filling is still going on. For other CUDA stream, add
-              // wait on the CUDA stream and return the value. Subsequent
-              // work queued on the stream will wait for the event to
-              // occur (i.e. transfer to finish).
-              alpaka::wait(queue, data.m_event.get());
-            }
-            // else: filling is still going on. But for the same CUDA
-            // stream (which would be a bit strange but fine), we can just
-            // return as all subsequent work should be enqueued to the
-            // same CUDA stream (or stream to be explicitly synchronized
-            // by the caller)
-          } else {
-            // Now we can be sure that the data is not yet on the GPU, and
-            // this thread is the first to try that.
-            transferAsync(data.m_data, queue);
-            assert(data.m_fillingStream == nullptr);
-            data.m_fillingStream = queue;
-            // Record in the cudaStream an event to mark the readiness of the
-            // EventSetup data on the GPU, so other streams can check for it
-            alpaka::enqueue(queue, data.m_event.get());
-            // Now the filling has been enqueued to the cudaStream, so we
-            // can return the GPU data immediately, since all subsequent
-            // work must be either enqueued to the cudaStream, or the cudaStream
-            // must be synchronized by the caller
-          }
-        }
-
-        return data.m_data;
-      }
-
-    private:
-      struct Item {
-        mutable std::mutex m_mutex;
-        mutable SharedEventPtr m_event;  // guarded by m_mutex
-        // non-null if some thread is already filling (cudaStream_t is just a pointer)
-        mutable Queue* m_fillingStream = nullptr;    // guarded by m_mutex
-        mutable std::atomic<bool> m_filled = false;  // easy check if data has been filled already or not
-        mutable T m_data;                            // guarded by m_mutex
-      };
-
-      std::vector<Item> gpuDataPerDevice_;
+  private:
+    struct Item {
+      mutable std::mutex m_mutex;
+      mutable SharedEventPtr m_event;  // guarded by m_mutex
+      // non-null if some thread is already filling (cudaStream_t is just a pointer)
+      mutable ::ALPAKA_ACCELERATOR_NAMESPACE::Queue* m_fillingStream = nullptr;  // guarded by m_mutex
+      mutable std::atomic<bool> m_filled = false;  // easy check if data has been filled already or not
+      mutable T m_data;                            // guarded by m_mutex
     };
-  }  // namespace alpakatools
-}  // namespace cms
 
-#endif
+    std::vector<Item> gpuDataPerDevice_;
+  };
+
+}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // HeterogeneousCore_AlpakaCore_ESProduct_h
