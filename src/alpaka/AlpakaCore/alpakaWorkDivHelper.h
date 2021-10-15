@@ -367,7 +367,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
           return *this;
         }
 #endif
-        // the iterator has reached or ovrflowed the end of the extent, clamp it to the extent
+        // the iterator has reached or overflown the end of the extent, clamp it to the extent
         index_ = extent_;
         return *this;
       }
@@ -425,7 +425,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       thread_ = {blockDimension[0u] * blockIndex[0u] + threadIndex[0u],
                  blockDimension[1u] * blockIndex[1u] + threadIndex[1u],
                  blockDimension[2u] * blockIndex[2u] + threadIndex[2u]};
-      stride_ = {blockDimension[0u] * gridDimension[0u], 1, 1};
+      stride_ = {blockDimension[0u] * gridDimension[0u], Idx{1}, Idx{1}};
       extent_ = stride_;
 
       blockDim_ = blockDimension;
@@ -442,7 +442,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                  blockDimension[1u] * blockIndex[1u] + threadIndex[1u],
                  blockDimension[2u] * blockIndex[2u] + threadIndex[2u]};
       thread_ = thread_ + elementIdxShift;
-      stride_ = {blockDimension[0u] * gridDimension[0u], 1, 1};
+      stride_ = {blockDimension[0u] * gridDimension[0u], Idx{1}, Idx{1}};
 
       blockDim_ = blockDimension;
     }
@@ -480,7 +480,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         }
 #endif
 
-        // the iterator has reached or ovrflowed the end of the extent, clamp it
+        // the iterator has reached or overflown the end of the extent, clamp it
         // to the extent
         index_ = extent_;
         return *this;
@@ -538,7 +538,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       thread_ = {blockDimension[0u] * blockIndex[0u] + threadIndex[0u],
                  blockDimension[1u] * blockIndex[1u] + threadIndex[1u],
                  blockDimension[2u] * blockIndex[2u] + threadIndex[2u]};
-      stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], 1};
+      stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], Idx{1}};
       extent_ = stride_;
 
       blockDim_ = blockDimension;
@@ -555,7 +555,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                  blockDimension[1u] * blockIndex[1u] + threadIndex[1u],
                  blockDimension[2u] * blockIndex[2u] + threadIndex[2u]};
       thread_ = thread_ + elementIdxShift;
-      stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], 1};
+      stride_ = {blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], Idx{1}};
 
       blockDim_ = blockDimension;
     }
@@ -600,7 +600,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         }
 #endif
 
-        // the iterator has reached or ovrflowed the end of the extent, clamp it
+        // the iterator has reached or overflown the end of the extent, clamp it
         // to the extent
         index_ = extent_;
         return *this;
@@ -733,7 +733,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         }
 #endif
 
-        // the iterator has reached or ovrflowed the end of the extent, clamp it
+        // the iterator has reached or overflown the end of the extent, clamp it
         // to the extent
         index_ = extent_;
         return *this;

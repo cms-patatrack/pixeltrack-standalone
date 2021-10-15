@@ -45,8 +45,8 @@ struct explicit_loop_1d {
     auto blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc));
     auto gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc));
 
-    Vec3D thread({blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u], 0, 0});
-    Vec3D stride({blockDimension[0u] * gridDimension[0u], 1, 1});
+    Vec3D thread({blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u], Idx{0}, Idx{0}});
+    Vec3D stride({blockDimension[0u] * gridDimension[0u], Idx{1}, Idx{1}});
     Vec3D index(thread);
 
     for (T i = index[0u]; i < elements[0u]; i += stride[0u]) {
@@ -77,8 +77,8 @@ struct explicit_loop_2d {
 
     Vec3D thread({blockDimension[0u] * blockIdxInGrid[0u] + threadIdxLocal[0u],
                   blockDimension[1u] * blockIdxInGrid[1u] + threadIdxLocal[1u],
-                  0});
-    Vec3D stride({blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], 1});
+                  Idx{0}});
+    Vec3D stride({blockDimension[0u] * gridDimension[0u], blockDimension[1u] * gridDimension[1u], Idx{1}});
     Vec3D index(thread);
 
     for (T i = index[1u]; i < elements[1u]; i += stride[1u]) {
