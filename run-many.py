@@ -49,7 +49,7 @@ class Program:
             command = ["numactl", "--cpunodebind={}".format(self._numa), "--membind={}".format(self._numa)] + command
             msg += " NUMA node {}".format(self._numa)
         if self._cores is not None:
-            command = ["taskset", "-c", self._cores]
+            command = ["taskset", "-c", self._cores] + command
             msg += " cores {}".format(self._cores)
         if len(self._cudaDevices) > 0:
             msg += " CUDA devices {}".format(",".join(self._cudaDevices))
@@ -226,7 +226,6 @@ def main(opts):
             raise Exception("Some program asked device {} but there is no device with that id".format(d))
 
     data = dict(
-        args=" ".join(opts.args),
         results=[]
     )
     outputJson = opts.output+".json"
@@ -303,6 +302,10 @@ Measuring combined throughput of multiple programs
                         help="Declaration of many programs to run (for syntax see above).")
 
     scan.addCommonArguments(parser)
+
+    parser.add_argument("--runForMinutes", type=int, default=-1,
+                        help="Process the set of events until this many minutes has elapsed. Conflicts with --eventsPerStream and --maxStreamsToAddEvents. (default -1 for disabled)")
+
     opts = scan.parseCommonArguments(parser)
 
     main(opts)
