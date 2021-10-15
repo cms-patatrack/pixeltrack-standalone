@@ -6,8 +6,14 @@ import json
 import time
 import socket
 import argparse
+import statistics
 import subprocess
+import collections
 import multiprocessing
+
+# Make CUDA_VISIBLE_DEVICES order match to nvidia-smi
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 # Number of events for each application
 n_events_unit = 1000
@@ -25,6 +31,53 @@ background_events_per_thread = 30*3600*8
 
 result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")
 
+Measurement = collections.namedtuple("Measurement", ["events", "time", "throughput"])
+GPU = collections.namedtuple("GPU", ["id", "name", "driver_version"])
+GPUStatus = collections.namedtuple("GPUStatus", ["utilization", "temperature", "power", "clock"])
+
+class Monitor:
+    def __init__(self, opts, cudaDevices=[]):
+        self._intervalSeconds = opts.monitorSeconds
+        self._monitorMemory = opts.monitorMemory
+        self._monitorCuda = opts.monitorCuda
+
+        self._timeStamp = []
+        self._dataMemory = []
+        self._dataCuda = {x: [] for x in cudaDevices}
+
+    def setIntervalSeconds(self, interval):
+        self._intervalSeconds = interval
+
+    def intervalSeconds(self):
+        return self._intervalSeconds
+
+    def snapshot(self, pid=None, cudaDevices=[]):
+        if self._intervalSeconds is None:
+            return
+        self._timeStamp.append(time.strftime("%y-%m-%d %H:%M:%S"))
+
+        if self._monitorMemory:
+            rss = processRss(pid) if pid is not None else 0
+            self._dataMemory.append(dict(rss=rss))
+
+        if self._monitorCuda:
+            for dev in cudaDevices:
+                data = {}
+                data.update(cudaDeviceStatus(dev)._asdict())
+                mem = cudaDeviceProcessMemory(dev, pid) if pid is not None else 0
+                data["proc_mem_use"] = mem
+                self._dataCuda[dev].append(data)
+
+    def toArrays(self):
+        data = {}
+        if self._intervalSeconds is not None:
+            data["time"] = self._timeStamp
+            if self._monitorMemory:
+                data["host"] = self._dataMemory
+            if self._monitorCuda:
+                data["cuda"] = self._dataCuda
+        return data
+
 
 def printMessage(*args):
     print(time.strftime("%y-%m-%d %H:%M:%S"), *args)
@@ -34,7 +87,7 @@ def throughput(output):
         m = result_re.search(line)
         if m:
             printMessage(line.rstrip())
-            return (float(m.group("throughput")), float(m.group("time")))
+            return Measurement(int(m.group("events")), float(m.group("time")), float(m.group("throughput")))
 
     raise Exception("Did not find throughput from the log")
 
@@ -44,12 +97,58 @@ def partition_cores(cores, nth):
 
     return (cores[0:nth], cores[nth:])
 
-def run(nev, nstr, cores_main, opts, logfilename):
+def listCudaDevices():
+    try:
+        p = subprocess.Popen(["nvidia-smi", "--query-gpu=index,name,driver_version", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    except FileNotFoundError:
+        return []
+    output = p.communicate()[0]
+    ret = {}
+    for line in output.split("\n"):
+        if line:
+            s = line.split(",")
+            gpu = GPU(*[x.strip().rstrip() for x in s])
+            ret[gpu.id] = gpu
+    return ret
+
+def cudaDeviceStatus(dev):
+    p = subprocess.Popen(["nvidia-smi", "--id="+dev, "--query-gpu=utilization.gpu,temperature.gpu,power.draw,clocks.sm", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    output = p.communicate()[0]
+    s = output.rstrip().split(",")
+    def convert(s):
+        try:
+            return float(s)
+        except ValueError:
+            return s
+    return GPUStatus(*[convert(x.strip().rstrip()) for x in s])
+
+def cudaDeviceProcessMemory(dev, pid):
+    """In MB"""
+    p = subprocess.Popen(["nvidia-smi", "--id="+dev, "--query-compute-apps=pid,used_gpu_memory", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    output = p.communicate()[0]
+    for line in output.split("\n"):
+        if line:
+            s = line.split(",")
+            if s[0].strip().rstrip() == str(pid):
+                return float(s[1].strip().rstrip())
+    return 0
+
+def processRss(pid):
+    """In MB"""
+    # from https://stackoverflow.com/a/48397534
+    with open("/proc/{}/status".format(pid)) as f:
+        content = f.read()
+    if not "VmRSS:" in content:
+        return 0
+    memusage = content.split('VmRSS:')[1].split('\n')[0][:-3]
+    return float(memusage.strip())/1024.0
+
+def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices=[]):
     nth = len(cores_main)
     with open(logfilename, "w") as logfile:
         taskset = []
         nvprof = []
-        command = [opts.program, "--maxEvents", str(nev), "--numberOfStreams", str(nstr), "--numberOfThreads", str(nth)] + opts.args
+        command = [opts.program] + processUntil + ["--numberOfStreams", str(nstr), "--numberOfThreads", str(nth)] + opts.args
         if opts.taskset:
             taskset = ["taskset", "-c", ",".join(cores_main)]
 
@@ -59,19 +158,39 @@ def run(nev, nstr, cores_main, opts, logfilename):
         if opts.dryRun:
             print(" ".join(taskset+command))
             return (0, 0)
-        p = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
-        try:
-            p.wait()
-        except KeyboardInterrupt:
+        env = None
+        if len(cudaDevices) > 0:
+            visibleDevices = ",".join(opts.cudaDevices)
+            logfile.write("export CUDA_DEVICE_ORDER=PCI_BUS_ID\n")
+            logfile.write("export CUDA_VISIBLE_DEVICES="+visibleDevices+"\n")
+            logfile.flush()
+            env = dict(os.environ, CUDA_VISIBLE_DEVICES=visibleDevices)
+        p = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True, env=env)
+        monitor.snapshot(pid=p.pid, cudaDevices=cudaDevices)
+        while True:
             try:
-                p.terminate()
-            except OSError:
-                pass
-            p.wait()
+                p.wait(timeout=monitor.intervalSeconds())
+                monitor.snapshot(cudaDevices=cudaDevices)
+            except subprocess.TimeoutExpired:
+                monitor.snapshot(pid=p.pid, cudaDevices=cudaDevices)
+                continue
+            except KeyboardInterrupt:
+                try:
+                    p.terminate()
+                except OSError:
+                    pass
+                p.wait()
+            break
         if p.returncode != 0:
             raise Exception("Got return code %d, see output in the log file %s" % (p.returncode, logfilename))
     with open(logfilename) as logfile:
         return throughput(logfile)
+
+def runEvents(nev, *args, **kwargs):
+    return _run(["--maxEvents", str(nev)], *args, **kwargs)
+
+def runMinutes(mins, *args, **kwargs):
+    return _run(["--runForMinutes", str(mins)], *args, **kwargs)
 
 def launchBackground(opts, cores_bkg, logfile):
     if opts.fill <= 0:
@@ -97,10 +216,31 @@ def launchBackground(opts, cores_bkg, logfile):
     serial = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
     return serial
 
+def getEventsPerStream(program, opts):
+    ret = opts.eventsPerStream
+    if ret is None and opts.runForMinutes < 0:
+        tmp = n_blocks_per_stream.get(os.path.basename(program), None)
+        if tmp is None:
+            raise Exception("No default number of event blocks for program %s, and --eventsPerStream was not given" % program)
+        if isinstance(tmp, dict):
+            if "--transfer" in opts.args:
+                eventBlocksPerStream = tmp["transfer"]
+            else:
+                eventBlocksPerStream = tmp[""]
+        else:
+            eventBlocksPerStream = tmp
+        return eventBlocksPerStream * n_events_unit
+    return ret
+
 def main(opts):
     ncores = multiprocessing.cpu_count()
     if opts.fill > 0:
         ncores = opts.fill
+
+    cudaDevices = listCudaDevices()
+    print("Found {} devices".format(len(cudaDevices)))
+    for i, d in cudaDevices.items():
+        print(" {} {} driver {}".format(i, d.name, d.driver_version))
 
     if len(opts.tasksetCores) > 0:
         cores = opts.tasksetCores[:]
@@ -117,19 +257,7 @@ def main(opts):
     if len(opts.numStreams) > 0:
         n_streams_threads = [(s, t) for t in nthreads for s in opts.numStreams]
 
-    nev_per_stream = opts.eventsPerStream
-    if nev_per_stream is None:
-        tmp = n_blocks_per_stream.get(os.path.basename(opts.program), None)
-        if tmp is None:
-            raise Exception("No default number of event blocks for program %s, and --eventsPerStream was not given" % opts.program)
-        if isinstance(tmp, dict):
-            if "--transfer" in opts.args:
-                eventBlocksPerStream = tmp["transfer"]
-            else:
-                eventBlocksPerStream = tmp[""]
-        else:
-            eventBlocksPerStream = tmp
-        nev_per_stream = eventBlocksPerStream * n_events_unit
+    nev_per_stream = getEventsPerStream(opts.program, opts)
 
     data = dict(
         program=opts.program,
@@ -154,15 +282,25 @@ def main(opts):
         if (nstr, nth) in alreadyExists:
             continue
 
-        if opts.maxStreamsToAddEvents > 0 and nstr > opts.maxStreamsToAddEvents:
-            nev = nev_per_stream * opts.maxStreamsToAddEvents
-        else:
-            nev = nev_per_stream*nstr
         (cores_main, cores_bkg) = partition_cores(cores, nth)
+
+        mins = -1
+        nev = -1
+        if opts.runForMinutes >= 0:
+            mins = opts.runForMinutes
+            def run(postfix, **kwargs): return runMinutes(mins, nstr, cores_main, opts, opts.output+postfix, **kwargs)
+        else:
+            if opts.maxStreamsToAddEvents > 0 and nstr > opts.maxStreamsToAddEvents:
+                nev = nev_per_stream * opts.maxStreamsToAddEvents
+            else:
+                nev = nev_per_stream*nstr
+            def run(postfix, **kwargs): return runEvents(nev, nstr, cores_main, opts, opts.output+postfix, **kwargs)
 
         if opts.warmup:
           printMessage("Warming up")
-          run(nev, nstr, cores_main, opts, opts.output+"_warmup.txt")
+          wmon = Monitor(opts)
+          wmon.setIntervalSeconds(None)
+          run("_warmup.txt", monitor=wmon)
           print()
           opts.warmup = False
 
@@ -175,16 +313,23 @@ def main(opts):
                 printMessage(msg)
 
             try:
-                msg = "Number of streams {} threads {} events {}".format(nstr, nth, nev)
+                msg = "Number of streams {} threads {}".format(nstr, nth)
+                if nev >= 0:
+                    msg += " events {}".format(nev)
+                else:
+                    msg += " minutes {}".format(mins)
                 if opts.taskset:
                     msg += ", running on cores " + ",".join(cores_main)
+                if len(opts.cudaDevices) > 0:
+                    msg += ", running on devices " + ",".join(opts.cudaDevices)
                 printMessage(msg)
                 throughputs = []
                 for i in range(opts.repeat):
                     tryAgain = opts.tryAgain
                     while tryAgain > 0:
                         try:
-                            (th, wtime) = run(nev, nstr, cores_main, opts, opts.output+"_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i))
+                            monitor = Monitor(opts, cudaDevices=opts.cudaDevices)
+                            measurement = run("_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i), monitor=monitor, cudaDevices=opts.cudaDevices)
                             break
                         except Exception as e:
                             tryAgain -= 1
@@ -194,6 +339,30 @@ def main(opts):
                             print("--------------------")
                             print(str(e))
                             print("--------------------")
+
+                    if opts.dryRun:
+                        continue
+                    throughputs.append(measurement.throughput)
+                    d = dict(
+                        hostname=hostname,
+                        threads=nth,
+                        streams=nstr,
+                        events=measurement.events,
+                        throughput=measurement.throughput,
+                    )
+                    if monitor.intervalSeconds() is not None:
+                        d["monitor"]=monitor.toArrays()
+                    if len(opts.cudaDevices) > 0:
+                        d["cudaDevices"] = {
+                            x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
+                        }
+                    data["results"].append(d)
+                    # Save results after each test
+                    with open(outputJson, "w") as out:
+                        json.dump(data, out, indent=2)
+                    if opts.stopAfterWallTime > 0 and measurement.time > opts.stopAfterWallTime:
+                        stop = True
+                        break
             finally:
                 if backgroundJob is not None:
                     printMessage("Run complete, terminating background serial")
@@ -203,67 +372,37 @@ def main(opts):
                         pass
                     backgroundJob.wait()
 
-            if opts.dryRun:
-                continue
-            throughputs.append(th)
-            data["results"].append(dict(
-                hostname=hostname,
-                threads=nth,
-                streams=nstr,
-                events=nev,
-                throughput=th,
-            ))
-            # Save results after each test
-            with open(outputJson, "w") as out:
-                json.dump(data, out, indent=2)
-            if opts.stopAfterWallTime > 0 and wtime > opts.stopAfterWallTime:
-                stop = True
-                break
-
         thr = 0
+        stdev = 0
         if len(throughputs) > 0:
-            thr = sum(throughputs)/len(throughputs)
-        printMessage("Number of streams %d threads %d, average throughput %f" % (nstr, nth, thr))
+            thr = statistics.mean(throughputs)
+            if len(throughputs) > 1:
+                stdev = statistics.stdev(throughputs)
+        printMessage("Number of streams {} threads {}, average throughput {} stdev {}".format(nstr, nth, thr, stdev))
         print()
         if stop:
             print("Reached max wall time of %d s, stopping scan" % opts.stopAfterWallTime)
             break
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run a scan of a given test program")
-    parser.add_argument("program", type=str,
-                        help="Path to the test program to run")
-    parser.add_argument("-o", "--output", type=str, default="result",
-                        help="Prefix of output JSON and log files. If the output JSON file exists, it will be updated (see also --overwrite) (default: 'result')")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Overwrite the output JSON instead of updating it")
-    parser.add_argument("--append", action="store_true",
-                        help="Append new (stream, threads) results insteads of ignoring already existing point")
-    parser.add_argument("--taskset", action="store_true",
-                        help="Use taskset to explicitly set the cores where to run on")
-    parser.add_argument("--tasksetCores", type=str, default="",
-                        help="Comma-separated list of cores to be used for taskset in that order. Default (empty) is to use range(0, N(cores))")
-    parser.add_argument("--fill", type=int, default=-1,
-                        help="Launch serial program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
-    parser.add_argument("--bkgNice", type=int, default=None,
-                        help="If given, use this 'nice' level for the background program")
-    parser.add_argument("--minThreads", type=int, default=1,
-                        help="Minimum number of threads to use in the scan (default: 1)")
-    parser.add_argument("--maxThreads", type=int, default=-1,
-                        help="Maximum number of threads to use in the scan (default: -1 for the number of cores)")
-    parser.add_argument("--numThreads", type=str, default="",
-                        help="Comma separated list of numbers of threads to use in the scan (default: empty for all)")
-    parser.add_argument("--numStreams", type=str, default="",
-                        help="Comma separated list of numbers of streams to use in the scan (default: empty for always the same as the number of threads). If both number of threads and number of streams have more than 1 element, a 2D scan is done with all the combinations")
-    parser.add_argument("--eventsPerStream", type=int, default=None,
-                        help="Number of events to be used per EDM stream (default: 400*4kev for cuda, others also hardcoded in the top of the script file)")
-    parser.add_argument("--maxStreamsToAddEvents", type=int, default=-1,
-                        help="Maximum number of streams to add events (default: -1 for no limit")
-    parser.add_argument("--stopAfterWallTime", type=int, default=-1,
-                        help="Stop running after the wall time of the job reaches this many in seconds (default: -1 for no limit)")
-    parser.add_argument("--repeat", type=int, default=1,
-                        help="Repeat each point this many times (default: 1)")
+def addCommonArguments(parser):
+    output_group = parser.add_argument_group("JSON output arguments")
+    output_group.add_argument("-o", "--output", type=str, default="result",
+                              help="Prefix of output JSON and log files. If the output JSON file exists, it will be updated (see also --overwrite) (default: 'result')")
+    output_group.add_argument("--overwrite", action="store_true",
+                              help="Overwrite the output JSON instead of updating it")
+    output_group.add_argument("--append", action="store_true",
+                              help="Append new (stream, threads) results insteads of ignoring already existing point")
+
+    monitor_group = parser.add_argument_group("Monitoring arguments",
+                                              description="These arguments can be used to enable various monitoring of the program being tested. The data is stored in the result JSON file.")
+    monitor_group.add_argument("--monitorSeconds", type=int, default=-1,
+                               help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
+    monitor_group.add_argument("--monitorMemory", action="store_true",
+                               help="Enable monitoring of host memory")
+    monitor_group.add_argument("--monitorCuda", action="store_true",
+                               help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
+
     parser.add_argument("--tryAgain", type=int, default=1,
                         help="In case of failure on a point, try again at most this many times (default: 1)")
     parser.add_argument("--warmup", action="store_true",
@@ -271,9 +410,59 @@ if __name__ == "__main__":
     parser.add_argument("--dryRun", action="store_true",
                         help="Print out commands, don't actually run anything")
 
+def parseCommonArguments(parser):
+    opts = parser.parse_args()
+    if opts.monitorSeconds < 0:
+        opts.monitorSeconds = None
+
+    return opts
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="""Run a scan of a given test program.
+Note that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices instead.
+""")
+    parser.add_argument("program", type=str,
+                        help="Path to the test program to run.")
+
+    addCommonArguments(parser)
+
+    scan_group = parser.add_argument_group("Scan arguments")
+    scan_group.add_argument("--repeat", type=int, default=1,
+                            help="Repeat each point this many times (default: 1)")
+    scan_group.add_argument("--minThreads", type=int, default=1,
+                            help="Minimum number of threads to use in the scan (default: 1)")
+    scan_group.add_argument("--maxThreads", type=int, default=-1,
+                            help="Maximum number of threads to use in the scan (default: -1 for the number of cores)")
+    scan_group.add_argument("--numThreads", type=str, default="",
+                            help="Comma separated list of numbers of threads to use in the scan (default: empty for all)")
+    scan_group.add_argument("--numStreams", type=str, default="",
+                            help="Comma separated list of numbers of streams to use in the scan (default: empty for always the same as the number of threads). If both number of threads and number of streams have more than 1 element, a 2D scan is done with all the combinations")
+    scan_group.add_argument("--stopAfterWallTime", type=int, default=-1,
+                            help="Stop running after the wall time of the job reaches this many in seconds (default: -1 for no limit)")
+
+    nevents_group = parser.add_argument_group("Setting number of events arguments")
+    nevents_group.add_argument("--eventsPerStream", type=int, default=None,
+                               help="Number of events to be used per EDM stream (default: 400*4kev for cuda, others also hardcoded in the top of the script file)")
+    nevents_group.add_argument("--maxStreamsToAddEvents", type=int, default=-1,
+                               help="Maximum number of streams to add events (default: -1 for no limit")
+    nevents_group.add_argument("--runForMinutes", type=int, default=-1,
+                               help="Process the set of events until this many minutes has elapsed. Conflicts with --eventsPerStream and --maxStreamsToAddEvents. (default -1 for disabled)")
+
+    fill_group = parser.add_argument_group("Node filling and pinning arguments")
+    fill_group.add_argument("--taskset", action="store_true",
+                            help="Use taskset to explicitly set the cores where to run on")
+    fill_group.add_argument("--tasksetCores", type=str, default="",
+                            help="Comma-separated list of cores to be used for taskset in that order. Default (empty) is to use range(0, N(cores))")
+    fill_group.add_argument("--fill", type=int, default=-1,
+                            help="Launch serial program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
+    fill_group.add_argument("--bkgNice", type=int, default=None,
+                            help="If given, use this 'nice' level for the background program")
+    fill_group.add_argument("--cudaDevices", type=str, default="",
+                            help="Comma-separeted list of CUDA devices (as in nvidia-smi) to use (default empty is to use all devices).")
+
     parser.add_argument("args", nargs=argparse.REMAINDER)
 
-    opts = parser.parse_args()
+    opts = parseCommonArguments(parser)
     if opts.minThreads <= 0:
         parser.error("minThreads must be > 0, got %d" % opts.minThreads)
     if opts.maxThreads <= 0 and opts.maxThreads != -1:
@@ -286,5 +475,11 @@ if __name__ == "__main__":
         opts.tasksetCores = opts.tasksetCores.split(",")
     if len(opts.tasksetCores) > 0 and opts.fill != -1 and len(opts.tasksetCores) != opts.fill:
         parser.error("When both --tasksetCores and --fill are given, --fill must match to the number of elements in --tasksetCores. No got --fill {} and {} elements in --tasksetCores {}".format(opts.fill, len(opts.tasksetCores)))
+    if opts.runForMinutes >= 0:
+        if opts.eventsPerStream is not None:
+            parser.error("--runForMinutes and --eventsPerStream can not be used together")
+        if opts.maxStreamsToAddEvents >= 0:
+            parser.error("--runForMinutes and --maxStreamsToAddEvents can not be used together")
+    opts.cudaDevices = opts.cudaDevices.split(",") if opts.cudaDevices != "" else []
 
     main(opts)

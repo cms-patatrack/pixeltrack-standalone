@@ -45,6 +45,8 @@ namespace {
         << " --numberOfThreads       Number of threads to use (default 1)\n"
         << " --numberOfStreams       Number of concurrent events (default 0=numberOfThreads)\n"
         << " --maxEvents             Number of events to process (default -1 for all events in the input file)\n"
+        << " --runForMinutes         Continue processing the set of 1000 events until this many minutes have passed "
+           "(default -1 for disabled; conflicts with --maxEvents)\n"
         << " --data                  Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer              Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation            Run (rudimentary) validation at the end (implies --transfer)\n"
@@ -60,6 +62,7 @@ int main(int argc, char** argv) {
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
+  int runForMinutes = -1;
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
@@ -90,6 +93,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);
+    } else if (*i == "--runForMinutes") {
+      ++i;
+      runForMinutes = std::stoi(*i);
     } else if (*i == "--data") {
       ++i;
       datadir = *i;
@@ -103,6 +109,10 @@ int main(int argc, char** argv) {
       print_help(args.front());
       return EXIT_FAILURE;
     }
+  }
+  if (maxEvents >= 0 and runForMinutes >= 0) {
+    std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
+    return EXIT_FAILURE;
   }
   if (numberOfStreams == 0) {
     numberOfStreams = numberOfThreads;
@@ -144,11 +154,15 @@ int main(int argc, char** argv) {
     }
   }
   edm::EventProcessor processor(
-      maxEvents, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
-  maxEvents = processor.maxEvents();
+      maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
 
-  std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
-            << numberOfThreads << " threads." << std::endl;
+  if (runForMinutes < 0) {
+    std::cout << "Processing " << processor.maxEvents() << " events, of which " << numberOfStreams
+              << " concurrently, with " << numberOfThreads << " threads." << std::endl;
+  } else {
+    std::cout << "Processing for about " << runForMinutes << " minutes with " << numberOfStreams
+              << " concurrent events and " << numberOfThreads << " threads." << std::endl;
+  }
 
   // Initialize tasks scheduler (thread pool)
   tbb::task_scheduler_init tsi(numberOfThreads);
@@ -190,6 +204,7 @@ int main(int argc, char** argv) {
   // Work done, report timing
   auto diff = stop - start;
   auto time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(diff).count()) / 1e6;
+  maxEvents = processor.processedEvents();
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
             << std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
   return EXIT_SUCCESS;
