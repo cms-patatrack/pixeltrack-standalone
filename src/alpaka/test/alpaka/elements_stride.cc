@@ -29,7 +29,7 @@ template <typename T>
 struct range_loop {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, T elements) const {
-    for (T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride<T, T_Acc>(acc, elements)) {
+    for (T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride(acc, elements)) {
       printf("range:%d\n", index);
     }
   }
@@ -59,8 +59,7 @@ template <typename T>
 struct range_loop_1d {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, Vec3D elements) const {
-    for (Vec3D index :
-         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_1d<T, T_Acc>(acc, elements)) {
+    for (Vec3D index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_1d(acc, elements)) {
       printf("range_1d:%d:%d:%d\n", index[0u], index[1u], index[2u]);
     }
   }
@@ -94,8 +93,7 @@ template <typename T>
 struct range_loop_2d {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, Vec3D elements) const {
-    for (Vec3D index :
-         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_2d<T, T_Acc>(acc, elements)) {
+    for (Vec3D index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_2d(acc, elements)) {
       printf("range_2d:%d:%d:%d\n", index[0u], index[1u], index[2u]);
     }
   }
@@ -133,8 +131,7 @@ template <typename T>
 struct range_loop_3d {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc& acc, Vec3D elements) const {
-    for (Vec3D index :
-         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_3d<T, T_Acc>(acc, elements)) {
+    for (Vec3D index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride_3d(acc, elements)) {
       printf("range_3d:%d:%d:%d\n", index[0u], index[1u], index[2u]);
     }
   }

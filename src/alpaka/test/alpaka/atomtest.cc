@@ -23,7 +23,8 @@ struct shared_block {
 
     syncBlockThreads(acc);
 
-    for ([[maybe_unused]] T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride<T, T_Acc>(acc, elements)) {
+    for ([[maybe_unused]] T index :
+         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride(acc, elements)) {
       for (int i = 0; i < 200000; i++) {
         alpaka::atomicAdd(acc, &s, b, alpaka::hierarchy::Blocks{});
         alpaka::atomicAdd(acc, &s, c, alpaka::hierarchy::Blocks{});
@@ -47,7 +48,8 @@ struct global_block {
     Data b = 1.0;
     Data c = -1.0;
 
-    for ([[maybe_unused]] T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride<T, T_Acc>(acc, elements)) {
+    for ([[maybe_unused]] T index :
+         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride(acc, elements)) {
       for (int i = 0; i < 200000; i++) {
         alpaka::atomicAdd(acc, &vec[blockIdxInGrid], b, alpaka::hierarchy::Grids{});
         alpaka::atomicAdd(acc, &vec[blockIdxInGrid], c, alpaka::hierarchy::Grids{});
@@ -64,7 +66,8 @@ struct global_grid {
     Data b = 1.0;
     Data c = -1.0;
 
-    for ([[maybe_unused]] T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride<T, T_Acc>(acc, elements)) {
+    for ([[maybe_unused]] T index :
+         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride(acc, elements)) {
       for (int i = 0; i < 200000; i++) {
         alpaka::atomicAdd(acc, &vec[0], b, alpaka::hierarchy::Grids{});  //alpaka::hierarchy::Blocks/Threads/Grids
         alpaka::atomicAdd(acc, &vec[0], c, alpaka::hierarchy::Grids{});
@@ -90,7 +93,8 @@ struct shared_grid {
 
     syncBlockThreads(acc);
 
-    for ([[maybe_unused]] T index : ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride<T, T_Acc>(acc, elements)) {
+    for ([[maybe_unused]] T index :
+         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::elements_with_stride(acc, elements)) {
       for (int i = 0; i < 200000; i++) {
         alpaka::atomicAdd(acc, &s, b, alpaka::hierarchy::Blocks{});  //alpaka::hierarchy::Blocks/Threads/Grids
         alpaka::atomicAdd(acc, &s, c, alpaka::hierarchy::Blocks{});
@@ -119,7 +123,8 @@ int main(void) {
 
   const Vec1D threadsPerBlockOrElementsPerThread1(Vec1D::all(nThreadsInit));
   const Vec1D blocksPerGrid1(Vec1D::all(nBlocksInit));
-  auto workDivMultiBlockInit1 = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
+  auto workDivMultiBlockInit1 = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+      blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
   using DevHost = alpaka::DevCpu;
   auto const devHost = alpaka::getDevByIdx<DevHost>(0u);

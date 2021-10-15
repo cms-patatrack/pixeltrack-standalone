@@ -322,7 +322,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   /*
    * Class which simplifies "for" loops over elements index
    */
-  template <typename T, typename T_Acc>
+  template <typename T_Acc, typename T>
   class elements_with_stride {
   public:
     ALPAKA_FN_ACC elements_with_stride(const T_Acc& acc,
@@ -412,7 +412,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
    * Class which simplifies "for" loops over elements index
    * Iterates over one dimension
    */
-  template <typename T, typename T_Acc>
+  template <typename T_Acc>
   class elements_with_stride_1d {
   public:
     ALPAKA_FN_ACC elements_with_stride_1d(const T_Acc& acc) {
@@ -526,7 +526,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
    * Class which simplifies "for" loops over elements index
    * Iterates over two dimensions
    */
-  template <typename T, typename T_Acc>
+  template <typename T_Acc>
   class elements_with_stride_2d {
   public:
     ALPAKA_FN_ACC elements_with_stride_2d(const T_Acc& acc) {
@@ -648,7 +648,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
    * Class which simplifies "for" loops over elements index
    * Iterates over three dimensions
    */
-  template <typename T, typename T_Acc>
+  template <typename T_Acc>
   class elements_with_stride_3d {
   public:
     ALPAKA_FN_ACC elements_with_stride_3d(const T_Acc& acc) {
