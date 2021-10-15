@@ -6,10 +6,9 @@
 #include <limits>
 
 #include "AlpakaCore/alpakaKernelCommon.h"
-
-#include "CondFormats/pixelCPEforGPU.h"
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "CondFormats/pixelCPEforGPU.h"
 #include "DataFormats/approx_atan2.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -54,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (threadIdxLocal == 0) {
             agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
             agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
-            //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
+            //printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
           }
         }
 
