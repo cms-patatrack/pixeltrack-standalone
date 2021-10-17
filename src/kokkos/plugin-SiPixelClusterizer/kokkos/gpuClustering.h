@@ -133,35 +133,27 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
 
 #if defined KOKKOS_BACKEND_SERIAL || defined KOKKOS_BACKEND_PTHREAD
           const uint32_t maxiter = hist_size;
+          // When compiling with gcc directly, the VLA compiles. When compiling via nvcc, it doesn't.
+          // GPU backend uses 256 threads per team, therefore the
+          // effective maximum number of iterations is 16*256 for
+          // Serial case.
+          // TODO: maybe this works well-enough for PTHREAD case too (even if it is number of threads/team too large)?
+          constexpr uint32_t maxiterSize = 16*256;
 #else
-          const uint32_t maxiter = 16;
+          constexpr uint32_t maxiter = 16;
+          constexpr uint32_t maxiterSize = maxiter;
 #endif
 
           constexpr int maxNeighbours = 10;
-          assert((hist_size / teamMember.team_size()) <= maxiter);
-      // nearest neighbour
-
-#if defined KOKKOS_BACKEND_CUDA || defined KOKKOS_BACKEND_HIP
-          uint16_t nn[maxiter][maxNeighbours];
-          uint8_t nnn[maxiter];
-
+          assert((hist_size / teamMember.team_size()) <= maxiterSize);
+          // nearest neighbour
+          uint16_t nn[maxiterSize][maxNeighbours];
+          uint8_t nnn[maxiterSize];
           for (uint32_t k = 0; k < maxiter; ++k) {
             nnn[k] = 0;
             for (uint32_t l = 0; l < maxNeighbours; ++l)
               nn[k][l] = 0;
           }
-#else
-
-          uint16_t** nn = new uint16_t*[maxiter];
-          uint8_t* nnn = new uint8_t[maxiter];
-          for (uint32_t k = 0; k < maxiter; ++k) {
-            nnn[k] = 0;
-            nn[k] = new uint16_t[maxNeighbours];
-            // cuda version does not iniitalize nn
-            for (uint32_t l = 0; l < maxNeighbours; ++l)
-              nn[k][l] = 0;
-          }
-#endif
 
           teamMember.team_barrier();  // for hit filling!
 
