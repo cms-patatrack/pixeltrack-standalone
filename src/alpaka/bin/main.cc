@@ -1,15 +1,15 @@
 #include <algorithm>
-#include <cstdlib>
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
-#include <filesystem>
 #include <string>
 #include <vector>
 
-#include "AlpakaCore/alpakaConfigCommon.h"
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
 
+#include "AlpakaCore/alpakaConfigCommon.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -107,23 +107,10 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // TO DO: Debug TBB backend.
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
-    numberOfStreams = 1;  // Study intra-event parallelization.
-    // TO DO: Warning: does not seem to be able to control the number of threads in TBB pool
-    // from here with a tbb::task_scheduler_init init(numThreads).
-    // Successfully managed to control the number of threads in TBB pool for now, by adding & updating
-    // tbb::task_scheduler_init init(2) directly inside:
-    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (and make clean_alpaka).
-
-    numberOfThreads = tbb::task_scheduler_init::
-        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
-  }
-
   // NB: The choice & tuning of device at runtime needs to be handled properly
   // inside a ALPAKA_ACCELERATOR_NAMESPACE.
   // For now, the choice is made at run time
-  // with --serial, --tbb (by default, numberOfThreads = TBB pool default), --cuda (1 GPU only).
+  // with --serial, --tbb, --cuda (1 GPU only).
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
@@ -169,6 +156,10 @@ int main(int argc, char** argv) {
     std::cout << "Processing for about " << runForMinutes << " minutes with " << numberOfStreams
               << " concurrent events and " << numberOfThreads << " threads." << std::endl;
   }
+
+  // Initialize the TBB thread pool
+  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
+                                      static_cast<std::size_t>(numberOfThreads)};
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
