@@ -151,8 +151,6 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           uint8_t nnn[maxiterSize];
           for (uint32_t k = 0; k < maxiter; ++k) {
             nnn[k] = 0;
-            for (uint32_t l = 0; l < maxNeighbours; ++l)
-              nn[k][l] = 0;
           }
 
           teamMember.team_barrier();  // for hit filling!
