@@ -85,7 +85,7 @@ TBB_BASE := $(EXTERNAL_BASE)/tbb
 TBB_LIBDIR := $(TBB_BASE)/lib
 TBB_LIB := $(TBB_LIBDIR)/libtbb.so
 export TBB_DEPS := $(TBB_LIB)
-export TBB_CXXFLAGS := -I$(TBB_BASE)/include
+export TBB_CXXFLAGS := -I$(TBB_BASE)/include -DTBB_SUPPRESS_DEPRECATED_MESSAGES -DTBB_PREVIEW_NUMA_SUPPORT
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
 export TBB_NVCC_CXXFLAGS :=
 
@@ -458,7 +458,7 @@ $(EXTERNAL_BASE):
 external_tbb: $(TBB_LIB)
 
 $(TBB_BASE):
-	git clone --branch 2019_U9 https://github.com/intel/tbb.git $@
+	git clone --branch v2020.3 https://github.com/oneapi-src/oneTBB.git $@
 
 $(TBB_LIBDIR): $(TBB_BASE)
 	mkdir -p $@
