@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <tbb/global_control.h>
+#include <tbb/info.h>
 
 #include "AlpakaCore/alpakaConfigCommon.h"
 #include "EventProcessor.h"
@@ -22,8 +23,8 @@ namespace {
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
         << " --cuda              Use CUDA backend\n"
-        << " --numberOfThreads   Number of threads to use (default 1)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
+        << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
+        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
            "(default -1 for disabled; conflicts with --maxEvents)\n"
@@ -95,6 +96,9 @@ int main(int argc, char** argv) {
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
     return EXIT_FAILURE;
+  }
+  if (numberOfThreads == 0) {
+    numberOfThreads = tbb::info::default_concurrency();
   }
   if (numberOfStreams == 0) {
     numberOfStreams = numberOfThreads;
