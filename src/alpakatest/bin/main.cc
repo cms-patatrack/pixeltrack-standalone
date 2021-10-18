@@ -1,15 +1,16 @@
 #include <algorithm>
-#include <cstdlib>
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
-#include <filesystem>
 #include <string>
 #include <vector>
 
-#include "AlpakaCore/alpakaConfigCommon.h"
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
+#include <tbb/info.h>
 
+#include "AlpakaCore/alpakaConfigCommon.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -22,8 +23,8 @@ namespace {
         << " --serial            Use CPU Serial backend\n"
         << " --tbb               Use CPU TBB backend\n"
         << " --cuda              Use CUDA backend\n"
-        << " --numberOfThreads   Number of threads to use (default 1)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
+        << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
+        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed"
            "(default -1 for disabled; conflicts with --maxEvents)\n"
@@ -83,6 +84,9 @@ int main(int argc, char** argv) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
     return EXIT_FAILURE;
   }
+  if (numberOfThreads == 0) {
+    numberOfThreads = tbb::info::default_concurrency();
+  }
   if (numberOfStreams == 0) {
     numberOfStreams = numberOfThreads;
   }
@@ -92,19 +96,6 @@ int main(int argc, char** argv) {
   if (not std::filesystem::exists(datadir)) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
-  }
-
-  // TO DO: Debug TBB backend.
-  if (auto found = std::find(backends.begin(), backends.end(), Backend::TBB); found != backends.end()) {
-    numberOfStreams = 1;  // Study intra-event parallelization.
-    // TO DO: Warning: does not seem to be able to control the number of threads in TBB pool
-    // from here with a tbb::task_scheduler_init init(numThreads).
-    // Successfully managed to control the number of threads in TBB pool for now, by adding & updating
-    // tbb::task_scheduler_init init(2) directly inside:
-    // external/alpaka/include/alpaka/kernel/TaskKernelCpuTbbBlocks.hpp (and make clean_alpaka).
-
-    numberOfThreads = tbb::task_scheduler_init::
-        default_num_threads();  // By default, this number of threads is chosen in Alpaka for the TBB pool.
   }
 
   // Initialize EventProcessor
@@ -137,6 +128,10 @@ int main(int argc, char** argv) {
     std::cout << "Processing for about " << runForMinutes << " minutes with " << numberOfStreams
               << " concurrent events and " << numberOfThreads << " threads." << std::endl;
   }
+
+  // Initialize the TBB thread pool
+  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
+                                      static_cast<std::size_t>(numberOfThreads)};
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
