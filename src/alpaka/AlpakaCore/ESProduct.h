@@ -20,7 +20,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     ESProduct() : gpuDataPerDevice_(::ALPAKA_ACCELERATOR_NAMESPACE::devices.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
+        gpuDataPerDevice_[i].m_event =
+            ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
       }
     }
 

@@ -7,6 +7,8 @@
 #include <functional>
 #include <vector>
 
+#include "AlpakaCore/device_unique_ptr.h"
+
 #include "Framework/Event.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
@@ -91,8 +93,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelTrackAlpaka CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DAlpaka const& hits_d,
                                                                float bfield,
                                                                Queue& queue) const {
-    PixelTrackAlpaka tracks{cms::alpakatools::allocDeviceBuf<pixelTrack::TrackSoA>(alpaka::getDev(queue), 1u)};
-    auto* soa = alpaka::getPtrNative(tracks);
+    PixelTrackAlpaka tracks{cms::alpakatools::make_device_unique<pixelTrack::TrackSoA>(1u)};
+    auto* soa = tracks.get();
 
     CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits(), queue);
     kernels.buildDoublets(hits_d, queue);

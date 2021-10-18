@@ -34,6 +34,11 @@ namespace cms::alpakatools {
     return alpaka::ViewPlainPtr<TDevice, TData, Dim1D, Idx>(data, device, extent);
   }
 
+  template <typename TData>
+  inline size_t nbytesFromExtent(const Extent& extent) {
+    return (sizeof(TData) * extent);
+  }
+
 }  // namespace cms::alpakatools
 
 #endif  // AlpakaCore_alpakaMemoryHelper_h

@@ -3,24 +3,24 @@
 
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelFedCablingMapGPUWrapper {
   public:
-    using CablingMapDeviceBuf = AlpakaDeviceBuf<SiPixelFedCablingMapGPU>;
+    using CablingMapDevicePtr = cms::alpakatools::device::unique_ptr<SiPixelFedCablingMapGPU>;
 
-    explicit SiPixelFedCablingMapGPUWrapper(CablingMapDeviceBuf cablingMap, bool quality)
+    explicit SiPixelFedCablingMapGPUWrapper(CablingMapDevicePtr cablingMap, bool quality)
         : cablingMapDevice_{std::move(cablingMap)}, hasQuality_{quality} {}
     ~SiPixelFedCablingMapGPUWrapper() = default;
 
     bool hasQuality() const { return hasQuality_; }
 
-    const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapDevice_); }
+    const SiPixelFedCablingMapGPU* cablingMap() const { return cablingMapDevice_.get(); }
 
   private:
-    CablingMapDeviceBuf cablingMapDevice_;
+    CablingMapDevicePtr cablingMapDevice_;
     bool hasQuality_;
   };
 

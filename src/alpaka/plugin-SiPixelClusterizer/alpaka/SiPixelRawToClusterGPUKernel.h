@@ -7,6 +7,8 @@
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
+#include "AlpakaCore/host_unique_ptr.h"
+
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
@@ -158,16 +160,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
 
-        auto word() const { return word_; }
-        auto fedId() const { return fedId_; }
+        auto word() const { return word_.get(); }
+        auto fedId() const { return fedId_.get(); }
 
       private:
-        AlpakaHostBuf<unsigned int> word_;
-        AlpakaHostBuf<unsigned char> fedId_;
+        ::cms::alpakatools::host::unique_ptr<unsigned int> word_;
+        ::cms::alpakatools::host::unique_ptr<unsigned char> fedId_;
       };
 
-      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{::cms::alpakatools::allocHostBuf<uint32_t>(2u)} {}
-
+      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{::cms::alpakatools::make_host_unique<uint32_t>(2u)} {};
+      // digis_d{SiPixelDigisAlpaka(0u)},
+      // clusters_d{SiPixelClustersAlpaka(0u)},
+      // digiErrors_d{SiPixelDigiErrorsAlpaka(0u, PixelFormatterErrors())} {};
       ~SiPixelRawToClusterGPUKernel() = default;
 
       SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
@@ -189,7 +193,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                              Queue& queue);
 
       std::pair<SiPixelDigisAlpaka, SiPixelClustersAlpaka> getResults() {
-        auto pnModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
+        auto pnModules_Clusters_h = nModules_Clusters_h.get();
         digis_d->setNModulesDigis(pnModules_Clusters_h[0], nDigis);
         clusters_d->setNClusters(pnModules_Clusters_h[1]);
         return std::make_pair(std::move(*digis_d), std::move(*clusters_d));
@@ -201,7 +205,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       uint32_t nDigis = 0;
 
       // Data to be put in the event
-      AlpakaHostBuf<uint32_t> nModules_Clusters_h;
+      ::cms::alpakatools::host::unique_ptr<uint32_t> nModules_Clusters_h;
       std::optional<SiPixelDigisAlpaka> digis_d;
       std::optional<SiPixelClustersAlpaka> clusters_d;
       std::optional<SiPixelDigiErrorsAlpaka> digiErrors_d;

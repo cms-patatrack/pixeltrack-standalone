@@ -1,4 +1,4 @@
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/host_unique_ptr.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
@@ -120,39 +120,39 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const nHits = hits.nHits();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    // TODO FIXME use the correct device
-    Queue queue(devices[0]);
-    auto const h_adcBuf = digis.adcToHostAsync(queue);
-    auto const h_adc = alpaka::getPtrNative(h_adcBuf);
+    Queue queue(ALPAKA_ACCELERATOR_NAMESPACE::devices[0]);
+    auto const h_adcPtr = digis.adcToHostAsync(queue);
+    auto const h_adc = h_adcPtr.get();
 
     auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(
         alpaka::getDev(queue), clusters.clusInModule(), gpuClustering::MaxNumModules);
-    auto h_clusInModuleBuf{::cms::alpakatools::allocHostBuf<uint32_t>(gpuClustering::MaxNumModules)};
-    alpaka::memcpy(queue, h_clusInModuleBuf, d_clusInModuleView, gpuClustering::MaxNumModules);
-    auto h_clusInModule = alpaka::getPtrNative(h_clusInModuleBuf);
+    auto h_clusInModulePtr{cms::alpakatools::make_host_unique<uint32_t>(gpuClustering::MaxNumModules)};
+    auto h_clusInModule{h_clusInModulePtr.get()};
+    auto h_clusInModuleView{cms::alpakatools::createHostView<uint32_t>(h_clusInModule, gpuClustering::MaxNumModules)};
+    alpaka::memcpy(queue, h_clusInModuleView, d_clusInModuleView, gpuClustering::MaxNumModules);
 
-    auto const h_lxBuf = hits.xlToHostAsync(queue);
-    auto const h_lx = alpaka::getPtrNative(h_lxBuf);
-    auto const h_lyBuf = hits.ylToHostAsync(queue);
-    auto const h_ly = alpaka::getPtrNative(h_lyBuf);
-    auto const h_lexBuf = hits.xerrToHostAsync(queue);
-    auto const h_lex = alpaka::getPtrNative(h_lexBuf);
-    auto const h_leyBuf = hits.yerrToHostAsync(queue);
-    auto const h_ley = alpaka::getPtrNative(h_leyBuf);
-    auto const h_gxBuf = hits.xgToHostAsync(queue);
-    auto const h_gx = alpaka::getPtrNative(h_gxBuf);
-    auto const h_gyBuf = hits.ygToHostAsync(queue);
-    auto const h_gy = alpaka::getPtrNative(h_gyBuf);
-    auto const h_gzBuf = hits.zgToHostAsync(queue);
-    auto const h_gz = alpaka::getPtrNative(h_gzBuf);
-    auto const h_grBuf = hits.rgToHostAsync(queue);
-    auto const h_gr = alpaka::getPtrNative(h_grBuf);
-    auto const h_chargeBuf = hits.chargeToHostAsync(queue);
-    auto const h_charge = alpaka::getPtrNative(h_chargeBuf);
-    auto const h_sizexBuf = hits.xsizeToHostAsync(queue);
-    auto const h_sizex = alpaka::getPtrNative(h_sizexBuf);
-    auto const h_sizeyBuf = hits.ysizeToHostAsync(queue);
-    auto const h_sizey = alpaka::getPtrNative(h_sizeyBuf);
+    auto const h_lxPtr = hits.xlToHostAsync(queue);
+    auto const h_lx = h_lxPtr.get();
+    auto const h_lyPtr = hits.ylToHostAsync(queue);
+    auto const h_ly = h_lyPtr.get();
+    auto const h_lexPtr = hits.xerrToHostAsync(queue);
+    auto const h_lex = h_lexPtr.get();
+    auto const h_leyPtr = hits.yerrToHostAsync(queue);
+    auto const h_ley = h_leyPtr.get();
+    auto const h_gxPtr = hits.xgToHostAsync(queue);
+    auto const h_gx = h_gxPtr.get();
+    auto const h_gyPtr = hits.ygToHostAsync(queue);
+    auto const h_gy = h_gyPtr.get();
+    auto const h_gzPtr = hits.zgToHostAsync(queue);
+    auto const h_gz = h_gzPtr.get();
+    auto const h_grPtr = hits.rgToHostAsync(queue);
+    auto const h_gr = h_grPtr.get();
+    auto const h_chargePtr = hits.chargeToHostAsync(queue);
+    auto const h_charge = h_chargePtr.get();
+    auto const h_sizexPtr = hits.xsizeToHostAsync(queue);
+    auto const h_sizex = h_sizexPtr.get();
+    auto const h_sizeyPtr = hits.ysizeToHostAsync(queue);
+    auto const h_sizey = h_sizeyPtr.get();
 
     alpaka::wait(queue);
 #else
@@ -200,8 +200,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     {
-      auto const& tracksBuf = iEvent.get(trackToken_);
-      auto const tracks = alpaka::getPtrNative(tracksBuf);
+      auto const& tracksPtr = iEvent.get(trackToken_);
+      auto const tracks = tracksPtr.get();
 
       int nTracks = 0;
       for (int i = 0; i < tracks->stride(); ++i) {
@@ -224,8 +224,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     {
-      auto const& verticesBuf = iEvent.get(vertexToken_);
-      auto const vertices = alpaka::getPtrNative(verticesBuf);
+      auto const& verticesPtr = iEvent.get(vertexToken_);
+      auto const vertices = verticesPtr.get();
 
       histos["vertex_n"].fill(vertices->nvFinal);
       for (uint32_t i = 0; i < vertices->nvFinal; ++i) {

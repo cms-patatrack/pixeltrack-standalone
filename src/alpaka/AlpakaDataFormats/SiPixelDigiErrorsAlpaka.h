@@ -1,27 +1,33 @@
-#ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
-#define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
+#ifndef AlpakaDataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
+#define AlpakaDataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 
 #include "DataFormats/PixelErrors.h"
 #include "AlpakaCore/SimpleVector.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
+#include "AlpakaCore/host_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelDigiErrorsAlpaka {
   public:
     SiPixelDigiErrorsAlpaka() = default;
-    explicit SiPixelDigiErrorsAlpaka(Device const& device, size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
-        : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
-          error_d{cms::alpakatools::allocDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(device, 1u)},
-          error_h{::cms::alpakatools::allocHostBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
+    explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
+        : data_d{cms::alpakatools::make_device_unique<PixelErrorCompact>(maxFedWords)},
+          error_d{cms::alpakatools::make_device_unique<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
+          error_h{cms::alpakatools::make_host_unique<cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
           formatterErrors_h{std::move(errors)} {
-      auto perror_h = alpaka::getPtrNative(error_h);
-      perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));
+      auto perror_h = error_h.get();
+      perror_h->construct(maxFedWords, data_d.get());
       ALPAKA_ASSERT_OFFLOAD(perror_h->empty());
       ALPAKA_ASSERT_OFFLOAD(perror_h->capacity() == static_cast<int>(maxFedWords));
 
-      alpaka::memcpy(queue, error_d, error_h, 1u);
+      // TO DO: nothing really async in here for now... Pass the queue in constructor argument instead, and don't wait anymore!
+      auto error_h_view =
+          cms::alpakatools::createHostView<cms::alpakatools::SimpleVector<PixelErrorCompact>>(error_h.get(), 1u);
+      auto error_d_view = cms::alpakatools::createDeviceView<cms::alpakatools::SimpleVector<PixelErrorCompact>>(
+          alpaka::getDev(queue), error_d.get(), 1u);
+      alpaka::memcpy(queue, error_d_view, error_h_view, 1u);
     }
     ~SiPixelDigiErrorsAlpaka() = default;
 
@@ -32,9 +38,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-    ::cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return alpaka::getPtrNative(error_d); }
-    ::cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return alpaka::getPtrNative(error_d); }
-    ::cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return alpaka::getPtrNative(error_d); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return error_d.get(); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return error_d.get(); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.get(); }
 
 #ifdef TODO
     using HostDataError =
@@ -45,9 +51,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
   private:
-    AlpakaDeviceBuf<PixelErrorCompact> data_d;
-    AlpakaDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>> error_d;
-    AlpakaHostBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>> error_h;
+    cms::alpakatools::device::unique_ptr<PixelErrorCompact> data_d;
+    cms::alpakatools::device::unique_ptr<cms::alpakatools::SimpleVector<PixelErrorCompact>> error_d;
+    cms::alpakatools::host::unique_ptr<cms::alpakatools::SimpleVector<PixelErrorCompact>> error_h;
     PixelFormatterErrors formatterErrors_h;
   };
 
