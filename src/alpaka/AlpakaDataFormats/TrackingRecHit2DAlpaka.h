@@ -38,22 +38,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                   1u)},
           m_hitsLayerStart{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(nHits)},
           m_hist{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<Hist>(1u)},
-          // SOA view:
-          m_view{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<TrackingRecHit2DSOAView>(1u)} {
+          // SoA view:
+          m_view{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<TrackingRecHit2DSOAView>(1u)},
+          m_view_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<TrackingRecHit2DSOAView>(1u)}
+    {
       // the hits are actually accessed in order only in building
       // if ordering is relevant they may have to be stored phi-ordered by layer or so
       // this will break 1to1 correspondence with cluster and module locality
       // so unless proven VERY inefficient we keep it ordered as generated
 
-      // Copy data to the SOA view:
-      TrackingRecHit2DSOAView view;
-      // By value.
+      // Copy data to the SoA view:
+      TrackingRecHit2DSOAView& view = *alpaka::getPtrNative(m_view_h);
+      // By value:
       view.m_nHits = nHits;
       // Raw pointer to data already owned in the event by SiPixelClusterAlpaka object:
       view.m_hitsModuleStart = hitsModuleStart;
       // Raw pointer to data already owned in the eventSetup by PixelCPEFast object:
       view.m_cpeParams = cpeParams;
-
       // Raw pointers to data owned here in TrackingRecHit2DAlpaka object:
       view.m_xl = alpaka::getPtrNative(m_xl);
       view.m_yl = alpaka::getPtrNative(m_yl);
@@ -71,10 +72,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       view.m_averageGeometry = alpaka::getPtrNative(m_averageGeometry);
       view.m_hitsLayerStart = alpaka::getPtrNative(m_hitsLayerStart);
       view.m_hist = alpaka::getPtrNative(m_hist);
-
-      // SoA view on device:
-      auto view_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createHostView<TrackingRecHit2DSOAView>(&view, 1u)};
-      alpaka::memcpy(queue, m_view, view_h, 1u);
+      // Copy the SoA view to the device
+      alpaka::memcpy(queue, m_view, m_view_h, 1u);
     }
 
     ~TrackingRecHit2DAlpaka() = default;
@@ -205,6 +204,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // This is used to access and modify data on GPU in a SoA format (TrackingRecHit2DSOAView),
     // while the data itself is owned here in the TrackingRecHit2DAlpaka instance.
     AlpakaDeviceBuf<TrackingRecHit2DSOAView> m_view;
+    // Keep a host copy of the device view alive during the asynchronous copy
+    AlpakaHostBuf<TrackingRecHit2DSOAView> m_view_h;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
