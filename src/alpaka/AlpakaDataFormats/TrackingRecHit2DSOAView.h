@@ -25,10 +25,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t nHits() const { return m_nHits; }
 
+    // TO DO: removed __ldg, check impact on perf
     ALPAKA_FN_ACC ALPAKA_FN_INLINE float& xLocal(int i) { return m_xl[i]; }
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE float xLocal(int i) const {
-      return m_xl[i];
-    }  // TO DO: removed __ldg from legacy, check impact on perf.
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE float xLocal(int i) const { return m_xl[i]; }
     ALPAKA_FN_ACC ALPAKA_FN_INLINE float& yLocal(int i) { return m_yl[i]; }
     ALPAKA_FN_ACC ALPAKA_FN_INLINE float yLocal(int i) const { return m_yl[i]; }
 
