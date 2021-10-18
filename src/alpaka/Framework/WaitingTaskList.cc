@@ -16,8 +16,6 @@
 
 #include <tbb/task.h>
 
-#include <alpaka/alpaka.hpp>
-
 // user include files
 #include "WaitingTaskList.h"
 #include "hardware_pause.h"
@@ -53,7 +51,7 @@ void WaitingTaskList::reset() {
   m_exceptionPtr = std::exception_ptr{};
   unsigned int nSeenTasks = m_lastAssignedCacheIndex;
   m_lastAssignedCacheIndex = 0;
-  ALPAKA_ASSERT_OFFLOAD(m_head == nullptr);
+  assert(m_head == nullptr);
   if (nSeenTasks > m_nodeCacheSize) {
     //need to expand so next time we don't have to do any
     // memory requests
