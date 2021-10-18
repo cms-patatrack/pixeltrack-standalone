@@ -1,10 +1,10 @@
-#ifndef CUDADataFormatsTrackTrackHeterogeneous_H
-#define CUDADataFormatsTrackTrackHeterogeneous_H
+#ifndef AlpakaDataFormatsTrackTrackHeterogeneous_H
+#define AlpakaDataFormatsTrackTrackHeterogeneous_H
 
 #include "AlpakaDataFormats/TrajectoryStateSoA.h"
 #include "AlpakaCore/HistoContainer.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace trackQuality {
   enum Quality : uint8_t { bad = 0, dup, loose, strict, tight, highPurity };
@@ -70,8 +70,8 @@ namespace pixelTrack {
 }  // namespace pixelTrack
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using PixelTrackAlpaka = AlpakaDeviceBuf<pixelTrack::TrackSoA>;
-  using PixelTrackHost = AlpakaHostBuf<pixelTrack::TrackSoA>;
+  using PixelTrackAlpaka = cms::alpakatools::device::unique_ptr<pixelTrack::TrackSoA>;
+  using PixelTrackHost = cms::alpakatools::host::unique_ptr<pixelTrack::TrackSoA>;
 
   // NB: ANOTHER OPTION IS TO CREATE A HeterogeneousSoA class,
   // with a AlpakaDeviceBuf<pixelTrack::TrackSoA> as a data member

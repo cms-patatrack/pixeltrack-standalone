@@ -16,7 +16,7 @@
 #include "../ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 #include <memory>
 #include <string>
@@ -68,7 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
     // get the GPU product already here so that the async transfer can begin
     const auto* gpuMap = hgpuMap.cablingMap();
-    const unsigned char* gpuModulesToUnpack = alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
+    const unsigned char* gpuModulesToUnpack = iSetup.get<cms::alpakatools::device::unique_ptr<unsigned char>>().get();
     const auto* gpuGains = &(iSetup.get<SiPixelGainForHLTonGPU>());
 
     auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();

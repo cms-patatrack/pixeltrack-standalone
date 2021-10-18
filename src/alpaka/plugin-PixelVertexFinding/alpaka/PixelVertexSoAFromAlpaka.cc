@@ -1,4 +1,4 @@
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/host_unique_ptr.h"
 #include "AlpakaDataFormats/ZVertexAlpaka.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
@@ -55,9 +55,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void PixelVertexSoAFromAlpaka::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto const& inputData = iEvent.get(tokenAlpaka_);
-    auto outputData = cms::alpakatools::allocHostBuf<ZVertexSoA>(1u);
+    auto outputData = cms::alpakatools::make_host_unique<ZVertexSoA>(1u);
     Queue queue(device);
-    alpaka::memcpy(queue, outputData, inputData, 1u);
+    auto const inputDataView = cms::alpakatools::createDeviceView<ZVertexSoA>(inputData.get(), 1u);
+    auto outputDataView = cms::alpakatools::createHostView<ZVertexSoA>(outputData.get(), 1u);
+    alpaka::memcpy(queue, outputDataView, inputDataView, 1u);
     alpaka::wait(queue);
 
     // No copies....

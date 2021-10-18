@@ -1,4 +1,4 @@
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/host_unique_ptr.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 
 #include "Framework/EventSetup.h"
@@ -74,9 +74,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto const& inputData = iEvent.get(tokenAlpaka_);
-    auto outputData = cms::alpakatools::allocHostBuf<pixelTrack::TrackSoA>(1u);
+    auto outputData = cms::alpakatools::make_host_unique<pixelTrack::TrackSoA>(1u);
     Queue queue(device);
-    alpaka::memcpy(queue, outputData, inputData, 1u);
+    auto const inputDataView = cms::alpakatools::createDeviceView<pixelTrack::TrackSoA>(inputData.get(), 1u);
+    auto outputDataView = cms::alpakatools::createHostView<pixelTrack::TrackSoA>(outputData.get(), 1u);
+    alpaka::memcpy(queue, outputDataView, inputDataView, 1u);
     alpaka::wait(queue);
 
     // DO NOT  make a copy  (actually TWO....)

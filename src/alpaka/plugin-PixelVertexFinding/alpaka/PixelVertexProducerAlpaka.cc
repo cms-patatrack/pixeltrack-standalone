@@ -46,8 +46,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   {}
 
   void PixelVertexProducerAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    auto const& tracksBuf = iEvent.get(tokenTrack_);
-    auto const tracks = alpaka::getPtrNative(tracksBuf);
+    auto const& tracksPtr = iEvent.get(tokenTrack_);
+    auto const tracks = tracksPtr.get();
 
     Queue queue(device);
     iEvent.emplace(tokenVertex_, m_gpuAlgo.makeAsync(tracks, m_ptMin, queue));

@@ -1,4 +1,4 @@
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 #include "gpuVertexFinder.h"
 #include "gpuClusterTracksByDensity.h"
@@ -106,12 +106,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // std::cout << "producing Vertices on GPU" << std::endl;
       assert(tksoa);
 
-      ZVertexAlpaka vertices{cms::alpakatools::allocDeviceBuf<ZVertexSoA>(1u)};
-      auto* soa = alpaka::getPtrNative(vertices);
+      ZVertexAlpaka vertices{cms::alpakatools::make_device_unique<ZVertexSoA>(1u)};
+      auto* soa = vertices.get();
       assert(soa);
 
-      auto ws_dBuf{cms::alpakatools::allocDeviceBuf<WorkSpace>(1u)};
-      auto ws_d = alpaka::getPtrNative(ws_dBuf);
+      auto ws_d = ws_dPtr.get();
 
       auto nvFinalVerticesView = cms::alpakatools::createDeviceView<uint32_t>(&soa->nvFinal, 1u);
       alpaka::memset(queue, nvFinalVerticesView, 0, 1u);

@@ -5,17 +5,17 @@
 
 #include "CondFormats/pixelCPEforGPU.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PixelCPEFast {
   public:
-    PixelCPEFast(AlpakaDeviceBuf<pixelCPEforGPU::CommonParams> commonParams,
-                 AlpakaDeviceBuf<pixelCPEforGPU::DetParams> detParams,
-                 AlpakaDeviceBuf<pixelCPEforGPU::LayerGeometry> layerGeometry,
-                 AlpakaDeviceBuf<pixelCPEforGPU::AverageGeometry> averageGeometry,
-                 AlpakaDeviceBuf<pixelCPEforGPU::ParamsOnGPU> params)
+    PixelCPEFast(cms::alpakatools::device::unique_ptr<pixelCPEforGPU::CommonParams> commonParams,
+                 cms::alpakatools::device::unique_ptr<pixelCPEforGPU::DetParams> detParams,
+                 cms::alpakatools::device::unique_ptr<pixelCPEforGPU::LayerGeometry> layerGeometry,
+                 cms::alpakatools::device::unique_ptr<pixelCPEforGPU::AverageGeometry> averageGeometry,
+                 cms::alpakatools::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> params)
         : m_commonParams(std::move(commonParams)),
           m_detParams(std::move(detParams)),
           m_layerGeometry(std::move(layerGeometry)),
@@ -24,14 +24,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ~PixelCPEFast() = default;
 
-    pixelCPEforGPU::ParamsOnGPU const* params() const { return alpaka::getPtrNative(m_params); }
+    pixelCPEforGPU::ParamsOnGPU const* params() const { return m_params.get(); }
 
   private:
-    AlpakaDeviceBuf<pixelCPEforGPU::CommonParams> m_commonParams;
-    AlpakaDeviceBuf<pixelCPEforGPU::DetParams> m_detParams;
-    AlpakaDeviceBuf<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
-    AlpakaDeviceBuf<pixelCPEforGPU::AverageGeometry> m_averageGeometry;
-    AlpakaDeviceBuf<pixelCPEforGPU::ParamsOnGPU> m_params;
+    cms::alpakatools::device::unique_ptr<pixelCPEforGPU::CommonParams> m_commonParams;
+    cms::alpakatools::device::unique_ptr<pixelCPEforGPU::DetParams> m_detParams;
+    cms::alpakatools::device::unique_ptr<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
+    cms::alpakatools::device::unique_ptr<pixelCPEforGPU::AverageGeometry> m_averageGeometry;
+    cms::alpakatools::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> m_params;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

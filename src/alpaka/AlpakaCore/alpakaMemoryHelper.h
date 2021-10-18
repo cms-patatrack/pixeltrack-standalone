@@ -36,6 +36,11 @@ namespace cms {
           data, ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
     }
 
+    template <typename TData>
+    inline size_t nbytesFromExtent(const Extent& extent) {
+      return (sizeof(TData) * extent);
+    }
+
   }  // namespace alpakatools
 }  // namespace cms
 

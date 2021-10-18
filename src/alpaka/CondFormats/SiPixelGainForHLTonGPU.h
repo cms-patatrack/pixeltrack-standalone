@@ -1,7 +1,7 @@
 #ifndef CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 #define CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -29,9 +29,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using Range = std::pair<uint32_t, uint32_t>;
     using RangeAndCols = std::pair<Range, int>;
 
-    SiPixelGainForHLTonGPU(AlpakaDeviceBuf<DecodingStructure> ped,
-                           AlpakaDeviceBuf<RangeAndCols> rc,
-                           AlpakaDeviceBuf<Fields> f)
+    SiPixelGainForHLTonGPU(cms::alpakatools::device::unique_ptr<DecodingStructure> ped,
+                           cms::alpakatools::device::unique_ptr<RangeAndCols> rc,
+                           cms::alpakatools::device::unique_ptr<Fields> f)
         : v_pedestals_(std::move(ped)), rangeAndCols_(std::move(rc)), fields_(std::move(f)){};
 
     ALPAKA_FN_INLINE ALPAKA_FN_ACC static std::pair<float, float> getPedAndGain(const DecodingStructure* v_pedestals,
@@ -72,14 +72,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       return ped * fields->pedPrecision + fields->minPed_;
     }
 
-    ALPAKA_FN_HOST const DecodingStructure* getVpedestals() const { return alpaka::getPtrNative(v_pedestals_); }
-    ALPAKA_FN_HOST const RangeAndCols* getRangeAndCols() const { return alpaka::getPtrNative(rangeAndCols_); }
-    ALPAKA_FN_HOST const Fields* getFields() const { return alpaka::getPtrNative(fields_); }
+    ALPAKA_FN_HOST const DecodingStructure* getVpedestals() const { return v_pedestals_.get(); }
+    ALPAKA_FN_HOST const RangeAndCols* getRangeAndCols() const { return rangeAndCols_.get(); }
+    ALPAKA_FN_HOST const Fields* getFields() const { return fields_.get(); }
 
   private:
-    AlpakaDeviceBuf<DecodingStructure> v_pedestals_;
-    AlpakaDeviceBuf<RangeAndCols> rangeAndCols_;
-    AlpakaDeviceBuf<Fields> fields_;
+    cms::alpakatools::device::unique_ptr<DecodingStructure> v_pedestals_;
+    cms::alpakatools::device::unique_ptr<RangeAndCols> rangeAndCols_;
+    cms::alpakatools::device::unique_ptr<Fields> fields_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

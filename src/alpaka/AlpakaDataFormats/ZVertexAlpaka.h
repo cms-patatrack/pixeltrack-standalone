@@ -1,13 +1,13 @@
-#ifndef CUDADataFormatsVertexZVertexHeterogeneous_H
-#define CUDADataFormatsVertexZVertexHeterogeneous_H
+#ifndef AlpakaDataFormatsVertexZVertexHeterogeneous_H
+#define AlpakaDataFormatsVertexZVertexHeterogeneous_H
 
 #include "AlpakaDataFormats/ZVertexSoA.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using ZVertexAlpaka = AlpakaDeviceBuf<ZVertexSoA>;
-  using ZVertexHost = AlpakaHostBuf<ZVertexSoA>;
+  using ZVertexAlpaka = cms::alpakatools::device::unique_ptr<ZVertexSoA>;
+  using ZVertexHost = cms::alpakatools::host::unique_ptr<ZVertexSoA>;
 
   // NB: ANOTHER OPTION IS TO CREATE A HeterogeneousSoA class,
   // with a AlpakaDeviceBuf<ZVertexSoA> as a data member

@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 #include "AlpakaDataFormats/ZVertexAlpaka.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 
@@ -42,7 +42,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                float ierrmax,  // max error to be "seed"
                float ichi2max  // max normalized distance to cluster
                )
-          : oneKernel_(oneKernel && !(useDBSCAN || useIterative)),
+          : ws_dPtr(cms::alpakatools::make_device_unique<WorkSpace>(1u)),
+            oneKernel_(oneKernel && !(useDBSCAN || useIterative)),
             useDensity_(useDensity),
             useDBSCAN_(useDBSCAN),
             useIterative_(useIterative),
@@ -56,6 +57,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ZVertexAlpaka makeAsync(TkSoA const* tksoa, float ptMin, Queue& queue) const;
 
     private:
+      cms::alpakatools::device::unique_ptr<WorkSpace> ws_dPtr;
+
       const bool oneKernel_;
       const bool useDensity_;
       const bool useDBSCAN_;

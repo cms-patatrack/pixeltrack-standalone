@@ -1,7 +1,7 @@
-#ifndef CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
-#define CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
+#ifndef AlpakaDataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
+#define AlpakaDataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/device_unique_ptr.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -9,10 +9,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelClustersAlpaka() = default;
     explicit SiPixelClustersAlpaka(size_t maxClusters)
-        : moduleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxClusters + 1)},
-          clusInModule_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxClusters)},
-          moduleId_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxClusters)},
-          clusModuleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(maxClusters + 1)} {}
+        : moduleStart_d{cms::alpakatools::make_device_unique<uint32_t>(maxClusters + 1)},
+          clusInModule_d{cms::alpakatools::make_device_unique<uint32_t>(maxClusters)},
+          moduleId_d{cms::alpakatools::make_device_unique<uint32_t>(maxClusters)},
+          clusModuleStart_d{cms::alpakatools::make_device_unique<uint32_t>(maxClusters + 1)} {}
     ~SiPixelClustersAlpaka() = default;
 
     SiPixelClustersAlpaka(const SiPixelClustersAlpaka &) = delete;
@@ -24,20 +24,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     uint32_t nClusters() const { return nClusters_h; }
 
-    uint32_t *moduleStart() { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t *clusInModule() { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t *moduleId() { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t *clusModuleStart() { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t *moduleStart() { return moduleStart_d.get(); }
+    uint32_t *clusInModule() { return clusInModule_d.get(); }
+    uint32_t *moduleId() { return moduleId_d.get(); }
+    uint32_t *clusModuleStart() { return clusModuleStart_d.get(); }
 
-    uint32_t const *moduleStart() const { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t const *clusInModule() const { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t const *moduleId() const { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t const *clusModuleStart() const { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t const *moduleStart() const { return moduleStart_d.get(); }
+    uint32_t const *clusInModule() const { return clusInModule_d.get(); }
+    uint32_t const *moduleId() const { return moduleId_d.get(); }
+    uint32_t const *clusModuleStart() const { return clusModuleStart_d.get(); }
 
-    uint32_t const *c_moduleStart() const { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t const *c_clusInModule() const { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t const *c_moduleId() const { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t const *c_clusModuleStart() const { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t const *c_moduleStart() const { return moduleStart_d.get(); }
+    uint32_t const *c_clusInModule() const { return clusInModule_d.get(); }
+    uint32_t const *c_moduleId() const { return moduleId_d.get(); }
+    uint32_t const *c_clusModuleStart() const { return clusModuleStart_d.get(); }
 
     class DeviceConstView {
     public:
@@ -61,12 +61,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
   private:
-    AlpakaDeviceBuf<uint32_t> moduleStart_d;   // index of the first pixel of each module
-    AlpakaDeviceBuf<uint32_t> clusInModule_d;  // number of clusters found in each module
-    AlpakaDeviceBuf<uint32_t> moduleId_d;      // module id of each module
+    cms::alpakatools::device::unique_ptr<uint32_t> moduleStart_d;   // index of the first pixel of each module
+    cms::alpakatools::device::unique_ptr<uint32_t> clusInModule_d;  // number of clusters found in each module
+    cms::alpakatools::device::unique_ptr<uint32_t> moduleId_d;      // module id of each module
 
     // originally from rechits
-    AlpakaDeviceBuf<uint32_t> clusModuleStart_d;  // index of the first cluster of each module
+    cms::alpakatools::device::unique_ptr<uint32_t> clusModuleStart_d;  // index of the first cluster of each module
 
     uint32_t nClusters_h = 0;
   };
