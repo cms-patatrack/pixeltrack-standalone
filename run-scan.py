@@ -41,10 +41,12 @@ class Monitor:
     def __init__(self, opts, cudaDevices=[]):
         self._intervalSeconds = opts.monitorSeconds
         self._monitorMemory = opts.monitorMemory
+        self._monitorClock = opts.monitorClock
         self._monitorCuda = opts.monitorCuda
 
         self._timeStamp = []
         self._dataMemory = []
+        self._dataClock = {x: [] for x in range(0, multiprocessing.cpu_count())}
         self._dataCuda = {x: [] for x in cudaDevices}
 
     def setIntervalSeconds(self, interval):
@@ -61,6 +63,10 @@ class Monitor:
         if self._monitorMemory:
             rss = processRss(pid) if pid is not None else 0
             self._dataMemory.append(dict(rss=rss))
+        if self._monitorClock:
+            clocks = processClock()
+            for key, lst in self._dataClock.items():
+                lst.append(dict(clock=clocks.get(key, -1.0)))
 
         if self._monitorCuda:
             for dev in cudaDevices:
@@ -74,8 +80,12 @@ class Monitor:
         data = {}
         if self._intervalSeconds is not None:
             data["time"] = self._timeStamp
-            if self._monitorMemory:
-                data["host"] = self._dataMemory
+            if self._monitorMemory or self._monitorClock:
+                data["host"] = {}
+                if self._monitorMemory:
+                    data["host"]["process"] = self._dataMemory
+                if self._monitorClock:
+                    data["host"]["cpu"] = self._dataClock
             if self._monitorCuda:
                 data["cuda"] = self._dataCuda
         return data
@@ -144,6 +154,19 @@ def processRss(pid):
         return 0
     memusage = content.split('VmRSS:')[1].split('\n')[0][:-3]
     return float(memusage.strip())/1024.0
+
+def processClock():
+    """In MHz"""
+    ret = {}
+    with open("/proc/cpuinfo") as f:
+        cpuId = -1
+        for line in f:
+            if "processor" in line:
+                cpuid = int(int(line.split(":")[1]))
+            elif "cpu MHz" in line:
+                ret[cpuid] = float(line.split(":")[1])
+                cpuid = -1
+    return ret
 
 def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices=[]):
     nth = len(cores_main)
@@ -421,6 +444,8 @@ def addCommonArguments(parser):
                                help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
     monitor_group.add_argument("--monitorMemory", action="store_true",
                                help="Enable monitoring of host memory")
+    monitor_group.add_argument("--monitorClock", action="store_true",
+                               help="Enable monitoring of CPU core clocks")
     monitor_group.add_argument("--monitorCuda", action="store_true",
                                help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
 

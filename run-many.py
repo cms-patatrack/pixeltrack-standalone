@@ -8,6 +8,7 @@ import argparse
 import importlib
 import subprocess
 import collections
+import multiprocessing
 
 scan = importlib.import_module("run-scan")
 
@@ -101,11 +102,13 @@ class Monitor:
     def __init__(self, opts, programs, cudaDevices=[]):
         self._intervalSeconds = opts.monitorSeconds
         self._monitorMemory = opts.monitorMemory
+        self._monitorClock = opts.monitorClock
         self._monitorCuda = opts.monitorCuda
         self._allPrograms = programs
 
         self._timeStamp = []
         self._dataMemory = [[] for p in programs]
+        self._dataClock = {x: [] for x in range(0, multiprocessing.cpu_count())}
         self._dataCuda = {x: [] for x in cudaDevices}
         self._dataCudaProcs = [{x: [] for x in p.cudaDevices()} for p in programs]
 
@@ -126,6 +129,10 @@ class Monitor:
                 update[rp.index]["rss"] = scan.processRss(rp.handle.pid)
             for i, u in enumerate(update):
                 self._dataMemory[i].append(u)
+        if self._monitorClock:
+            clocks = scan.processClock()
+            for key, lst in self._dataClock.items():
+                lst.append(dict(clock=clocks.get(key, -1.0)))
 
         if self._monitorCuda:
             for dev in self._dataCuda.keys():
@@ -142,8 +149,12 @@ class Monitor:
         data = {}
         if self._intervalSeconds is not None:
             data["time"] = self._timeStamp
-            if self._monitorMemory:
-                data["host"] = self._dataMemory
+            if self._monitorMemory or self._monitorClock:
+                data["host"] = {}
+                if self._monitorMemory:
+                    data["host"]["processes"] = self._dataMemory
+                if self._monitorClock:
+                    data["host"]["cpu"] = self._dataClock
             if self._monitorCuda:
                 data["cuda"] = dict(
                     device = self._dataCuda,
