@@ -14,10 +14,10 @@ scan = importlib.import_module("run-scan")
 RunningProgram = collections.namedtuple("RunningProgram", ["program", "index", "handle"])
 
 class Program:
-    def __init__(self, description):
+    def __init__(self, description, opts):
         s = description.split(":")
         self._program = s[0]
-        self._options = ["threads","streams","numa","cores","cudaDevices"]
+        self._options = ["events", "threads","streams","numa","cores","cudaDevices"]
         valid = set(self._options)
         for o in s[1:]:
             (name, value) = o.split("=")
@@ -27,6 +27,11 @@ class Program:
             valid.remove(name)
         for o in valid:
             setattr(self, "_"+o, None)
+        if opts.runForMinutes > 0:
+            if self._events is not None:
+                raise Exception("--runForMinutes argument conflicts with 'events'")
+        elif self._events is None:
+            self._events = 1000
         if self._threads is None:
             self._threads = 1
         if self._streams is None:
@@ -39,11 +44,19 @@ class Program:
     def programShort(self):
         return os.path.basename(self._program)
 
+    def events(self):
+        return self._events
+
     def cudaDevices(self):
         return self._cudaDevices
 
-    def makeCommandMessage(self, processUntil):
-        command = [self._program] + processUntil + ["--numberOfThreads", str(self._threads), "--numberOfStreams", str(self._streams)]
+    def makeCommandMessage(self, opts):
+        command = [self._program]
+        if opts.runForMinutes > 0:
+            command.extend(["--runForMinutes", str(opts.runForMinutes)])
+        else:
+            command.extend(["--maxEvents", str(self._events)])
+        command.extend(["--numberOfThreads", str(self._threads), "--numberOfStreams", str(self._streams)])
         msg = "Program {} threads {} streams {}".format(self.programShort(), self._threads, self._streams)
         if self._numa is not None:
             command = ["numactl", "--cpunodebind={}".format(self._numa), "--membind={}".format(self._numa)] + command
@@ -138,15 +151,19 @@ class Monitor:
                 )
         return data
 
-def runMany(programs, processUntil, opts, logfilenamebase, monitor):
+def runMany(programs, opts, logfilenamebase, monitor):
     logfiles = []
     for i in range(0, len(programs)):
         logfiles.append(open(logfilenamebase.format(i), "w"))
 
     running_programs = []
     for i, (prog, logfile) in enumerate(zip(programs, logfiles)):
-        (command, msg) = prog.makeCommandMessage(processUntil)
-        msg = str(i) + " "+ msg + " minutes {}".format(opts.runForMinutes)
+        (command, msg) = prog.makeCommandMessage(opts)
+        msg = str(i) + " "+ msg
+        if opts.runForMinutes > 0:
+            msg += " minutes {}".format(opts.runForMinutes)
+        else:
+            msg += " events {}".format(prog.events())
         scan.printMessage(msg)
         logfile.write(" ".join(command))
         logfile.write("\n----\n")
@@ -212,7 +229,7 @@ def main(opts):
             num = int(s[0])
             x = s[1]
         for i in range(0, num):
-            p = Program(x)
+            p = Program(x, opts)
             programs.append(p)
             cudaDevicesInPrograms.update(p.cudaDevices())
     cudaDevicesInPrograms = list(cudaDevicesInPrograms)
@@ -238,15 +255,11 @@ def main(opts):
 
     hostname = socket.gethostname()
 
-    if opts.runForMinutes < 0:
-        raise Exception("currently --runForMinutes is required")
-    mins = opts.runForMinutes
-
     tryAgain = opts.tryAgain
     while tryAgain > 0:
         try:
             monitor = Monitor(opts, programs, cudaDevices=cudaDevicesInPrograms)
-            measurements = runMany(programs, ["--runForMinutes", str(mins)], opts, opts.output+"_log_{}.txt", monitor=monitor)
+            measurements = runMany(programs, opts, opts.output+"_log_{}.txt", monitor=monitor)
             break
         except Exception as e:
             tryAgain -= 1
@@ -291,6 +304,7 @@ Measuring combined throughput of multiple programs
 [M]<program>:threads=N:streams=N:numa=N:cores=<list>:cudaDevices=<list>;<program>:...
 
   <program>   (Path to) the program to run
+  events      Number of events to process (default 1000 if --runForMinutes is not specified)
   threads     Number host threads (default: 1)
   streams     Number of streams (concurrent events) (default: same as threads)
   numa        NUMA node, uses 'numactl' (default: not set)
@@ -304,7 +318,7 @@ Measuring combined throughput of multiple programs
     scan.addCommonArguments(parser)
 
     parser.add_argument("--runForMinutes", type=int, default=-1,
-                        help="Process the set of events until this many minutes has elapsed. Conflicts with --eventsPerStream and --maxStreamsToAddEvents. (default -1 for disabled)")
+                        help="Process the set of events until this many minutes has elapsed. Conflicts with 'events'. (default -1 for disabled)")
 
     opts = scan.parseCommonArguments(parser)
 
