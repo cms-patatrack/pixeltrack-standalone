@@ -51,7 +51,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         if (data.mayReuseStream()) {
           stream_ = data.streamPtr();
         } else {
-          stream_ = getStreamCache().get(acc);
+          stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
         }
       }
 
@@ -68,7 +68,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         cudaSetDevice(currentDevice_);
 #endif
-        stream_ = getStreamCache().get(acc);
+        stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
       }
 
     private:
