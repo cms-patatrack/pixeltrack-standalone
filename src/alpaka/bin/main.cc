@@ -9,6 +9,7 @@
 
 #include <tbb/global_control.h>
 #include <tbb/info.h>
+#include <tbb/task_arena.h>
 
 #include "AlpakaCore/alpakaConfigCommon.h"
 #include "EventProcessor.h"
@@ -168,7 +169,8 @@ int main(int argc, char** argv) {
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
   try {
-    processor.runToCompletion();
+    tbb::task_arena arena(numberOfThreads);
+    arena.execute([&] { processor.runToCompletion(); });
   } catch (std::runtime_error& e) {
     std::cout << "\n----------\nCaught std::runtime_error" << std::endl;
     std::cout << e.what() << std::endl;
