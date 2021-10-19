@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCoreCUDAUtilities_radixSort_H
-#define HeterogeneousCoreCUDAUtilities_radixSort_H
+#ifndef HeterogeneousCore_AlpakaUtilities_radixSort_h
+#define HeterogeneousCore_AlpakaUtilities_radixSort_h
 
 #include <cstdint>
 #include <type_traits>
@@ -23,23 +23,24 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::syncBlockThreads(acc);
 
     // find first negative
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size - 1, [&](uint32_t i) {
-      if ((a[ind[i]] ^ a[ind[i + 1]]) < 0)
-        firstNeg = i + 1;
-    });
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+        acc, size - 1, [&](uint32_t idx) {
+          if ((a[ind[idx]] ^ a[ind[idx + 1]]) < 0)
+            firstNeg = idx + 1;
+        });
 
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, size, firstNeg, [&](uint32_t i) { ind2[i - firstNeg] = ind[i]; });
+        acc, size, firstNeg, [&](uint32_t idx) { ind2[idx - firstNeg] = ind[idx]; });
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, firstNeg, [&](uint32_t i) { ind2[i + size - firstNeg] = ind[i]; });
+        acc, firstNeg, [&](uint32_t idx) { ind2[idx + size - firstNeg] = ind[idx]; });
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, size, [&](uint32_t i) { ind[i] = ind2[i]; });
+        acc, size, [&](uint32_t idx) { ind[idx] = ind2[idx]; });
   }
 
   template <typename T_Acc, typename T>
@@ -52,22 +53,23 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::syncBlockThreads(acc);
 
     // find first negative
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size - 1, [&](uint32_t i) {
-      if ((a[ind[i]] ^ a[ind[i + 1]]) < 0)
-        firstNeg = i + 1;
-    });
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+        acc, size - 1, [&](uint32_t idx) {
+          if ((a[ind[idx]] ^ a[ind[idx + 1]]) < 0)
+            firstNeg = idx + 1;
+        });
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, size, firstNeg, [&](uint32_t i) { ind2[size - firstNeg - i - 1] = ind[i]; });
+        acc, size, firstNeg, [&](uint32_t idx) { ind2[size - idx - 1] = ind[idx]; });
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, firstNeg, [&](uint32_t i) { ind2[i + size - firstNeg] = ind[i]; });
+        acc, firstNeg, [&](uint32_t idx) { ind2[idx + size - firstNeg] = ind[idx]; });
     alpaka::syncBlockThreads(acc);
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, size, [&](uint32_t i) { ind[i] = ind2[i]; });
+        acc, size, [&](uint32_t idx) { ind[idx] = ind2[idx]; });
   }
 
   template <typename T_Acc,
@@ -76,6 +78,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
             typename RF>
   ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSortImpl(
       const T_Acc& acc, T const* __restrict__ a, uint16_t* ind, uint16_t* ind2, uint32_t size, RF reorder) {
+    const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
+
     constexpr int d = 8, w = 8 * sizeof(T);
     constexpr int sb = 1 << d;
     constexpr int ps = int(sizeof(T)) - NS;
@@ -83,16 +88,11 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     auto& c = alpaka::declareSharedVar<int32_t[sb], __COUNTER__>(acc);
     auto& ct = alpaka::declareSharedVar<int32_t[sb], __COUNTER__>(acc);
     auto& cu = alpaka::declareSharedVar<int32_t[sb], __COUNTER__>(acc);
-
     auto& ibs = alpaka::declareSharedVar<int, __COUNTER__>(acc);
     auto& p = alpaka::declareSharedVar<int, __COUNTER__>(acc);
 
     ALPAKA_ASSERT_OFFLOAD(size > 0);
-
-    const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
     ALPAKA_ASSERT_OFFLOAD(blockDimension >= sb);
-
-    // bool debug = false; // threadIdx.x==0 && blockIdx.x==5;
 
     p = ps;
 
@@ -100,56 +100,56 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     auto k = ind2;
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, size, [&](uint32_t i) { j[i] = i; });
+        acc, size, [&](uint32_t idx) { j[idx] = idx; });
     alpaka::syncBlockThreads(acc);
 
     while (alpaka::syncBlockThreadsPredicate<alpaka::BlockAnd>(acc, (p < w / d))) {
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(
-          acc, sb, [&](uint32_t i) { c[i] = 0; });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, sb, [&](uint32_t idx) { c[idx] = 0; });
       alpaka::syncBlockThreads(acc);
 
       // fill bins
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size, [&](uint32_t i) {
-        auto bin = (a[j[i]] >> d * p) & (sb - 1);
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size, [&](uint32_t idx) {
+        auto bin = (a[j[idx]] >> d * p) & (sb - 1);
         alpaka::atomicAdd(acc, &c[bin], 1, alpaka::hierarchy::Blocks{});
       });
       alpaka::syncBlockThreads(acc);
 
       // prefix scan "optimized"???...
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t i) {
-        auto x = c[i];
-        auto laneId = i & 0x1f;
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t idx) {
+        auto x = c[idx];
+        auto laneId = idx & 0x1f;
 
         for (int offset = 1; offset < 32; offset <<= 1) {
           auto y = __shfl_up_sync(0xffffffff, x, offset);
           if (laneId >= (uint32_t)offset)
             x += y;
         }
-        ct[i] = x;
+        ct[idx] = x;
       });
       alpaka::syncBlockThreads(acc);
 
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t i) {
-        auto ss = (i / 32) * 32 - 1;
-        c[i] = ct[i];
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t idx) {
+        auto ss = (idx / 32) * 32 - 1;
+        c[idx] = ct[idx];
         for (int i = ss; i > 0; i -= 32)
-          c[i] += ct[i];
+          c[idx] += ct[i];
       });
 
       /* 
-    //prefix scan for the nulls  (for documentation)
-    if (threadIdxLocal==0)
-      for (int i = 1; i < sb; ++i) c[i] += c[i-1];
-    */
+      //prefix scan for the nulls  (for documentation)
+      if (threadIdxLocal==0)
+        for (int i = 1; i < sb; ++i) c[i] += c[i-1];
+      */
 
       // broadcast
       ibs = size - 1;
       alpaka::syncBlockThreads(acc);
 
       while (alpaka::syncBlockThreadsPredicate<alpaka::BlockAnd>(acc, ibs > 0)) {
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t i) {
-          cu[i] = -1;
-          ct[i] = -1;
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, sb, [&](uint32_t idx) {
+          cu[idx] = -1;
+          ct[idx] = -1;
         });
         alpaka::syncBlockThreads(acc);
 
@@ -177,21 +177,20 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         });
         alpaka::syncBlockThreads(acc);
 
-        const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
         if (threadIdxLocal == 0)
           ibs -= sb;
         alpaka::syncBlockThreads(acc);
       }
 
       /*
-    // broadcast for the nulls  (for documentation)
-    if (threadIdxLocal==0)
-    for (int i=size-first-1; i>=0; i--) { // =blockDim.x) {
-      auto bin = (a[j[i]] >> d*p)&(sb-1);
-      auto ik = atomicSub(&c[bin],1);
-      k[ik-1] = j[i];
-    }
-    */
+      // broadcast for the nulls  (for documentation)
+      if (threadIdxLocal==0)
+      for (int i=size-first-1; i>=0; i--) { // =blockDim.x) {
+        auto bin = (a[j[i]] >> d*p)&(sb-1);
+        auto ik = atomicSub(&c[bin],1);
+        k[ik-1] = j[i];
+      }
+      */
 
       alpaka::syncBlockThreads(acc);
       ALPAKA_ASSERT_OFFLOAD(c[0] == 0);
@@ -212,7 +211,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     if (j != ind)  // odd...
       ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-          acc, size, [&](uint32_t i) { ind[i] = ind2[i]; });
+          acc, size, [&](uint32_t idx) { ind[idx] = ind2[idx]; });
 
     alpaka::syncBlockThreads(acc);
 
@@ -244,6 +243,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
             typename std::enable_if<std::is_floating_point<T>::value, T>::type* = nullptr>
   ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSort(
       const T_Acc& acc, T const* a, uint16_t* ind, uint16_t* ind2, uint32_t size) {
+    static_assert(sizeof(T) == sizeof(int), "radixSort with the wrong type size");
     using I = int;
     radixSortImpl<T_Acc, I, NS>(acc, (I const*)(a), ind, ind2, size, reorderFloat<T_Acc, I>);
   }
@@ -280,4 +280,4 @@ ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSortMult
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // HeterogeneousCoreCUDAUtilities_radixSort_H
+#endif  // HeterogeneousCore_AlpakaUtilities_radixSort_h
