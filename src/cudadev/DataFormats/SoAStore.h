@@ -14,7 +14,7 @@
 
 /* dump SoA fields information; these should expand to, for columns:
  * Example:
- * declare_SoA_template(SoA,
+ * generate_SoA_store(SoA,
  *   // predefined static scalars
  *   // size_t size;
  *   // size_t alignment;
@@ -82,13 +82,6 @@
               <<  std::endl;                                                                                                        \
     offset+=(((nElements * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) * byteAlignment                                      \
               * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                                                          \
-  ,                                                                                                                                 \
-    /* Dump fundamental type column */                                                                                              \
-    std::cout << " Column " BOOST_PP_STRINGIZE(NAME) "_ at offset " << offset                                                       \
-              <<  " has size " << sizeof(CPP_TYPE) * nElements << " and padding "                                                   \
-              << (((nElements * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment - (sizeof(CPP_TYPE) * nElements)        \
-              <<  std::endl;                                                                                                        \
-    offset+=(((nElements * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment;                                             \
 )
 
 #define _DECLARE_SOA_DUMP_INFO(R, DATA, TYPE_NAME)                                                                                  \
@@ -98,53 +91,36 @@
 /**
  * SoAMetadata member computing column pitch
  */
-#define _COMPUTE_SOA_COLUMN_PITCH_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                                  \
+#define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                                   \
   _SWITCH_ON_TYPE(VALUE_TYPE,                                                                                                       \
     /* Scalar */                                                                                                                    \
     size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                                      \
       return (((sizeof(CPP_TYPE) - 1) / parent_.byteAlignment_) + 1) * parent_.byteAlignment_;                                      \
     }                                                                                                                               \
+    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
+    static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::scalar;                                           \
+    CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }                                     \
   ,                                                                                                                                 \
     /* Column */                                                                                                                    \
     size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                                      \
       return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / parent_.byteAlignment_) + 1) * parent_.byteAlignment_;                 \
     }                                                                                                                               \
+    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
+    static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::column;                                           \
+    CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }                                     \
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                                      \
       return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / parent_.byteAlignment_) + 1) * parent_.byteAlignment_          \
           * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                                                              \
     }                                                                                                                               \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                                      \
-      return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / parent_.byteAlignment_) + 1) * parent_.byteAlignment_;                 \
-    }                                                                                                                               \
+    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
+    static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::eigen;                                            \
+    CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }                             \
   )
 
-#define _COMPUTE_SOA_COLUMN_PITCH(R, DATA, TYPE_NAME)                                                                               \
-  _COMPUTE_SOA_COLUMN_PITCH_IMPL TYPE_NAME
-
-/**
- * SoAMetadata member computing column pitch
- */
-#define _DEFINE_SOA_COLUMN_TYPES_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                                   \
-  _SWITCH_ON_TYPE(VALUE_TYPE,                                                                                                       \
-    /* Scalar */                                                                                                                    \
-    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
-  ,                                                                                                                                 \
-    /* Column */                                                                                                                    \
-    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
-  ,                                                                                                                                 \
-    /* Eigen column */                                                                                                              \
-    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                                   \
-  )
-
-#define _DEFINE_SOA_COLUMN_TYPES(R, DATA, TYPE_NAME)                                                                               \
-  _DEFINE_SOA_COLUMN_TYPES_IMPL TYPE_NAME
+#define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME)                                                                                \
+  _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
 
 /**
  * Member assignment for trivial constructor
@@ -160,9 +136,6 @@
     /* Eigen column */                                                                                                              \
     ( BOOST_PP_CAT(NAME, _) (nullptr) )                                                                                             \
     ( BOOST_PP_CAT(NAME, Stride_) (0) )                                                                                             \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    ( BOOST_PP_CAT(NAME, _) (nullptr) )                                                                                             \
 )
 
 #define _DECLARE_MEMBER_TRIVIAL_CONSTRUCTION(R, DATA, TYPE_NAME)                                                                    \
@@ -186,10 +159,6 @@
           * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                                                              \
     BOOST_PP_CAT(NAME, Stride_) = (((nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment_) + 1)                              \
           * byteAlignment_ / sizeof(CPP_TYPE::Scalar);                                                                              \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    BOOST_PP_CAT(NAME, _) = reinterpret_cast<CPP_TYPE *>(curMem);                                                                   \
-    curMem += (((nElements_ * sizeof(CPP_TYPE) - 1) / byteAlignment_) + 1) * byteAlignment_;                                        \
   )
 
 #define _ASSIGN_SOA_COLUMN_OR_SCALAR(R, DATA, TYPE_NAME)                                                                            \
@@ -209,9 +178,6 @@
     /* Eigen column */                                                                                                              \
     ret += (((nElements * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) * byteAlignment                                       \
           * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                                                              \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    ret += (((nElements * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment;                                              \
   )
 
 #define _ACCUMULATE_SOA_ELEMENT(R, DATA, TYPE_NAME)                                                                                 \
@@ -234,9 +200,6 @@
     EigenConstMapMaker<CPP_TYPE>::Type const NAME() {                                                                               \
       return EigenConstMapMaker<CPP_TYPE>::withData(soa_. NAME () + index_).withStride(soa_.BOOST_PP_CAT(NAME, Stride)());          \
     }                                                                                                                               \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    CPP_TYPE const & NAME() { return * (soa_. NAME () + index_ + 0 + 0); }                                                          \
   )
 
 #define _DECLARE_SOA_CONST_ELEMENT_ACCESSOR(R, DATA, TYPE_NAME)                                                                     \
@@ -255,9 +218,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     (CPP_TYPE::Scalar *NAME) (size_t BOOST_PP_CAT(NAME, Stride))                                                                    \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    (CPP_TYPE &NAME)                                                                                                                \
   )
 
 #define _DECLARE_ELEMENT_VALUE_ARG(R, DATA, TYPE_NAME)                                                                              \
@@ -276,9 +236,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     (NAME (DATA, NAME, BOOST_PP_CAT(NAME, Stride)))                                                                                 \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    (NAME (NAME))                                                                                                                   \
   )
 
 /* declare AoS-like element value args for contructor; these should expand,for columns only */
@@ -298,9 +255,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     (BOOST_PP_CAT(NAME, _) (DATA, NAME, BOOST_PP_CAT(NAME, Stride)))                                                                \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    (BOOST_PP_CAT(NAME, _) (NAME))                                                                                                  \
   )
 
 /* declare AoS-like element value args for contructor; these should expand,for columns only */
@@ -319,9 +273,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     static_cast<CPP_TYPE>(NAME) = static_cast<std::add_const<CPP_TYPE>::type &>(other.NAME);                                        \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    NAME = static_cast<std::add_const<CPP_TYPE>::type &>(other.NAME);                                                               \
   )
 
 #define _DECLARE_ELEMENT_VALUE_COPY(R, DATA, TYPE_NAME)                                                                             \
@@ -340,9 +291,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     const SoAEigenValue<CPP_TYPE> BOOST_PP_CAT(NAME, _);                                                                            \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    const CPP_TYPE & BOOST_PP_CAT(NAME, _);                                                                                         \
   )
 
 #define _DECLARE_CONST_ELEMENT_VALUE_MEMBER(R, DATA, TYPE_NAME)                                                                     \
@@ -356,14 +304,11 @@
     /* Scalar */                                                                                                                    \
     BOOST_PP_EMPTY()                                                                                                                \
   ,                                                                                                                                 \
-    /* Column */ /* (LOAD_INCOHERENT already done inside NAME_() */                                                                 \
+    /* Column */                                                              \
     SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return BOOST_PP_CAT(NAME, _)(); }                                                \
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     SOA_HOST_DEVICE_INLINE const SoAEigenValue<CPP_TYPE> NAME() const { return BOOST_PP_CAT(NAME, _); }                             \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return LOAD_INCOHERENT(& BOOST_PP_CAT(NAME, _) ); }                              \
   )
 
 #define _DECLARE_CONST_ELEMENT_ACCESSOR(R, DATA, TYPE_NAME)                                                                         \
@@ -382,9 +327,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     SoAEigenValue<CPP_TYPE> NAME;                                                                                                   \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    CPP_TYPE & NAME;                                                                                                                \
   )
     
 
@@ -404,9 +346,6 @@
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     (BOOST_PP_CAT(NAME, _)) (BOOST_PP_CAT(NAME, Stride_))                                                                           \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    (BOOST_PP_CAT(NAME, _[index]))                                                                                                  \
   )
 
 #define _DECLARE_ELEMENT_CONSTR_CALL(R, DATA, TYPE_NAME)                                                                            \
@@ -427,10 +366,6 @@
     /* Eigen column */                                                                                                              \
     /* Unsupported for the moment TODO */                                                                                           \
     BOOST_PP_EMPTY()                                                                                                                \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE* NAME() { return BOOST_PP_CAT(NAME, _); }                                                       \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME(size_t index) { return BOOST_PP_CAT(NAME, _)[index]; }                                    \
   )
 
 #define _DECLARE_SOA_ACCESSOR(R, DATA, TYPE_NAME)                                                                                   \
@@ -442,19 +377,15 @@
 #define _DECLARE_SOA_CONST_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                                \
   _SWITCH_ON_TYPE(VALUE_TYPE,                                                                                                       \
     /* Scalar */                                                                                                                    \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return LOAD_INCOHERENT(BOOST_PP_CAT(NAME, _)); }                           \
+    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return *(BOOST_PP_CAT(NAME, _)); }                                               \
   ,                                                                                                                                 \
     /* Column */                                                                                                                    \
     SOA_HOST_DEVICE_INLINE CPP_TYPE const* NAME() const { return BOOST_PP_CAT(NAME, _); }                                           \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index) const { return LOAD_INCOHERENT(BOOST_PP_CAT(NAME, _) + index); }       \
+    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index) const { return *(BOOST_PP_CAT(NAME, _) + index); }                           \
   ,                                                                                                                                 \
     /* Eigen column */                                                                                                              \
     SOA_HOST_DEVICE_INLINE CPP_TYPE::Scalar const* NAME() const { return BOOST_PP_CAT(NAME, _); }                                   \
-    SOA_HOST_DEVICE_INLINE size_t BOOST_PP_CAT(NAME,Stride)() { return BOOST_PP_CAT(NAME, Stride_); }                         \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE const* NAME() const { return BOOST_PP_CAT(NAME, _); }                                           \
-    SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index) const { return LOAD_INCOHERENT(BOOST_PP_CAT(NAME, _) + index); }       \
+    SOA_HOST_DEVICE_INLINE size_t BOOST_PP_CAT(NAME,Stride)() { return BOOST_PP_CAT(NAME, Stride_); }                               \
   )
 
 #define _DECLARE_SOA_CONST_ACCESSOR(R, DATA, TYPE_NAME)                                                                             \
@@ -474,9 +405,6 @@
     /* Eigen column */                                                                                                              \
     CPP_TYPE::Scalar * BOOST_PP_CAT(NAME, _) = nullptr;                                                                             \
     size_t BOOST_PP_CAT(NAME, Stride_) = 0;                                                                                         \
-  ,                                                                                                                                 \
-    /* Fundamental type column */                                                                                                   \
-    CPP_TYPE * BOOST_PP_CAT(NAME, _) = nullptr;                                                                                     \
   )
 
 #define _DECLARE_SOA_DATA_MEMBER(R, DATA, TYPE_NAME)                                                                                \
@@ -533,8 +461,7 @@ struct CLASS {                                                                  
     SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) {                                                               \
       return CLASS(addr, parent_.nElements_, parent_.byteAlignment_ );                                                              \
     }                                                                                                                               \
-    _ITERATE_ON_ALL(_COMPUTE_SOA_COLUMN_PITCH, ~, __VA_ARGS__)                                                                      \
-    _ITERATE_ON_ALL(_DEFINE_SOA_COLUMN_TYPES, ~, __VA_ARGS__)                                                                       \
+    _ITERATE_ON_ALL(_DEFINE_METADATA_MEMBERS, ~, __VA_ARGS__)                                                                       \
                                                                                                                                     \
   private:                                                                                                                          \
     SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent): parent_(parent) {}                                                     \

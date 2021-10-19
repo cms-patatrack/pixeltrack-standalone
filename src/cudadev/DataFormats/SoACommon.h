@@ -43,7 +43,7 @@ public:
   SOA_HOST_DEVICE_INLINE SoAValue(size_t i, T * col): idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
   SOA_HOST_DEVICE_INLINE T& operator() () { return col_[idx_]; }
-  SOA_HOST_DEVICE_INLINE T operator() () const { return LOAD_INCOHERENT(col_ + idx_); }
+  SOA_HOST_DEVICE_INLINE T operator() () const { return *(col_ + idx_); }
   SOA_HOST_DEVICE_INLINE T* operator& () { return &col_[idx_]; }
   SOA_HOST_DEVICE_INLINE const T* operator& () const { return &col_[idx_]; }
   template <typename T2>
@@ -61,7 +61,7 @@ class SoAConstValue {
 public:
   SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, const  T * col): idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
-  SOA_HOST_DEVICE_INLINE T operator() () const { return LOAD_INCOHERENT(col_ + idx_); }
+  SOA_HOST_DEVICE_INLINE T operator() () const { return *(col_ + idx_); }
   SOA_HOST_DEVICE_INLINE const T* operator& () const { return &col_[idx_]; }
   typedef T valueType;
   static constexpr auto valueSize = sizeof(T);
@@ -142,12 +142,16 @@ inline size_t alignSize(size_t size, size_t alignment = 128) {
 #define _VALUE_TYPE_SCALAR 0
 #define _VALUE_TYPE_COLUMN 1
 #define _VALUE_TYPE_EIGEN_COLUMN 2
-#define _VALUE_TYPE_FUNDAMENTAL_COLUMN 3
+
+enum class SoAColumnType {
+  scalar = _VALUE_TYPE_SCALAR,
+  column = _VALUE_TYPE_COLUMN,
+  eigen = _VALUE_TYPE_EIGEN_COLUMN
+};
 
 #define SoA_scalar(TYPE, NAME) (_VALUE_TYPE_SCALAR, TYPE, NAME)
 #define SoA_column(TYPE, NAME) (_VALUE_TYPE_COLUMN, TYPE, NAME)
 #define SoA_eigenColumn(TYPE, NAME) (_VALUE_TYPE_EIGEN_COLUMN, TYPE, NAME)
-#define SoA_FundamentalTypeColumn(TYPE, NAME) (_VALUE_TYPE_FUNDAMENTAL_COLUMN, TYPE, NAME)
 
 /* Iterate on the macro MACRO and return the result as a comma separated list */
 #define _ITERATE_ON_ALL_COMMA(MACRO, DATA, ...)                                                                                     \
@@ -163,17 +167,14 @@ inline size_t alignSize(size_t size, size_t alignment = 128) {
   )
 
 /* Switch on macros depending on scalar / column type */
-#define _SWITCH_ON_TYPE(VALUE_TYPE, IF_SCALAR, IF_COLUMN, IF_EIGEN_COLUMN, IF_FUNDAMENTAL_COLUMN)                                   \
+#define _SWITCH_ON_TYPE(VALUE_TYPE, IF_SCALAR, IF_COLUMN, IF_EIGEN_COLUMN)                                                          \
   BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_SCALAR),                                                                       \
     IF_SCALAR,                                                                                                                      \
     BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_COLUMN),                                                                     \
       IF_COLUMN,                                                                                                                    \
       BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_EIGEN_COLUMN),                                                             \
         IF_EIGEN_COLUMN,                                                                                                            \
-        BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_FUNDAMENTAL_COLUMN),                                                     \
-          IF_FUNDAMENTAL_COLUMN,                                                                                                    \
-          BOOST_PP_EMPTY()                                                                                                          \
-        )                                                                                                                           \
+        BOOST_PP_EMPTY()                                                                                                            \
       )                                                                                                                             \
     )                                                                                                                               \
   )

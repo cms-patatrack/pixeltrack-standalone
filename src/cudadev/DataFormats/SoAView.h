@@ -58,11 +58,17 @@
 /**
  * Member types aliasing for referencing by name
  */
-#define _DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME)                                                  \
-  typedef BOOST_PP_CAT(TypeOf_, STORE_NAME) :: SoAMetadata:: BOOST_PP_CAT(TypeOf_, STORE_MEMBER) BOOST_PP_CAT(TypeOf_, LOCAL_NAME);
+#define _DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME, DATA)                                            \
+  typedef BOOST_PP_CAT(TypeOf_, STORE_NAME) :: SoAMetadata:: BOOST_PP_CAT(TypeOf_, STORE_MEMBER) BOOST_PP_CAT(TypeOf_, LOCAL_NAME); \
+  static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                                                              \
+    BOOST_PP_CAT(TypeOf_, STORE_NAME) :: SoAMetadata:: BOOST_PP_CAT(ColumnTypeOf_, STORE_MEMBER);                                   \
+  DATA BOOST_PP_CAT(TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(addressOf_, LOCAL_NAME) () const  {                                         \
+    return parent_.BOOST_PP_CAT(LOCAL_NAME, _);                                                                                     \
+  };                                                                                                                                \
+  static_assert(BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != SoAColumnType::eigen, "Eigen columns not supported in views.");
 
 #define _DECLARE_VIEW_MEMBER_TYPE_ALIAS(R, DATA, STORE_MEMBER_NAME)                                                                 \
-  BOOST_PP_EXPAND(_DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL STORE_MEMBER_NAME)
+  BOOST_PP_EXPAND(_DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL BOOST_PP_TUPLE_PUSH_BACK(STORE_MEMBER_NAME, DATA))
 
 /**
  * Member assignment for trivial constructor
@@ -76,7 +82,7 @@
 /**
  * Generator of parameters (stores) for constructor.
  */
-#define _DECLARE_VIEW_CONSTRUCTION_PARAMETERS_IMPL(STORE_TYPE, STORE_NAME, DATA)                                                          \
+#define _DECLARE_VIEW_CONSTRUCTION_PARAMETERS_IMPL(STORE_TYPE, STORE_NAME, DATA)                                                    \
   ( DATA STORE_TYPE & STORE_NAME )
 
 #define _DECLARE_VIEW_CONSTRUCTION_PARAMETERS(R, DATA, TYPE_NAME)                                                                   \
@@ -84,9 +90,15 @@
 
 /**
  * Generator of member initialization from constructor.
+ * We use a lambda with auto return type to handle multiple possible return types.
  */
 #define _DECLARE_VIEW_MEMBER_INITIALIZERS_IMPL(STORE, MEMBER, NAME)                                                                 \
-  ( BOOST_PP_CAT(NAME, _) ( STORE . MEMBER () ) )
+  ( BOOST_PP_CAT(NAME, _) ( [&]() -> auto {                                                                                         \
+      static_assert ( BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, NAME) != SoAColumnType::eigen,                                       \
+        "Eigen values not supported in views" );                                                                                    \
+      return STORE . soaMetadata() . BOOST_PP_CAT(addressOf_, MEMBER) ();                                                           \
+    }() ) )
+        
 
 #define _DECLARE_VIEW_MEMBER_INITIALIZERS(R, DATA, STORE_MEMBER_NAME)                                                               \
   BOOST_PP_EXPAND(_DECLARE_VIEW_MEMBER_INITIALIZERS_IMPL STORE_MEMBER_NAME)
@@ -195,7 +207,7 @@
       return BOOST_PP_CAT(LOCAL_NAME, _);                                                                                           \
     }                                                                                                                               \
     SOA_HOST_DEVICE_INLINE BOOST_PP_CAT( SoAMetadata::TypeOf_, LOCAL_NAME) LOCAL_NAME(size_t index) const {                         \
-      return LOAD_INCOHERENT(BOOST_PP_CAT(LOCAL_NAME, _) + index);                                                                  \
+      return *(BOOST_PP_CAT(LOCAL_NAME, _) + index);                                                                                \
     }
 
 #define _DECLARE_VIEW_SOA_CONST_ACCESSOR(R, DATA, STORE_MEMBER_NAME)                                                                \
@@ -220,12 +232,18 @@ struct CLASS {                                                                  
    * Helper/friend class allowing SoA introspection.                                                                                \
    */                                                                                                                               \
   struct SoAMetadata {                                                                                                              \
+    friend CLASS;                                                                                                                   \
     /* Alias store types to name-derived identifyer to allow simpler definitions */                                                 \
     _ITERATE_ON_ALL(_DECLARE_VIEW_STORE_TYPE_ALIAS, ~, STORES_LIST)                                                                 \
                                                                                                                                     \
     /* Alias member types to name-derived identifyer to allow simpler definitions */                                                \
-    _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, ~, VALUE_LIST)                                                                 \
+    _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, BOOST_PP_EMPTY(), VALUE_LIST)                                                  \
+  private:                                                                                                                          \
+    SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent): parent_(parent) {}                                                     \
+    const CLASS& parent_;                                                                                                           \
   };                                                                                                                                \
+  friend SoAMetadata  ;                                                                                                             \
+  SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return  SoAMetadata(*this); }                                      \
                                                                                                                                     \
   /* Trivial constuctor */                                                                                                          \
   CLASS():                                                                                                                          \
@@ -301,12 +319,18 @@ struct CLASS {                                                                  
    * Helper/friend class allowing SoA introspection.                                                                                \
    */                                                                                                                               \
   struct SoAMetadata {                                                                                                              \
+    friend CLASS;                                                                                                                   \
     /* Alias store types to name-derived identifyer to allow simpler definitions */                                                 \
     _ITERATE_ON_ALL(_DECLARE_VIEW_STORE_TYPE_ALIAS, ~, STORES_LIST)                                                                 \
                                                                                                                                     \
     /* Alias member types to name-derived identifyer to allow simpler definitions */                                                \
-    _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, ~, VALUE_LIST)                                                                 \
+    _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, const, VALUE_LIST)                                                             \
+  private:                                                                                                                          \
+    SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent): parent_(parent) {}                                                     \
+    const CLASS& parent_;                                                                                                           \
   };                                                                                                                                \
+  friend SoAMetadata  ;                                                                                                             \
+  SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return  SoAMetadata(*this); }                                      \
                                                                                                                                     \
   /* Trivial constuctor */                                                                                                          \
   CLASS():                                                                                                                          \
@@ -345,7 +369,7 @@ struct CLASS {                                                                  
   template <typename T> SOA_HOST_ONLY friend void dump();                                                                           \
                                                                                                                                     \
 private:                                                                                                                            \
-  _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, const, VALUE_LIST)                                                                \
+  _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, const, VALUE_LIST)                                                                      \
 }
 
 #endif // ndef DataStrcutures_SoAView_h
