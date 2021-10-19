@@ -215,7 +215,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     template <typename T_Acc>
     auto getEvent(T_Acc acc) {
-      return getEventCache().get(acc);
+      return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(acc);
     }
 
     // create the CUDA Event upfront to catch possible errors from its creation

@@ -2,6 +2,7 @@
 #define alpakaConfigHost_h_
 
 #include <alpaka/alpaka.hpp>
+#include "alpaka/alpaka_ex.hpp"
 
 namespace alpaka_common {
   using Idx = uint32_t;
