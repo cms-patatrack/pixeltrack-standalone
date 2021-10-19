@@ -12,6 +12,7 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
+#include "AlpakaCore/ScopedContext.h"
 
 #include "../ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
@@ -31,6 +32,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ContextState ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
     edm::EDPutTokenT<SiPixelDigisAlpaka> digiPutToken_;
@@ -137,7 +140,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     }  // end of for loop
 
-    Queue queue(device);
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                                                                               iEvent.streamID()};
     gpuAlgo_.makeClustersAsync(isRun2_,
                                gpuMap,
                                gpuModulesToUnpack,
@@ -149,16 +153,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                useQuality_,
                                includeErrors_,
                                false,  // debug
-                               queue);
-
-    // TODO: synchronize explicitly for now
-    alpaka::wait(queue);
+                               ctx.stream());
 
     auto tmp = gpuAlgo_.getResults();
-    iEvent.emplace(digiPutToken_, std::move(tmp.first));
-    iEvent.emplace(clusterPutToken_, std::move(tmp.second));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiPutToken_, std::move(tmp.first));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, clusterPutToken_, std::move(tmp.second));
     if (includeErrors_) {
-      iEvent.emplace(digiErrorPutToken_, gpuAlgo_.getErrors());
+      ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
     }
   }
 

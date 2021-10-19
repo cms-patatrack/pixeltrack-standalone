@@ -22,7 +22,7 @@ namespace cms {
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           ALPAKA_ASSERT_OFFLOAD((*off) > 0);
           int32_t ih = off - offsets - 1;
@@ -41,7 +41,7 @@ namespace cms {
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           ALPAKA_ASSERT_OFFLOAD((*off) > 0);
           int32_t ih = off - offsets - 1;
@@ -54,9 +54,10 @@ namespace cms {
 
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(
-        Histo *__restrict__ h, ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+        Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       uint32_t *poff = (uint32_t *)(char *)(&(h->off));
-      auto histoOffView = cms::alpakatools::createDeviceView<typename Histo::Counter>(poff, Histo::totbins());
+      auto histoOffView = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<typename Histo::Counter>(
+          poff, Histo::totbins());
 
       alpaka::memset(queue, histoOffView, 0, Histo::totbins());
       alpaka::wait(queue);
@@ -64,7 +65,7 @@ namespace cms {
 
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
-        Histo *__restrict__ h, ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+        Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       uint32_t *poff = (uint32_t *)(char *)(&(h->off));
 
       const int num_items = Histo::totbins();
@@ -74,17 +75,18 @@ namespace cms {
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1D blocksPerGrid(nblocks);
 
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+          blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
+                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                          workDiv, ::cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
-      const WorkDiv1D &workDivWith1Block =
-          cms::alpakatools::make_workdiv(Vec1D::all(1), threadsPerBlockOrElementsPerThread);
+      const WorkDiv1D &workDivWith1Block = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+          Vec1D::all(1), threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
+          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+              workDivWith1Block, ::cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
     }
 
     template <typename Histo, typename T>
@@ -95,22 +97,23 @@ namespace cms {
         uint32_t const *__restrict__ offsets,
         uint32_t totSize,
         unsigned int nthreads,
-        ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+        ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       launchZero(h, queue);
 
       const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
       const Vec1D blocksPerGrid(nblocks);
       const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+          blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, countFromVector(), h, nh, v, offsets));
+          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, countFromVector(), h, nh, v, offsets));
       launchFinalize(h, queue);
 
       alpaka::enqueue(
           queue,
-          alpaka::createTaskKernel<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, fillFromVector(), h, nh, v, offsets));
+          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, fillFromVector(), h, nh, v, offsets));
     }
 
     struct finalizeBulk {
@@ -250,7 +253,8 @@ namespace cms {
           return;
         }
 
-        cms::alpakatools::for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+            acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
       }
 
       template <typename T_Acc>

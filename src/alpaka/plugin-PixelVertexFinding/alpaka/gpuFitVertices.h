@@ -42,11 +42,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto foundClusters = nvFinal;
 
       // zero
-      cms::alpakatools::for_each_element_in_block_strided(acc, foundClusters, [&](uint32_t i) {
-        zv[i] = 0;
-        wv[i] = 0;
-        chi2[i] = 0;
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, foundClusters, [&](uint32_t i) {
+            zv[i] = 0;
+            wv[i] = 0;
+            chi2[i] = 0;
+          });
 
       // only for test
       auto& noise = alpaka::declareSharedVar<int, __COUNTER__>(acc);
@@ -57,7 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::syncBlockThreads(acc);
 
       // compute cluster location
-      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] > 9990) {
           if (verbose)
             alpaka::atomicAdd(acc, &noise, 1, alpaka::hierarchy::Blocks{});
@@ -72,15 +73,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       alpaka::syncBlockThreads(acc);
       // reuse nn
-      cms::alpakatools::for_each_element_in_block_strided(acc, foundClusters, [&](uint32_t i) {
-        ALPAKA_ASSERT_OFFLOAD(wv[i] > 0.f);
-        zv[i] /= wv[i];
-        nn[i] = -1;  // ndof
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, foundClusters, [&](uint32_t i) {
+            ALPAKA_ASSERT_OFFLOAD(wv[i] > 0.f);
+            zv[i] /= wv[i];
+            nn[i] = -1;  // ndof
+          });
       alpaka::syncBlockThreads(acc);
 
       // compute chi2
-      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] <= 9990) {
           auto c2 = zv[iv[i]] - zt[i];
           c2 *= c2 / ezt2[i];
@@ -94,10 +96,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       });
       alpaka::syncBlockThreads(acc);
 
-      cms::alpakatools::for_each_element_in_block_strided(acc, foundClusters, [&](uint32_t i) {
-        if (nn[i] > 0)
-          wv[i] *= float(nn[i]) / chi2[i];
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, foundClusters, [&](uint32_t i) {
+            if (nn[i] > 0)
+              wv[i] *= float(nn[i]) / chi2[i];
+          });
 
       if (verbose && 0 == threadIdxLocal)
         printf("found %d proto clusters ", foundClusters);

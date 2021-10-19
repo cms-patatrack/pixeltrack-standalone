@@ -33,13 +33,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         return;
 
       // fill indexing
-      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) { data.idv[ws.itrk[i]] = iv[i]; });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, nt, [&](uint32_t i) { data.idv[ws.itrk[i]] = iv[i]; });
 
       // can be done asynchronoisly at the end of previous event
-      cms::alpakatools::for_each_element_in_block_strided(acc, nvFinal, [&](uint32_t i) { ptv2[i] = 0; });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, nvFinal, [&](uint32_t i) { ptv2[i] = 0; });
       alpaka::syncBlockThreads(acc);
 
-      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] <= 9990) {
           alpaka::atomicAdd(acc, &ptv2[iv[i]], ptt2[i], alpaka::hierarchy::Blocks{});
         }
@@ -55,7 +57,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
       auto& sws = alpaka::declareSharedVar<uint16_t[1024], __COUNTER__>(acc);
       // sort using only 16 bits
-      cms::alpakatools::radixSort<Acc1D, float, 2>(acc, ptv2, sortInd, sws, nvFinal);
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::radixSort<Acc1D, float, 2>(acc, ptv2, sortInd, sws, nvFinal);
 #else
       for (uint16_t i = 0; i < nvFinal; ++i)
         sortInd[i] = i;

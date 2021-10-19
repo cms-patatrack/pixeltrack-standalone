@@ -91,10 +91,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelTrackAlpaka CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DAlpaka const& hits_d,
                                                                float bfield,
                                                                Queue& queue) const {
-    PixelTrackAlpaka tracks{cms::alpakatools::allocDeviceBuf<pixelTrack::TrackSoA>(1u)};
+    PixelTrackAlpaka tracks{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelTrack::TrackSoA>(1u)};
     auto* soa = alpaka::getPtrNative(tracks);
 
-    CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits());
+    CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits(), queue);
     kernels.buildDoublets(hits_d, queue);
     kernels.launchKernels(hits_d, soa, queue);
     kernels.fillHitDetIndices(hits_d.view(), soa, queue);  // in principle needed only if Hits not "available"

@@ -170,10 +170,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       };
 
       SiPixelRawToClusterGPUKernel()
-          : nModules_Clusters_h{cms::alpakatools::allocHostBuf<uint32_t>(2u)},
+          : nModules_Clusters_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(2u)},
             digis_d{SiPixelDigisAlpaka(0u)},
-            clusters_d{SiPixelClustersAlpaka(0u)},
-            digiErrors_d{SiPixelDigiErrorsAlpaka(0u, PixelFormatterErrors())} {};
+            clusters_d{SiPixelClustersAlpaka(0u)} {};
+
       ~SiPixelRawToClusterGPUKernel() = default;
 
       SiPixelRawToClusterGPUKernel(const SiPixelRawToClusterGPUKernel&) = delete;
@@ -201,7 +201,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         return std::make_pair(std::move(digis_d), std::move(clusters_d));
       }
 
-      SiPixelDigiErrorsAlpaka&& getErrors() { return std::move(digiErrors_d); }
+      SiPixelDigiErrorsAlpaka&& getErrors() { return std::move(*digiErrors_d); }
 
     private:
       uint32_t nDigis = 0;
@@ -210,7 +210,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       AlpakaHostBuf<uint32_t> nModules_Clusters_h;
       SiPixelDigisAlpaka digis_d;
       SiPixelClustersAlpaka clusters_d;
-      SiPixelDigiErrorsAlpaka digiErrors_d;
+      std::optional<SiPixelDigiErrorsAlpaka> digiErrors_d;
     };
 
     // see RecoLocalTracker/SiPixelClusterizer

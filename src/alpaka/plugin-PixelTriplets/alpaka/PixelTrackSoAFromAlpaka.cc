@@ -5,6 +5,7 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
+#include "AlpakaCore/ScopedContext.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -74,13 +75,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto const& inputData = iEvent.get(tokenAlpaka_);
-    auto outputData = cms::alpakatools::allocHostBuf<pixelTrack::TrackSoA>(1u);
-    Queue queue(device);
-    alpaka::memcpy(queue, outputData, inputData, 1u);
-    alpaka::wait(queue);
+    auto outputData = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<pixelTrack::TrackSoA>(1u);
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+                                                                               iEvent.streamID()};
+    alpaka::memcpy(ctx.stream(), outputData, inputData, 1u);
 
     // DO NOT  make a copy  (actually TWO....)
-    iEvent.emplace(tokenSOA_, std::move(outputData));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, tokenSOA_, std::move(outputData));
 #endif
   }
 

@@ -12,25 +12,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const auto blockSize = 64;
     const auto numberOfBlocks = (maxNumberOfConcurrentFits_ + blockSize - 1) / blockSize;
-    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
-    const WorkDiv1D workDivQuadsPenta =
-        cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
+    const WorkDiv1D workDivTriplets = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+        Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    const WorkDiv1D workDivQuadsPenta = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+        Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
 
     //  Fit internals
-    auto hitsGPU_ = cms::alpakatools::allocDeviceBuf<double>(maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) /
-                                                             sizeof(double));
+    auto hitsGPU_ = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<double>(
+        maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
 
-    auto hits_geGPU_ =
-        cms::alpakatools::allocDeviceBuf<float>(maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
+    auto hits_geGPU_ = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<float>(
+        maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
 
-    auto fast_fit_resultsGPU_ =
-        cms::alpakatools::allocDeviceBuf<double>(maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
+    auto fast_fit_resultsGPU_ = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<double>(
+        maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
 
     //auto circle_fit_resultsGPU_holder =
     //cms::cuda::make_device_unique<char[]>(maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit), stream);
     //Rfit::circle_fit *circle_fit_resultsGPU_ = (Rfit::circle_fit *)(circle_fit_resultsGPU_holder.get());
-    //auto circle_fit_resultsGPU_holder = cms::alpakatools::allocDeviceBuf<char>(maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit));
-    auto circle_fit_resultsGPU_ = cms::alpakatools::allocDeviceBuf<Rfit::circle_fit>(maxNumberOfConcurrentFits_);
+    //auto circle_fit_resultsGPU_holder = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<char>(maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit));
+    auto circle_fit_resultsGPU_ =
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<Rfit::circle_fit>(maxNumberOfConcurrentFits_);
 
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
       // triplets

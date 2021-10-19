@@ -32,8 +32,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 
     SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_{cms::alpakatools::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
-          fedId_{cms::alpakatools::allocHostBuf<unsigned char>(MAX_FED_WORDS)} {}
+        : word_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
+          fedId_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<unsigned char>(MAX_FED_WORDS)} {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,
@@ -361,114 +361,115 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     uint32_t *pdigi,
                                     uint32_t *rawIdArr,
                                     uint16_t *moduleId,
-                                    cms::alpakatools::SimpleVector<PixelErrorCompact> *err,
+                                    ::cms::alpakatools::SimpleVector<PixelErrorCompact> *err,
                                     bool useQualityInfo,
                                     bool includeErrors,
                                     bool debug) const {
-        cms::alpakatools::for_each_element_in_grid_strided(acc, wordCounter, [&](uint32_t iloop) {
-          auto gIndex = iloop;
-          xx[gIndex] = 0;
-          yy[gIndex] = 0;
-          adc[gIndex] = 0;
-          bool skipROC = false;
+        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+            acc, wordCounter, [&](uint32_t iloop) {
+              auto gIndex = iloop;
+              xx[gIndex] = 0;
+              yy[gIndex] = 0;
+              adc[gIndex] = 0;
+              bool skipROC = false;
 
-          uint8_t fedId = fedIds[gIndex / 2];  // +1200;
+              uint8_t fedId = fedIds[gIndex / 2];  // +1200;
 
-          // initialize (too many coninue below)
-          pdigi[gIndex] = 0;
-          rawIdArr[gIndex] = 0;
-          moduleId[gIndex] = 9999;
+              // initialize (too many coninue below)
+              pdigi[gIndex] = 0;
+              rawIdArr[gIndex] = 0;
+              moduleId[gIndex] = 9999;
 
-          uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
-          if (ww == 0) {
-            // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
-            return;
-          }
-
-          uint32_t link = getLink(ww);  // Extract link
-          uint32_t roc = getRoc(ww);    // Extract Roc in link
-          ::pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
-
-          uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
-          skipROC = (roc < ::pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
-          if (includeErrors and skipROC) {
-            uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
-            err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
-            return;
-          }
-
-          uint32_t rawId = detId.RawId;
-          uint32_t rocIdInDetUnit = detId.rocInDet;
-          bool barrel = isBarrel(rawId);
-
-          uint32_t index = fedId * ::pixelgpudetails::MAX_LINK * ::pixelgpudetails::MAX_ROC +
-                           (link - 1) * ::pixelgpudetails::MAX_ROC + roc;
-          if (useQualityInfo) {
-            skipROC = cablingMap->badRocs[index];
-            if (skipROC)
-              return;
-          }
-          skipROC = modToUnp[index];
-          if (skipROC)
-            return;
-
-          uint32_t layer = 0;                   //, ladder =0;
-          int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
-
-          if (barrel) {
-            layer = (rawId >> ::pixelgpudetails::layerStartBit) & ::pixelgpudetails::layerMask;
-            module = (rawId >> ::pixelgpudetails::moduleStartBit) & ::pixelgpudetails::moduleMask;
-            side = (module < 5) ? -1 : 1;
-          } else {
-            // endcap ids
-            layer = 0;
-            panel = (rawId >> ::pixelgpudetails::panelStartBit) & ::pixelgpudetails::panelMask;
-            //disk  = (rawId >> diskStartBit_) & diskMask_;
-            side = (panel == 1) ? -1 : 1;
-            //blade = (rawId >> bladeStartBit_) & bladeMask_;
-          }
-
-          // ***special case of layer to 1 be handled here
-          ::pixelgpudetails::Pixel localPix;
-          if (layer == 1) {
-            uint32_t col = (ww >> ::pixelgpudetails::COL_shift) & ::pixelgpudetails::COL_mask;
-            uint32_t row = (ww >> ::pixelgpudetails::ROW_shift) & ::pixelgpudetails::ROW_mask;
-            localPix.row = row;
-            localPix.col = col;
-            if (includeErrors) {
-              if (not rocRowColIsValid(row, col)) {
-                uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
-                err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
-                if (debug)
-                  printf("BPIX1  Error status: %i\n", error);
+              uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
+              if (ww == 0) {
+                // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
                 return;
               }
-            }
-          } else {
-            // ***conversion rules for dcol and pxid
-            uint32_t dcol = (ww >> ::pixelgpudetails::DCOL_shift) & ::pixelgpudetails::DCOL_mask;
-            uint32_t pxid = (ww >> ::pixelgpudetails::PXID_shift) & ::pixelgpudetails::PXID_mask;
-            uint32_t row = ::pixelgpudetails::numRowsInRoc - pxid / 2;
-            uint32_t col = dcol * 2 + pxid % 2;
-            localPix.row = row;
-            localPix.col = col;
-            if (includeErrors and not dcolIsValid(dcol, pxid)) {
-              uint8_t error = conversionError(fedId, 3, debug);
-              err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
-              if (debug)
-                printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
-              return;
-            }
-          }
 
-          ::pixelgpudetails::Pixel globalPix = frameConversion(barrel, side, layer, rocIdInDetUnit, localPix);
-          xx[gIndex] = globalPix.row;  // origin shifting by 1 0-159
-          yy[gIndex] = globalPix.col;  // origin shifting by 1 0-415
-          adc[gIndex] = getADC(ww);
-          pdigi[gIndex] = ::pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
-          moduleId[gIndex] = detId.moduleId;
-          rawIdArr[gIndex] = rawId;
-        });  // end of stride on grid
+              uint32_t link = getLink(ww);  // Extract link
+              uint32_t roc = getRoc(ww);    // Extract Roc in link
+              ::pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
+
+              uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
+              skipROC = (roc < ::pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
+              if (includeErrors and skipROC) {
+                uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
+                err->push_back(acc, PixelErrorCompact{rID, ww, errorType, fedId});
+                return;
+              }
+
+              uint32_t rawId = detId.RawId;
+              uint32_t rocIdInDetUnit = detId.rocInDet;
+              bool barrel = isBarrel(rawId);
+
+              uint32_t index = fedId * ::pixelgpudetails::MAX_LINK * ::pixelgpudetails::MAX_ROC +
+                               (link - 1) * ::pixelgpudetails::MAX_ROC + roc;
+              if (useQualityInfo) {
+                skipROC = cablingMap->badRocs[index];
+                if (skipROC)
+                  return;
+              }
+              skipROC = modToUnp[index];
+              if (skipROC)
+                return;
+
+              uint32_t layer = 0;                   //, ladder =0;
+              int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
+
+              if (barrel) {
+                layer = (rawId >> ::pixelgpudetails::layerStartBit) & ::pixelgpudetails::layerMask;
+                module = (rawId >> ::pixelgpudetails::moduleStartBit) & ::pixelgpudetails::moduleMask;
+                side = (module < 5) ? -1 : 1;
+              } else {
+                // endcap ids
+                layer = 0;
+                panel = (rawId >> ::pixelgpudetails::panelStartBit) & ::pixelgpudetails::panelMask;
+                //disk  = (rawId >> diskStartBit_) & diskMask_;
+                side = (panel == 1) ? -1 : 1;
+                //blade = (rawId >> bladeStartBit_) & bladeMask_;
+              }
+
+              // ***special case of layer to 1 be handled here
+              ::pixelgpudetails::Pixel localPix;
+              if (layer == 1) {
+                uint32_t col = (ww >> ::pixelgpudetails::COL_shift) & ::pixelgpudetails::COL_mask;
+                uint32_t row = (ww >> ::pixelgpudetails::ROW_shift) & ::pixelgpudetails::ROW_mask;
+                localPix.row = row;
+                localPix.col = col;
+                if (includeErrors) {
+                  if (not rocRowColIsValid(row, col)) {
+                    uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
+                    err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
+                    if (debug)
+                      printf("BPIX1  Error status: %i\n", error);
+                    return;
+                  }
+                }
+              } else {
+                // ***conversion rules for dcol and pxid
+                uint32_t dcol = (ww >> ::pixelgpudetails::DCOL_shift) & ::pixelgpudetails::DCOL_mask;
+                uint32_t pxid = (ww >> ::pixelgpudetails::PXID_shift) & ::pixelgpudetails::PXID_mask;
+                uint32_t row = ::pixelgpudetails::numRowsInRoc - pxid / 2;
+                uint32_t col = dcol * 2 + pxid % 2;
+                localPix.row = row;
+                localPix.col = col;
+                if (includeErrors and not dcolIsValid(dcol, pxid)) {
+                  uint8_t error = conversionError(fedId, 3, debug);
+                  err->push_back(acc, PixelErrorCompact{rawId, ww, error, fedId});
+                  if (debug)
+                    printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
+                  return;
+                }
+              }
+
+              ::pixelgpudetails::Pixel globalPix = frameConversion(barrel, side, layer, rocIdInDetUnit, localPix);
+              xx[gIndex] = globalPix.row;  // origin shifting by 1 0-159
+              yy[gIndex] = globalPix.col;  // origin shifting by 1 0-415
+              adc[gIndex] = getADC(ww);
+              pdigi[gIndex] = ::pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
+              moduleId[gIndex] = detId.moduleId;
+              rawIdArr[gIndex] = rawId;
+            });  // end of stride on grid
 
       }  // end of Raw to Digi kernel operator()
     };   // end of Raw to Digi struct
@@ -493,16 +494,17 @@ namespace pixelgpudetails {
 #endif
 
       // limit to MaxHitsInModule;
-      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
-        moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, gpuClustering::MaxNumModules, [&](uint32_t i) {
+            moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
+          });
 
       auto &&ws = alpaka::declareSharedVar<uint32_t[32], __COUNTER__>(acc);
-      cms::alpakatools::blockPrefixScan(acc, moduleStart + 1, moduleStart + 1, 1024, ws);
-      cms::alpakatools::blockPrefixScan(
+      ::cms::alpakatools::blockPrefixScan(acc, moduleStart + 1, moduleStart + 1, 1024, ws);
+      ::cms::alpakatools::blockPrefixScan(
           acc, moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
-      cms::alpakatools::for_each_element_in_block_strided(
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
           acc, gpuClustering::MaxNumModules + 1, 1025u, [&](uint32_t i) { moduleStart[i] += moduleStart[1024]; });
       alpaka::syncBlockThreads(acc);
 
@@ -515,22 +517,24 @@ namespace pixelgpudetails {
       ALPAKA_ASSERT_OFFLOAD(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
       //for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
-      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
-        if (0 != i)
-          ALPAKA_ASSERT_OFFLOAD(moduleStart[i] >= moduleStart[i - i]);
-        // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
-        // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
-        if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
-          printf("moduleStart %d %d\n", i, moduleStart[i]);
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
+            if (0 != i)
+              ALPAKA_ASSERT_OFFLOAD(moduleStart[i] >= moduleStart[i - i]);
+            // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
+            // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
+            if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
+              printf("moduleStart %d %d\n", i, moduleStart[i]);
+          });
 #endif
 
       // avoid overflow
       constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-      cms::alpakatools::for_each_element_in_block_strided(acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
-        if (moduleStart[i] > MAX_HITS)
-          moduleStart[i] = MAX_HITS;
-      });
+      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+          acc, gpuClustering::MaxNumModules + 1, [&](uint32_t i) {
+            if (moduleStart[i] > MAX_HITS)
+              moduleStart[i] = MAX_HITS;
+          });
 
     }  // end of fillHitsModuleStart kernel operator()
   };   // end of fillHitsModuleStart struct
@@ -561,7 +565,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+        digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors), queue);
       }
       clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
 
@@ -575,16 +579,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
         const uint32_t blocks =
             (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+            Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
-        auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(wordCounter);
+        auto word_d = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.
         // However, only the first half of elements end up eventually used:
         // hence, here, only wordCounter/2 elements are allocated.
-        auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(wordCounter / 2);
+        auto fedId_d = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint8_t>(wordCounter / 2);
 
         alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
         alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter / 2);
@@ -604,7 +608,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         digis_d.pdigi(),
                                                         digis_d.rawIdArr(),
                                                         digis_d.moduleInd(),
-                                                        digiErrors_d.error(),
+                                                        digiErrors_d->error(),
                                                         useQualityInfo,
                                                         includeErrors,
                                                         debug));
@@ -634,8 +638,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const int blocks =
             (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) /
             threadsPerBlockOrElementsPerThread;
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+            Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
 
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDiv,
@@ -664,12 +668,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             alpaka::createTaskKernel<Acc1D>(
                 workDiv, countModules(), digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter));
 
-        auto moduleStartFirstElement = cms::alpakatools::createDeviceView<uint32_t>(clusters_d.moduleStart(), 1u);
+        auto moduleStartFirstElement =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(clusters_d.moduleStart(), 1u);
 
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
         const WorkDiv1D &workDivMaxNumModules =
-            cms::alpakatools::make_workdiv(Vec1D::all(MaxNumModules), Vec1D::all(256));
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(MaxNumModules), Vec1D::all(256));
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.
@@ -712,7 +717,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        const WorkDiv1D &workDivOneBlock = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(1024u));
+        const WorkDiv1D &workDivOneBlock =
+            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(1u), Vec1D::all(1024u));
 
         // MUST be ONE block
         alpaka::enqueue(queue,
@@ -722,12 +728,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         clusters_d.clusModuleStart()));
 
         // last element holds the number of all clusters
-        auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(clusters_d.clusModuleStart(),
-                                                                                gpuClustering::MaxNumModules + 1);
+        auto clusModuleStartView = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(
+            clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
         const auto clusModuleStartLastElement =
             AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
         // slice on host
-        auto nModules_Clusters_1_h{cms::alpakatools::allocHostBuf<uint32_t>(1u)};
+        auto nModules_Clusters_1_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(1u)};
         auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
         alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartLastElement, 1u);
