@@ -44,9 +44,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel;
           ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
               acc, numberOfLaddersInBarrel, [&](uint32_t il) {
-                agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
                 agc.ladderX[il] = ag.ladderX[il] - bs->x;
                 agc.ladderY[il] = ag.ladderY[il] - bs->y;
+                agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
                 agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
                 agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
                 agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
@@ -96,7 +96,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           ALPAKA_ASSERT_OFFLOAD(nClusInIter <= nclus);
           ALPAKA_ASSERT_OFFLOAD(nClusInIter > 0);
           ALPAKA_ASSERT_OFFLOAD(lastClus <= nclus);
-
           ALPAKA_ASSERT_OFFLOAD(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
           // init
@@ -115,8 +114,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           alpaka::syncBlockThreads(acc);
 
-          // one thead per "digi"
-
+          // one thread per "digi"
           const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
           const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
               ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block(acc, first);
@@ -184,7 +182,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           alpaka::syncBlockThreads(acc);
 
           // next one cluster per thread...
-
           first = clusters.clusModuleStart(me) + startClus;
 
           ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
@@ -193,8 +190,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
                 // this cannot happen anymore
                 // TODO: was 'break', OTOH comment above says "should not happen", so hopefully 'return' is ok
-                if (h >= TrackingRecHit2DSOAView::maxHits())
+                if (h >= TrackingRecHit2DSOAView::maxHits()) {
                   return;  // overflow...
+                }
                 ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());
                 ALPAKA_ASSERT_OFFLOAD(h < clusters.clusModuleStart(me + 1));
 
@@ -202,18 +200,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
 
                 // store it
-
                 hits.charge(h) = clusParams.charge[ic];
-
                 hits.detectorIndex(h) = me;
-
                 float xl, yl;
                 hits.xLocal(h) = xl = clusParams.xpos[ic];
                 hits.yLocal(h) = yl = clusParams.ypos[ic];
-
                 hits.clusterSizeX(h) = clusParams.xsize[ic];
                 hits.clusterSizeY(h) = clusParams.ysize[ic];
-
                 hits.xerrLocal(h) = clusParams.xerr[ic] * clusParams.xerr[ic];
                 hits.yerrLocal(h) = clusParams.yerr[ic] * clusParams.yerr[ic];
 
