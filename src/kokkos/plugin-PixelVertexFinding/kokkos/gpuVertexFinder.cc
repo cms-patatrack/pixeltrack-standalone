@@ -98,8 +98,7 @@ namespace KOKKOS_NAMESPACE {
 
     void vertexFinderKernel2(const Kokkos::View<gpuVertexFinder::ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
                              const Kokkos::View<gpuVertexFinder::WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
-                             Kokkos::View<gpuVertexFinder::ZVertices,
-                                          typename cms::kokkos::MemSpaceTraits<KokkosDeviceMemSpace>::HostSpace> hdata,
+                             const Kokkos::View<gpuVertexFinder::ZVertices, KokkosHostMemSpace>& hdata,
                              KokkosExecSpace const& execSpace,
                              Kokkos::TeamPolicy<KokkosExecSpace> const& teamPolicy) {
       Kokkos::parallel_for(

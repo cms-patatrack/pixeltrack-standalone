@@ -32,7 +32,7 @@ namespace cms {
     KOKKOS_INLINE_FUNCTION void countFromVector(const Kokkos::View<Histo, MemSpace, Restrict>& h,
                                                 const uint32_t nh,
                                                 const Kokkos::View<T const*, MemSpace, Restrict>& v,
-                                                const Kokkos::View<uint32_t const*, MemSpace, Restrict> offsets,
+                                                const Kokkos::View<uint32_t const*, MemSpace, Restrict>& offsets,
                                                 const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       uint32_t first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       uint32_t total_threads = teamMember.league_size() * teamMember.team_size();
@@ -271,7 +271,7 @@ namespace cms {
       }
 
       template <typename MemSpace>
-      KOKKOS_FORCEINLINE_FUNCTION int32_t bulkFill(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> apc,
+      KOKKOS_FORCEINLINE_FUNCTION int32_t bulkFill(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc,
                                                    index_type const* v,
                                                    uint32_t n) {
         auto c = apc().add(n);
