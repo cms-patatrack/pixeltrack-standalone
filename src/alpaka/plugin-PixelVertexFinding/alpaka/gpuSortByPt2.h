@@ -1,10 +1,9 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
 
+#include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaKernelCommon.h"
 #include "AlpakaCore/radixSort.h"
-
-#include "AlpakaCore/HistoContainer.h"
 
 #include "gpuVertexFinder.h"
 
