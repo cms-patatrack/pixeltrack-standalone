@@ -17,7 +17,9 @@ RunningProgram = collections.namedtuple("RunningProgram", ["program", "index", "
 class Program:
     def __init__(self, description, opts):
         s = description.split(":")
-        self._program = s[0]
+        s2 = s[0].split(" ")
+        self._program = s2[0]
+        self._programArgs = s2[1:]
         self._options = ["events", "threads","streams","numa","cores","cudaDevices"]
         valid = set(self._options)
         for o in s[1:]:
@@ -52,7 +54,7 @@ class Program:
         return self._cudaDevices
 
     def makeCommandMessage(self, opts):
-        command = [self._program]
+        command = [self._program] + self._programArgs
         if opts.runForMinutes > 0:
             command.extend(["--runForMinutes", str(opts.runForMinutes)])
         else:
