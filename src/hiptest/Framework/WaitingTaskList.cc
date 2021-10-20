@@ -12,11 +12,11 @@
 //
 
 // system include files
-
-// user include files
-#include "tbb/task.h"
 #include <cassert>
 
+#include <tbb/task.h>
+
+// user include files
 #include "WaitingTaskList.h"
 #include "hardware_pause.h"
 
