@@ -17,9 +17,9 @@ namespace KOKKOS_NAMESPACE {
     __device__ uint32_t gMaxHit = 0;
 #endif
 
-    KOKKOS_INLINE_FUNCTION void countModules(const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& id,
-                                             const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleStart,
-                                             const Kokkos::View<int32_t*, KokkosExecSpace, Restrict>& clusterId,
+    KOKKOS_INLINE_FUNCTION void countModules(const Kokkos::View<uint16_t const*, KokkosDeviceMemSpace, Restrict>& id,
+                                             const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& moduleStart,
+                                             const Kokkos::View<int32_t*, KokkosDeviceMemSpace, Restrict>& clusterId,
                                              int numElements,
                                              const size_t index) {
       clusterId[index] = index;
@@ -41,15 +41,15 @@ namespace KOKKOS_NAMESPACE {
 namespace KOKKOS_NAMESPACE::gpuClustering {
   //  __launch_bounds__(256,4)
   KOKKOS_INLINE_FUNCTION void findClus(
-      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& id,  // module id of each pixel
-      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& x,   // local coordinates of each pixel
-      const Kokkos::View<const uint16_t*, KokkosExecSpace, Restrict>& y,   //
-      const Kokkos::View<const uint32_t*, KokkosExecSpace, Restrict>&
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& id,  // module id of each pixel
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& x,   // local coordinates of each pixel
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& y,   //
+      const Kokkos::View<const uint32_t*, KokkosDeviceMemSpace, Restrict>&
           moduleStart,  // index of the first pixel of each module
-      const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>&
+      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>&
           nClustersInModule,  // output: number of clusters found in each module
-      const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleId,  // output: module id of each module
-      const Kokkos::View<int*, KokkosExecSpace, Restrict>& clusterId,      // output: cluster id of each pixel
+      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& moduleId,  // output: module id of each module
+      const Kokkos::View<int*, KokkosDeviceMemSpace, Restrict>& clusterId,      // output: cluster id of each pixel
       int numElements,
       Kokkos::TeamPolicy<KokkosExecSpace>& teamPolicy,
       KokkosExecSpace const& execSpace) {

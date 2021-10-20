@@ -52,8 +52,8 @@ namespace KOKKOS_NAMESPACE {
 
       ~Producer() = default;
 
-      Kokkos::View<ZVertexSoA, KokkosExecSpace> make(
-          Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace, Restrict> const& tksoa,
+      Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace> make(
+          Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace, Restrict> const& tksoa,
           float ptMin,
           KokkosExecSpace const& execSpace) const;
 

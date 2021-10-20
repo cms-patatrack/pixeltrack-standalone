@@ -20,8 +20,8 @@ namespace KOKKOS_NAMESPACE {
   private:
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-    edm::EDGetTokenT<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>>> tokenTrack_;
-    edm::EDPutTokenT<cms::kokkos::Product<Kokkos::View<ZVertexSoA, KokkosExecSpace>>> tokenVertex_;
+    edm::EDGetTokenT<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace>>> tokenTrack_;
+    edm::EDPutTokenT<cms::kokkos::Product<Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace>>> tokenVertex_;
 
     const gpuVertexFinder::Producer m_gpuAlgo;
 
@@ -30,8 +30,8 @@ namespace KOKKOS_NAMESPACE {
   };
 
   PixelVertexProducerKokkos::PixelVertexProducerKokkos(edm::ProductRegistry& reg)
-      : tokenTrack_(reg.consumes<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>>>()),
-        tokenVertex_(reg.produces<cms::kokkos::Product<Kokkos::View<ZVertexSoA, KokkosExecSpace>>>()),
+      : tokenTrack_(reg.consumes<cms::kokkos::Product<Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace>>>()),
+        tokenVertex_(reg.produces<cms::kokkos::Product<Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace>>>()),
         m_gpuAlgo(true,   // oneKernel
                   true,   // useDensity
                   false,  // useDBSCAN

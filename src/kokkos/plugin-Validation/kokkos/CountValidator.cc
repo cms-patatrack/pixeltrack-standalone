@@ -32,10 +32,10 @@ namespace KOKKOS_NAMESPACE {
     edm::EDGetTokenT<TrackCount> trackCountToken_;
     edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiToken_;
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterToken_;
-    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror> trackToken_;
-    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror> vertexToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> digiToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> clusterToken_;
+    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
+    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
 
     static std::atomic<int> allEvents;
     static std::atomic<int> goodEvents;
@@ -55,10 +55,10 @@ namespace KOKKOS_NAMESPACE {
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
         vertexCountToken_(reg.consumes<VertexCount>()),
-        digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
-        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
-        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
+        digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
+        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
+        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
+        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>>()) {}
 
   void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // values from cuda program

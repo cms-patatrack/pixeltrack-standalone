@@ -23,15 +23,15 @@ namespace KOKKOS_NAMESPACE {
 
     KOKKOS_INLINE_FUNCTION void calibDigis(
         bool isRun2,
-        const Kokkos::View<uint16_t*, KokkosExecSpace>& id,
-        const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& x,
-        const Kokkos::View<uint16_t const*, KokkosExecSpace, Restrict>& y,
-        const Kokkos::View<uint16_t*, KokkosExecSpace>& adc,
-        const SiPixelGainForHLTonGPU<KokkosExecSpace>& ped,
+        const Kokkos::View<uint16_t*, KokkosDeviceMemSpace>& id,
+        const Kokkos::View<uint16_t const*, KokkosDeviceMemSpace, Restrict>& x,
+        const Kokkos::View<uint16_t const*, KokkosDeviceMemSpace, Restrict>& y,
+        const Kokkos::View<uint16_t*, KokkosDeviceMemSpace>& adc,
+        const SiPixelGainForHLTonGPU<KokkosDeviceMemSpace>& ped,
         int numElements,
-        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& moduleStart,        // just to zero first
-        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& nClustersInModule,  // just to zero them
-        const Kokkos::View<uint32_t*, KokkosExecSpace, Restrict>& clusModuleStart,    // just to zero first
+        const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& moduleStart,        // just to zero first
+        const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& nClustersInModule,  // just to zero them
+        const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& clusModuleStart,    // just to zero first
         const size_t index) {
       // zero for next kernels...
       if (0 == index) {

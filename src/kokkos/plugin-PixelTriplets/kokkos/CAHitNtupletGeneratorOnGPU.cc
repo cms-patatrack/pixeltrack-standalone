@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Framework/Event.h"
+#include "KokkosCore/ViewHelpers.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
 
@@ -84,7 +85,7 @@ namespace KOKKOS_NAMESPACE {
            "h5");
 #endif
 
-    auto tmp = Kokkos::create_mirror_view(m_counters);
+    auto tmp = cms::kokkos::create_mirror_view(m_counters);
     memset(&tmp(), 0, sizeof(Counters));
     Kokkos::deep_copy(KokkosExecSpace(), m_counters, tmp);
     KokkosExecSpace().fence();
@@ -96,9 +97,11 @@ namespace KOKKOS_NAMESPACE {
     }
   }
 
-  Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
-      TrackingRecHit2DKokkos<KokkosExecSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) const {
-    Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace> tracks(Kokkos::ViewAllocateWithoutInitializing("tracks"));
+  Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
+      TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d,
+      float bfield,
+      KokkosExecSpace const& execSpace) const {
+    Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> tracks(Kokkos::ViewAllocateWithoutInitializing("tracks"));
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.data();

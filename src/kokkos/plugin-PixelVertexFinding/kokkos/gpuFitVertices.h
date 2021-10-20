@@ -10,8 +10,8 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_FORCEINLINE_FUNCTION void fitVertices(const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-                                                 const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+    KOKKOS_FORCEINLINE_FUNCTION void fitVertices(const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+                                                 const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
                                                  float chi2Max,  // for outlier rejection
                                                  const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       constexpr bool verbose = false;  // in principle the compiler should optmize out if false
@@ -107,8 +107,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     KOKKOS_FORCEINLINE_FUNCTION void fitVerticesKernel(
-        const Kokkos::View<ZVertices, KokkosExecSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosExecSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
         float chi2Max,  // for outlier rejection
         const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       fitVertices(vdata, vws, chi2Max, team_member);

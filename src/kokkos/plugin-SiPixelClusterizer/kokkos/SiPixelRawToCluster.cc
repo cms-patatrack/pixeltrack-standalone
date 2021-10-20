@@ -39,9 +39,9 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ContextState<KokkosExecSpace> ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiPutToken_;
-    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosExecSpace>>> digiErrorPutToken_;
-    edm::EDPutTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> digiPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosDeviceMemSpace>>> digiErrorPutToken_;
+    edm::EDPutTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> clusterPutToken_;
 
     pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -54,13 +54,13 @@ namespace KOKKOS_NAMESPACE {
 
   SiPixelRawToCluster::SiPixelRawToCluster(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        digiPutToken_(reg.produces<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
-        clusterPutToken_(reg.produces<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
+        digiPutToken_(reg.produces<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
+        clusterPutToken_(reg.produces<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
         isRun2_(true),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
-      digiErrorPutToken_ = reg.produces<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosExecSpace>>>();
+      digiErrorPutToken_ = reg.produces<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosDeviceMemSpace>>>();
     }
 
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
@@ -71,15 +71,15 @@ namespace KOKKOS_NAMESPACE {
                                     edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx(std::move(waitingTaskHolder), ctxState_);
 
-    auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper<KokkosExecSpace>>();
+    auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper<KokkosDeviceMemSpace>>();
     if (hgpuMap.hasQuality() != useQuality_) {
       throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
                                ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
     }
     // get the GPU product already here so that the async transfer can begin
     const auto& gpuMap = hgpuMap.cablingMap();
-    const auto& gpuModulesToUnpack = iSetup.get<Kokkos::View<const unsigned char*, KokkosExecSpace>>();
-    auto const& gpuGains = iSetup.get<SiPixelGainForHLTonGPU<KokkosExecSpace>>();
+    const auto& gpuModulesToUnpack = iSetup.get<Kokkos::View<const unsigned char*, KokkosDeviceMemSpace>>();
+    auto const& gpuGains = iSetup.get<SiPixelGainForHLTonGPU<KokkosDeviceMemSpace>>();
 
     auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
 

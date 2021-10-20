@@ -24,23 +24,23 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
     // The mess with inputs will be cleaned up when migrating to the new framework
-    edm::EDGetTokenT<cms::kokkos::Product<BeamSpotKokkos<KokkosExecSpace>>> tBeamSpot;
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> token_;
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> tokenDigi_;
+    edm::EDGetTokenT<cms::kokkos::Product<BeamSpotKokkos<KokkosDeviceMemSpace>>> tBeamSpot;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> token_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> tokenDigi_;
 
-    edm::EDPutTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>> tokenHit_;
+    edm::EDPutTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>> tokenHit_;
 
     pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
   };
 
   SiPixelRecHitKokkos::SiPixelRecHitKokkos(edm::ProductRegistry& reg)
-      : tBeamSpot(reg.consumes<cms::kokkos::Product<BeamSpotKokkos<KokkosExecSpace>>>()),
-        token_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
-        tokenDigi_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
-        tokenHit_(reg.produces<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>>()) {}
+      : tBeamSpot(reg.consumes<cms::kokkos::Product<BeamSpotKokkos<KokkosDeviceMemSpace>>>()),
+        token_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
+        tokenDigi_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
+        tokenHit_(reg.produces<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>>()) {}
 
   void SiPixelRecHitKokkos::produce(edm::Event& iEvent, const edm::EventSetup& es) {
-    auto const& fcpe = es.get<PixelCPEFast<KokkosExecSpace>>();
+    auto const& fcpe = es.get<PixelCPEFast<KokkosDeviceMemSpace>>();
 
     auto const& pclusters = iEvent.get(token_);
     cms::kokkos::ScopedContextProduce<KokkosExecSpace> ctx{pclusters};

@@ -7,7 +7,6 @@
 
 #include "CondFormats/pixelCPEforGPU.h"
 #include "KokkosDataFormats/approx_atan2.h"
-#include "KokkosDataFormats/BeamSpotKokkos.h"
 #include "KokkosDataFormats/TrackingRecHit2DKokkos.h"
 #include "KokkosCore/atomic.h"
 
@@ -15,9 +14,9 @@ namespace KOKKOS_NAMESPACE {
   namespace gpuPixelRecHits {
     KOKKOS_INLINE_FUNCTION void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                                         BeamSpotPOD const* __restrict__ bs,
-                                        const SiPixelDigisKokkos<KokkosExecSpace>::DeviceConstView& pdigis,
+                                        const SiPixelDigisKokkos<KokkosDeviceMemSpace>::DeviceConstView& pdigis,
                                         int numElements,
-                                        const SiPixelClustersKokkos<KokkosExecSpace>::DeviceConstView& pclusters,
+                                        const SiPixelClustersKokkos<KokkosDeviceMemSpace>::DeviceConstView& pclusters,
                                         TrackingRecHit2DSOAView* hits,
                                         Kokkos::TeamPolicy<KokkosExecSpace>::member_type const& teamMember) {
       // FIXME

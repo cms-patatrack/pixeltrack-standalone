@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
+#include "KokkosCore/ViewHelpers.h"
+
 #include "KokkosDataFormats/TrackingRecHit2DSOAView.h"
 
 template <typename MemorySpace>
@@ -40,7 +42,7 @@ public:
 #define TO_HOST_ASYNC(name)                                  \
   template <typename ExecSpace>                              \
   auto name##ToHostAsync(ExecSpace const& execSpace) const { \
-    auto host = Kokkos::create_mirror_view(m_##name);        \
+    auto host = cms::kokkos::create_mirror_view(m_##name);   \
     Kokkos::deep_copy(execSpace, host, m_##name);            \
     return host;                                             \
   }
@@ -129,7 +131,7 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   // this will break 1to1 correspondence with cluster and module locality
   // so unless proven VERY inefficient we keep it ordered as generated
 
-  auto view_h = Kokkos::create_mirror_view(m_view);
+  auto view_h = cms::kokkos::create_mirror_view(m_view);
 #define SET(name) view_h().name = name.data()
   SET(m_xl);
   SET(m_yl);

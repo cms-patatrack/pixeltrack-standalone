@@ -12,14 +12,14 @@
 
 namespace gpuClustering {
 
-  template <typename ExecSpace>
+  template <typename MemSpace, typename ExecSpace>
   void clusterChargeCut(
-      Kokkos::View<uint16_t*, ExecSpace> id,                 // module id of each pixel
-      Kokkos::View<const uint16_t*, ExecSpace> adc,          // local coordinates of each pixel
-      Kokkos::View<const uint32_t*, ExecSpace> moduleStart,  // index of the first pixel of each module
-      Kokkos::View<uint32_t*, ExecSpace> nClustersInModule,  // output: number of clusters found in each module
-      Kokkos::View<const uint32_t*, ExecSpace> moduleId,     // output: module id of each module
-      Kokkos::View<int*, ExecSpace> clusterId,               // output: cluster id of each pixel
+      const Kokkos::View<uint16_t*, MemSpace>& id,                 // module id of each pixel
+      const Kokkos::View<const uint16_t*, MemSpace>& adc,          // local coordinates of each pixel
+      const Kokkos::View<const uint32_t*, MemSpace>& moduleStart,  // index of the first pixel of each module
+      const Kokkos::View<uint32_t*, MemSpace>& nClustersInModule,  // output: number of clusters found in each module
+      const Kokkos::View<const uint32_t*, MemSpace>& moduleId,     // output: module id of each module
+      const Kokkos::View<int*, MemSpace>& clusterId,               // output: cluster id of each pixel
       int numElements,
       Kokkos::TeamPolicy<ExecSpace>& teamPolicy,
       ExecSpace const& execSpace) {

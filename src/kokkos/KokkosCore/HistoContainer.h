@@ -16,8 +16,8 @@
 
 namespace cms {
   namespace kokkos {
-    template <typename T, typename ExecSpace>
-    KOKKOS_INLINE_FUNCTION uint32_t upper_bound(const Kokkos::View<uint32_t const*, ExecSpace, Restrict>& offsets,
+    template <typename T, typename MemSpace>
+    KOKKOS_INLINE_FUNCTION uint32_t upper_bound(const Kokkos::View<uint32_t const*, MemSpace, Restrict>& offsets,
                                                 const uint32_t& upper_index,
                                                 const T& value) {
       for (uint32_t j = 0; j < upper_index; ++j) {
@@ -28,11 +28,11 @@ namespace cms {
       return 0;
     }
 
-    template <typename Histo, typename ExecSpace, typename T>
-    KOKKOS_INLINE_FUNCTION void countFromVector(const Kokkos::View<Histo, ExecSpace, Restrict>& h,
+    template <typename Histo, typename MemSpace, typename ExecSpace, typename T>
+    KOKKOS_INLINE_FUNCTION void countFromVector(const Kokkos::View<Histo, MemSpace, Restrict>& h,
                                                 const uint32_t nh,
-                                                const Kokkos::View<T const*, ExecSpace, Restrict>& v,
-                                                const Kokkos::View<uint32_t const*, ExecSpace, Restrict> offsets,
+                                                const Kokkos::View<T const*, MemSpace, Restrict>& v,
+                                                const Kokkos::View<uint32_t const*, MemSpace, Restrict>& offsets,
                                                 const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       uint32_t first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       uint32_t total_threads = teamMember.league_size() * teamMember.team_size();
@@ -46,11 +46,11 @@ namespace cms {
       }
     }
 
-    template <typename Histo, typename ExecSpace, typename T>
-    KOKKOS_INLINE_FUNCTION void fillFromVector(const Kokkos::View<Histo, ExecSpace, Restrict>& h,
+    template <typename Histo, typename MemSpace, typename ExecSpace, typename T>
+    KOKKOS_INLINE_FUNCTION void fillFromVector(const Kokkos::View<Histo, MemSpace, Restrict>& h,
                                                const uint32_t nh,
-                                               const Kokkos::View<T const*, ExecSpace, Restrict>& v,
-                                               const Kokkos::View<uint32_t const*, ExecSpace, Restrict>& offsets,
+                                               const Kokkos::View<T const*, MemSpace, Restrict>& v,
+                                               const Kokkos::View<uint32_t const*, MemSpace, Restrict>& offsets,
                                                const typename Kokkos::TeamPolicy<ExecSpace>::member_type& teamMember) {
       int first = teamMember.league_rank() * teamMember.team_size() + teamMember.team_rank();
       int total_threads = teamMember.league_size() * teamMember.team_size();
@@ -71,8 +71,8 @@ namespace cms {
       }
     }
 
-    template <typename Histo, typename ExecSpace>
-    inline void launchZero(const Kokkos::View<Histo, ExecSpace, Restrict>& h, ExecSpace const& execSpace) {
+    template <typename Histo, typename MemSpace, typename ExecSpace>
+    inline void launchZero(const Kokkos::View<Histo, MemSpace, Restrict>& h, ExecSpace const& execSpace) {
       Kokkos::parallel_for(
           "launchZero_view",
           hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
@@ -87,8 +87,8 @@ namespace cms {
           KOKKOS_LAMBDA(const size_t i) { h->off[i] = 0; });
     }
 
-    template <typename Histo, typename ExecSpace>
-    inline void launchFinalize(const Kokkos::View<Histo, ExecSpace, Restrict>& h, ExecSpace const& execSpace) {
+    template <typename Histo, typename MemSpace, typename ExecSpace>
+    inline void launchFinalize(const Kokkos::View<Histo, MemSpace, Restrict>& h, ExecSpace const& execSpace) {
       Kokkos::parallel_scan(
           "launchFinalize",
           hintLightWeight(Kokkos::RangePolicy<ExecSpace>(execSpace, 0, Histo::totbins())),
@@ -99,11 +99,11 @@ namespace cms {
           });
     }
 
-    template <typename Histo, typename ExecSpace, typename T>
-    inline void fillManyFromVector(const Kokkos::View<Histo, ExecSpace, Restrict>& h,
+    template <typename Histo, typename MemSpace, typename ExecSpace, typename T>
+    inline void fillManyFromVector(const Kokkos::View<Histo, MemSpace, Restrict>& h,
                                    const uint32_t nh,
-                                   const Kokkos::View<T const*, ExecSpace, Restrict>& v,
-                                   const Kokkos::View<uint32_t const*, ExecSpace, Restrict>& offsets,
+                                   const Kokkos::View<T const*, MemSpace, Restrict>& v,
+                                   const Kokkos::View<uint32_t const*, MemSpace, Restrict>& offsets,
                                    const uint32_t totSize,
                                    const int nthreads,
                                    ExecSpace const& execSpace) {
@@ -126,17 +126,19 @@ namespace cms {
 #endif
       Kokkos::parallel_for(
           "countFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
-            countFromVector(h, nh, v, offsets, teamMember);
+            // TODO: unclear why the argument type deduction fails here
+            countFromVector<Histo, MemSpace, ExecSpace, T>(h, nh, v, offsets, teamMember);
           });
       launchFinalize(h, execSpace);
       Kokkos::parallel_for(
           "fillFromVector", tp, KOKKOS_LAMBDA(typename TeamPolicy::member_type const& teamMember) {
-            fillFromVector(h, nh, v, offsets, teamMember);
+            // TODO: unclear why the argument type deduction fails here
+            fillFromVector<Histo, MemSpace, ExecSpace, T>(h, nh, v, offsets, teamMember);
           });
     }
 
-    template <typename Assoc, typename ExecSpace>
-    void finalizeBulk(Kokkos::View<AtomicPairCounter, ExecSpace, Restrict> const& apc,
+    template <typename Assoc, typename MemSpace, typename ExecSpace>
+    void finalizeBulk(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc,
                       Kokkos::View<Assoc, ExecSpace, Restrict> const& assoc,
                       ExecSpace const& execSpace) {
       Kokkos::parallel_for(
@@ -145,8 +147,8 @@ namespace cms {
           KOKKOS_LAMBDA(const int& i) { assoc().bulkFinalizeFill(apc, i); });
     }
 
-    template <typename Assoc, typename ExecSpace>
-    void finalizeBulk(Kokkos::View<AtomicPairCounter, ExecSpace, Restrict> const& apc,
+    template <typename Assoc, typename MemSpace, typename ExecSpace>
+    void finalizeBulk(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc,
                       Assoc* __restrict__ assoc,
                       ExecSpace const& execSpace) {
       Kokkos::parallel_for(
@@ -168,8 +170,8 @@ namespace cms {
     }
 
     // iteratate over bins containing all values in window wmin, wmax
-    template <typename Histo, typename V, typename Func, typename ExecSpace>
-    KOKKOS_FORCEINLINE_FUNCTION void forEachInWindow(const Kokkos::View<Histo*, ExecSpace, Restrict>& hist,
+    template <typename Histo, typename V, typename Func, typename MemSpace>
+    KOKKOS_FORCEINLINE_FUNCTION void forEachInWindow(const Kokkos::View<Histo*, MemSpace, Restrict>& hist,
                                                      V wmin,
                                                      V wmax,
                                                      Func const& func) {
@@ -268,8 +270,8 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      template <typename ExecSpace>
-      KOKKOS_FORCEINLINE_FUNCTION int32_t bulkFill(Kokkos::View<AtomicPairCounter, ExecSpace, Restrict> apc,
+      template <typename MemSpace>
+      KOKKOS_FORCEINLINE_FUNCTION int32_t bulkFill(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc,
                                                    index_type const* v,
                                                    uint32_t n) {
         auto c = apc().add(n);
@@ -291,13 +293,13 @@ namespace cms {
         return c.m;
       }
 
-      template <typename ExecSpace>
-      KOKKOS_FORCEINLINE_FUNCTION void bulkFinalize(Kokkos::View<AtomicPairCounter, ExecSpace, Restrict> const& apc) {
+      template <typename MemSpace>
+      KOKKOS_FORCEINLINE_FUNCTION void bulkFinalize(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc) {
         off[apc().get().m] = apc().get().n;
       }
 
-      template <typename ExecSpace>
-      KOKKOS_FORCEINLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter, ExecSpace, Restrict> const& apc,
+      template <typename MemSpace>
+      KOKKOS_FORCEINLINE_FUNCTION void bulkFinalizeFill(Kokkos::View<AtomicPairCounter, MemSpace, Restrict> const& apc,
                                                         const int threadId) {
         auto m = apc().get().m;
         auto n = apc().get().n;

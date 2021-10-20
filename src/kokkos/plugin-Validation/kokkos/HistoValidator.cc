@@ -1,6 +1,7 @@
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/Product.h"
 #include "KokkosCore/ScopedContext.h"
+#include "KokkosCore/ViewHelpers.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "KokkosDataFormats/SiPixelClustersKokkos.h"
 #include "KokkosDataFormats/SiPixelDigisKokkos.h"
@@ -28,31 +29,31 @@ namespace KOKKOS_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
     void endJob() override;
 
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>> digiToken_;
-    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>> clusterToken_;
-    edm::EDGetTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>> hitToken_;
-    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror> trackToken_;
-    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror> vertexToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> digiToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> clusterToken_;
+    edm::EDGetTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>> hitToken_;
+    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
+    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
 
     uint32_t nDigis;
     uint32_t nModules;
     uint32_t nClusters;
     uint32_t nHits;
 
-    Kokkos::View<uint16_t const*, KokkosExecSpace>::HostMirror h_adc;
-    Kokkos::View<uint32_t const*, KokkosExecSpace>::HostMirror h_clusInModule;
+    Kokkos::View<uint16_t*, KokkosHostMemSpace> h_adc;
+    Kokkos::View<uint32_t*, KokkosHostMemSpace> h_clusInModule;
 
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_lx;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_ly;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_lex;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_ley;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gx;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gy;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gz;
-    Kokkos::View<float const*, KokkosExecSpace>::HostMirror h_gr;
-    Kokkos::View<int32_t const*, KokkosExecSpace>::HostMirror h_charge;
-    Kokkos::View<int16_t const*, KokkosExecSpace>::HostMirror h_sizex;
-    Kokkos::View<int16_t const*, KokkosExecSpace>::HostMirror h_sizey;
+    Kokkos::View<float*, KokkosHostMemSpace> h_lx;
+    Kokkos::View<float*, KokkosHostMemSpace> h_ly;
+    Kokkos::View<float*, KokkosHostMemSpace> h_lex;
+    Kokkos::View<float*, KokkosHostMemSpace> h_ley;
+    Kokkos::View<float*, KokkosHostMemSpace> h_gx;
+    Kokkos::View<float*, KokkosHostMemSpace> h_gy;
+    Kokkos::View<float*, KokkosHostMemSpace> h_gz;
+    Kokkos::View<float*, KokkosHostMemSpace> h_gr;
+    Kokkos::View<int32_t*, KokkosHostMemSpace> h_charge;
+    Kokkos::View<int16_t*, KokkosHostMemSpace> h_sizex;
+    Kokkos::View<int16_t*, KokkosHostMemSpace> h_sizey;
 
     static std::map<std::string, SimpleAtomicHisto> histos;
   };
@@ -93,11 +94,11 @@ namespace KOKKOS_NAMESPACE {
       {"vertex_pt2", SimpleAtomicHisto(100, 0, 4000)}};
 
   HistoValidator::HistoValidator(edm::ProductRegistry& reg)
-      : digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosExecSpace>>>()),
-        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosExecSpace>>>()),
-        hitToken_(reg.consumes<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosExecSpace>>>()),
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosExecSpace>::HostMirror>()),
-        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosExecSpace>::HostMirror>()) {}
+      : digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
+        clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
+        hitToken_(reg.consumes<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>>()),
+        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
+        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>>()) {}
 
   void HistoValidator::acquire(const edm::Event& iEvent,
                                const edm::EventSetup& iSetup,
@@ -114,8 +115,7 @@ namespace KOKKOS_NAMESPACE {
 
     nClusters = clusters.nClusters();
     auto const d_clusInModule = clusters.clusInModule();
-    h_clusInModule = Kokkos::create_mirror_view(d_clusInModule);
-    Kokkos::deep_copy(ctx.execSpace(), h_clusInModule, d_clusInModule);
+    h_clusInModule = clusters.clusInModuleToHostAsync(ctx.execSpace());
 
     nHits = hits.nHits();
     h_lx = hits.xlToHostAsync(ctx.execSpace());

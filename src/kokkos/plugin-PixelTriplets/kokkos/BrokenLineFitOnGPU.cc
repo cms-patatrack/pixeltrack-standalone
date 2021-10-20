@@ -8,11 +8,11 @@ namespace KOKKOS_NAMESPACE {
                                               uint32_t maxNumberOfTuples,
                                               KokkosExecSpace const& execSpace) {
     //  Fit internals
-    Kokkos::View<double*, KokkosExecSpace, Restrict> hitsGPU(Kokkos::ViewAllocateWithoutInitializing("hitsGPU"),
-                                                             maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
-    Kokkos::View<float*, KokkosExecSpace, Restrict> hits_geGPU(Kokkos::ViewAllocateWithoutInitializing("hits_geGPU"),
-                                                               maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
-    Kokkos::View<double*, KokkosExecSpace, Restrict> fast_fit_resultsGPU(
+    Kokkos::View<double*, KokkosDeviceMemSpace, Restrict> hitsGPU(
+        Kokkos::ViewAllocateWithoutInitializing("hitsGPU"), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
+    Kokkos::View<float*, KokkosDeviceMemSpace, Restrict> hits_geGPU(
+        Kokkos::ViewAllocateWithoutInitializing("hits_geGPU"), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
+    Kokkos::View<double*, KokkosDeviceMemSpace, Restrict> fast_fit_resultsGPU(
         Kokkos::ViewAllocateWithoutInitializing("fast_fit_resultsGPU"),
         maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
 

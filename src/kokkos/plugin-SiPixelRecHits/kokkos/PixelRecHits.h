@@ -22,11 +22,11 @@ namespace KOKKOS_NAMESPACE {
       PixelRecHitGPUKernel& operator=(const PixelRecHitGPUKernel&) = delete;
       PixelRecHitGPUKernel& operator=(PixelRecHitGPUKernel&&) = delete;
 
-      TrackingRecHit2DKokkos<KokkosExecSpace> makeHitsAsync(
-          SiPixelDigisKokkos<KokkosExecSpace> const& digis_d,
-          SiPixelClustersKokkos<KokkosExecSpace> const& clusters_d,
-          BeamSpotKokkos<KokkosExecSpace> const& bs_d,
-          Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, KokkosExecSpace> const& cpeParams,
+      TrackingRecHit2DKokkos<KokkosDeviceMemSpace> makeHitsAsync(
+          SiPixelDigisKokkos<KokkosDeviceMemSpace> const& digis_d,
+          SiPixelClustersKokkos<KokkosDeviceMemSpace> const& clusters_d,
+          BeamSpotKokkos<KokkosDeviceMemSpace> const& bs_d,
+          Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, KokkosDeviceMemSpace> const& cpeParams,
           KokkosExecSpace const& execSpace) const;
     };
   }  // namespace pixelgpudetails

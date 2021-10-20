@@ -22,9 +22,9 @@ namespace KOKKOS_NAMESPACE {
                                             CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                             uint32_t nHits,
                                             HitsOnGPU const *__restrict__ hhp,
-                                            Kokkos::View<double *, KokkosExecSpace> phits,
-                                            Kokkos::View<float *, KokkosExecSpace> phits_ge,
-                                            Kokkos::View<double *, KokkosExecSpace> pfast_fit,
+                                            Kokkos::View<double *, KokkosDeviceMemSpace> phits,
+                                            Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
+                                            Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit,
                                             uint32_t offset,
                                             int local_idx) {
     constexpr uint32_t hitsInFit = N;
@@ -81,10 +81,10 @@ namespace KOKKOS_NAMESPACE {
   KOKKOS_INLINE_FUNCTION void kernelCircleFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                               uint32_t nHits,
                                               double B,
-                                              Kokkos::View<double *, KokkosExecSpace> phits,
-                                              Kokkos::View<float *, KokkosExecSpace> phits_ge,
-                                              Kokkos::View<double *, KokkosExecSpace> pfast_fit_input,
-                                              Kokkos::View<Rfit::circle_fit *, KokkosExecSpace> circle_fit,
+                                              Kokkos::View<double *, KokkosDeviceMemSpace> phits,
+                                              Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
+                                              Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit_input,
+                                              Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit,
                                               uint32_t offset,
                                               int local_idx) {
     assert(N <= nHits);
@@ -119,10 +119,10 @@ namespace KOKKOS_NAMESPACE {
                                             uint32_t nHits,
                                             double B,
                                             OutputSoA *results,
-                                            Kokkos::View<double *, KokkosExecSpace> phits,
-                                            Kokkos::View<float *, KokkosExecSpace> phits_ge,
-                                            Kokkos::View<double *, KokkosExecSpace> pfast_fit_input,
-                                            Kokkos::View<Rfit::circle_fit *, KokkosExecSpace> circle_fit,
+                                            Kokkos::View<double *, KokkosDeviceMemSpace> phits,
+                                            Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
+                                            Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit_input,
+                                            Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit,
                                             uint32_t offset,
                                             int local_idx) {
     assert(results);
