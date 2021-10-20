@@ -112,7 +112,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       kernels.printCounters(queue);
     }
 
-    alpaka::wait(queue);
     return tracks;
   }
 

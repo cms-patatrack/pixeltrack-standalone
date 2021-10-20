@@ -203,9 +203,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       launchZero(alpaka::getPtrNative(device_tupleMultiplicity_), queue);
       launchZero(alpaka::getPtrNative(device_hitToTuple_), queue);
-
-      // we may wish to keep it in the edm...
-      alpaka::wait(queue);
     }
 
     ~CAHitNtupletGeneratorKernels() = default;

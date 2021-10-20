@@ -103,7 +103,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         alpaka::getPtrNative(fast_fit_resultsGPU_),
                                                         5,
                                                         offset));
-        alpaka::wait(queue);
       } else {
         // fit penta (all 5)
         alpaka::enqueue(queue,
@@ -129,7 +128,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         alpaka::getPtrNative(fast_fit_resultsGPU_),
                                                         5,
                                                         offset));
-        alpaka::wait(queue);
       }
 
     }  // loop on concurrent fits

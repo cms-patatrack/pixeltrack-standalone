@@ -15,7 +15,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         queue,
         alpaka::createTaskKernel<Acc1D>(
             fillHitDetWorkDiv, kernel_fillHitDetIndices(), &tracks_d->hitIndices, hv, &tracks_d->detIndices));
-    alpaka::wait(queue);
   }
 
   void CAHitNtupletGeneratorKernels::launchKernels(HitsOnCPU const &hh, TkSoA *tracks_d, Queue &queue) {
@@ -84,7 +83,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       alpaka::getPtrNative(device_isOuterHitOfCell_),
                                                       nhits,
                                                       false));
-      alpaka::wait(queue);
     }
 
     blockSize = 64;
@@ -111,10 +109,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       alpaka::getPtrNative(device_theCells_),
                                                       alpaka::getPtrNative(device_nCells_)));
     }
-
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-#endif
 
     blockSize = 128;
     numberOfBlocks = (HitContainer::totbins() + blockSize - 1) / blockSize;
@@ -175,7 +169,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       alpaka::getPtrNative(device_isOuterHitOfCell_),
                                                       nhits,
                                                       true));
-      alpaka::wait(queue);
     }
 
     if (m_params.doStats_) {
@@ -196,11 +189,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       nhits,
                                                       m_params.maxNumberOfDoublets_,
                                                       alpaka::getPtrNative(counters_)));
-      alpaka::wait(queue);
     }
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-#endif
 
     // free space asap
     // device_isOuterHitOfCell_.reset();
@@ -211,10 +200,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef NTUPLE_DEBUG
     std::cout << "building Doublets out of " << nhits << " Hits" << std::endl;
-#endif
-
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
 #endif
 
     ALPAKA_ASSERT_OFFLOAD(alpaka::getPtrNative(device_isOuterHitOfCell_));
@@ -234,12 +219,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       alpaka::getPtrNative(device_theCellNeighborsContainer_),
                                                       alpaka::getPtrNative(device_theCellTracks_),
                                                       alpaka::getPtrNative(device_theCellTracksContainer_)));
-      alpaka::wait(queue);
     }
-
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-#endif
 
     if (0 == nhits)
       return;  // protect against empty events
@@ -274,11 +254,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     m_params.doZ0Cut_,
                                                     m_params.doPtCut_,
                                                     m_params.maxNumberOfDoublets_));
-    alpaka::wait(queue);
-
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-#endif
   }
 
   void CAHitNtupletGeneratorKernels::classifyTuples(HitsOnCPU const &hh, TkSoA *tracks_d, Queue &queue) {
@@ -307,7 +282,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       alpaka::getPtrNative(device_theCells_),
                                                       alpaka::getPtrNative(device_nCells_),
                                                       quality_d));
-      alpaka::wait(queue);
     }
 
     // remove duplicates (tracks that share a doublet)
@@ -340,7 +314,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           queue,
           alpaka::createTaskKernel<Acc1D>(
               workDiv1D, kernel_fillHitInTracks(), tuples_d, quality_d, alpaka::getPtrNative(device_hitToTuple_)));
-      alpaka::wait(queue);
     }
     if (m_params.minHitsPerNtuplet_ < 4) {
       // remove duplicates (tracks that share a hit)
@@ -355,7 +328,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tracks_d,
                                                       quality_d,
                                                       alpaka::getPtrNative(device_hitToTuple_)));
-      alpaka::wait(queue);
     }
 
     if (m_params.doStats_) {
@@ -375,11 +347,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(
                           workDiv1D, kernel_doStatsForTracks(), tuples_d, quality_d, alpaka::getPtrNative(counters_)));
-      alpaka::wait(queue);
     }
-#ifdef GPU_DEBUG
-    alpaka::wait(queue);
-#endif
 
 #ifdef DUMP_GPU_TK_TUPLES
     static std::atomic<int> iev(0);
@@ -403,7 +371,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(1u), Vec1D::all(1u));
     alpaka::enqueue(
         queue, alpaka::createTaskKernel<Acc1D>(workDiv1D, kernel_printCounters(), alpaka::getPtrNative(counters_)));
-    alpaka::wait(queue);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

@@ -182,7 +182,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, sortByPt2Kernel(), soa, ws_d));
       }
 
-      alpaka::wait(queue);
       return vertices;
     }
 

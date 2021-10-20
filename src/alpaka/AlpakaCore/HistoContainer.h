@@ -60,7 +60,6 @@ namespace cms {
           poff, Histo::totbins());
 
       alpaka::memset(queue, histoOffView, 0, Histo::totbins());
-      alpaka::wait(queue);
     }
 
     template <typename Histo>

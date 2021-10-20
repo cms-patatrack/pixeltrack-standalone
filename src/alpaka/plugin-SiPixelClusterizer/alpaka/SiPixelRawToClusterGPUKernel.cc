@@ -622,6 +622,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           digiErrors_d.copyErrorToHostAsync(stream);
         }
 #endif
+        // FIXME what needs to be done before we can remove the synchronisation ?
         alpaka::wait(queue);  // Wait for work to be completed before end of scope.
       }
       // End of Raw2Digi and passing data for clustering
