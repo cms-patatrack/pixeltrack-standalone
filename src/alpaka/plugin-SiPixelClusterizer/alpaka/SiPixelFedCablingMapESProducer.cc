@@ -29,7 +29,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
     in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);
 
-    Queue queue(device);
+    Queue queue(devices[0]);
 
     auto cablingMap_h{
         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};

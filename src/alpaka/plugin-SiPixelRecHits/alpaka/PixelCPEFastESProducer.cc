@@ -23,7 +23,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::ifstream in((data_ + "/cpefast.bin").c_str(), std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
 
-    Queue queue(device);
+    Queue queue(devices[0]);
 
     pixelCPEforGPU::CommonParams commonParams;
     in.read(reinterpret_cast<char *>(&commonParams), sizeof(pixelCPEforGPU::CommonParams));
