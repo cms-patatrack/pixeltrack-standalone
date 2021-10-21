@@ -120,7 +120,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const nHits = hits.nHits();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    Queue queue(device);
+    Queue queue(devices[0]);
     auto const h_adcBuf = digis.adcToHostAsync(queue);
     auto const h_adc = alpaka::getPtrNative(h_adcBuf);
 

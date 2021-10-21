@@ -1,7 +1,9 @@
 #ifndef HeterogeneousCore_AlpakaUtilities_ScopedSetDevice_h
 #define HeterogeneousCore_AlpakaUtilities_ScopedSetDevice_h
 
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 #include <cuda_runtime.h>
+#endif
 
 namespace cms::alpakatools {
 

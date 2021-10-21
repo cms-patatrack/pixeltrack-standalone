@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include <cuda_runtime.h>
-
 #include "AlpakaCore/ScopedSetDevice.h"
 #include "AlpakaCore/SharedEventPtr.h"
 #include "AlpakaCore/alpakaConfig.h"

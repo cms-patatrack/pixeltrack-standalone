@@ -57,12 +57,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto const& inputData = iEvent.get(tokenAlpaka_);
     auto outputData = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<ZVertexSoA>(1u);
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
                                                                                iEvent.streamID()};
     alpaka::memcpy(ctx.stream(), outputData, inputData, 1u);
 
     // No copies....
-    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device, iEvent, tokenSOA_, std::move(outputData));
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], iEvent, tokenSOA_, std::move(outputData));
 #endif
   }
 

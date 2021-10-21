@@ -20,19 +20,19 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <typename TData>
   auto allocDeviceBuf(const Extent& extent) {
-    return alpaka::allocBuf<TData, Idx>(::ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
+    return alpaka::allocBuf<TData, Idx>(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
   }
 
   template <typename TData>
   auto createDeviceView(const TData* data, const Extent& extent) {
     return alpaka::ViewPlainPtr<::ALPAKA_ACCELERATOR_NAMESPACE::Device, const TData, Dim1D, Idx>(
-        data, ::ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
+        data, ::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
   }
 
   template <typename TData>
   auto createDeviceView(TData* data, const Extent& extent) {
     return alpaka::ViewPlainPtr<::ALPAKA_ACCELERATOR_NAMESPACE::Device, TData, Dim1D, Idx>(
-        data, ::ALPAKA_ACCELERATOR_NAMESPACE::device, extent);
+        data, ::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
   }
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

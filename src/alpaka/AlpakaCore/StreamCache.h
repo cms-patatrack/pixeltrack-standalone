@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include <cuda_runtime.h>
-
 #include "AlpakaCore/ScopedSetDevice.h"
 #include "AlpakaCore/SharedStreamPtr.h"
 #include "AlpakaCore/currentDevice.h"

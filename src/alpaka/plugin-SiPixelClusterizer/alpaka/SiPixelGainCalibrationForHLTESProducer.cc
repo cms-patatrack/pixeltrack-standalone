@@ -42,7 +42,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::vector<char> gainData(nbytes);
     in.read(gainData.data(), nbytes);
 
-    Queue queue(device);
+    Queue queue(devices[0]);
 
     const uint32_t numDecodingStructures = gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure);
     auto ped_h{

@@ -54,9 +54,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     // TO DO: Async: Would need to add a queue as a parameter, not async for now!
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::device,
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
                                                                                iEvent.streamID()};
-    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::device,
+    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
                 iEvent,
                 tokenHit_,
                 gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params(), ctx.stream()));
