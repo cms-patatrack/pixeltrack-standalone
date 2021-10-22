@@ -26,7 +26,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // This class is intended to be derived by other ScopedContext*, not for general use
     class ScopedContextBase {
     public:
-      int device() const { return currentDevice_; }
+      using Device = ::ALPAKA_ACCELERATOR_NAMESPACE::Device;
+
+      Device const& device() const { return currentDevice_; }
 
       // cudaStream_t is a pointer to a thread-safe object, for which a
       // mutable access is needed even if the ScopedContext itself
@@ -43,36 +45,24 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // the scope where this context is. The current device doesn't
       // really matter between modules (or across TBB tasks).
 
-      template <typename T_Acc>
-      ScopedContextBase(T_Acc acc, const ProductBase& data) : currentDevice_(data.device()) {
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-        cudaSetDevice(currentDevice_);
-#endif
+      ScopedContextBase(const ProductBase& data) : currentDevice_(data.device()) {
         if (data.mayReuseStream()) {
           stream_ = data.streamPtr();
         } else {
-          stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
+          stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(currentDevice_);
         }
       }
 
-      explicit ScopedContextBase(int device, SharedStreamPtr stream)
-          : currentDevice_(device), stream_(std::move(stream)) {
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-        cudaSetDevice(currentDevice_);
-#endif
-      }
+      explicit ScopedContextBase(Device device, SharedStreamPtr stream)
+          : currentDevice_(std::move(device)), stream_(std::move(stream)) {}
 
-      template <typename T_Acc>
-      explicit ScopedContextBase(T_Acc acc, edm::StreamID streamID)
+      explicit ScopedContextBase(edm::StreamID streamID)
           : currentDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::chooseDevice(streamID)) {
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-        cudaSetDevice(currentDevice_);
-#endif
-        stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
+        stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(currentDevice_);
       }
 
     private:
-      int currentDevice_;
+      Device const currentDevice_;
       SharedStreamPtr stream_;
     };
 
@@ -93,7 +83,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       template <typename... Args>
       ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-      void synchronizeStreams(int dataDevice,
+      void synchronizeStreams(Device const& dataDevice,
                               ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& dataStream,
                               bool available,
                               alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue> dataEvent);
@@ -111,7 +101,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         waitingTaskHolder_ = std::move(waitingTaskHolder);
       }
 
-      void enqueueCallback(int device, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream);
+      void enqueueCallback(::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream);
 
     private:
       edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
@@ -128,30 +118,24 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   class ScopedContextAcquire : public impl::ScopedContextGetterBase {
   public:
     /// Constructor to create a new CUDA stream (no need for context beyond acquire())
-    template <typename T_Acc>
-    explicit ScopedContextAcquire(T_Acc acc, edm::StreamID streamID, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-        : ScopedContextGetterBase(acc, streamID), holderHelper_{std::move(waitingTaskHolder)} {}
+    explicit ScopedContextAcquire(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+        : ScopedContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)} {}
 
     // /// Constructor to create a new CUDA stream, and the context is needed after acquire()
-    template <typename T_Acc>
-    explicit ScopedContextAcquire(T_Acc acc,
-                                  edm::StreamID streamID,
+    explicit ScopedContextAcquire(edm::StreamID streamID,
                                   edm::WaitingTaskWithArenaHolder waitingTaskHolder,
                                   ContextState& state)
-        : ScopedContextGetterBase(acc, streamID), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
+        : ScopedContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream (no need for context beyond acquire())
-    template <typename T_Acc>
-    explicit ScopedContextAcquire(T_Acc acc, const ProductBase& data, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-        : ScopedContextGetterBase(acc, data), holderHelper_{std::move(waitingTaskHolder)} {}
+    explicit ScopedContextAcquire(const ProductBase& data, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+        : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream, and the context is needed after acquire()
-    template <typename T_Acc>
-    explicit ScopedContextAcquire(T_Acc acc,
-                                  const ProductBase& data,
+    explicit ScopedContextAcquire(const ProductBase& data,
                                   edm::WaitingTaskWithArenaHolder waitingTaskHolder,
                                   ContextState& state)
-        : ScopedContextGetterBase(acc, data), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
+        : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
 
     ~ScopedContextAcquire();
 
@@ -185,23 +169,21 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     explicit ScopedContextProduce(ContextState& state)
         : ScopedContextGetterBase(state.device(), state.releaseStreamPtr()) {}
 
-    template <typename T_Acc>
-    explicit ScopedContextProduce(T_Acc acc, const ProductBase& data) : ScopedContextGetterBase(acc, data) {}
+    explicit ScopedContextProduce(const ProductBase& data) : ScopedContextGetterBase(data) {}
 
-    template <typename T_Acc>
-    explicit ScopedContextProduce(T_Acc acc, edm::StreamID streamID) : ScopedContextGetterBase(acc, streamID) {}
+    explicit ScopedContextProduce(edm::StreamID streamID) : ScopedContextGetterBase(streamID) {}
 
     /// Record the CUDA event, all asynchronous work must have been queued before the destructor
     ~ScopedContextProduce();
 
-    template <typename T_Acc, typename T>
-    std::unique_ptr<Product<T>> wrap(T_Acc acc, T data) {
+    template <typename T>
+    std::unique_ptr<Product<T>> wrap(T data) {
       // make_unique doesn't work because of private constructor
-      return std::unique_ptr<Product<T>>(new Product<T>(device(), streamPtr(), getEvent(acc), std::move(data)));
+      return std::unique_ptr<Product<T>>(new Product<T>(streamPtr(), std::move(data)));
     }
 
-    template <typename T_Acc, typename T, typename... Args>
-    auto emplace(T_Acc acc, edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
+    template <typename T, typename... Args>
+    auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
       // return iEvent.emplace(token, device(), streamPtr(), getEvent(acc), std::forward<Args>(args)...);
       return iEvent.emplace(token, std::forward<Args>(args)...);
       // TODO
@@ -210,13 +192,10 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     friend class ::ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest::TestScopedContext;
 
-    explicit ScopedContextProduce(int device, SharedStreamPtr stream)
-        : ScopedContextGetterBase(device, std::move(stream)) {}
+    explicit ScopedContextProduce(Device device, SharedStreamPtr stream)
+        : ScopedContextGetterBase(std::move(device), std::move(stream)) {}
 
-    template <typename T_Acc>
-    auto getEvent(T_Acc acc) {
-      return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(acc);
-    }
+    auto getEvent() { return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(device()); }
 
     // create the CUDA Event upfront to catch possible errors from its creation
   };
@@ -260,8 +239,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   class ScopedContextAnalyze : public impl::ScopedContextGetterBase {
   public:
     /// Constructor to (possibly) re-use a CUDA stream
-    template <typename T_Acc>
-    explicit ScopedContextAnalyze(T_Acc acc, const ProductBase& data) : ScopedContextGetterBase(acc, data) {}
+    explicit ScopedContextAnalyze(const ProductBase& data) : ScopedContextGetterBase(data) {}
   };
 
   namespace impl {

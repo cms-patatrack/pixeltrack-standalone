@@ -27,20 +27,18 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     ProductBase(ProductBase&& other)
         : stream_{std::move(other.stream_)},
           event_{std::move(other.event_)},
-          mayReuseStream_{other.mayReuseStream_.load()},
-          device_{other.device_} {}
+          mayReuseStream_{other.mayReuseStream_.load()} {}
     ProductBase& operator=(ProductBase&& other) {
       stream_ = std::move(other.stream_);
       event_ = std::move(other.event_);
       mayReuseStream_ = other.mayReuseStream_.load();
-      device_ = other.device_;
       return *this;
     }
 
     bool isValid() const { return stream_.get() != nullptr; }
     bool isAvailable() const;
 
-    int device() const { return device_; }
+    ::ALPAKA_ACCELERATOR_NAMESPACE::Device device() const { return alpaka::getDev(stream()); }
 
     // cudaStream_t is a pointer to a thread-safe object, for which a
     // mutable access is needed even if the ::cms::alpakatools::ScopedContext itself
@@ -55,8 +53,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>& event() const { return *(event_.get()); }
 
   protected:
-    explicit ProductBase(int device, SharedStreamPtr stream, SharedEventPtr event)
-        : stream_{std::move(stream)}, event_{std::move(event)}, device_{device} {}
+    explicit ProductBase(SharedStreamPtr stream, SharedEventPtr event)
+        : stream_{std::move(stream)}, event_{std::move(event)} {}
 
   private:
     friend class impl::ScopedContextBase;
@@ -83,9 +81,6 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // consumer or not. The goal is to have a "chain" of modules to
     // queue their work to the same stream.
     mutable std::atomic<bool> mayReuseStream_ = true;  //!
-
-    // The CUDA device associated with this product
-    int device_ = -1;  //!
   };
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
