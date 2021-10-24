@@ -45,7 +45,7 @@ namespace cms::alpakatools {
       // the scope where this context is. The current device doesn't
       // really matter between modules (or across TBB tasks).
 
-      ScopedContextBase(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
+      ScopedContextBase(ProductBase<Queue> const& data)
           : stream_{data.mayReuseStream() ? data.streamPtr() : getStreamCache<Queue>().get(data.device())} {}
 
       explicit ScopedContextBase(std::shared_ptr<Queue> stream) : stream_(std::move(stream)) {}
@@ -64,14 +64,13 @@ namespace cms::alpakatools {
       using Queue = TQueue;
 
       template <typename T>
-      const T& get(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T> const& data) {
+      const T& get(Product<Queue, T> const& data) {
         synchronizeStreams(data);
         return data.data_;
       }
 
       template <typename T>
-      const T& get(const edm::Event& iEvent,
-                   edm::EDGetTokenT<::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T>> token) {
+      const T& get(const edm::Event& iEvent, edm::EDGetTokenT<Product<Queue, T>> token) {
         return get(iEvent.get(token));
       }
 
@@ -79,7 +78,7 @@ namespace cms::alpakatools {
       template <typename... Args>
       ScopedContextGetterBase<TQueue>(Args&&... args) : ScopedContextBase<Queue>(std::forward<Args>(args)...) {}
 
-      void synchronizeStreams(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data) {
+      void synchronizeStreams(ProductBase<Queue> const& data) {
         // If the product has been enqueued to a different queue, make sure that it is available before accessing it
         if (data.stream() != this->stream()) {
           // Different streams, check if the underlying device is the same
@@ -162,12 +161,11 @@ namespace cms::alpakatools {
         : ScopedContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream (no need for context beyond acquire())
-    explicit ScopedContextAcquire(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data,
-                                  edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+    explicit ScopedContextAcquire(ProductBase<Queue> const& data, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
         : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream, and the context is needed after acquire()
-    explicit ScopedContextAcquire(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data,
+    explicit ScopedContextAcquire(ProductBase<Queue> const& data,
                                   edm::WaitingTaskWithArenaHolder waitingTaskHolder,
                                   ContextState<Queue>& state)
         : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
@@ -215,14 +213,10 @@ namespace cms::alpakatools {
     using ScopedContextGetterBase::device;
     using ScopedContextGetterBase::streamPtr;
 
-    template <typename T>
-    using Product = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T>;
-
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
     explicit ScopedContextProduce(ContextState<Queue>& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
 
-    explicit ScopedContextProduce(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
-        : ScopedContextGetterBase(data) {}
+    explicit ScopedContextProduce(ProductBase<Queue> const& data) : ScopedContextGetterBase(data) {}
 
     explicit ScopedContextProduce(edm::StreamID streamID) : ScopedContextGetterBase(streamID) {}
 
@@ -237,9 +231,9 @@ namespace cms::alpakatools {
     }
 
     template <typename T>
-    std::unique_ptr<Product<T>> wrap(T data) {
+    std::unique_ptr<Product<Queue, T>> wrap(T data) {
       // make_unique doesn't work because of private constructor
-      return std::unique_ptr<Product<T>>(new Product<T>(streamPtr(), std::move(data)));
+      return std::unique_ptr<Product<Queue, T>>(new Product<Queue, T>(streamPtr(), std::move(data)));
     }
 
     template <typename T, typename... Args>
@@ -310,8 +304,7 @@ namespace cms::alpakatools {
     using ScopedContextGetterBase::streamPtr;
 
     /// Constructor to (possibly) re-use a CUDA stream
-    explicit ScopedContextAnalyze(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
-        : ScopedContextGetterBase(data) {}
+    explicit ScopedContextAnalyze(ProductBase<Queue> const& data) : ScopedContextGetterBase(data) {}
   };
 
 }  // namespace cms::alpakatools
