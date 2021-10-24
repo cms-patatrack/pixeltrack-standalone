@@ -11,11 +11,16 @@ namespace edm {
   class Wrapper;
 }
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
   namespace impl {
+    template <typename TQueue>
     class ScopedContextGetterBase;
   }
+
+}  // namespace cms::alpakatools
+
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   /**
      * The purpose of this class is to wrap CUDA data to edm::Event in a
@@ -42,8 +47,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     Product& operator=(Product&&) = default;
 
   private:
-    friend class impl::ScopedContextGetterBase;
-    friend class ScopedContextProduce;
+    friend class cms::alpakatools::impl::ScopedContextGetterBase<Queue>;
+    friend class cms::alpakatools::ScopedContextProduce<Queue>;
     friend class edm::Wrapper<Product<T>>;
 
     explicit Product(std::shared_ptr<Queue> stream, std::shared_ptr<Event> event, T data)

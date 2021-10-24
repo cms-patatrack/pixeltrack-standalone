@@ -33,7 +33,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ContextState ctxState_;
+    ::cms::alpakatools::ContextState<Queue> ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
     edm::EDPutTokenT<SiPixelDigisAlpaka> digiPutToken_;
@@ -140,7 +140,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     }  // end of for loop
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     gpuAlgo_.makeClustersAsync(isRun2_,
                                gpuMap,
                                gpuModulesToUnpack,

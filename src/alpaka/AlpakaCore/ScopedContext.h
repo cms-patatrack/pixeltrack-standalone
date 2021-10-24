@@ -18,13 +18,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest {
   class TestScopedContext;
 }
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
   namespace impl {
     // This class is intended to be derived by other ScopedContext*, not for general use
+    template <typename TQueue>
     class ScopedContextBase {
     public:
-      using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+      using Queue = TQueue;
       using Device = alpaka::Dev<Queue>;
 
       Device device() const { return alpaka::getDev(*stream_); }
@@ -33,7 +34,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // mutable access is needed even if the ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      Queue& stream() const { return *(stream_.get()); }
+      Queue& stream() const { return *stream_; }
       const std::shared_ptr<Queue>& streamPtr() const { return stream_; }
 
     protected:
@@ -44,7 +45,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // the scope where this context is. The current device doesn't
       // really matter between modules (or across TBB tasks).
 
-      ScopedContextBase(const ProductBase& data)
+      ScopedContextBase(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
           : stream_{data.mayReuseStream() ? data.streamPtr() : getStreamCache<Queue>().get(data.device())} {}
 
       explicit ScopedContextBase(std::shared_ptr<Queue> stream) : stream_(std::move(stream)) {}
@@ -57,24 +58,47 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       std::shared_ptr<Queue> stream_;
     };
 
-    class ScopedContextGetterBase : public ScopedContextBase {
+    template <typename TQueue>
+    class ScopedContextGetterBase : public ScopedContextBase<TQueue> {
     public:
+      using Queue = TQueue;
+
       template <typename T>
-      const T& get(const Product<T>& data) {
-        synchronizeStreams(data.stream(), data.isAvailable(), data.event());
+      const T& get(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T> const& data) {
+        synchronizeStreams(data);
         return data.data_;
       }
 
       template <typename T>
-      const T& get(const edm::Event& iEvent, edm::EDGetTokenT<Product<T>> token) {
+      const T& get(const edm::Event& iEvent,
+                   edm::EDGetTokenT<::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T>> token) {
         return get(iEvent.get(token));
       }
 
     protected:
       template <typename... Args>
-      ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
+      ScopedContextGetterBase<TQueue>(Args&&... args) : ScopedContextBase<Queue>(std::forward<Args>(args)...) {}
 
-      void synchronizeStreams(Queue& dataStream, bool available, alpaka::Event<Queue> dataEvent);
+      void synchronizeStreams(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data) {
+        // If the product has been enqueued to a different queue, make sure that it is available before accessing it
+        if (data.stream() != this->stream()) {
+          // Different streams, check if the underlying device is the same
+          if (data.device() != this->device()) {
+            // Eventually replace with prefetch to current device (assuming unified memory works)
+            // If we won't go to unified memory, need to figure out something else...
+            throw std::runtime_error("Handling data from multiple devices is not yet supported");
+          }
+          // If the data product is not yet available, synchronize the two streams
+          if (not data.isAvailable()) {
+            // Event not yet occurred, so need to add synchronization
+            // here. Sychronization is done by making the current queue
+            // wait for an event, so all subsequent work in the stream
+            // will run only after the event has "occurred" (i.e. data
+            // product became available).
+            alpaka::wait(this->stream(), data.event());
+          }
+        }
+      }
     };
 
     class ScopedContextHolderHelper {
@@ -82,14 +106,30 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       ScopedContextHolderHelper(edm::WaitingTaskWithArenaHolder waitingTaskHolder)
           : waitingTaskHolder_{std::move(waitingTaskHolder)} {}
 
-      template <typename F>
-      void pushNextTask(F&& f, ContextState const* state);
+      template <typename F, typename TQueue>
+      void pushNextTask(F&& f, ContextState<TQueue> const* state) {
+        replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{
+            edm::make_waiting_task_with_holder(tbb::task::allocate_root(),
+                                               std::move(waitingTaskHolder_),
+                                               [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
+                                                 func(ScopedContextTask{state, std::move(h)});
+                                               })});
+      }
 
       void replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
         waitingTaskHolder_ = std::move(waitingTaskHolder);
       }
 
-      void enqueueCallback(ScopedContextBase::Queue& stream);
+      template <typename TQueue>
+      void enqueueCallback(TQueue& stream) {
+        alpaka::enqueue(stream, [holder = waitingTaskHolder_]() {
+          // TODO: The functor is required to be const, so can't use
+          // 'mutable', so I'm copying the object as a workaround. I
+          // wonder if there are any wider implications.
+          auto h = holder;
+          h.doneWaiting(nullptr);
+        });
+      }
 
     private:
       edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
@@ -103,8 +143,14 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      * - synchronizing between CUDA streams if necessary
      * and enforce that those get done in a proper way in RAII fashion.
      */
-  class ScopedContextAcquire : public impl::ScopedContextGetterBase {
+  template <typename TQueue>
+  class ScopedContextAcquire : public impl::ScopedContextGetterBase<TQueue> {
   public:
+    using Queue = TQueue;
+    using ScopedContextGetterBase = impl::ScopedContextGetterBase<Queue>;
+    using ScopedContextGetterBase::stream;
+    using ScopedContextGetterBase::streamPtr;
+
     /// Constructor to create a new CUDA stream (no need for context beyond acquire())
     explicit ScopedContextAcquire(edm::StreamID streamID, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
         : ScopedContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)} {}
@@ -112,20 +158,26 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // /// Constructor to create a new CUDA stream, and the context is needed after acquire()
     explicit ScopedContextAcquire(edm::StreamID streamID,
                                   edm::WaitingTaskWithArenaHolder waitingTaskHolder,
-                                  ContextState& state)
+                                  ContextState<Queue>& state)
         : ScopedContextGetterBase(streamID), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream (no need for context beyond acquire())
-    explicit ScopedContextAcquire(const ProductBase& data, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+    explicit ScopedContextAcquire(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data,
+                                  edm::WaitingTaskWithArenaHolder waitingTaskHolder)
         : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)} {}
 
     // /// Constructor to (possibly) re-use a CUDA stream, and the context is needed after acquire()
-    explicit ScopedContextAcquire(const ProductBase& data,
+    explicit ScopedContextAcquire(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data,
                                   edm::WaitingTaskWithArenaHolder waitingTaskHolder,
-                                  ContextState& state)
+                                  ContextState<Queue>& state)
         : ScopedContextGetterBase(data), holderHelper_{std::move(waitingTaskHolder)}, contextState_{&state} {}
 
-    ~ScopedContextAcquire();
+    ~ScopedContextAcquire() {
+      holderHelper_.enqueueCallback(stream());
+      if (contextState_) {
+        contextState_->set(streamPtr());
+      }
+    }
 
     template <typename F>
     void pushNextTask(F&& f) {
@@ -139,10 +191,14 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
   private:
-    void throwNoState();
+    void throwNoState() {
+      throw std::runtime_error(
+          "Calling ScopedContextAcquire::insertNextTask() requires ScopedContextAcquire to be constructed with "
+          "ContextState, but that was not the case");
+    }
 
     impl::ScopedContextHolderHelper holderHelper_;
-    ContextState* contextState_ = nullptr;
+    ContextState<Queue>* contextState_ = nullptr;
   };
 
   /**
@@ -151,17 +207,34 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      * - synchronizing between CUDA streams if necessary
      * and enforce that those get done in a proper way in RAII fashion.
      */
-  class ScopedContextProduce : public impl::ScopedContextGetterBase {
+  template <typename TQueue>
+  class ScopedContextProduce : public impl::ScopedContextGetterBase<TQueue> {
   public:
-    /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit ScopedContextProduce(ContextState& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
+    using Queue = TQueue;
+    using ScopedContextGetterBase = impl::ScopedContextGetterBase<Queue>;
+    using ScopedContextGetterBase::device;
+    using ScopedContextGetterBase::streamPtr;
 
-    explicit ScopedContextProduce(const ProductBase& data) : ScopedContextGetterBase(data) {}
+    template <typename T>
+    using Product = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::Product<T>;
+
+    /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
+    explicit ScopedContextProduce(ContextState<Queue>& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
+
+    explicit ScopedContextProduce(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
+        : ScopedContextGetterBase(data) {}
 
     explicit ScopedContextProduce(edm::StreamID streamID) : ScopedContextGetterBase(streamID) {}
 
     /// Record the CUDA event, all asynchronous work must have been queued before the destructor
-    ~ScopedContextProduce();
+    ~ScopedContextProduce() {
+      // Intentionally not checking the return value to avoid throwing
+      // exceptions. If this call would fail, we should get failures
+      // elsewhere as well.
+      //TODO
+      //cudaEventRecord(event_.get(), stream());
+      //alpaka::enqueue(stream(), getEvent(::ALPAKA_ACCELERATOR_NAMESPACE::Device).get());
+    }
 
     template <typename T>
     std::unique_ptr<Product<T>> wrap(T data) {
@@ -192,15 +265,21 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      * - calling edm::WaitingTaskWithArenaHolder::doneWaiting() when necessary
      * and enforce that those get done in a proper way in RAII fashion.
      */
-  class ScopedContextTask : public impl::ScopedContextBase {
+  template <typename TQueue>
+  class ScopedContextTask : public impl::ScopedContextBase<TQueue> {
   public:
+    using Queue = TQueue;
+    using ScopedContextBase = impl::ScopedContextBase<Queue>;
+    using ScopedContextBase::stream;
+    using ScopedContextBase::streamPtr;
+
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit ScopedContextTask(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
+    explicit ScopedContextTask(ContextState<Queue> const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
         : ScopedContextBase(state->streamPtr()),  // don't move, state is re-used afterwards
           holderHelper_{std::move(waitingTaskHolder)},
           contextState_{state} {}
 
-    ~ScopedContextTask();
+    ~ScopedContextTask() { holderHelper_.enqueueCallback(stream()); }
 
     template <typename F>
     void pushNextTask(F&& f) {
@@ -213,7 +292,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     impl::ScopedContextHolderHelper holderHelper_;
-    ContextState const* contextState_;
+    ContextState<Queue> const* contextState_;
   };
 
   /**
@@ -222,24 +301,19 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      * - synchronizing between CUDA streams if necessary
      * and enforce that those get done in a proper way in RAII fashion.
      */
-  class ScopedContextAnalyze : public impl::ScopedContextGetterBase {
+  template <typename TQueue>
+  class ScopedContextAnalyze : public impl::ScopedContextGetterBase<TQueue> {
   public:
+    using Queue = TQueue;
+    using ScopedContextGetterBase = impl::ScopedContextGetterBase<Queue>;
+    using ScopedContextGetterBase::stream;
+    using ScopedContextGetterBase::streamPtr;
+
     /// Constructor to (possibly) re-use a CUDA stream
-    explicit ScopedContextAnalyze(const ProductBase& data) : ScopedContextGetterBase(data) {}
+    explicit ScopedContextAnalyze(ALPAKA_ACCELERATOR_NAMESPACE::ProductBase const& data)
+        : ScopedContextGetterBase(data) {}
   };
 
-  namespace impl {
-    template <typename F>
-    void ScopedContextHolderHelper::pushNextTask(F&& f, ContextState const* state) {
-      replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{
-          edm::make_waiting_task_with_holder(tbb::task::allocate_root(),
-                                             std::move(waitingTaskHolder_),
-                                             [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
-                                               func(ScopedContextTask{state, std::move(h)});
-                                             })});
-    }
-  }  // namespace impl
-
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace cms::alpakatools
 
 #endif  // HeterogeneousCore_AlpakaCore_ScopedContext_h

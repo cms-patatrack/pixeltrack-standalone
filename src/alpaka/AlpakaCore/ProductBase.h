@@ -8,11 +8,19 @@
 
 #include "AlpakaCore/alpakaConfigAcc.h"
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
   namespace impl {
+    template <typename TQueue>
     class ScopedContextBase;
   }
+
+  template <typename TQueue>
+  class ScopedContextProduce;
+
+}  // namespace cms::alpakatools
+
+namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   /**
      * Base class for all instantiations of CUDA<T> to hold the
@@ -61,8 +69,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         : stream_{std::move(stream)}, event_{std::move(event)} {}
 
   private:
-    friend class impl::ScopedContextBase;
-    friend class ScopedContextProduce;
+    friend class cms::alpakatools::impl::ScopedContextBase<Queue>;
+    friend class cms::alpakatools::ScopedContextProduce<Queue>;
 
     // The following function is intended to be used only from ScopedContext
     const std::shared_ptr<Queue>& streamPtr() const { return stream_; }
