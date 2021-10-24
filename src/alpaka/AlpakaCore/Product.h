@@ -46,11 +46,11 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     friend class ScopedContextProduce;
     friend class edm::Wrapper<Product<T>>;
 
-    explicit Product(SharedStreamPtr stream, SharedEventPtr event, T data)
+    explicit Product(std::shared_ptr<Queue> stream, std::shared_ptr<Event> event, T data)
         : ProductBase(std::move(stream), std::move(event)), data_(std::move(data)) {}
 
     template <typename... Args>
-    explicit Product(SharedStreamPtr stream, SharedEventPtr event, Args&&... args)
+    explicit Product(std::shared_ptr<Queue> stream, std::shared_ptr<Event> event, Args&&... args)
         : ProductBase(std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
 
     T data_;  //!

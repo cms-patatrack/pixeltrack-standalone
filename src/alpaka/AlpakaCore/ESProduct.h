@@ -8,7 +8,6 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
-#include "AlpakaCore/SharedEventPtr.h"
 #include "AlpakaCore/currentDevice.h"
 #include "AlpakaCore/deviceCount.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
@@ -18,11 +17,12 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   template <typename T>
   class ESProduct {
   public:
+    using Event = ::ALPAKA_ACCELERATOR_NAMESPACE::Event;
+
     template <typename T_Acc>
     ESProduct(T_Acc acc) : gpuDataPerDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event =
-            ::cms::alpakatools::getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(acc);
+        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(acc);
       }
     }
 
@@ -92,7 +92,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     struct Item {
       mutable std::mutex m_mutex;
-      mutable SharedEventPtr m_event;  // guarded by m_mutex
+      mutable std::shared_ptr<Event> m_event;  // guarded by m_mutex
       // non-null if some thread is already filling (cudaStream_t is just a pointer)
       mutable ::ALPAKA_ACCELERATOR_NAMESPACE::Queue* m_fillingStream = nullptr;  // guarded by m_mutex
       mutable std::atomic<bool> m_filled = false;  // easy check if data has been filled already or not

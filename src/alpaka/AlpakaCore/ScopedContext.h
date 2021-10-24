@@ -7,8 +7,6 @@
 #include "AlpakaCore/ContextState.h"
 #include "AlpakaCore/EventCache.h"
 #include "AlpakaCore/Product.h"
-#include "AlpakaCore/SharedEventPtr.h"
-#include "AlpakaCore/SharedStreamPtr.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
 #include "Framework/Event.h"
@@ -27,6 +25,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     class ScopedContextBase {
     public:
       using Device = ::ALPAKA_ACCELERATOR_NAMESPACE::Device;
+      using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
 
       Device const& device() const { return currentDevice_; }
 
@@ -34,8 +33,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // mutable access is needed even if the ScopedContext itself
       // would be const. Therefore it is ok to return a non-const
       // pointer from a const method here.
-      ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream() const { return *(stream_.get()); }
-      const SharedStreamPtr& streamPtr() const { return stream_; }
+      Queue& stream() const { return *(stream_.get()); }
+      const std::shared_ptr<Queue>& streamPtr() const { return stream_; }
 
     protected:
       // The constructors set the current device, but the device
@@ -49,21 +48,21 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         if (data.mayReuseStream()) {
           stream_ = data.streamPtr();
         } else {
-          stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(currentDevice_);
+          stream_ = getStreamCache<Queue>().get(currentDevice_);
         }
       }
 
-      explicit ScopedContextBase(Device device, SharedStreamPtr stream)
+      explicit ScopedContextBase(Device device, std::shared_ptr<Queue> stream)
           : currentDevice_(std::move(device)), stream_(std::move(stream)) {}
 
       explicit ScopedContextBase(edm::StreamID streamID)
           : currentDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::chooseDevice(streamID)) {
-        stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(currentDevice_);
+        stream_ = getStreamCache<Queue>().get(currentDevice_);
       }
 
     private:
       Device const currentDevice_;
-      SharedStreamPtr stream_;
+      std::shared_ptr<Queue> stream_;
     };
 
     class ScopedContextGetterBase : public ScopedContextBase {
@@ -84,9 +83,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
       void synchronizeStreams(Device const& dataDevice,
-                              ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& dataStream,
+                              Queue& dataStream,
                               bool available,
-                              alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue> dataEvent);
+                              alpaka::Event<Queue> dataEvent);
     };
 
     class ScopedContextHolderHelper {
@@ -101,7 +100,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         waitingTaskHolder_ = std::move(waitingTaskHolder);
       }
 
-      void enqueueCallback(::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream);
+      void enqueueCallback(ScopedContextBase::Queue& stream);
 
     private:
       edm::WaitingTaskWithArenaHolder waitingTaskHolder_;
@@ -192,7 +191,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     friend class ::ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest::TestScopedContext;
 
-    explicit ScopedContextProduce(Device device, SharedStreamPtr stream)
+    explicit ScopedContextProduce(Device device, std::shared_ptr<Queue> stream)
         : ScopedContextGetterBase(std::move(device), std::move(stream)) {}
 
     auto getEvent() { return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(device()); }

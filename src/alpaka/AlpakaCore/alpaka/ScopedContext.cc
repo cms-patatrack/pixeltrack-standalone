@@ -5,9 +5,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace impl {
     void ScopedContextGetterBase::synchronizeStreams(Device const& dataDevice,
-                                                     ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& dataStream,
+                                                     Queue& dataStream,
                                                      bool available,
-                                                     alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue> dataEvent) {
+                                                     alpaka::Event<Queue> dataEvent) {
       if (dataDevice != device()) {
         // Eventually replace with prefetch to current device (assuming unified memory works)
         // If we won't go to unified memory, need to figure out something else...
@@ -27,7 +27,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
 
-    void ScopedContextHolderHelper::enqueueCallback(::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream) {
+    void ScopedContextHolderHelper::enqueueCallback(ScopedContextBase::Queue& stream) {
       alpaka::enqueue(stream, [holder = waitingTaskHolder_]() {
         // TODO: The functor is required to be const, so can't use
         // 'mutable', so I'm copying the object as a workaround. I

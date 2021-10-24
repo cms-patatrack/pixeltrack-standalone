@@ -4,8 +4,9 @@
 #include <atomic>
 #include <memory>
 
-#include "AlpakaCore/SharedEventPtr.h"
-#include "AlpakaCore/SharedStreamPtr.h"
+#include <alpaka/alpaka.hpp>
+
+#include "AlpakaCore/alpakaConfigAcc.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -19,6 +20,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      */
   class ProductBase {
   public:
+    using Event = ::ALPAKA_ACCELERATOR_NAMESPACE::Event;
+    using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+
     ProductBase() = default;  // Needed only for ROOT dictionary generation
     ~ProductBase();
 
@@ -38,22 +42,22 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     bool isValid() const { return stream_.get() != nullptr; }
     bool isAvailable() const;
 
-    ::ALPAKA_ACCELERATOR_NAMESPACE::Device device() const { return alpaka::getDev(stream()); }
+    alpaka::Dev<Queue> device() const { return alpaka::getDev(stream()); }
 
     // cudaStream_t is a pointer to a thread-safe object, for which a
     // mutable access is needed even if the ::cms::alpakatools::ScopedContext itself
     // would be const. Therefore it is ok to return a non-const
     // pointer from a const method here.
-    ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream() const { return *(stream_.get()); }
+    Queue& stream() const { return *(stream_.get()); }
 
     // cudaEvent_t is a pointer to a thread-safe object, for which a
     // mutable access is needed even if the ::cms::alpakatools::ScopedContext itself
     // would be const. Therefore it is ok to return a non-const
     // pointer from a const method here.
-    alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>& event() const { return *(event_.get()); }
+    Event& event() const { return *(event_.get()); }
 
   protected:
-    explicit ProductBase(SharedStreamPtr stream, SharedEventPtr event)
+    explicit ProductBase(std::shared_ptr<Queue> stream, std::shared_ptr<Event> event)
         : stream_{std::move(stream)}, event_{std::move(event)} {}
 
   private:
@@ -61,7 +65,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     friend class ScopedContextProduce;
 
     // The following function is intended to be used only from ScopedContext
-    const SharedStreamPtr& streamPtr() const { return stream_; }
+    const std::shared_ptr<Queue>& streamPtr() const { return stream_; }
 
     bool mayReuseStream() const {
       bool expected = true;
@@ -73,9 +77,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     // The cudaStream_t is really shared among edm::Event products, so
     // using shared_ptr also here
-    SharedStreamPtr stream_;  //!
+    std::shared_ptr<Queue> stream_;  //!
     // shared_ptr because of caching in ::cms::alpakatools::EventCache
-    SharedEventPtr event_;  //!
+    std::shared_ptr<Event> event_;  //!
 
     // This flag tells whether the CUDA stream may be reused by a
     // consumer or not. The goal is to have a "chain" of modules to
