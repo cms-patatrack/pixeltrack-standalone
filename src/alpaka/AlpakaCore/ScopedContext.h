@@ -51,7 +51,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
         if (data.mayReuseStream()) {
           stream_ = data.streamPtr();
         } else {
-          stream_ = getStreamCache().get(acc);
+          stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
         }
       }
 
@@ -68,7 +68,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         cudaSetDevice(currentDevice_);
 #endif
-        stream_ = getStreamCache().get(acc);
+        stream_ = getStreamCache<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>().get(acc);
       }
 
     private:
@@ -215,7 +215,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     template <typename T_Acc>
     auto getEvent(T_Acc acc) {
-      return getEventCache().get(acc);
+      return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(acc);
     }
 
     // create the CUDA Event upfront to catch possible errors from its creation

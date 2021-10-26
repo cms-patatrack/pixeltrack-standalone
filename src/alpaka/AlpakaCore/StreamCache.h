@@ -3,42 +3,53 @@
 
 #include <vector>
 
-#include "AlpakaCore/ScopedSetDevice.h"
-#include "AlpakaCore/SharedStreamPtr.h"
-#include "AlpakaCore/currentDevice.h"
-#include "AlpakaCore/deviceCount.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/getDevIndex.h"
 #include "Framework/ReusableObjectHolder.h"
 
-class CUDAService;
+namespace cms::alpakatools {
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
-
+  template <typename Queue>
   class StreamCache {
+    using Device = alpaka::Dev<Queue>;
+    using Platform = alpaka::Pltf<Device>;
+
   public:
-    StreamCache();
+    // StreamCache should be constructed by the first call to
+    // getStreamCache() only if we have CUDA devices present
+    StreamCache() : cache_(alpaka::getDevCount<Platform>()) {}
 
     // Gets a (cached) CUDA stream for the current device. The stream
     // will be returned to the cache by the shared_ptr destructor.
     // This function is thread safe
-    template <typename T_Acc>
-    ALPAKA_FN_HOST SharedStreamPtr get(T_Acc acc) {
-      const auto dev = currentDevice();
-      return cache_[dev].makeOrGet(
-          [dev, acc]() { return std::make_unique<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>(acc); });
+    ALPAKA_FN_HOST std::shared_ptr<Queue> get(Device dev) {
+      return cache_[cms::alpakatools::getDevIndex(dev)].makeOrGet([dev]() { return std::make_unique<Queue>(dev); });
     }
 
   private:
-    friend class ::CUDAService;
     // not thread safe, intended to be called only from CUDAService destructor
-    void clear();
+    void clear() {
+      // Reset the contents of the caches, but leave an
+      // edm::ReusableObjectHolder alive for each device. This is needed
+      // mostly for the unit tests, where the function-static
+      // StreamCache lives through multiple tests (and go through
+      // multiple shutdowns of the framework).
+      cache_.clear();
+      cache_.resize(alpaka::getDevCount<Platform>());
+    }
 
-    std::vector<edm::ReusableObjectHolder<::ALPAKA_ACCELERATOR_NAMESPACE::Queue>> cache_;
+    std::vector<edm::ReusableObjectHolder<Queue>> cache_;
   };
 
   // Gets the global instance of a StreamCache
   // This function is thread safe
-  StreamCache& getStreamCache();
+  template <typename Queue>
+  StreamCache<Queue>& getStreamCache() {
+    // the public interface is thread safe
+    static StreamCache<Queue> cache;
+    return cache;
+  }
 
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace cms::alpakatools
 
 #endif  // HeterogeneousCore_AlpakaUtilities_StreamCache_h

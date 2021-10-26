@@ -8,7 +8,9 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
+#include "AlpakaCore/SharedEventPtr.h"
 #include "AlpakaCore/currentDevice.h"
+#include "AlpakaCore/deviceCount.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
@@ -19,7 +21,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     template <typename T_Acc>
     ESProduct(T_Acc acc) : gpuDataPerDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::getEventCache().get(acc);
+        gpuDataPerDevice_[i].m_event =
+            ::cms::alpakatools::getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(acc);
       }
     }
 

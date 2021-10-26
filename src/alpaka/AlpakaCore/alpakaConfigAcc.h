@@ -99,6 +99,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
 
   using Event = alpaka::Event<Queue>;
+  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
+                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
+  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
+                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
 
   template <class TData>
   using AlpakaAccBuf1D = alpaka::Buf<Acc1D, TData, Dim1D, Idx>;
