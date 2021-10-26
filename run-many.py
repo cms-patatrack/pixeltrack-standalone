@@ -20,7 +20,7 @@ class Program:
         s2 = s[0].split(" ")
         self._program = s2[0]
         self._programArgs = s2[1:]
-        self._options = ["events", "threads","streams","numa","cores","cudaDevices"]
+        self._options = ["events", "eventsPerStream", "threads","streams","numa","cores","cudaDevices"]
         valid = set(self._options)
         for o in s[1:]:
             (name, value) = o.split("=")
@@ -31,14 +31,17 @@ class Program:
         for o in valid:
             setattr(self, "_"+o, None)
         if opts.runForMinutes > 0:
-            if self._events is not None:
-                raise Exception("--runForMinutes argument conflicts with 'events'")
+            if self._events is not None or self._eventsPerStream is not None:
+                raise Exception("--runForMinutes argument conflicts with 'events'/'eventsPerStream'")
         elif self._events is None:
             self._events = 1000
         if self._threads is None:
             self._threads = 1
         if self._streams is None:
             self._streams = self._threads
+        if self._eventsPerStream is not None:
+            self._events = int(self._eventsPerStream)*int(self._streams)
+            self._eventsPerStream = None
         self._cudaDevices = self._cudaDevices.split(",") if self._cudaDevices is not None else []
 
     def program(self):
@@ -316,13 +319,14 @@ Note that this program does not honor CUDA_VISIBLE_DEVICES, use cudaDevices inst
 Measuring combined throughput of multiple programs
 [M]<program>:threads=N:streams=N:numa=N:cores=<list>:cudaDevices=<list>;<program>:...
 
-  <program>   (Path to) the program to run
-  events      Number of events to process (default 1000 if --runForMinutes is not specified)
-  threads     Number host threads (default: 1)
-  streams     Number of streams (concurrent events) (default: same as threads)
-  numa        NUMA node, uses 'numactl' (default: not set)
-  cores       List of CPU cores to pin, uses 'taskset' (default: not set)
-  cudaDevices List of CUDA devices to use (default: not set)
+  <program>       (Path to) the program to run
+  events          Number of events to process (default 1000 if --runForMinutes is not specified)
+  eventsPerStream Number of events per stream to process
+  threads         Number host threads (default: 1)
+  streams         Number of streams (concurrent events) (default: same as threads)
+  numa            NUMA node, uses 'numactl' (default: not set)
+  cores           List of CPU cores to pin, uses 'taskset' (default: not set)
+  cudaDevices     List of CUDA devices to use (default: not set)
   M copies
 """, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("programs", type=str,
