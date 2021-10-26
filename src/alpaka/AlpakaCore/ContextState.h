@@ -2,7 +2,6 @@
 #define HeterogeneousCore_AlpakaCore_ContextState_h
 
 #include <memory>
-#include <optional>
 
 #include "AlpakaCore/alpakaConfig.h"
 
@@ -15,8 +14,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      */
   class ContextState {
   public:
-    using Device = ::ALPAKA_ACCELERATOR_NAMESPACE::Device;
     using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+    using Device = alpaka::Dev<Queue>;
 
     ContextState() = default;
     ~ContextState() = default;
@@ -31,13 +30,12 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     friend class ScopedContextProduce;
     friend class ScopedContextTask;
 
-    void set(Device device, std::shared_ptr<Queue> stream) {
+    void set(std::shared_ptr<Queue> stream) {
       throwIfStream();
-      device_ = std::move(device);
       stream_ = std::move(stream);
     }
 
-    Device const& device() const { return *device_; }
+    Device device() const { return alpaka::getDev(*stream_); }
 
     const std::shared_ptr<Queue>& streamPtr() const {
       throwIfNoStream();
@@ -57,9 +55,6 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     void throwIfNoStream() const;
 
     std::shared_ptr<Queue> stream_;
-    // Work around no default constructor for Device
-    // On the other hand, we don't strictly need the Device here...
-    std::optional<Device> device_;
   };
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

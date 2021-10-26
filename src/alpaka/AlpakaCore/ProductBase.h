@@ -20,8 +20,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      */
   class ProductBase {
   public:
-    using Event = ::ALPAKA_ACCELERATOR_NAMESPACE::Event;
     using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+    using Event = alpaka::Event<Queue>;
 
     ProductBase() = default;  // Needed only for ROOT dictionary generation
     ~ProductBase();

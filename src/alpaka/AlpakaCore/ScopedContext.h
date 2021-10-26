@@ -24,10 +24,10 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // This class is intended to be derived by other ScopedContext*, not for general use
     class ScopedContextBase {
     public:
-      using Device = ::ALPAKA_ACCELERATOR_NAMESPACE::Device;
       using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+      using Device = alpaka::Dev<Queue>;
 
-      Device const& device() const { return currentDevice_; }
+      Device device() const { return alpaka::getDev(*stream_); }
 
       // cudaStream_t is a pointer to a thread-safe object, for which a
       // mutable access is needed even if the ScopedContext itself
@@ -44,24 +44,16 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // the scope where this context is. The current device doesn't
       // really matter between modules (or across TBB tasks).
 
-      ScopedContextBase(const ProductBase& data) : currentDevice_(data.device()) {
-        if (data.mayReuseStream()) {
-          stream_ = data.streamPtr();
-        } else {
-          stream_ = getStreamCache<Queue>().get(currentDevice_);
-        }
-      }
+      ScopedContextBase(const ProductBase& data)
+          : stream_{data.mayReuseStream() ? data.streamPtr() : getStreamCache<Queue>().get(data.device())} {}
 
-      explicit ScopedContextBase(Device device, std::shared_ptr<Queue> stream)
-          : currentDevice_(std::move(device)), stream_(std::move(stream)) {}
+      explicit ScopedContextBase(std::shared_ptr<Queue> stream) : stream_(std::move(stream)) {}
 
       explicit ScopedContextBase(edm::StreamID streamID)
-          : currentDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::chooseDevice(streamID)) {
-        stream_ = getStreamCache<Queue>().get(currentDevice_);
-      }
+          : stream_{getStreamCache<Queue>().get(
+                ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::chooseDevice(streamID))} {}
 
     private:
-      Device const currentDevice_;
       std::shared_ptr<Queue> stream_;
     };
 
@@ -69,7 +61,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       template <typename T>
       const T& get(const Product<T>& data) {
-        synchronizeStreams(data.device(), data.stream(), data.isAvailable(), data.event());
+        synchronizeStreams(data.stream(), data.isAvailable(), data.event());
         return data.data_;
       }
 
@@ -82,10 +74,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       template <typename... Args>
       ScopedContextGetterBase(Args&&... args) : ScopedContextBase(std::forward<Args>(args)...) {}
 
-      void synchronizeStreams(Device const& dataDevice,
-                              Queue& dataStream,
-                              bool available,
-                              alpaka::Event<Queue> dataEvent);
+      void synchronizeStreams(Queue& dataStream, bool available, alpaka::Event<Queue> dataEvent);
     };
 
     class ScopedContextHolderHelper {
@@ -165,8 +154,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   class ScopedContextProduce : public impl::ScopedContextGetterBase {
   public:
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit ScopedContextProduce(ContextState& state)
-        : ScopedContextGetterBase(state.device(), state.releaseStreamPtr()) {}
+    explicit ScopedContextProduce(ContextState& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
 
     explicit ScopedContextProduce(const ProductBase& data) : ScopedContextGetterBase(data) {}
 
@@ -183,7 +171,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     template <typename T, typename... Args>
     auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
-      // return iEvent.emplace(token, device(), streamPtr(), getEvent(acc), std::forward<Args>(args)...);
+      // return iEvent.emplace(token, streamPtr(), getEvent(acc), std::forward<Args>(args)...);
       return iEvent.emplace(token, std::forward<Args>(args)...);
       // TODO
     }
@@ -191,8 +179,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     friend class ::ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest::TestScopedContext;
 
-    explicit ScopedContextProduce(Device device, std::shared_ptr<Queue> stream)
-        : ScopedContextGetterBase(std::move(device), std::move(stream)) {}
+    explicit ScopedContextProduce(std::shared_ptr<Queue> stream) : ScopedContextGetterBase(std::move(stream)) {}
 
     auto getEvent() { return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(device()); }
 
@@ -209,7 +196,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
     explicit ScopedContextTask(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-        : ScopedContextBase(state->device(), state->streamPtr()),  // don't move, state is re-used afterwards
+        : ScopedContextBase(state->streamPtr()),  // don't move, state is re-used afterwards
           holderHelper_{std::move(waitingTaskHolder)},
           contextState_{state} {}
 

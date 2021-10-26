@@ -22,7 +22,7 @@ namespace cms::alpakatools {
     // Gets a (cached) CUDA stream for the current device. The stream
     // will be returned to the cache by the shared_ptr destructor.
     // This function is thread safe
-    ALPAKA_FN_HOST std::shared_ptr<Queue> get(Device dev) {
+    ALPAKA_FN_HOST std::shared_ptr<Queue> get(Device const& dev) {
       return cache_[cms::alpakatools::getDevIndex(dev)].makeOrGet([dev]() { return std::make_unique<Queue>(dev); });
     }
 

@@ -4,18 +4,18 @@
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace impl {
-    void ScopedContextGetterBase::synchronizeStreams(Device const& dataDevice,
-                                                     Queue& dataStream,
+    void ScopedContextGetterBase::synchronizeStreams(Queue& dataStream,
                                                      bool available,
                                                      alpaka::Event<Queue> dataEvent) {
-      if (dataDevice != device()) {
-        // Eventually replace with prefetch to current device (assuming unified memory works)
-        // If we won't go to unified memory, need to figure out something else...
-        throw std::runtime_error("Handling data from multiple devices is not yet supported");
-      }
-
       if (dataStream != stream()) {
-        // Different streams, need to synchronize
+        // Different streams, check if the underlying device is the same
+        if (alpaka::getDev(dataStream) != device()) {
+          // Eventually replace with prefetch to current device (assuming unified memory works)
+          // If we won't go to unified memory, need to figure out something else...
+          throw std::runtime_error("Handling data from multiple devices is not yet supported");
+        }
+
+        // Synchronize the two streams
         if (not available) {
           // Event not yet occurred, so need to add synchronization
           // here. Sychronization is done by making the CUDA stream to
@@ -43,7 +43,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   ScopedContextAcquire::~ScopedContextAcquire() {
     holderHelper_.enqueueCallback(stream());
     if (contextState_) {
-      contextState_->set(device(), streamPtr());
+      contextState_->set(streamPtr());
     }
   }
 
