@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/SharedStreamPtr.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -15,6 +14,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
      */
   class ContextState {
   public:
+    using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
+    using Device = alpaka::Dev<Queue>;
+
     ContextState() = default;
     ~ContextState() = default;
 
@@ -28,24 +30,23 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     friend class ScopedContextProduce;
     friend class ScopedContextTask;
 
-    void set(int device, SharedStreamPtr stream) {
+    void set(std::shared_ptr<Queue> stream) {
       throwIfStream();
-      device_ = device;
       stream_ = std::move(stream);
     }
 
-    int device() const { return device_; }
+    Device device() const { return alpaka::getDev(*stream_); }
 
-    const SharedStreamPtr& streamPtr() const {
+    const std::shared_ptr<Queue>& streamPtr() const {
       throwIfNoStream();
       return stream_;
     }
 
-    SharedStreamPtr releaseStreamPtr() {
+    std::shared_ptr<Queue> releaseStreamPtr() {
       throwIfNoStream();
       // This function needs to effectively reset stream_ (i.e. stream_
       // must be empty after this function). This behavior ensures that
-      // the SharedStreamPtr is not hold for inadvertedly long (i.e. to
+      // the std::shared_ptr<Queue> is not hold for inadvertedly long (i.e. to
       // the next event), and is checked at run time.
       return std::move(stream_);
     }
@@ -53,8 +54,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     void throwIfStream() const;
     void throwIfNoStream() const;
 
-    SharedStreamPtr stream_;
-    int device_;
+    std::shared_ptr<Queue> stream_;
   };
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

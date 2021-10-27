@@ -36,12 +36,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto const& hits = iEvent.get(tokenHitGPU_);
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
-                                                                               iEvent.streamID()};
-    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
-                iEvent,
-                tokenTrackGPU_,
-                gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

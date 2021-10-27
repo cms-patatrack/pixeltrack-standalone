@@ -6,7 +6,7 @@
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
-  int chooseDevice(edm::StreamID id);
+  ::ALPAKA_ACCELERATOR_NAMESPACE::Device const& chooseDevice(edm::StreamID id);
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
 

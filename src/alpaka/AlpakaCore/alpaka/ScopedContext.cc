@@ -1,28 +1,21 @@
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/ScopedContext.h"
 
-namespace {
-  struct CallbackData {
-    edm::WaitingTaskWithArenaHolder holder;
-    int device;
-  };
-}  // namespace
-
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace impl {
-    void ScopedContextGetterBase::synchronizeStreams(int dataDevice,
-                                                     ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& dataStream,
+    void ScopedContextGetterBase::synchronizeStreams(Queue& dataStream,
                                                      bool available,
-                                                     alpaka::Event<::ALPAKA_ACCELERATOR_NAMESPACE::Queue> dataEvent) {
-      if (dataDevice != device()) {
-        // Eventually replace with prefetch to current device (assuming unified memory works)
-        // If we won't go to unified memory, need to figure out something else...
-        throw std::runtime_error("Handling data from multiple devices is not yet supported");
-      }
-
+                                                     alpaka::Event<Queue> dataEvent) {
       if (dataStream != stream()) {
-        // Different streams, need to synchronize
+        // Different streams, check if the underlying device is the same
+        if (alpaka::getDev(dataStream) != device()) {
+          // Eventually replace with prefetch to current device (assuming unified memory works)
+          // If we won't go to unified memory, need to figure out something else...
+          throw std::runtime_error("Handling data from multiple devices is not yet supported");
+        }
+
+        // Synchronize the two streams
         if (not available) {
           // Event not yet occurred, so need to add synchronization
           // here. Sychronization is done by making the CUDA stream to
@@ -34,13 +27,13 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
 
-    void ScopedContextHolderHelper::enqueueCallback(int device, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& stream) {
-      alpaka::enqueue(stream, [this, device]() {
-        auto data = new CallbackData{waitingTaskHolder_, device};
-        std::unique_ptr<CallbackData> guard{reinterpret_cast<CallbackData*>(data)};
-        edm::WaitingTaskWithArenaHolder& waitingTaskHolder = guard->holder;
-        int device2 = guard->device;
-        waitingTaskHolder.doneWaiting(nullptr);
+    void ScopedContextHolderHelper::enqueueCallback(ScopedContextBase::Queue& stream) {
+      alpaka::enqueue(stream, [holder = waitingTaskHolder_]() {
+        // TODO: The functor is required to be const, so can't use
+        // 'mutable', so I'm copying the object as a workaround. I
+        // wonder if there are any wider implications.
+        auto h = holder;
+        h.doneWaiting(nullptr);
       });
     }
   }  // namespace impl
@@ -48,9 +41,9 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   ////////////////////
 
   ScopedContextAcquire::~ScopedContextAcquire() {
-    holderHelper_.enqueueCallback(device(), stream());
+    holderHelper_.enqueueCallback(stream());
     if (contextState_) {
-      contextState_->set(device(), streamPtr());
+      contextState_->set(streamPtr());
     }
   }
 
@@ -73,6 +66,6 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
   ////////////////////
 
-  ScopedContextTask::~ScopedContextTask() { holderHelper_.enqueueCallback(device(), stream()); }
+  ScopedContextTask::~ScopedContextTask() { holderHelper_.enqueueCallback(stream()); }
 
 }  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE

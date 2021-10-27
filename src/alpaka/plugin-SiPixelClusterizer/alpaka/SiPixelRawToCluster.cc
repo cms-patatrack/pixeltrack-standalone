@@ -140,8 +140,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     }  // end of for loop
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{::ALPAKA_ACCELERATOR_NAMESPACE::devices[0],
-                                                                               iEvent.streamID()};
+    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
     gpuAlgo_.makeClustersAsync(isRun2_,
                                gpuMap,
                                gpuModulesToUnpack,
@@ -156,10 +155,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                ctx.stream());
 
     auto tmp = gpuAlgo_.getResults();
-    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], iEvent, digiPutToken_, std::move(tmp.first));
-    ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], iEvent, clusterPutToken_, std::move(tmp.second));
+    ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
+    ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
     if (includeErrors_) {
-      ctx.emplace(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
+      ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
     }
   }
 
