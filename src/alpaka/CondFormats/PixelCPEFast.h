@@ -41,7 +41,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const pixelCPEforGPU::ParamsOnGPU getGPUProductAsync(T_Acc acc, Queue queue) const {
       auto gpuData_ = getGPUData<T_Acc, GPUData>(acc);
 
-      const auto &data = gpuData_.dataForCurrentDeviceAsync(queue, [this](GPUData &data, Queue queue) {
+      const auto &data = gpuData_.dataForDeviceAsync(queue, [this](GPUData &data, Queue queue) {
         // and now copy to device...
         auto cParams =
             ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<pixelCPEforGPU::CommonParams>(1u);
