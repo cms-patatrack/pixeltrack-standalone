@@ -75,18 +75,15 @@ namespace cms {
       const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
       const Vec1D blocksPerGrid(nblocks);
 
+      auto d_pc = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<int32_t>(1u);
+      int32_t *pc = alpaka::getPtrNative(d_pc);
+      alpaka::memset(queue, d_pc, 0, 1u);
+
       const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
           blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, ::cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
-
-      const WorkDiv1D &workDivWith1Block = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-          Vec1D::all(1), threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-              workDivWith1Block, ::cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, nblocks));
+                          workDiv, ::cms::alpakatools::multiBlockPrefixScan<uint32_t>(), poff, poff, num_items, pc));
     }
 
     template <typename Histo, typename T>
@@ -106,14 +103,14 @@ namespace cms {
       const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
           blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, countFromVector(), h, nh, v, offsets));
+      alpaka::enqueue(queue,
+                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                          workDiv, countFromVector(), h, nh, v, offsets));
       launchFinalize(h, queue);
 
-      alpaka::enqueue(
-          queue,
-          alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv, fillFromVector(), h, nh, v, offsets));
+      alpaka::enqueue(queue,
+                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                          workDiv, fillFromVector(), h, nh, v, offsets));
     }
 
     struct finalizeBulk {

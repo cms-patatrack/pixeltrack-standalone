@@ -178,24 +178,14 @@ int main() {
         blocksPerGrid4, threadsPerBlockOrElementsPerThread4);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
-    alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc1D>(workDivMultiBlock,
-                                                    ::cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(),
-                                                    input_d,
-                                                    output1_d,
-                                                    num_items));
+    auto d_pc(alpaka::allocBuf<int32_t, Idx>(device, size));
+    int32_t* pc = alpaka::getPtrNative(d_pc);
 
-    const Vec1D blocksPerGridSecondStep(Vec1D::all(1));
-    const WorkDiv1D& workDivMultiBlockSecondStep = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-        blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
-    alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc1D>(workDivMultiBlockSecondStep,
-                                                    ::cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
-                                                    input_d,
-                                                    output1_d,
-                                                    num_items,
-                                                    nBlocks));
-
+    alpaka::memset(queue, d_pc, 0, size);
+    alpaka::enqueue(
+        queue,
+        alpaka::createTaskKernel<Acc1D>(
+            workDivMultiBlock, ::cms::alpakatools::multiBlockPrefixScan<uint32_t>(), input_d, output1_d, num_items, pc));
     alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivMultiBlock, verify(), output1_d, num_items));
 
     alpaka::wait(queue);  // input_dBuf and output1_dBuf end of scope
