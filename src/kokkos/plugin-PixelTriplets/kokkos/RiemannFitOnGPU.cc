@@ -8,14 +8,19 @@ namespace KOKKOS_NAMESPACE {
                                            uint32_t maxNumberOfTuples,
                                            KokkosExecSpace const &execSpace) {
     //  Fit internals
-    Kokkos::View<double *, KokkosDeviceMemSpace> hitsGPU("hitsGPU",
-                                                         maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>));
-    Kokkos::View<float *, KokkosDeviceMemSpace> hits_geGPU("hits_geGPU",
-                                                           maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
-    Kokkos::View<double *, KokkosDeviceMemSpace> fast_fit_resultsGPU(
-        "fast_fit_resultsGPU", maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
-    Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit_resultsGPU("circle_fit_resultsGPU",
-                                                                                 maxNumberOfConcurrentFits_);
+    auto hitsGPU_ptr = cms::kokkos::make_shared<double[], KokkosDeviceMemSpace>(maxNumberOfConcurrentFits_ *
+                                                                                sizeof(Rfit::Matrix3xNd<4>));
+    auto hits_geGPU_ptr =
+        cms::kokkos::make_shared<float[], KokkosDeviceMemSpace>(maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f));
+    auto fast_fit_resultsGPU_ptr =
+        cms::kokkos::make_shared<double[], KokkosDeviceMemSpace>(maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d));
+    auto circle_fit_resultsGPU_ptr =
+        cms::kokkos::make_shared<Rfit::circle_fit[], KokkosDeviceMemSpace>(maxNumberOfConcurrentFits_);
+
+    auto hitsGPU = cms::kokkos::to_view(hitsGPU_ptr);
+    auto hits_geGPU = cms::kokkos::to_view(hits_geGPU_ptr);
+    auto fast_fit_resultsGPU = cms::kokkos::to_view(fast_fit_resultsGPU_ptr);
+    auto circle_fit_resultsGPU = cms::kokkos::to_view(circle_fit_resultsGPU_ptr);
 
     // avoid capturing this by the lambdas
     auto const bField = bField_;

@@ -34,8 +34,8 @@ namespace KOKKOS_NAMESPACE {
 
     edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> digiToken_;
     edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> clusterToken_;
-    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
-    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
+    edm::EDGetTokenT<cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
+    edm::EDGetTokenT<cms::kokkos::shared_ptr<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
 
     static std::atomic<int> allEvents;
     static std::atomic<int> goodEvents;
@@ -57,8 +57,8 @@ namespace KOKKOS_NAMESPACE {
         vertexCountToken_(reg.consumes<VertexCount>()),
         digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
         clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
-        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>>()) {}
+        trackToken_(reg.consumes<cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
+        vertexToken_(reg.consumes<cms::kokkos::shared_ptr<ZVertexSoA, KokkosHostMemSpace>>()) {}
 
   void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // values from cuda program
@@ -95,8 +95,8 @@ namespace KOKKOS_NAMESPACE {
       auto const& tracks = iEvent.get(trackToken_);
 
       int nTracks = 0;
-      for (int i = 0; i < tracks().stride(); ++i) {
-        if (tracks().nHits(i) > 0) {
+      for (int i = 0; i < tracks->stride(); ++i) {
+        if (tracks->nHits(i) > 0) {
           ++nTracks;
         }
       }
@@ -117,12 +117,12 @@ namespace KOKKOS_NAMESPACE {
       auto const& count = iEvent.get(vertexCountToken_);
       auto const& vertices = iEvent.get(vertexToken_);
 
-      auto diff = std::abs(int(vertices().nvFinal) - int(count.nVertices()));
+      auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices()));
       if (diff != 0) {
         sumVertexDifference += diff;
       }
       if (diff > vertexTolerance) {
-        ss << "\n N(vertices) is " << vertices().nvFinal << " expected " << count.nVertices() << ", difference " << diff
+        ss << "\n N(vertices) is " << vertices->nvFinal << " expected " << count.nVertices() << ", difference " << diff
            << " is outside tolerance " << vertexTolerance;
         ok = false;
       }

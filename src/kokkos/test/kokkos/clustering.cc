@@ -22,16 +22,16 @@ void test() {
   int numElements = 256 * 2000;
   // these in reality are already on GPU
 
-  Kokkos::View<uint16_t*, KokkosExecSpace> d_id("d_id", numElements);
+  Kokkos::View<uint16_t*, KokkosDeviceMemSpace> d_id("d_id", numElements);
   auto h_id = Kokkos::create_mirror_view(d_id);
-  Kokkos::View<uint16_t*, KokkosExecSpace> d_x("d_x", numElements);
+  Kokkos::View<uint16_t*, KokkosDeviceMemSpace> d_x("d_x", numElements);
   auto h_x = Kokkos::create_mirror_view(d_x);
-  Kokkos::View<uint16_t*, KokkosExecSpace> d_y("d_y", numElements);
+  Kokkos::View<uint16_t*, KokkosDeviceMemSpace> d_y("d_y", numElements);
   auto h_y = Kokkos::create_mirror_view(d_y);
-  Kokkos::View<uint16_t*, KokkosExecSpace> d_adc("d_adc", numElements);
+  Kokkos::View<uint16_t*, KokkosDeviceMemSpace> d_adc("d_adc", numElements);
   auto h_adc = Kokkos::create_mirror_view(d_adc);
 
-  Kokkos::View<int*, KokkosExecSpace> d_clus("d_clus", numElements);
+  Kokkos::View<int*, KokkosDeviceMemSpace> d_clus("d_clus", numElements);
   auto h_clus = Kokkos::create_mirror_view(d_clus);
 
   Kokkos::parallel_for(
@@ -49,11 +49,11 @@ void test() {
   Kokkos::deep_copy(KokkosExecSpace(), h_y, d_y);
   Kokkos::deep_copy(KokkosExecSpace(), h_adc, d_adc);
 
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleStart("d_moduleStart", MaxNumModules + 1);
+  Kokkos::View<uint32_t*, KokkosDeviceMemSpace> d_moduleStart("d_moduleStart", MaxNumModules + 1);
   auto h_moduleStart = Kokkos::create_mirror_view(d_moduleStart);
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_clusInModule("d_clusInModule", MaxNumModules);
+  Kokkos::View<uint32_t*, KokkosDeviceMemSpace> d_clusInModule("d_clusInModule", MaxNumModules);
   auto h_clusInModule = Kokkos::create_mirror_view(d_clusInModule);
-  Kokkos::View<uint32_t*, KokkosExecSpace> d_moduleId("d_moduleId", MaxNumModules);
+  Kokkos::View<uint32_t*, KokkosDeviceMemSpace> d_moduleId("d_moduleId", MaxNumModules);
   auto h_moduleId = Kokkos::create_mirror_view(d_moduleId);
 
   Kokkos::parallel_for(
@@ -289,10 +289,10 @@ void test() {
           d_clusInModule(i) = 0;
         });
 
-    KOKKOS_NAMESPACE::gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosExecSpace>(d_id),
-                                              Kokkos::View<const uint16_t*, KokkosExecSpace>(d_x),
-                                              Kokkos::View<const uint16_t*, KokkosExecSpace>(d_y),
-                                              Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
+    KOKKOS_NAMESPACE::gpuClustering::findClus(Kokkos::View<const uint16_t*, KokkosDeviceMemSpace>(d_id),
+                                              Kokkos::View<const uint16_t*, KokkosDeviceMemSpace>(d_x),
+                                              Kokkos::View<const uint16_t*, KokkosDeviceMemSpace>(d_y),
+                                              Kokkos::View<const uint32_t*, KokkosDeviceMemSpace>(d_moduleStart),
                                               d_clusInModule,
                                               d_moduleId,
                                               d_clus,
@@ -317,15 +317,16 @@ void test() {
     if (ncl != clustInModule_acc)
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    gpuClustering::clusterChargeCut(d_id,
-                                    Kokkos::View<const uint16_t*, KokkosExecSpace>(d_adc),
-                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleStart),
-                                    d_clusInModule,
-                                    Kokkos::View<const uint32_t*, KokkosExecSpace>(d_moduleId),
-                                    d_clus,
-                                    n,
-                                    teamPolicy,
-                                    KokkosExecSpace());
+    gpuClustering::clusterChargeCut(
+        cms::kokkos::make_restrictUnmanaged(d_id),
+        Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, RestrictUnmanaged>(d_adc),
+        Kokkos::View<const uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>(d_moduleStart),
+        cms::kokkos::make_restrictUnmanaged(d_clusInModule),
+        Kokkos::View<const uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>(d_moduleId),
+        cms::kokkos::make_restrictUnmanaged(d_clus),
+        n,
+        teamPolicy,
+        KokkosExecSpace());
     KokkosExecSpace().fence();
 
     std::cout << "found " << h_moduleStart(0) << " Modules active" << std::endl;

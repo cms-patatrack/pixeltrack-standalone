@@ -19,8 +19,8 @@ namespace KOKKOS_NAMESPACE {
     //
     template <typename Hist>
     KOKKOS_FORCEINLINE_FUNCTION void clusterTracksByDensity(
-        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, RestrictUnmanaged>& vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -195,8 +195,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     KOKKOS_INLINE_FUNCTION void clusterTracksByDensityKernel(
-        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, RestrictUnmanaged>& vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -207,8 +207,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     template <typename MemSpace, typename ExecSpace>
-    void clusterTracksByDensityHost(const Kokkos::View<ZVertices, MemSpace, Restrict>& vdata,
-                                    const Kokkos::View<WorkSpace, MemSpace, Restrict>& vws,
+    void clusterTracksByDensityHost(const Kokkos::View<ZVertices, MemSpace, RestrictUnmanaged>& vdata,
+                                    const Kokkos::View<WorkSpace, MemSpace, RestrictUnmanaged>& vws,
                                     int minT,       // min number of neighbours to be "seed"
                                     float eps,      // max absolute distance to cluster
                                     float errmax,   // max error to be "seed"

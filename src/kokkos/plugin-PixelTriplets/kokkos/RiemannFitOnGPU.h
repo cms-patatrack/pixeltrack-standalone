@@ -18,15 +18,16 @@ namespace KOKKOS_NAMESPACE {
   using OutputSoA = pixelTrack::TrackSoA;
 
   template <int N>
-  KOKKOS_INLINE_FUNCTION void kernelFastFit(Tuples const *__restrict__ foundNtuplets,
-                                            CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                            uint32_t nHits,
-                                            HitsOnGPU const *__restrict__ hhp,
-                                            Kokkos::View<double *, KokkosDeviceMemSpace> phits,
-                                            Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
-                                            Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit,
-                                            uint32_t offset,
-                                            int local_idx) {
+  KOKKOS_INLINE_FUNCTION void kernelFastFit(
+      Tuples const *__restrict__ foundNtuplets,
+      CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+      uint32_t nHits,
+      HitsOnGPU const *__restrict__ hhp,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits,
+      const Kokkos::View<float *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits_ge,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &pfast_fit,
+      uint32_t offset,
+      int local_idx) {
     constexpr uint32_t hitsInFit = N;
 
     assert(hitsInFit <= nHits);
@@ -78,15 +79,16 @@ namespace KOKKOS_NAMESPACE {
   }
 
   template <int N>
-  KOKKOS_INLINE_FUNCTION void kernelCircleFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                              uint32_t nHits,
-                                              double B,
-                                              Kokkos::View<double *, KokkosDeviceMemSpace> phits,
-                                              Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
-                                              Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit_input,
-                                              Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit,
-                                              uint32_t offset,
-                                              int local_idx) {
+  KOKKOS_INLINE_FUNCTION void kernelCircleFit(
+      CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+      uint32_t nHits,
+      double B,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits,
+      const Kokkos::View<float *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits_ge,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &pfast_fit_input,
+      const Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace, RestrictUnmanaged> &circle_fit,
+      uint32_t offset,
+      int local_idx) {
     assert(N <= nHits);
 
     // same as above...
@@ -115,16 +117,17 @@ namespace KOKKOS_NAMESPACE {
   }
 
   template <int N>
-  KOKKOS_INLINE_FUNCTION void kernelLineFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                            uint32_t nHits,
-                                            double B,
-                                            OutputSoA *results,
-                                            Kokkos::View<double *, KokkosDeviceMemSpace> phits,
-                                            Kokkos::View<float *, KokkosDeviceMemSpace> phits_ge,
-                                            Kokkos::View<double *, KokkosDeviceMemSpace> pfast_fit_input,
-                                            Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace> circle_fit,
-                                            uint32_t offset,
-                                            int local_idx) {
+  KOKKOS_INLINE_FUNCTION void kernelLineFit(
+      CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+      uint32_t nHits,
+      double B,
+      OutputSoA *results,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits,
+      const Kokkos::View<float *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits_ge,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &pfast_fit_input,
+      const Kokkos::View<Rfit::circle_fit *, KokkosDeviceMemSpace, RestrictUnmanaged> &circle_fit,
+      uint32_t offset,
+      int local_idx) {
     assert(results);
     assert(N <= nHits);
 

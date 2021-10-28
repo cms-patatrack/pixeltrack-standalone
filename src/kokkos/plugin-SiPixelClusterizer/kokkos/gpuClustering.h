@@ -8,6 +8,7 @@
 #include "KokkosCore/hintLightWeight.h"
 #include "KokkosCore/HistoContainer.h"
 #include "KokkosCore/atomic.h"
+#include "KokkosCore/memoryTraits.h"
 #include "KokkosDataFormats/gpuClusteringConstants.h"
 
 namespace KOKKOS_NAMESPACE {
@@ -17,11 +18,12 @@ namespace KOKKOS_NAMESPACE {
     __device__ uint32_t gMaxHit = 0;
 #endif
 
-    KOKKOS_INLINE_FUNCTION void countModules(const Kokkos::View<uint16_t const*, KokkosDeviceMemSpace, Restrict>& id,
-                                             const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& moduleStart,
-                                             const Kokkos::View<int32_t*, KokkosDeviceMemSpace, Restrict>& clusterId,
-                                             int numElements,
-                                             const size_t index) {
+    KOKKOS_INLINE_FUNCTION void countModules(
+        const Kokkos::View<uint16_t const*, KokkosDeviceMemSpace, RestrictUnmanaged>& id,
+        const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>& moduleStart,
+        const Kokkos::View<int32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>& clusterId,
+        int numElements,
+        const size_t index) {
       clusterId[index] = index;
       if (::gpuClustering::InvId == id[index])
         return;
@@ -41,15 +43,16 @@ namespace KOKKOS_NAMESPACE {
 namespace KOKKOS_NAMESPACE::gpuClustering {
   //  __launch_bounds__(256,4)
   inline void findClus(
-      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& id,  // module id of each pixel
-      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& x,   // local coordinates of each pixel
-      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& y,   //
-      const Kokkos::View<const uint32_t*, KokkosDeviceMemSpace, Restrict>&
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, RestrictUnmanaged>& id,  // module id of each pixel
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, RestrictUnmanaged>& x,  // local coordinates of each pixel
+      const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, RestrictUnmanaged>& y,  //
+      const Kokkos::View<const uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>&
           moduleStart,  // index of the first pixel of each module
-      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>&
+      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>&
           nClustersInModule,  // output: number of clusters found in each module
-      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, Restrict>& moduleId,  // output: module id of each module
-      const Kokkos::View<int*, KokkosDeviceMemSpace, Restrict>& clusterId,      // output: cluster id of each pixel
+      const Kokkos::View<uint32_t*, KokkosDeviceMemSpace, RestrictUnmanaged>&
+          moduleId,                                                                  // output: module id of each module
+      const Kokkos::View<int*, KokkosDeviceMemSpace, RestrictUnmanaged>& clusterId,  // output: cluster id of each pixel
       int numElements,
       Kokkos::TeamPolicy<KokkosExecSpace>& teamPolicy,
       KokkosExecSpace const& execSpace) {
@@ -58,9 +61,9 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
     using Hist = cms::kokkos::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
     using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
-    using shared_team_view = Kokkos::View<uint32_t, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
-    using HistView = Kokkos::View<Hist, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
-    using SizeView = Kokkos::View<int, KokkosExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using shared_team_view = Kokkos::View<uint32_t, KokkosExecSpace::scratch_memory_space, RestrictUnmanaged>;
+    using HistView = Kokkos::View<Hist, KokkosExecSpace::scratch_memory_space, RestrictUnmanaged>;
+    using SizeView = Kokkos::View<int, KokkosExecSpace::scratch_memory_space, RestrictUnmanaged>;
     size_t shared_view_bytes = shared_team_view::shmem_size() + HistView::shmem_size() + SizeView::shmem_size();
 
     int shared_view_level = 0;

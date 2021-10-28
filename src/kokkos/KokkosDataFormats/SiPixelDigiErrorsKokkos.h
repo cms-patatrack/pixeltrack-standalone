@@ -5,6 +5,8 @@
 #include "KokkosCore/SimpleVector.h"
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/deep_copy.h"
+#include "KokkosCore/shared_ptr.h"
 
 template <typename MemorySpace>
 class SiPixelDigiErrorsKokkos {
@@ -12,14 +14,14 @@ public:
   SiPixelDigiErrorsKokkos() = default;
   template <typename ExecSpace>
   explicit SiPixelDigiErrorsKokkos(size_t maxFedWords, PixelFormatterErrors errors, ExecSpace const& execSpace)
-      : data_d{Kokkos::ViewAllocateWithoutInitializing("data_d"), maxFedWords},
-        error_d{Kokkos::ViewAllocateWithoutInitializing("error_d")},
-        error_h{Kokkos::ViewAllocateWithoutInitializing("error_h")},
+      : data_d{cms::kokkos::make_shared<PixelErrorCompact[], MemorySpace>(maxFedWords)},
+        error_d{cms::kokkos::make_shared<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace>()},
+        error_h{cms::kokkos::make_mirror_shared(error_d)},
         formatterErrors_h{std::move(errors)} {
-    error_h().construct(maxFedWords, data_d.data());
-    assert(error_h().empty());
-    assert(error_h().capacity() == static_cast<int>(maxFedWords));
-    Kokkos::deep_copy(execSpace, error_d, error_h);
+    error_h->construct(maxFedWords, data_d.get());
+    assert(error_h->empty());
+    assert(error_h->capacity() == static_cast<int>(maxFedWords));
+    cms::kokkos::deep_copy(execSpace, error_d, error_h);
   }
   ~SiPixelDigiErrorsKokkos() = default;
 
@@ -30,9 +32,9 @@ public:
 
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-  cms::kokkos::SimpleVector<PixelErrorCompact>* error() { return error_d.data(); }
-  cms::kokkos::SimpleVector<PixelErrorCompact> const* error() const { return error_d.data(); }
-  cms::kokkos::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.data(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact>* error() { return error_d.get(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact> const* error() const { return error_d.get(); }
+  cms::kokkos::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.get(); }
 
 #ifdef TODO
   using HostDataError = std::pair<cms::kokkos::SimpleVector<PixelErrorCompact>,
@@ -43,9 +45,10 @@ public:
 #endif
 
 private:
-  Kokkos::View<PixelErrorCompact*, MemorySpace> data_d;
-  Kokkos::View<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace> error_d;
-  typename Kokkos::View<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace>::HostMirror error_h;
+  cms::kokkos::shared_ptr<PixelErrorCompact[], MemorySpace> data_d;
+  cms::kokkos::shared_ptr<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace> error_d;
+  cms::kokkos::shared_ptr<cms::kokkos::SimpleVector<PixelErrorCompact>, cms::kokkos::HostMirrorSpace_t<MemorySpace>>
+      error_h;
   PixelFormatterErrors formatterErrors_h;
 };
 

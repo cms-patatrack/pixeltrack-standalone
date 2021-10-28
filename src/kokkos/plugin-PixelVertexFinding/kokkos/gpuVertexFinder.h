@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/shared_ptr.h"
 #include "KokkosDataFormats/ZVertexHeterogeneous.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 
@@ -52,8 +53,8 @@ namespace KOKKOS_NAMESPACE {
 
       ~Producer() = default;
 
-      Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace> make(
-          Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace, Restrict> const& tksoa,
+      cms::kokkos::shared_ptr<ZVertexSoA, KokkosDeviceMemSpace> make(
+          cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosDeviceMemSpace> const& tksoa,
           float ptMin,
           KokkosExecSpace const& execSpace) const;
 

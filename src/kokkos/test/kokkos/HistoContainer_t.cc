@@ -14,7 +14,7 @@ void go() {
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
   constexpr int N = 12000;
-  Kokkos::View<T*, KokkosExecSpace> v_d("v_d", N);
+  Kokkos::View<T*, KokkosDeviceMemSpace> v_d("v_d", N);
   auto v_h = Kokkos::create_mirror_view(v_d);
 
   constexpr uint32_t nParts = 10;
@@ -26,10 +26,10 @@ void go() {
             << Hist::capacity() << ' ' << Hist::wsSize() << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  Kokkos::View<Hist, KokkosExecSpace, Restrict> h_d("h_d");
+  Kokkos::View<Hist, KokkosDeviceMemSpace> h_d("h_d");
   auto h_h = Kokkos::create_mirror_view(h_d);
 
-  Kokkos::View<uint32_t*, KokkosExecSpace, Restrict> off_d("off_d", nParts + 1);
+  Kokkos::View<uint32_t*, KokkosDeviceMemSpace> off_d("off_d", nParts + 1);
   auto off_h = Kokkos::create_mirror_view(off_d);
 
   for (int it = 0; it < 5; ++it) {
@@ -63,10 +63,10 @@ void go() {
     }
     Kokkos::deep_copy(KokkosExecSpace(), v_d, v_h);
 
-    cms::kokkos::fillManyFromVector(h_d,
+    cms::kokkos::fillManyFromVector(cms::kokkos::make_restrictUnmanaged(h_d),
                                     nParts,
-                                    Kokkos::View<T const*, KokkosExecSpace, Restrict>(v_d),
-                                    Kokkos::View<uint32_t const*, KokkosExecSpace, Restrict>(off_d),
+                                    Kokkos::View<T const*, KokkosDeviceMemSpace, RestrictUnmanaged>(v_d),
+                                    Kokkos::View<uint32_t const*, KokkosDeviceMemSpace, RestrictUnmanaged>(off_d),
                                     off_h(10),
                                     256,
                                     KokkosExecSpace());

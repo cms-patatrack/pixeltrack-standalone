@@ -32,28 +32,28 @@ namespace KOKKOS_NAMESPACE {
     edm::EDGetTokenT<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>> digiToken_;
     edm::EDGetTokenT<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>> clusterToken_;
     edm::EDGetTokenT<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>> hitToken_;
-    edm::EDGetTokenT<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
-    edm::EDGetTokenT<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
+    edm::EDGetTokenT<cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosHostMemSpace>> trackToken_;
+    edm::EDGetTokenT<cms::kokkos::shared_ptr<ZVertexSoA, KokkosHostMemSpace>> vertexToken_;
 
     uint32_t nDigis;
     uint32_t nModules;
     uint32_t nClusters;
     uint32_t nHits;
 
-    Kokkos::View<uint16_t*, KokkosHostMemSpace> h_adc;
-    Kokkos::View<uint32_t*, KokkosHostMemSpace> h_clusInModule;
+    cms::kokkos::shared_ptr<uint16_t[], KokkosHostMemSpace> h_adc;
+    cms::kokkos::shared_ptr<uint32_t[], KokkosHostMemSpace> h_clusInModule;
 
-    Kokkos::View<float*, KokkosHostMemSpace> h_lx;
-    Kokkos::View<float*, KokkosHostMemSpace> h_ly;
-    Kokkos::View<float*, KokkosHostMemSpace> h_lex;
-    Kokkos::View<float*, KokkosHostMemSpace> h_ley;
-    Kokkos::View<float*, KokkosHostMemSpace> h_gx;
-    Kokkos::View<float*, KokkosHostMemSpace> h_gy;
-    Kokkos::View<float*, KokkosHostMemSpace> h_gz;
-    Kokkos::View<float*, KokkosHostMemSpace> h_gr;
-    Kokkos::View<int32_t*, KokkosHostMemSpace> h_charge;
-    Kokkos::View<int16_t*, KokkosHostMemSpace> h_sizex;
-    Kokkos::View<int16_t*, KokkosHostMemSpace> h_sizey;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_lx;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_ly;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_lex;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_ley;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_gx;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_gy;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_gz;
+    cms::kokkos::shared_ptr<float[], KokkosHostMemSpace> h_gr;
+    cms::kokkos::shared_ptr<int32_t[], KokkosHostMemSpace> h_charge;
+    cms::kokkos::shared_ptr<int16_t[], KokkosHostMemSpace> h_sizex;
+    cms::kokkos::shared_ptr<int16_t[], KokkosHostMemSpace> h_sizey;
 
     static std::map<std::string, SimpleAtomicHisto> histos;
   };
@@ -97,8 +97,8 @@ namespace KOKKOS_NAMESPACE {
       : digiToken_(reg.consumes<cms::kokkos::Product<SiPixelDigisKokkos<KokkosDeviceMemSpace>>>()),
         clusterToken_(reg.consumes<cms::kokkos::Product<SiPixelClustersKokkos<KokkosDeviceMemSpace>>>()),
         hitToken_(reg.consumes<cms::kokkos::Product<TrackingRecHit2DKokkos<KokkosDeviceMemSpace>>>()),
-        trackToken_(reg.consumes<Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
-        vertexToken_(reg.consumes<Kokkos::View<ZVertexSoA, KokkosHostMemSpace>>()) {}
+        trackToken_(reg.consumes<cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosHostMemSpace>>()),
+        vertexToken_(reg.consumes<cms::kokkos::shared_ptr<ZVertexSoA, KokkosHostMemSpace>>()) {}
 
   void HistoValidator::acquire(const edm::Event& iEvent,
                                const edm::EventSetup& iSetup,
@@ -134,32 +134,31 @@ namespace KOKKOS_NAMESPACE {
   void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     histos["digi_n"].fill(nDigis);
     for (uint32_t i = 0; i < nDigis; ++i) {
-      histos["digi_adc"].fill(h_adc(i));
+      histos["digi_adc"].fill(h_adc[i]);
     }
     histos["module_n"].fill(nModules);
-    //h_adc.reset();
+    h_adc.reset();
 
     histos["cluster_n"].fill(nClusters);
     for (uint32_t i = 0; i < nModules; ++i) {
-      histos["cluster_per_module_n"].fill(h_clusInModule(i));
+      histos["cluster_per_module_n"].fill(h_clusInModule[i]);
     }
-    //h_clusInModule.reset();
+    h_clusInModule.reset();
 
     histos["hit_n"].fill(nHits);
     for (uint32_t i = 0; i < nHits; ++i) {
-      histos["hit_lx"].fill(h_lx(i));
-      histos["hit_ly"].fill(h_ly(i));
-      histos["hit_lex"].fill(h_lex(i));
-      histos["hit_ley"].fill(h_ley(i));
-      histos["hit_gx"].fill(h_gx(i));
-      histos["hit_gy"].fill(h_gy(i));
-      histos["hit_gz"].fill(h_gz(i));
-      histos["hit_gr"].fill(h_gr(i));
-      histos["hit_charge"].fill(h_charge(i));
-      histos["hit_sizex"].fill(h_sizex(i));
-      histos["hit_sizey"].fill(h_sizey(i));
+      histos["hit_lx"].fill(h_lx[i]);
+      histos["hit_ly"].fill(h_ly[i]);
+      histos["hit_lex"].fill(h_lex[i]);
+      histos["hit_ley"].fill(h_ley[i]);
+      histos["hit_gx"].fill(h_gx[i]);
+      histos["hit_gy"].fill(h_gy[i]);
+      histos["hit_gz"].fill(h_gz[i]);
+      histos["hit_gr"].fill(h_gr[i]);
+      histos["hit_charge"].fill(h_charge[i]);
+      histos["hit_sizex"].fill(h_sizex[i]);
+      histos["hit_sizey"].fill(h_sizey[i]);
     }
-    /*
     h_lx.reset();
     h_ly.reset();
     h_lex.reset();
@@ -171,25 +170,24 @@ namespace KOKKOS_NAMESPACE {
     h_charge.reset();
     h_sizex.reset();
     h_sizey.reset();
-    */
 
     {
       auto const& tracks = iEvent.get(trackToken_);
 
       int nTracks = 0;
-      for (int i = 0; i < tracks().stride(); ++i) {
-        if (tracks().nHits(i) > 0 and tracks().quality(i) >= trackQuality::loose) {
+      for (int i = 0; i < tracks->stride(); ++i) {
+        if (tracks->nHits(i) > 0 and tracks->quality(i) >= trackQuality::loose) {
           ++nTracks;
-          histos["track_nhits"].fill(tracks().nHits(i));
-          histos["track_chi2"].fill(tracks().chi2(i));
-          histos["track_pt"].fill(tracks().pt(i));
-          histos["track_eta"].fill(tracks().eta(i));
-          histos["track_phi"].fill(tracks().phi(i));
-          histos["track_tip"].fill(tracks().tip(i));
-          histos["track_tip_zoom"].fill(tracks().tip(i));
-          histos["track_zip"].fill(tracks().zip(i));
-          histos["track_zip_zoom"].fill(tracks().zip(i));
-          histos["track_quality"].fill(tracks().quality(i));
+          histos["track_nhits"].fill(tracks->nHits(i));
+          histos["track_chi2"].fill(tracks->chi2(i));
+          histos["track_pt"].fill(tracks->pt(i));
+          histos["track_eta"].fill(tracks->eta(i));
+          histos["track_phi"].fill(tracks->phi(i));
+          histos["track_tip"].fill(tracks->tip(i));
+          histos["track_tip_zoom"].fill(tracks->tip(i));
+          histos["track_zip"].fill(tracks->zip(i));
+          histos["track_zip_zoom"].fill(tracks->zip(i));
+          histos["track_quality"].fill(tracks->quality(i));
         }
       }
 
@@ -199,12 +197,12 @@ namespace KOKKOS_NAMESPACE {
     {
       auto const& vertices = iEvent.get(vertexToken_);
 
-      histos["vertex_n"].fill(vertices().nvFinal);
-      for (uint32_t i = 0; i < vertices().nvFinal; ++i) {
-        histos["vertex_z"].fill(vertices().zv[i]);
-        histos["vertex_chi2"].fill(vertices().chi2[i]);
-        histos["vertex_ndof"].fill(vertices().ndof[i]);
-        histos["vertex_pt2"].fill(vertices().ptv2[i]);
+      histos["vertex_n"].fill(vertices->nvFinal);
+      for (uint32_t i = 0; i < vertices->nvFinal; ++i) {
+        histos["vertex_z"].fill(vertices->zv[i]);
+        histos["vertex_chi2"].fill(vertices->chi2[i]);
+        histos["vertex_ndof"].fill(vertices->ndof[i]);
+        histos["vertex_pt2"].fill(vertices->ptv2[i]);
       }
     }
   }

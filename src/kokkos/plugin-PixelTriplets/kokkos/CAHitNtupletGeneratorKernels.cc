@@ -4,26 +4,25 @@
 #include "KokkosCore/hintLightWeight.h"
 
 namespace KOKKOS_NAMESPACE {
-  void CAHitNtupletGeneratorKernels::fillHitDetIndices(
-      HitsView const *hv,
-      const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
-      KokkosExecSpace const &execSpace) {
+  void CAHitNtupletGeneratorKernels::fillHitDetIndices(HitsView const *hv,
+                                                       cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace> &tracks_d,
+                                                       KokkosExecSpace const &execSpace) {
+    auto *hitIndices = &tracks_d->hitIndices;
+    auto *detIndices = &tracks_d->detIndices;
     Kokkos::parallel_for(
         hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitContainer::capacity())),
-        KOKKOS_LAMBDA(size_t i) {
-          kernel_fillHitDetIndices(&(tracks_d().hitIndices), hv, &(tracks_d().detIndices), i);
-        });
+        KOKKOS_LAMBDA(size_t i) { kernel_fillHitDetIndices(hitIndices, hv, detIndices, i); });
 #ifdef GPU_DEBUG
     execSpace.fence();
 #endif
   }
 
   void CAHitNtupletGeneratorKernels::launchKernels(HitsOnCPU const &hh,
-                                                   const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
+                                                   cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace> &tracks_d,
                                                    KokkosExecSpace const &execSpace) {
     // these are pointer on GPU!
-    auto *tuples_d = &tracks_d().hitIndices;
-    auto *quality_d = (Quality *)(&tracks_d().m_quality);
+    auto *tuples_d = &tracks_d->hitIndices;
+    auto *quality_d = (Quality *)(&tracks_d->m_quality);
 
     // zero tuples
     cms::kokkos::launchZero(tuples_d, execSpace);
@@ -59,14 +58,14 @@ namespace KOKKOS_NAMESPACE {
     const auto *hhp = hh.view();
 
     // Kokkos::View as local variables to pass to the lambda
-    auto d_hitTuple_apc_ = device_hitTuple_apc_;
-    auto d_hitToTuple_apc_ = device_hitToTuple_apc_;
-    auto d_theCells_ = device_theCells_;
-    auto d_nCells_ = device_nCells_;
-    auto d_theCellNeighbors_ = device_theCellNeighbors_;
-    auto d_theCellTracks_ = device_theCellTracks_;
-    auto d_isOuterHitOfCell_ = device_isOuterHitOfCell_;
-    auto d_tupleMultiplicity_ = device_tupleMultiplicity_;
+    auto d_hitTuple_apc_ = cms::kokkos::to_view(device_hitTuple_apc_);
+    auto d_hitToTuple_apc_ = cms::kokkos::to_view(device_hitToTuple_apc_);
+    auto d_theCells_ = cms::kokkos::to_view(device_theCells_);
+    auto d_nCells_ = cms::kokkos::to_view(device_nCells_);
+    auto d_theCellNeighbors_ = cms::kokkos::to_view(device_theCellNeighbors_);
+    auto d_theCellTracks_ = cms::kokkos::to_view(device_theCellTracks_);
+    auto d_isOuterHitOfCell_ = cms::kokkos::to_view(device_isOuterHitOfCell_);
+    auto d_tupleMultiplicity_ = cms::kokkos::to_view(device_tupleMultiplicity_);
 
     {
       // capturing this by the lambda leads to illegal memory access with CUDA
@@ -237,22 +236,20 @@ namespace KOKKOS_NAMESPACE {
 #endif
 
     // in principle we can use "nhits" to heuristically dimension the workspace...
-    device_isOuterHitOfCell_ = Kokkos::View<GPUCACell::OuterHitOfCell *, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_isOuterHitOfCell_"), std::max(1U, nhits));
+    device_isOuterHitOfCell_ =
+        cms::kokkos::make_shared<GPUCACell::OuterHitOfCell[], KokkosDeviceMemSpace>(std::max(1U, nhits));
 
-    device_theCellNeighborsContainer_ = Kokkos::View<CAConstants::CellNeighbors *, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighborsContainer_"),
+    device_theCellNeighborsContainer_ = cms::kokkos::make_shared<CAConstants::CellNeighbors[], KokkosDeviceMemSpace>(
         CAConstants::maxNumOfActiveDoublets());
-    device_theCellTracksContainer_ = Kokkos::View<CAConstants::CellTracks *, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_theCellTracksContainer_"),
+    device_theCellTracksContainer_ = cms::kokkos::make_shared<CAConstants::CellTracks[], KokkosDeviceMemSpace>(
         CAConstants::maxNumOfActiveDoublets());
 
     {
-      auto isOuterHitOfCell = device_isOuterHitOfCell_;
-      auto cellNeighbors = device_theCellNeighbors_;
-      auto cellNeighborsContainer = device_theCellNeighborsContainer_;
-      auto cellTracks = device_theCellTracks_;
-      auto cellTracksContainer = device_theCellTracksContainer_;
+      auto isOuterHitOfCell = cms::kokkos::to_view(device_isOuterHitOfCell_);
+      auto cellNeighbors = cms::kokkos::to_view(device_theCellNeighbors_);
+      auto cellNeighborsContainer = cms::kokkos::to_view(device_theCellNeighborsContainer_);
+      auto cellTracks = cms::kokkos::to_view(device_theCellTracks_);
+      auto cellTracksContainer = cms::kokkos::to_view(device_theCellTracksContainer_);
       Kokkos::parallel_for(
           "initDoublets",
           hintLightWeight(Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, nhits)),
@@ -273,8 +270,7 @@ namespace KOKKOS_NAMESPACE {
           });
     }
 
-    device_theCells_ = Kokkos::View<GPUCACell *, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_theCells_"), m_params.maxNumberOfDoublets_);
+    device_theCells_ = cms::kokkos::make_shared<GPUCACell[], KokkosDeviceMemSpace>(m_params.maxNumberOfDoublets_);
 
 #ifdef GPU_DEBUG
     execSpace.fence();
@@ -313,12 +309,12 @@ namespace KOKKOS_NAMESPACE {
     tempPolicy.set_scratch_size(0, Kokkos::PerTeam((CAConstants::maxNumberOfLayerPairs() + 2) * sizeof(uint32_t)));
     const auto *hhp = hh.view();
 
-    gpuPixelDoublets::getDoubletsFromHisto getdoublets(device_theCells_,
-                                                       device_nCells_,
-                                                       device_theCellNeighbors_,
-                                                       device_theCellTracks_,
+    gpuPixelDoublets::getDoubletsFromHisto getdoublets(cms::kokkos::to_view(device_theCells_),
+                                                       cms::kokkos::to_view(device_nCells_),
+                                                       cms::kokkos::to_view(device_theCellNeighbors_),
+                                                       cms::kokkos::to_view(device_theCellTracks_),
                                                        hhp,
-                                                       device_isOuterHitOfCell_,
+                                                       cms::kokkos::to_view(device_isOuterHitOfCell_),
                                                        nActualPairs,
                                                        m_params.idealConditions_,
                                                        m_params.doClusterCut_,
@@ -334,48 +330,48 @@ namespace KOKKOS_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::classifyTuples(HitsOnCPU const &hh,
-                                                    const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict> &tracks_d,
+                                                    cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace> &tracks_d,
                                                     KokkosExecSpace const &execSpace) {
     // these are pointer on GPU!
-    auto const *tuples_d = &tracks_d().hitIndices;
-    auto *quality_d = (Quality *)(&tracks_d().m_quality);
+    auto *tksoa_d = tracks_d.get();
+    auto const *tuples_d = &tracks_d->hitIndices;
+    auto *quality_d = (Quality *)(&tracks_d->m_quality);
 
     {
       auto const cuts = m_params.cuts_;
       Kokkos::parallel_for(
           "kernel_classifyTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
-          KOKKOS_LAMBDA(const size_t i) { kernel_classifyTracks(tuples_d, tracks_d.data(), cuts, quality_d, i); });
+          KOKKOS_LAMBDA(const size_t i) { kernel_classifyTracks(tuples_d, tksoa_d, cuts, quality_d, i); });
     }
 
-    auto theCells = device_theCells_;
+    auto *theCells = device_theCells_.get();
+    auto *d_nCells = device_nCells_.get();
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
-      auto d_nCells = device_nCells_;
       Kokkos::parallel_for(
           "kernel_fishboneCleaner",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
-            if (i < d_nCells()) {
-              kernel_fishboneCleaner(theCells.data(), quality_d, i);
+            if (i < *d_nCells) {
+              kernel_fishboneCleaner(theCells, quality_d, i);
             }
           });
     }
 
     // remove duplicates (tracks that share a doublet)
     {
-      auto nCells = device_nCells_;
       Kokkos::parallel_for(
           "kernel_fastDuplicateRemover",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, m_params.maxNumberOfDoublets_),
           KOKKOS_LAMBDA(const size_t i) {
-            if (i < nCells()) {
-              kernel_fastDuplicateRemover(theCells.data(), tuples_d, tracks_d.data(), i);
+            if (i < *d_nCells) {
+              kernel_fastDuplicateRemover(theCells, tuples_d, tksoa_d, i);
             }
           });
     }
 
-    auto hitToTuple = device_hitToTuple_;
+    auto *hitToTuple = device_hitToTuple_.get();
     if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
       // fill hit->track "map"
       Kokkos::parallel_for(
@@ -383,16 +379,16 @@ namespace KOKKOS_NAMESPACE {
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
-              kernel_countHitInTracks(tuples_d, quality_d, hitToTuple.data(), i);
+              kernel_countHitInTracks(tuples_d, quality_d, hitToTuple, i);
             }
           });
-      cms::kokkos::launchFinalize(device_hitToTuple_, execSpace);
+      cms::kokkos::launchFinalize(cms::kokkos::to_view(device_hitToTuple_), execSpace);
       Kokkos::parallel_for(
           "kernel_fillHitInTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
           KOKKOS_LAMBDA(const size_t i) {
             if (i < tuples_d->nbins()) {
-              kernel_fillHitInTracks(tuples_d, quality_d, hitToTuple.data(), i);
+              kernel_fillHitInTracks(tuples_d, quality_d, hitToTuple, i);
             }
           });
     }
@@ -404,8 +400,8 @@ namespace KOKKOS_NAMESPACE {
           "kernel_tripletCleaner",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()),
           KOKKOS_LAMBDA(const size_t i) {
-            if (i < hitToTuple().nbins()) {
-              kernel_tripletCleaner(hh_view, tuples_d, tracks_d.data(), quality_d, hitToTuple.data(), i);
+            if (i < hitToTuple->nbins()) {
+              kernel_tripletCleaner(hh_view, tuples_d, tksoa_d, quality_d, hitToTuple, i);
             }
           });
     }
@@ -417,8 +413,8 @@ namespace KOKKOS_NAMESPACE {
           "kernel_doStatsForHitInTracks",
           Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, HitToTuple::capacity()),
           KOKKOS_LAMBDA(const size_t i) {
-            if (i < hitToTuple().nbins()) {
-              kernel_doStatsForHitInTracks(hitToTuple.data(), d_counters, i);
+            if (i < hitToTuple->nbins()) {
+              kernel_doStatsForHitInTracks(hitToTuple, d_counters, i);
             }
           });
       Kokkos::parallel_for(
@@ -444,14 +440,14 @@ namespace KOKKOS_NAMESPACE {
         Kokkos::RangePolicy<KokkosExecSpace>(execSpace, 0, CAConstants::maxNumberOfQuadruplets()),
         KOKKOS_LAMBDA(const size_t i) {
           if (i < std::min(maxPrint, tuples_d->nbins() =)) {
-            kernel_print_found_ntuplets(hh_view, tuples_d, tracks_d, quality_d, hitToTuple.data(), 100, iev, i);
+            kernel_print_found_ntuplets(hh_view, tuples_d, tracks_d, quality_d, hitToTuple, 100, iev, i);
           }
         });
 #endif
   }
 
   void CAHitNtupletGeneratorKernels::printCounters(
-      const Kokkos::View<Counters const, KokkosDeviceMemSpace, Restrict> &counters) {
+      const cms::kokkos::shared_ptr<Counters, KokkosDeviceMemSpace> &counters) {
 #ifdef TODO
     kernel_printCounters<<<1, 1>>>(counters);
 #endif
@@ -462,31 +458,24 @@ namespace KOKKOS_NAMESPACE {
     // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
     //////////////////////////////////////////////////////////
 
-    device_theCellNeighbors_ = Kokkos::View<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_theCellNeighbors_"));
-    device_theCellTracks_ = Kokkos::View<CAConstants::CellTracksVector, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_theCellTracks_"));
+    device_theCellNeighbors_ = cms::kokkos::make_shared<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace>();
+    device_theCellTracks_ = cms::kokkos::make_shared<CAConstants::CellTracksVector, KokkosDeviceMemSpace>();
 
-    device_hitToTuple_ =
-        Kokkos::View<HitToTuple, KokkosDeviceMemSpace>(Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_"));
+    device_hitToTuple_ = cms::kokkos::make_shared<HitToTuple, KokkosDeviceMemSpace>();
 
-    device_tupleMultiplicity_ = Kokkos::View<TupleMultiplicity, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_tupleMultiplicity_"));
+    device_tupleMultiplicity_ = cms::kokkos::make_shared<TupleMultiplicity, KokkosDeviceMemSpace>();
 
-    device_hitTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_hitTuple_apc_"));
-    device_hitToTuple_apc_ = Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_hitToTuple_apc_"));
-    device_nCells_ = Kokkos::View<uint32_t, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_nCells_"));
-    device_tmws_ = Kokkos::View<uint8_t *, KokkosDeviceMemSpace, Restrict>(
-        Kokkos::ViewAllocateWithoutInitializing("device_tmws_"),
+    device_hitTuple_apc_ = cms::kokkos::make_shared<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace>();
+    device_hitToTuple_apc_ = cms::kokkos::make_shared<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace>();
+    device_nCells_ = cms::kokkos::make_shared<uint32_t, KokkosDeviceMemSpace>();
+    device_tmws_ = cms::kokkos::make_shared<uint8_t[], KokkosDeviceMemSpace>(
         std::max(TupleMultiplicity::wsSize(), HitToTuple::wsSize()));
 
-    Kokkos::deep_copy(execSpace, device_nCells_, 0);
+    Kokkos::deep_copy(execSpace, cms::kokkos::to_view(device_nCells_), 0);
 
-    cms::kokkos::launchZero(device_tupleMultiplicity_, execSpace);
-    cms::kokkos::launchZero(device_hitToTuple_, execSpace);  // we may wish to keep it in the edm...
+    cms::kokkos::launchZero(cms::kokkos::to_view(device_tupleMultiplicity_), execSpace);
+    cms::kokkos::launchZero(cms::kokkos::to_view(device_hitToTuple_),
+                            execSpace);  // we may wish to keep it in the edm...
   }
 
 }  // namespace KOKKOS_NAMESPACE

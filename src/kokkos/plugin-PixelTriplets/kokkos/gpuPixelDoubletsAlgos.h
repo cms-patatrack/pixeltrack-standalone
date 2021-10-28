@@ -27,14 +27,14 @@ namespace KOKKOS_NAMESPACE {
     KOKKOS_FORCEINLINE_FUNCTION void doubletsFromHisto(
         uint8_t const* __restrict__ layerPairs,
         uint32_t nPairs,
-        const Kokkos::View<GPUCACell*, KokkosDeviceMemSpace, Restrict>& cells,
-        const Kokkos::View<uint32_t, KokkosDeviceMemSpace, Restrict>& nCells,
-        const Kokkos::View<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace, Restrict>&
+        const Kokkos::View<GPUCACell*, KokkosDeviceMemSpace, RestrictUnmanaged>& cells,
+        const Kokkos::View<uint32_t, KokkosDeviceMemSpace, RestrictUnmanaged>& nCells,
+        const Kokkos::View<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace, RestrictUnmanaged>&
             cellNeighbors,  // not used at the moment
-        const Kokkos::View<CAConstants::CellTracksVector, KokkosDeviceMemSpace, Restrict>&
+        const Kokkos::View<CAConstants::CellTracksVector, KokkosDeviceMemSpace, RestrictUnmanaged>&
             cellTracks,  // not used at the moment
         TrackingRecHit2DSOAView const& __restrict__ hh,
-        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosDeviceMemSpace, Restrict>& isOuterHitOfCell,
+        const Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosDeviceMemSpace, RestrictUnmanaged>& isOuterHitOfCell,
         int16_t const* __restrict__ phicuts,
         float const* __restrict__ minz,
         float const* __restrict__ maxz,

@@ -8,9 +8,10 @@
 namespace KOKKOS_NAMESPACE {
   namespace gpuVertexFinder {
 
-    KOKKOS_FORCEINLINE_FUNCTION void sortByPt2(const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
-                                               const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
-                                               const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_FORCEINLINE_FUNCTION void sortByPt2(
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, RestrictUnmanaged>& vws,
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       auto& __restrict__ data = *vdata.data();
       auto& __restrict__ ws = *vws.data();
       auto nt = ws.ntrks;
@@ -52,19 +53,22 @@ namespace KOKKOS_NAMESPACE {
       }
     }
 
-    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
-                                                const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
-                                                const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
+    KOKKOS_INLINE_FUNCTION void sortByPt2Kernel(
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, RestrictUnmanaged>& vws,
+        const Kokkos::TeamPolicy<KokkosExecSpace>::member_type& team_member) {
       Kokkos::abort("sortByPt2Kernel: device sort kernel not supported in Kokkos (see sortByPt2Host)");
     }
 
     // equivalent to CUDA sortByPt2Kernel + deep copy to host
     template <typename MemSpace, typename ExecSpace>
-    void sortByPt2Host(const Kokkos::View<ZVertices, MemSpace, Restrict>& vdata,
-                       const Kokkos::View<WorkSpace, MemSpace, Restrict>& vws,
-                       const Kokkos::View<ZVertices, typename cms::kokkos::MemSpaceTraits<MemSpace>::HostSpace>& hdata,
-                       const ExecSpace& execSpace,
-                       const Kokkos::TeamPolicy<ExecSpace>& policy) {
+    void sortByPt2Host(
+        const Kokkos::View<ZVertices, MemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, MemSpace, RestrictUnmanaged>& vws,
+        const Kokkos::View<ZVertices, typename cms::kokkos::MemSpaceTraits<MemSpace>::HostSpace, RestrictUnmanaged>&
+            hdata,
+        const ExecSpace& execSpace,
+        const Kokkos::TeamPolicy<ExecSpace>& policy) {
       using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
 
       Kokkos::parallel_for(

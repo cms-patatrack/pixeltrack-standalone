@@ -14,22 +14,23 @@ namespace gpuClustering {
 
   template <typename MemSpace, typename ExecSpace>
   void clusterChargeCut(
-      const Kokkos::View<uint16_t*, MemSpace>& id,                 // module id of each pixel
-      const Kokkos::View<const uint16_t*, MemSpace>& adc,          // local coordinates of each pixel
-      const Kokkos::View<const uint32_t*, MemSpace>& moduleStart,  // index of the first pixel of each module
-      const Kokkos::View<uint32_t*, MemSpace>& nClustersInModule,  // output: number of clusters found in each module
-      const Kokkos::View<const uint32_t*, MemSpace>& moduleId,     // output: module id of each module
-      const Kokkos::View<int*, MemSpace>& clusterId,               // output: cluster id of each pixel
+      const Kokkos::View<uint16_t*, MemSpace, RestrictUnmanaged>& id,         // module id of each pixel
+      const Kokkos::View<const uint16_t*, MemSpace, RestrictUnmanaged>& adc,  // local coordinates of each pixel
+      const Kokkos::View<const uint32_t*, MemSpace, RestrictUnmanaged>&
+          moduleStart,  // index of the first pixel of each module
+      const Kokkos::View<uint32_t*, MemSpace, RestrictUnmanaged>&
+          nClustersInModule,  // output: number of clusters found in each module
+      const Kokkos::View<const uint32_t*, MemSpace, RestrictUnmanaged>& moduleId,  // output: module id of each module
+      const Kokkos::View<int*, MemSpace, RestrictUnmanaged>& clusterId,            // output: cluster id of each pixel
       int numElements,
       Kokkos::TeamPolicy<ExecSpace>& teamPolicy,
       ExecSpace const& execSpace) {
     using member_type = typename Kokkos::TeamPolicy<ExecSpace>::member_type;
-    using charge_view_type = Kokkos::View<int32_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using charge_view_type = Kokkos::View<int32_t*, typename ExecSpace::scratch_memory_space, RestrictUnmanaged>;
     size_t charge_view_bytes = charge_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
-    using ok_view_type = Kokkos::View<uint8_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using ok_view_type = Kokkos::View<uint8_t*, typename ExecSpace::scratch_memory_space, RestrictUnmanaged>;
     size_t ok_view_bytes = ok_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
-    using newclusid_view_type =
-        Kokkos::View<uint16_t*, typename ExecSpace::scratch_memory_space, Kokkos::MemoryUnmanaged>;
+    using newclusid_view_type = Kokkos::View<uint16_t*, typename ExecSpace::scratch_memory_space, RestrictUnmanaged>;
     size_t newclusid_view_bytes = newclusid_view_type::shmem_size(::gpuClustering::MaxNumClustersPerModules);
 
     auto total_shared_bytes = charge_view_bytes + ok_view_bytes + newclusid_view_bytes;

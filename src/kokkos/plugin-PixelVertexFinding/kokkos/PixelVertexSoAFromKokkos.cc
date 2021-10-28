@@ -1,6 +1,8 @@
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/Product.h"
 #include "KokkosCore/ScopedContext.h"
+#include "KokkosCore/shared_ptr.h"
+#include "KokkosCore/deep_copy.h"
 #include "DataFormats/ZVertexSoA.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
@@ -20,8 +22,8 @@ namespace KOKKOS_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    using VerticesDeviceMemSpace = Kokkos::View<ZVertexSoA, KokkosDeviceMemSpace>;
-    using VerticesHostMemSpace = Kokkos::View<ZVertexSoA, KokkosHostMemSpace>;
+    using VerticesDeviceMemSpace = cms::kokkos::shared_ptr<ZVertexSoA, KokkosDeviceMemSpace>;
+    using VerticesHostMemSpace = cms::kokkos::shared_ptr<ZVertexSoA, KokkosHostMemSpace>;
 
     edm::EDGetTokenT<cms::kokkos::Product<VerticesDeviceMemSpace>> tokenKokkos_;
     edm::EDPutTokenT<VerticesHostMemSpace> tokenSOA_;
@@ -40,8 +42,8 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    m_soa = VerticesHostMemSpace("vertices");
-    Kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
+    m_soa = cms::kokkos::make_shared<ZVertexSoA, KokkosHostMemSpace>();
+    cms::kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
   }
 
   void PixelVertexSoAFromKokkos::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {

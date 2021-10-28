@@ -65,7 +65,7 @@ namespace KOKKOS_NAMESPACE {
                  0.15000000596,     // dcaCutInnerTriplet
                  0.25,              // dcaCutOuterTriplet
                  makeQualityCuts()),
-        m_counters(Kokkos::ViewAllocateWithoutInitializing("m_counters")) {
+        m_counters(cms::kokkos::make_shared<Counters, KokkosDeviceMemSpace>()) {
 #ifdef DUMP_GPU_TK_TUPLES
     printf("TK: %s %s % %s %s %s %s %s %s %s %s %s %s %s %s %s\n",
            "tid",
@@ -85,9 +85,9 @@ namespace KOKKOS_NAMESPACE {
            "h5");
 #endif
 
-    auto tmp = cms::kokkos::create_mirror_view(m_counters);
-    memset(&tmp(), 0, sizeof(Counters));
-    Kokkos::deep_copy(KokkosExecSpace(), m_counters, tmp);
+    auto tmp = cms::kokkos::make_mirror_shared(m_counters);
+    memset(tmp.get(), 0, sizeof(Counters));
+    cms::kokkos::deep_copy(KokkosExecSpace(), m_counters, tmp);
     KokkosExecSpace().fence();
   }
 
@@ -97,14 +97,12 @@ namespace KOKKOS_NAMESPACE {
     }
   }
 
-  Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
-      TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d,
-      float bfield,
-      KokkosExecSpace const& execSpace) const {
-    Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> tracks(Kokkos::ViewAllocateWithoutInitializing("tracks"));
+  cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosDeviceMemSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
+      TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) {
+    auto tracks = cms::kokkos::make_shared<pixelTrack::TrackSoA, KokkosDeviceMemSpace>();
 
     CAHitNtupletGeneratorKernels kernels(m_params);
-    kernels.counters_ = m_counters.data();
+    kernels.counters_ = m_counters.get();
 
     kernels.allocateOnGPU(execSpace);
 
@@ -113,7 +111,7 @@ namespace KOKKOS_NAMESPACE {
     kernels.fillHitDetIndices(hits_d.view(), tracks, execSpace);  // in principle needed only if Hits not "available"
 
     HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
-    fitter.allocateOnGPU(&(tracks().hitIndices), kernels.tupleMultiplicity().data(), tracks.data());
+    fitter.allocateOnGPU(&(tracks->hitIndices), kernels.tupleMultiplicity().get(), tracks.get());
     if (m_params.useRiemannFit_) {
       fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), execSpace);
     } else {

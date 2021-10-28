@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "KokkosCore/HistoContainer.h"
+#include "KokkosCore/memoryTraits.h"
 
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
@@ -25,9 +26,9 @@ using TeamView = Kokkos::View<Multiplicity::CountersOnly, KokkosExecSpace::scrat
 
 //using TK = Kokkos::View<uint16_t**,KokkosExecSpace>; std::array<uint16_t, 4>;
 
-template <typename ExecSpace>
-void countMultiLocal(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
-                     Kokkos::View<Multiplicity, ExecSpace, Restrict> const& assoc,
+template <typename MemSpace, typename ExecSpace>
+void countMultiLocal(Kokkos::View<uint16_t**, MemSpace, RestrictUnmanaged> const& tk,
+                     Kokkos::View<Multiplicity, MemSpace, RestrictUnmanaged> const& assoc,
                      const int32_t& n,
                      ExecSpace const& execSpace) {
   auto nThreads = 256;
@@ -57,17 +58,19 @@ void countMultiLocal(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
       });
 }
 
-template <typename T, typename ExecSpace>
-void countMulti(Kokkos::View<T, ExecSpace, Restrict> const& assoc, const uint32_t& n, ExecSpace const& execSpace) {
+template <typename T, typename MemSpace, typename ExecSpace>
+void countMulti(Kokkos::View<T, MemSpace, RestrictUnmanaged> const& assoc,
+                const uint32_t& n,
+                ExecSpace const& execSpace) {
   Kokkos::parallel_for(
       "countMulti", Kokkos::RangePolicy<ExecSpace>(execSpace, 0, n), KOKKOS_LAMBDA(const int& i) {
         assoc().countDirect(2 + i % 4);
       });
 }
 
-template <typename ExecSpace>
-void verifyMulti(Kokkos::View<Multiplicity, ExecSpace, Restrict> const& m1,
-                 Kokkos::View<Multiplicity, ExecSpace, Restrict> const& m2,
+template <typename MemSpace, typename ExecSpace>
+void verifyMulti(Kokkos::View<Multiplicity, MemSpace> const& m1,
+                 Kokkos::View<Multiplicity, MemSpace> const& m2,
                  ExecSpace const& execSpace) {
   Kokkos::parallel_for(
       "verifyMulti",
@@ -75,9 +78,9 @@ void verifyMulti(Kokkos::View<Multiplicity, ExecSpace, Restrict> const& m1,
       KOKKOS_LAMBDA(const int& i) { assert(m1().off[i] == m2().off[i]); });
 }
 
-template <typename ExecSpace>
-void count(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
-           Kokkos::View<Assoc, ExecSpace, Restrict> const& assoc,
+template <typename MemSpace, typename ExecSpace>
+void count(Kokkos::View<uint16_t**, MemSpace> const& tk,
+           Kokkos::View<Assoc, MemSpace> const& assoc,
            const uint32_t& n,
            ExecSpace const& execSpace) {
   Kokkos::parallel_for(
@@ -94,9 +97,9 @@ void count(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
       });
 }
 
-template <typename ExecSpace>
-void fill(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
-          Kokkos::View<Assoc, ExecSpace, Restrict>& assoc,
+template <typename MemSpace, typename ExecSpace>
+void fill(Kokkos::View<uint16_t**, MemSpace> const& tk,
+          Kokkos::View<Assoc, MemSpace>& assoc,
           const uint32_t& n,
           ExecSpace const& execSpace) {
   Kokkos::parallel_for(
@@ -111,15 +114,15 @@ void fill(Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
       });
 }
 
-template <typename ArrayLayout, typename ExecSpace>
-void verify(Kokkos::View<Assoc, ArrayLayout, ExecSpace> const& assoc) {
+template <typename ArrayLayout, typename MemSpace>
+void verify(Kokkos::View<Assoc, ArrayLayout, MemSpace> const& assoc) {
   assert(assoc().size() < Assoc::capacity());
 }
 
-template <typename Assoc, typename ExecSpace>
-void fillBulk(Kokkos::View<cms::kokkos::AtomicPairCounter, ExecSpace, Restrict> const& apc,
-              Kokkos::View<uint16_t**, ExecSpace, Restrict> const& tk,
-              Kokkos::View<Assoc, ExecSpace, Restrict> const& assoc,
+template <typename Assoc, typename MemSpace, typename ExecSpace>
+void fillBulk(Kokkos::View<cms::kokkos::AtomicPairCounter, MemSpace, RestrictUnmanaged> const& apc,
+              Kokkos::View<uint16_t**, MemSpace, RestrictUnmanaged> const& tk,
+              Kokkos::View<Assoc, MemSpace, RestrictUnmanaged> const& assoc,
               const uint32_t& n,
               ExecSpace const& execSpace) {
   Kokkos::parallel_for(
@@ -131,9 +134,9 @@ void fillBulk(Kokkos::View<cms::kokkos::AtomicPairCounter, ExecSpace, Restrict> 
       });
 }
 
-template <typename HistoType, typename ArrayLayout, typename ExecSpace>
-void verifyBulk(Kokkos::View<HistoType, ArrayLayout, ExecSpace> const& assoc,
-                Kokkos::View<cms::kokkos::AtomicPairCounter, ArrayLayout, ExecSpace> const& apc) {
+template <typename HistoType, typename ArrayLayout, typename MemSpace>
+void verifyBulk(Kokkos::View<HistoType, ArrayLayout, MemSpace> const& assoc,
+                Kokkos::View<cms::kokkos::AtomicPairCounter, ArrayLayout, MemSpace> const& apc) {
   if (apc().get().m >= HistoType::nbins())
     printf("Overflow %d %d\n", apc().get().m, HistoType::nbins());
   if (assoc().size() >= HistoType::capacity())
@@ -155,7 +158,7 @@ int main() {
   std::default_random_engine generator(1234);
   std::geometric_distribution<int> rdm(0.8);
   constexpr uint32_t rdm_N = 16000;
-  Kokkos::View<int*, KokkosExecSpace, Restrict> rdm_d("rdm_d", rdm_N);
+  Kokkos::View<int*, KokkosDeviceMemSpace> rdm_d("rdm_d", rdm_N);
   auto rdm_h = Kokkos::create_mirror_view(rdm_d);
   for (uint32_t i = 0; i < rdm_N; ++i) {
     rdm_h(i) = rdm(eng);
@@ -165,24 +168,24 @@ int main() {
 
   constexpr uint32_t N = 4000;
 
-  Kokkos::View<uint16_t**, KokkosExecSpace, Restrict> v_d("v_d", N, 4);
+  Kokkos::View<uint16_t**, KokkosDeviceMemSpace> v_d("v_d", N, 4);
   auto v_h = Kokkos::create_mirror_view(v_d);
-  Kokkos::View<Assoc, KokkosExecSpace, Restrict> a_d("a_d");
+  Kokkos::View<Assoc, KokkosDeviceMemSpace> a_d("a_d");
   auto a_h = Kokkos::create_mirror_view(a_d);
-  Kokkos::View<SmallAssoc, KokkosExecSpace, Restrict> sa_d("sa_d");
+  Kokkos::View<SmallAssoc, KokkosDeviceMemSpace> sa_d("sa_d");
   auto sa_h = Kokkos::create_mirror_view(sa_d);
-  Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosExecSpace, Restrict> dc_d("dc_d");
+  Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace> dc_d("dc_d");
   auto dc_h = Kokkos::create_mirror_view(dc_d);
 
-  Kokkos::View<long long, KokkosExecSpace, Restrict> ave_d("ave_d");
+  Kokkos::View<long long, KokkosDeviceMemSpace> ave_d("ave_d");
   auto ave_h = Kokkos::create_mirror_view(ave_d);
-  Kokkos::View<int, KokkosExecSpace, Restrict> imax_d("imax_d");
+  Kokkos::View<int, KokkosDeviceMemSpace> imax_d("imax_d");
   auto imax_h = Kokkos::create_mirror_view(imax_d);
-  Kokkos::View<uint32_t, KokkosExecSpace, Restrict> n_d("n_d");
+  Kokkos::View<uint32_t, KokkosDeviceMemSpace> n_d("n_d");
   auto n_h = Kokkos::create_mirror_view(n_d);
-  Kokkos::View<uint32_t, KokkosExecSpace, Restrict> z_d("z_d");
+  Kokkos::View<uint32_t, KokkosDeviceMemSpace> z_d("z_d");
   auto z_h = Kokkos::create_mirror_view(z_d);
-  Kokkos::View<uint32_t, KokkosExecSpace, Restrict> nz_d("nz_d");
+  Kokkos::View<uint32_t, KokkosDeviceMemSpace> nz_d("nz_d");
   auto nz_h = Kokkos::create_mirror_view(nz_d);
   // fill with "index" to element
   Kokkos::parallel_for(
@@ -239,14 +242,14 @@ int main() {
             << std::endl;
   // Kokkos::deep_copy(v_d,v_h);
 
-  cms::kokkos::launchZero(a_d, KokkosExecSpace());
+  cms::kokkos::launchZero(cms::kokkos::make_restrictUnmanaged(a_d), KokkosExecSpace());
 
   // auto nThreads = 256;
   // auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
   count(v_d, a_d, N, KokkosExecSpace());
 
-  cms::kokkos::launchFinalize(a_d, KokkosExecSpace());
+  cms::kokkos::launchFinalize(cms::kokkos::make_restrictUnmanaged(a_d), KokkosExecSpace());
 
   Kokkos::deep_copy(KokkosExecSpace(), a_h, a_d);
 
@@ -276,9 +279,14 @@ int main() {
   // now the inverse map (actually this is the direct....)
   dc_h().zero();
   Kokkos::deep_copy(KokkosExecSpace(), dc_d, dc_h);
-  fillBulk(dc_d, v_d, a_d, N, KokkosExecSpace());
+  fillBulk(cms::kokkos::make_restrictUnmanaged(dc_d),
+           cms::kokkos::make_restrictUnmanaged(v_d),
+           cms::kokkos::make_restrictUnmanaged(a_d),
+           N,
+           KokkosExecSpace());
 
-  cms::kokkos::finalizeBulk(dc_d, a_d, KokkosExecSpace());
+  cms::kokkos::finalizeBulk(
+      cms::kokkos::make_restrictUnmanaged(dc_d), cms::kokkos::make_restrictUnmanaged(a_d), KokkosExecSpace());
 
   Kokkos::deep_copy(KokkosExecSpace(), a_h, a_d);
   Kokkos::deep_copy(KokkosExecSpace(), dc_h, dc_d);
@@ -288,9 +296,14 @@ int main() {
   dc_h().zero();
   Kokkos::deep_copy(KokkosExecSpace(), dc_d, dc_h);
 
-  fillBulk(dc_d, v_d, sa_d, N, KokkosExecSpace());
+  fillBulk(cms::kokkos::make_restrictUnmanaged(dc_d),
+           cms::kokkos::make_restrictUnmanaged(v_d),
+           cms::kokkos::make_restrictUnmanaged(sa_d),
+           N,
+           KokkosExecSpace());
 
-  cms::kokkos::finalizeBulk(dc_d, sa_d, KokkosExecSpace());
+  cms::kokkos::finalizeBulk(
+      cms::kokkos::make_restrictUnmanaged(dc_d), cms::kokkos::make_restrictUnmanaged(sa_d), KokkosExecSpace());
 
   Kokkos::deep_copy(KokkosExecSpace(), sa_h, sa_d);
   Kokkos::deep_copy(KokkosExecSpace(), dc_h, dc_d);
@@ -314,21 +327,22 @@ int main() {
   std::cout << "found with ave occupancy " << double(ave_h()) / N << ' ' << imax_h() << std::endl;
 
   // here verify use of block local counters
-  Kokkos::View<Multiplicity, KokkosExecSpace, Restrict> m1_d("m1_d");
-  Kokkos::View<Multiplicity, KokkosExecSpace, Restrict> m2_d("m2_d");
+  Kokkos::View<Multiplicity, KokkosDeviceMemSpace> m1_d("m1_d");
+  Kokkos::View<Multiplicity, KokkosDeviceMemSpace> m2_d("m2_d");
 
-  cms::kokkos::launchZero(m1_d, KokkosExecSpace());
-  cms::kokkos::launchZero(m2_d, KokkosExecSpace());
+  cms::kokkos::launchZero(cms::kokkos::make_restrictUnmanaged(m1_d), KokkosExecSpace());
+  cms::kokkos::launchZero(cms::kokkos::make_restrictUnmanaged(m2_d), KokkosExecSpace());
 
   // nBlocks = (4 * N + nThreads - 1) / nThreads;
-  countMulti(m1_d, N, KokkosExecSpace());
+  countMulti(cms::kokkos::make_restrictUnmanaged(m1_d), N, KokkosExecSpace());
 
-  countMultiLocal(v_d, m2_d, N, KokkosExecSpace());
+  countMultiLocal(
+      cms::kokkos::make_restrictUnmanaged(v_d), cms::kokkos::make_restrictUnmanaged(m2_d), N, KokkosExecSpace());
 
   verifyMulti(m1_d, m2_d, KokkosExecSpace());
 
-  cms::kokkos::launchFinalize(m1_d, KokkosExecSpace());
-  cms::kokkos::launchFinalize(m2_d, KokkosExecSpace());
+  cms::kokkos::launchFinalize(cms::kokkos::make_restrictUnmanaged(m1_d), KokkosExecSpace());
+  cms::kokkos::launchFinalize(cms::kokkos::make_restrictUnmanaged(m2_d), KokkosExecSpace());
   verifyMulti(m1_d, m2_d, KokkosExecSpace());
 
   return 0;
