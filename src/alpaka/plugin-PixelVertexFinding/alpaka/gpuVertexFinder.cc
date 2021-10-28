@@ -107,21 +107,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // std::cout << "producing Vertices on GPU" << std::endl;
       ALPAKA_ASSERT_OFFLOAD(tksoa);
 
-      ZVertexAlpaka vertices{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<ZVertexSoA>(1u)};
+      ZVertexAlpaka vertices{cms::alpakatools::allocDeviceBuf<ZVertexSoA>(alpaka::getDev(queue), 1u)};
       auto* soa = alpaka::getPtrNative(vertices);
       ALPAKA_ASSERT_OFFLOAD(soa);
 
-      auto ws_dBuf{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<WorkSpace>(1u)};
+      auto ws_dBuf{cms::alpakatools::allocDeviceBuf<WorkSpace>(alpaka::getDev(queue), 1u)};
       auto ws_d = alpaka::getPtrNative(ws_dBuf);
 
-      auto nvFinalVerticesView =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(&soa->nvFinal, 1u);
+      auto nvFinalVerticesView = cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &soa->nvFinal, 1u);
       alpaka::memset(queue, nvFinalVerticesView, 0, 1u);
-      auto ntrksWorkspaceView =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(&ws_d->ntrks, 1u);
+      auto ntrksWorkspaceView = cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &ws_d->ntrks, 1u);
       alpaka::memset(queue, ntrksWorkspaceView, 0, 1u);
       auto nvIntermediateWorkspaceView =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(&ws_d->nvIntermediate, 1u);
+          cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &ws_d->nvIntermediate, 1u);
       alpaka::memset(queue, nvIntermediateWorkspaceView, 0, 1u);
 
       const uint32_t blockSize = 128;

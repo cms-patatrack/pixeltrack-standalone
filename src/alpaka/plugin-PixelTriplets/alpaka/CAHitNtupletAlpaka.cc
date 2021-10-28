@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto const& hits = iEvent.get(tokenHitGPU_);
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
   }
 

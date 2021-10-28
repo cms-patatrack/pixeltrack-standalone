@@ -4,16 +4,13 @@
 #include <algorithm>
 
 #include "AlpakaCore/alpakaCommon.h"
-
+#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
+#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
-
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "DataFormats/PixelErrors.h"
-#include "AlpakaDataFormats/gpuClusteringConstants.h"
 
 struct SiPixelFedCablingMapGPU;
 class SiPixelGainForHLTonGPU;
@@ -169,10 +166,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         AlpakaHostBuf<unsigned char> fedId_;
       };
 
-      SiPixelRawToClusterGPUKernel()
-          : nModules_Clusters_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(2u)},
-            digis_d{SiPixelDigisAlpaka(0u)},
-            clusters_d{SiPixelClustersAlpaka(0u)} {};
+      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{::cms::alpakatools::allocHostBuf<uint32_t>(2u)} {}
 
       ~SiPixelRawToClusterGPUKernel() = default;
 
@@ -196,9 +190,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       std::pair<SiPixelDigisAlpaka, SiPixelClustersAlpaka> getResults() {
         auto pnModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-        digis_d.setNModulesDigis(pnModules_Clusters_h[0], nDigis);
-        clusters_d.setNClusters(pnModules_Clusters_h[1]);
-        return std::make_pair(std::move(digis_d), std::move(clusters_d));
+        digis_d->setNModulesDigis(pnModules_Clusters_h[0], nDigis);
+        clusters_d->setNClusters(pnModules_Clusters_h[1]);
+        return std::make_pair(std::move(*digis_d), std::move(*clusters_d));
       }
 
       SiPixelDigiErrorsAlpaka&& getErrors() { return std::move(*digiErrors_d); }
@@ -208,8 +202,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // Data to be put in the event
       AlpakaHostBuf<uint32_t> nModules_Clusters_h;
-      SiPixelDigisAlpaka digis_d;
-      SiPixelClustersAlpaka clusters_d;
+      std::optional<SiPixelDigisAlpaka> digis_d;
+      std::optional<SiPixelClustersAlpaka> clusters_d;
       std::optional<SiPixelDigiErrorsAlpaka> digiErrors_d;
     };
 

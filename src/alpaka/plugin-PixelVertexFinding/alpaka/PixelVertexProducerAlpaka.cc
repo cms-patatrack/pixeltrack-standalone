@@ -51,7 +51,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& tracksBuf = iEvent.get(tokenTrack_);
     auto const tracks = alpaka::getPtrNative(tracksBuf);
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     ctx.emplace(iEvent, tokenVertex_, m_gpuAlgo.makeAsync(tracks, m_ptMin, ctx.stream()));
   }
 

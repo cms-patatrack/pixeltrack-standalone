@@ -26,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     auto const& bsRaw = iSetup.get<BeamSpotPOD>();
 
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     BeamSpotAlpaka bsDevice(&bsRaw, ctx.stream());
     ctx.emplace(iEvent, bsPutToken_, std::move(bsDevice));
   }

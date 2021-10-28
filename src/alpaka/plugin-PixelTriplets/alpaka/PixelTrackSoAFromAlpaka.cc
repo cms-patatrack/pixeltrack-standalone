@@ -75,8 +75,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     auto const& inputData = iEvent.get(tokenAlpaka_);
-    auto outputData = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<pixelTrack::TrackSoA>(1u);
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ScopedContextProduce ctx{iEvent.streamID()};
+    auto outputData = ::cms::alpakatools::allocHostBuf<pixelTrack::TrackSoA>(1u);
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     alpaka::memcpy(ctx.stream(), outputData, inputData, 1u);
 
     // DO NOT  make a copy  (actually TWO....)

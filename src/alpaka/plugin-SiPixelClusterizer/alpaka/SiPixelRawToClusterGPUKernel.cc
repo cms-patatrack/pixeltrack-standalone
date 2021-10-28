@@ -32,8 +32,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 
     SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
-          fedId_{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<unsigned char>(MAX_FED_WORDS)} {}
+        : word_{::cms::alpakatools::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
+          fedId_{::cms::alpakatools::allocHostBuf<unsigned char>(MAX_FED_WORDS)} {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,
@@ -563,11 +563,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-      digis_d = SiPixelDigisAlpaka(pixelgpudetails::MAX_FED_WORDS);
+      digis_d = SiPixelDigisAlpaka(alpaka::getDev(queue), pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d = SiPixelDigiErrorsAlpaka(pixelgpudetails::MAX_FED_WORDS, std::move(errors), queue);
+        digiErrors_d =
+            SiPixelDigiErrorsAlpaka(alpaka::getDev(queue), pixelgpudetails::MAX_FED_WORDS, std::move(errors), queue);
       }
-      clusters_d = SiPixelClustersAlpaka(gpuClustering::MaxNumModules);
+      clusters_d = SiPixelClustersAlpaka(alpaka::getDev(queue), gpuClustering::MaxNumModules);
 
       if (wordCounter)  // protect in case of empty event....
       {
@@ -584,11 +585,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
-        auto word_d = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint32_t>(wordCounter);
+        auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.
         // However, only the first half of elements end up eventually used:
         // hence, here, only wordCounter/2 elements are allocated.
-        auto fedId_d = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<uint8_t>(wordCounter / 2);
+        auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(alpaka::getDev(queue), wordCounter / 2);
 
         alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
         alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter / 2);
@@ -602,12 +603,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         wordCounter,
                                                         alpaka::getPtrNative(word_d),
                                                         alpaka::getPtrNative(fedId_d),
-                                                        digis_d.xx(),
-                                                        digis_d.yy(),
-                                                        digis_d.adc(),
-                                                        digis_d.pdigi(),
-                                                        digis_d.rawIdArr(),
-                                                        digis_d.moduleInd(),
+                                                        digis_d->xx(),
+                                                        digis_d->yy(),
+                                                        digis_d->adc(),
+                                                        digis_d->pdigi(),
+                                                        digis_d->rawIdArr(),
+                                                        digis_d->moduleInd(),
                                                         digiErrors_d->error(),
                                                         useQualityInfo,
                                                         includeErrors,
@@ -645,31 +646,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                         alpaka::createTaskKernel<Acc1D>(workDiv,
                                                         gpuCalibPixel::calibDigis(),
                                                         isRun2,
-                                                        digis_d.moduleInd(),
-                                                        digis_d.c_xx(),
-                                                        digis_d.c_yy(),
-                                                        digis_d.adc(),
+                                                        digis_d->moduleInd(),
+                                                        digis_d->c_xx(),
+                                                        digis_d->c_yy(),
+                                                        digis_d->adc(),
                                                         //gains,
                                                         gains->getVpedestals(),
                                                         gains->getRangeAndCols(),
                                                         gains->getFields(),
                                                         wordCounter,
-                                                        clusters_d.moduleStart(),
-                                                        clusters_d.clusInModule(),
-                                                        clusters_d.clusModuleStart()));
+                                                        clusters_d->moduleStart(),
+                                                        clusters_d->clusInModule(),
+                                                        clusters_d->clusModuleStart()));
 #ifdef GPU_DEBUG
         alpaka::wait(queue);
         std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of "
                   << threadsPerBlockOrElementsPerThread << " threadsPerBlockOrElementsPerThread\n";
 #endif
 
-        alpaka::enqueue(
-            queue,
-            alpaka::createTaskKernel<Acc1D>(
-                workDiv, countModules(), digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter));
+        alpaka::enqueue(queue,
+                        alpaka::createTaskKernel<Acc1D>(workDiv,
+                                                        countModules(),
+                                                        digis_d->c_moduleInd(),
+                                                        clusters_d->moduleStart(),
+                                                        digis_d->clus(),
+                                                        wordCounter));
 
         auto moduleStartFirstElement =
-            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(clusters_d.moduleStart(), 1u);
+            cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
 
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
@@ -687,13 +691,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
                                                         findClus(),
-                                                        digis_d.c_moduleInd(),
-                                                        digis_d.c_xx(),
-                                                        digis_d.c_yy(),
-                                                        clusters_d.c_moduleStart(),
-                                                        clusters_d.clusInModule(),
-                                                        clusters_d.moduleId(),
-                                                        digis_d.clus(),
+                                                        digis_d->c_moduleInd(),
+                                                        digis_d->c_xx(),
+                                                        digis_d->c_yy(),
+                                                        clusters_d->c_moduleStart(),
+                                                        clusters_d->clusInModule(),
+                                                        clusters_d->moduleId(),
+                                                        digis_d->clus(),
                                                         wordCounter));
 
 #ifdef GPU_DEBUG
@@ -704,12 +708,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
                                                         clusterChargeCut(),
-                                                        digis_d.moduleInd(),
-                                                        digis_d.c_adc(),
-                                                        clusters_d.c_moduleStart(),
-                                                        clusters_d.clusInModule(),
-                                                        clusters_d.c_moduleId(),
-                                                        digis_d.clus(),
+                                                        digis_d->moduleInd(),
+                                                        digis_d->c_adc(),
+                                                        clusters_d->c_moduleStart(),
+                                                        clusters_d->clusInModule(),
+                                                        clusters_d->c_moduleId(),
+                                                        digis_d->clus(),
                                                         wordCounter));
 
         // count the module start indices already here (instead of
@@ -724,16 +728,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivOneBlock,
                                                         ::pixelgpudetails::fillHitsModuleStart(),
-                                                        clusters_d.c_clusInModule(),
-                                                        clusters_d.clusModuleStart()));
+                                                        clusters_d->c_clusInModule(),
+                                                        clusters_d->clusModuleStart()));
 
         // last element holds the number of all clusters
-        auto clusModuleStartView = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(
-            clusters_d.clusModuleStart(), gpuClustering::MaxNumModules + 1);
+        auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(
+            alpaka::getDev(queue), clusters_d->clusModuleStart(), gpuClustering::MaxNumModules + 1);
         const auto clusModuleStartLastElement =
             AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
         // slice on host
-        auto nModules_Clusters_1_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(1u)};
+        auto nModules_Clusters_1_h{::cms::alpakatools::allocHostBuf<uint32_t>(1u)};
         auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
 
         alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartLastElement, 1u);

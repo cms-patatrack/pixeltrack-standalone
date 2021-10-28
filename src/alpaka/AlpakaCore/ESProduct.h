@@ -8,8 +8,6 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
-#include "AlpakaCore/currentDevice.h"
-#include "AlpakaCore/deviceCount.h"
 #include "AlpakaCore/eventWorkHasCompleted.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
@@ -17,12 +15,12 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
   template <typename T>
   class ESProduct {
   public:
+    using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
     using Event = ::ALPAKA_ACCELERATOR_NAMESPACE::Event;
 
-    template <typename T_Acc>
-    ESProduct(T_Acc acc) : gpuDataPerDevice_(::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::deviceCount()) {
+    ESProduct() : gpuDataPerDevice_(::ALPAKA_ACCELERATOR_NAMESPACE::devices.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(acc);
+        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
       }
     }
 
@@ -32,8 +30,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // which enqueues asynchronous transfers (possibly kernels as well)
     // to the CUDA stream
     template <typename F>
-    const T& dataForCurrentDeviceAsync(::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue, F transferAsync) const {
-      auto device = currentDevice();
+    const T& dataForDeviceAsync(Queue queue, F transferAsync) const {
+      auto device = cms::alpakatools::getDevIndex(alpaka::getDev(queue));
       auto& data = gpuDataPerDevice_[device];
 
       // If GPU data has already been filled, we can return it
