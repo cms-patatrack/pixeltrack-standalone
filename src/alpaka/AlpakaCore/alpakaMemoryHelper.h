@@ -4,37 +4,36 @@
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaDevices.h"
 
-using namespace alpaka_common;
+namespace cms::alpakatools {
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+  // for Extent, Dim1D, Idx
+  using namespace alpaka_common;
 
   template <typename TData>
-  auto allocHostBuf(const Extent& extent) {
+  auto allocHostBuf(Extent extent) {
     return alpaka::allocBuf<TData, Idx>(host, extent);
   }
 
   template <typename TData>
-  auto createHostView(TData* data, const Extent& extent) {
+  auto createHostView(TData* data, Extent extent) {
     return alpaka::ViewPlainPtr<DevHost, TData, Dim1D, Idx>(data, host, extent);
   }
 
-  template <typename TData>
-  auto allocDeviceBuf(const Extent& extent) {
-    return alpaka::allocBuf<TData, Idx>(::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
+  template <typename TData, typename TDevice>
+  auto allocDeviceBuf(TDevice const& device, Extent extent) {
+    return alpaka::allocBuf<TData, Idx>(device, extent);
   }
 
-  template <typename TData>
-  auto createDeviceView(const TData* data, const Extent& extent) {
-    return alpaka::ViewPlainPtr<::ALPAKA_ACCELERATOR_NAMESPACE::Device, const TData, Dim1D, Idx>(
-        data, ::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
+  template <typename TData, typename TDevice>
+  auto createDeviceView(TDevice const& device, TData const* data, Extent extent) {
+    return alpaka::ViewPlainPtr<TDevice, const TData, Dim1D, Idx>(data, device, extent);
   }
 
-  template <typename TData>
-  auto createDeviceView(TData* data, const Extent& extent) {
-    return alpaka::ViewPlainPtr<::ALPAKA_ACCELERATOR_NAMESPACE::Device, TData, Dim1D, Idx>(
-        data, ::ALPAKA_ACCELERATOR_NAMESPACE::devices[0], extent);
+  template <typename TData, typename TDevice>
+  auto createDeviceView(TDevice const& device, TData* data, Extent extent) {
+    return alpaka::ViewPlainPtr<TDevice, TData, Dim1D, Idx>(data, device, extent);
   }
 
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace cms::alpakatools
 
 #endif  // AlpakaCore_alpakaMemoryHelper_h

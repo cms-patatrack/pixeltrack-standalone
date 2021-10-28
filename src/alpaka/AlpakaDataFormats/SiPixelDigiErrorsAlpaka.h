@@ -11,12 +11,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class SiPixelDigiErrorsAlpaka {
   public:
     SiPixelDigiErrorsAlpaka() = default;
-    explicit SiPixelDigiErrorsAlpaka(size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
-        : data_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<PixelErrorCompact>(maxFedWords)},
-          error_d{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocDeviceBuf<
-              ::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
-          error_h{::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<
-              ::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
+    explicit SiPixelDigiErrorsAlpaka(Device const& device, size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
+        : data_d{cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
+          error_d{cms::alpakatools::allocDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(device, 1u)},
+          error_h{::cms::alpakatools::allocHostBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
           formatterErrors_h{std::move(errors)} {
       auto perror_h = alpaka::getPtrNative(error_h);
       perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));

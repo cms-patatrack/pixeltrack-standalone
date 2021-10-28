@@ -120,14 +120,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const nHits = hits.nHits();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    // TODO FIXME use the correct device
     Queue queue(devices[0]);
     auto const h_adcBuf = digis.adcToHostAsync(queue);
     auto const h_adc = alpaka::getPtrNative(h_adcBuf);
 
-    auto const d_clusInModuleView = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::createDeviceView<uint32_t>(
-        clusters.clusInModule(), gpuClustering::MaxNumModules);
-    auto h_clusInModuleBuf{
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::allocHostBuf<uint32_t>(gpuClustering::MaxNumModules)};
+    auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(
+        alpaka::getDev(queue), clusters.clusInModule(), gpuClustering::MaxNumModules);
+    auto h_clusInModuleBuf{::cms::alpakatools::allocHostBuf<uint32_t>(gpuClustering::MaxNumModules)};
     alpaka::memcpy(queue, h_clusInModuleBuf, d_clusInModuleView, gpuClustering::MaxNumModules);
     auto h_clusInModule = alpaka::getPtrNative(h_clusInModuleBuf);
 
