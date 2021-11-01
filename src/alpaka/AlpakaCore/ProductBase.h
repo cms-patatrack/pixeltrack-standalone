@@ -64,7 +64,7 @@ namespace cms::alpakatools {
       if (not event_) {
         return false;
       }
-      return eventWorkHasCompleted(*(event_.get()));
+      return alpaka::isComplete(*event_);
     }
 
     Device device() const { return alpaka::getDev(stream()); }

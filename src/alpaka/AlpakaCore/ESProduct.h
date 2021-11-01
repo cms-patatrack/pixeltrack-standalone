@@ -6,9 +6,10 @@
 #include <mutex>
 #include <vector>
 
+#include <alpaka/alpaka.hpp>
+
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
-#include "AlpakaCore/eventWorkHasCompleted.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -49,7 +50,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
           // Someone else is filling
 
           // Check first if the recorded event has occurred
-          if (eventWorkHasCompleted(data.m_event.get())) {
+          if (alpaka::isComplete(data.m_event.get())) {
             // It was, so data is accessible from all CUDA streams on
             // the device. Set the 'filled' for all subsequent calls and
             // return the value
