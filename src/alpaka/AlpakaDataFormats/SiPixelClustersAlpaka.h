@@ -9,10 +9,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelClustersAlpaka() = default;
     explicit SiPixelClustersAlpaka(Device const &device, size_t maxClusters)
-        : moduleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)},
-          clusInModule_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
-          moduleId_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
-          clusModuleStart_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)} {}
+        : moduleStart_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)},
+          clusInModule_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
+          moduleId_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters)},
+          clusModuleStart_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxClusters + 1)} {}
     ~SiPixelClustersAlpaka() = default;
 
     SiPixelClustersAlpaka(const SiPixelClustersAlpaka &) = delete;

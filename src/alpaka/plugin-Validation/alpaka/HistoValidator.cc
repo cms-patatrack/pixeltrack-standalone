@@ -86,7 +86,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                const edm::EventSetup& iSetup,
                                edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
     auto const& pdigis = iEvent.get(digiToken_);
-    cms::cuda::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
+    ::cms::alpakatools::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
     auto const& digis = ctx.get(iEvent, digiToken_);
     auto const& clusters = ctx.get(iEvent, clusterToken_);
     auto const& hits = ctx.get(iEvent, hitToken_);
@@ -96,7 +96,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     h_adc = digis.adcToHostAsync(ctx.stream());
 
     nClusters = clusters.nClusters();
-    h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx.stream());
+    h_clusInModule = ::cms::alpakatools::make_host_unique<uint32_t[]>(nModules, ctx.stream());
     cudaCheck(cudaMemcpyAsync(
         h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaMemcpyDefault, ctx.stream()));
 
@@ -125,7 +125,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const h_adcBuf = digis.adcToHostAsync(queue);
     auto const h_adc = alpaka::getPtrNative(h_adcBuf);
 
-    auto const d_clusInModuleView = cms::alpakatools::createDeviceView<uint32_t>(
+    auto const d_clusInModuleView = ::cms::alpakatools::createDeviceView<uint32_t>(
         alpaka::getDev(queue), clusters.clusInModule(), gpuClustering::MaxNumModules);
     auto h_clusInModuleBuf{::cms::alpakatools::allocHostBuf<uint32_t>(gpuClustering::MaxNumModules)};
     alpaka::memcpy(queue, h_clusInModuleBuf, d_clusInModuleView, gpuClustering::MaxNumModules);

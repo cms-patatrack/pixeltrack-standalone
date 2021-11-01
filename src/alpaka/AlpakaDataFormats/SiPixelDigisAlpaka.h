@@ -9,13 +9,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelDigisAlpaka() = default;
     explicit SiPixelDigisAlpaka(Device const &device, size_t maxFedWords)
-        : xx_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          yy_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          adc_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          moduleInd_d{cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          clus_d{cms::alpakatools::allocDeviceBuf<int32_t>(device, maxFedWords)},
-          pdigi_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)},
-          rawIdArr_d{cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)} {}
+        : xx_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
+          yy_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
+          adc_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
+          moduleInd_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
+          clus_d{::cms::alpakatools::allocDeviceBuf<int32_t>(device, maxFedWords)},
+          pdigi_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)},
+          rawIdArr_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)} {}
     ~SiPixelDigisAlpaka() = default;
 
     SiPixelDigisAlpaka(const SiPixelDigisAlpaka &) = delete;
@@ -63,9 +63,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
 #ifdef TODO
-    cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
-    cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
-    cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+    ::cms::alpakatools::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
+    ::cms::alpakatools::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
+    ::cms::alpakatools::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
 #endif
 
     class DeviceConstView {

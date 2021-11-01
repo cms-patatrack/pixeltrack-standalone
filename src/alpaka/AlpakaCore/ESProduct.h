@@ -21,7 +21,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     ESProduct() : gpuDataPerDevice_(::ALPAKA_ACCELERATOR_NAMESPACE::devices.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
+        gpuDataPerDevice_[i].m_event =
+            ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
       }
     }
 
@@ -32,7 +33,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // to the CUDA stream
     template <typename F>
     const T& dataForDeviceAsync(Queue queue, F transferAsync) const {
-      auto device = cms::alpakatools::getDevIndex(alpaka::getDev(queue));
+      auto device = ::cms::alpakatools::getDevIndex(alpaka::getDev(queue));
       auto& data = gpuDataPerDevice_[device];
 
       // If GPU data has already been filled, we can return it

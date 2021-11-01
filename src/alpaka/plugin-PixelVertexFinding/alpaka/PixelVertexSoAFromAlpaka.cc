@@ -29,7 +29,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
 #ifdef TODO
-    cms::cuda::host::unique_ptr<ZVertexSoA> m_soa;
+    ::cms::alpakatools::host::unique_ptr<ZVertexSoA> m_soa;
 #endif
   };
 
@@ -47,7 +47,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                          edm::EventSetup const& iSetup,
                                          edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
     auto const& inputDataWrapped = iEvent.get(tokenAlpaka_);
-    cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
+    ::cms::alpakatools::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
     m_soa = inputData.toHostAsync(ctx.stream());
