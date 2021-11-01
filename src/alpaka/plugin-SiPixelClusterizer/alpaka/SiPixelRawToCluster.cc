@@ -1,44 +1,47 @@
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
-#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
-#include "CondFormats/SiPixelFedIds.h"
-#include "DataFormats/PixelErrors.h"
-#include "DataFormats/FEDNumbering.h"
-#include "DataFormats/FEDRawData.h"
-#include "DataFormats/FEDRawDataCollection.h"
-#include "Framework/EventSetup.h"
-#include "Framework/Event.h"
-#include "Framework/PluginFactory.h"
-#include "Framework/EDProducer.h"
-#include "AlpakaCore/ScopedContext.h"
-
-#include "../ErrorChecker.h"
-#include "SiPixelRawToClusterGPUKernel.h"
-
-#include "AlpakaCore/alpakaCommon.h"
-
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "AlpakaCore/Product.h"
+#include "AlpakaCore/ScopedContext.h"
+#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
+#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
+#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
+#include "CondFormats/SiPixelFedIds.h"
+#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "DataFormats/FEDNumbering.h"
+#include "DataFormats/FEDRawData.h"
+#include "DataFormats/FEDRawDataCollection.h"
+#include "DataFormats/PixelErrors.h"
+#include "Framework/EDProducer.h"
+#include "Framework/Event.h"
+#include "Framework/EventSetup.h"
+#include "Framework/PluginFactory.h"
+
+#include "../ErrorChecker.h"
+#include "SiPixelRawToClusterGPUKernel.h"
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  class SiPixelRawToCluster : public edm::EDProducer {
+  class SiPixelRawToCluster : public edm::EDProducerExternalWork {
   public:
     explicit SiPixelRawToCluster(edm::ProductRegistry& reg);
     ~SiPixelRawToCluster() override = default;
 
   private:
+    void acquire(const edm::Event& iEvent,
+                 const edm::EventSetup& iSetup,
+                 edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
     ::cms::alpakatools::ContextState<Queue> ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<SiPixelDigisAlpaka> digiPutToken_;
-    edm::EDPutTokenT<SiPixelDigiErrorsAlpaka> digiErrorPutToken_;
-    edm::EDPutTokenT<SiPixelClustersAlpaka> clusterPutToken_;
+    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiPutToken_;
+    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>> digiErrorPutToken_;
+    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterPutToken_;
 
     pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -51,19 +54,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   SiPixelRawToCluster::SiPixelRawToCluster(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        digiPutToken_(reg.produces<SiPixelDigisAlpaka>()),
-        clusterPutToken_(reg.produces<SiPixelClustersAlpaka>()),
+        digiPutToken_(reg.produces<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
+        clusterPutToken_(reg.produces<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
         isRun2_(true),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
-      digiErrorPutToken_ = reg.produces<SiPixelDigiErrorsAlpaka>();
+      digiErrorPutToken_ = reg.produces<::cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>>();
     }
 
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
   }
 
-  void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  void SiPixelRawToCluster::acquire(const edm::Event& iEvent,
+                                    const edm::EventSetup& iSetup,
+                                    edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+    ::cms::alpakatools::ScopedContextAcquire<Queue> ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
+
     auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
     if (hgpuMap.hasQuality() != useQuality_) {
       throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
@@ -140,7 +147,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     }  // end of for loop
 
-    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
     gpuAlgo_.makeClustersAsync(isRun2_,
                                gpuMap,
                                gpuModulesToUnpack,
@@ -153,6 +159,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                includeErrors_,
                                false,  // debug
                                ctx.stream());
+  }
+
+  void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+    ::cms::alpakatools::ScopedContextProduce ctx{ctxState_};
 
     auto tmp = gpuAlgo_.getResults();
     ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
