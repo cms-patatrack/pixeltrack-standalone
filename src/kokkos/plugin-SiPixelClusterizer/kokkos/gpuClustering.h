@@ -40,7 +40,7 @@ namespace KOKKOS_NAMESPACE {
 
 namespace KOKKOS_NAMESPACE::gpuClustering {
   //  __launch_bounds__(256,4)
-  KOKKOS_INLINE_FUNCTION void findClus(
+  inline void findClus(
       const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& id,  // module id of each pixel
       const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& x,   // local coordinates of each pixel
       const Kokkos::View<const uint16_t*, KokkosDeviceMemSpace, Restrict>& y,   //
