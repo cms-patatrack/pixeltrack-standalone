@@ -184,7 +184,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
           if (iv[i] == int(i)) {
             if (nn[i] >= minT) {
-              auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Blocks{});
+              auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Threads{});
               iv[i] = -(old + 1);
             } else {  // noise
               iv[i] = -9998;
