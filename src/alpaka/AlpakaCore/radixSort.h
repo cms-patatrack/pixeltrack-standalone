@@ -111,7 +111,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
       // fill bins
       ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size, [&](uint32_t idx) {
         auto bin = (a[j[idx]] >> d * p) & (sb - 1);
-        alpaka::atomicAdd(acc, &c[bin], 1, alpaka::hierarchy::Blocks{});
+        alpaka::atomicAdd(acc, &c[bin], 1, alpaka::hierarchy::Threads{});
       });
       alpaka::syncBlockThreads(acc);
 
@@ -159,7 +159,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
           if (i >= 0) {
             bin = (a[j[i]] >> d * p) & (sb - 1);
             ct[idx] = bin;
-            alpaka::atomicMax(acc, &cu[bin], int(i), alpaka::hierarchy::Blocks{});
+            alpaka::atomicMax(acc, &cu[bin], int(i), alpaka::hierarchy::Threads{});
           }
         });
         alpaka::syncBlockThreads(acc);
