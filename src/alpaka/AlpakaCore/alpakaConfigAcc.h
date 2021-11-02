@@ -105,10 +105,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                 STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
 
   template <class TData>
-  using AlpakaAccBuf1D = alpaka::Buf<Acc1D, TData, Dim1D, Idx>;
+  using AlpakaAccBuf1D = alpaka::Buf<Device, TData, Dim1D, Idx>;
 
   template <class TData>
-  using AlpakaAccBuf2D = alpaka::Buf<Acc2D, TData, Dim2D, Idx>;
+  using AlpakaAccBuf2D = alpaka::Buf<Device, TData, Dim2D, Idx>;
 
   template <typename TData>
   using AlpakaDeviceBuf = AlpakaAccBuf1D<TData>;
