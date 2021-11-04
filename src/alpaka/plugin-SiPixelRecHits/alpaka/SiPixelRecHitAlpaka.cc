@@ -53,9 +53,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (nHits >= TrackingRecHit2DSOAView::maxHits()) {
       std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
     }
-
-    // TODO: replace fcpe.params() with fcpe.getGPUProductAsync(ctx.stream())
-    ctx.emplace(iEvent, tokenHit_, gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.params(), ctx.stream()));
+    ctx.emplace(iEvent,
+                tokenHit_,
+                gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.getGPUProductAsync(&ctx.stream()), ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
