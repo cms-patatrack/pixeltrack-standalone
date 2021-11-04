@@ -60,7 +60,6 @@ namespace cms {
           ::cms::alpakatools::createDeviceView<typename Histo::Counter>(alpaka::getDev(queue), poff, Histo::totbins());
 
       alpaka::memset(queue, histoOffView, 0, Histo::totbins());
-      alpaka::wait(queue);
     }
 
     template <typename Histo>
