@@ -46,22 +46,22 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     Queue queue(devices[0]);
 
     const uint32_t numDecodingStructures = gainData.size() / sizeof(SiPixelGainForHLTonGPU_DecodingStructure);
-    auto ped_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::DecodingStructure>(
+    auto ped_h{::cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::DecodingStructure>(
         reinterpret_cast<SiPixelGainForHLTonGPU::DecodingStructure*>(gainData.data()), numDecodingStructures)};
-    auto ped_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::DecodingStructure>(alpaka::getDev(queue),
-                                                                                           numDecodingStructures)};
+    auto ped_d{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::DecodingStructure>(alpaka::getDev(queue),
+                                                                                             numDecodingStructures)};
     alpaka::prepareForAsyncCopy(ped_d);
     alpaka::memcpy(queue, ped_d, ped_h, numDecodingStructures);
 
     auto rangeAndCols_h{
-        cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::RangeAndCols>(gain.rangeAndCols, 2000u)};
+        ::cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::RangeAndCols>(gain.rangeAndCols, 2000u)};
     auto rangeAndCols_d{
-        cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::RangeAndCols>(alpaka::getDev(queue), 2000u)};
+        ::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::RangeAndCols>(alpaka::getDev(queue), 2000u)};
     alpaka::prepareForAsyncCopy(rangeAndCols_d);
     alpaka::memcpy(queue, rangeAndCols_d, rangeAndCols_h, 2000u);
 
-    auto fields_h{cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::Fields>(&gain.fields_, 1u)};
-    auto fields_d{cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(alpaka::getDev(queue), 1u)};
+    auto fields_h{::cms::alpakatools::createHostView<SiPixelGainForHLTonGPU::Fields>(&gain.fields_, 1u)};
+    auto fields_d{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU::Fields>(alpaka::getDev(queue), 1u)};
     alpaka::prepareForAsyncCopy(fields_d);
     alpaka::memcpy(queue, fields_d, fields_h, 1u);
 

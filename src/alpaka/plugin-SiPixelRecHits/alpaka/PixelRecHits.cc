@@ -77,7 +77,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
 #endif
 
-      alpaka::wait(queue);
       return hits_d;
     }
 

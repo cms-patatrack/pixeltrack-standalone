@@ -57,10 +57,9 @@ namespace cms {
         Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       uint32_t *poff = (uint32_t *)(char *)(&(h->off));
       auto histoOffView =
-          cms::alpakatools::createDeviceView<typename Histo::Counter>(alpaka::getDev(queue), poff, Histo::totbins());
+          ::cms::alpakatools::createDeviceView<typename Histo::Counter>(alpaka::getDev(queue), poff, Histo::totbins());
 
       alpaka::memset(queue, histoOffView, 0, Histo::totbins());
-      alpaka::wait(queue);
     }
 
     template <typename Histo>

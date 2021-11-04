@@ -91,7 +91,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelTrackAlpaka CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DAlpaka const& hits_d,
                                                                float bfield,
                                                                Queue& queue) const {
-    PixelTrackAlpaka tracks{cms::alpakatools::allocDeviceBuf<pixelTrack::TrackSoA>(alpaka::getDev(queue), 1u)};
+    PixelTrackAlpaka tracks{::cms::alpakatools::allocDeviceBuf<pixelTrack::TrackSoA>(alpaka::getDev(queue), 1u)};
     auto* soa = alpaka::getPtrNative(tracks);
 
     CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits(), queue);
@@ -112,6 +112,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       kernels.printCounters(queue);
     }
 
+    // FIXME: the wait is needed to avoid that the device buffers inside "kernels" go out of scope before the kernels have run
     alpaka::wait(queue);
     return tracks;
   }

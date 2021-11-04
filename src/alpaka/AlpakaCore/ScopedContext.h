@@ -121,12 +121,10 @@ namespace cms::alpakatools {
 
       template <typename TQueue>
       void enqueueCallback(TQueue& stream) {
-        alpaka::enqueue(stream, [holder = waitingTaskHolder_]() {
-          // TODO: The functor is required to be const, so can't use
-          // 'mutable', so I'm copying the object as a workaround. I
-          // wonder if there are any wider implications.
-          auto h = holder;
-          h.doneWaiting(nullptr);
+        alpaka::enqueue(stream, [holder = std::move(waitingTaskHolder_)]() {
+          // The functor is required to be const, but the original waitingTaskHolder_
+          // needs to be notified...
+          const_cast<edm::WaitingTaskWithArenaHolder&>(holder).doneWaiting(nullptr);
         });
       }
 
@@ -209,25 +207,26 @@ namespace cms::alpakatools {
   class ScopedContextProduce : public impl::ScopedContextGetterBase<TQueue> {
   public:
     using Queue = TQueue;
+    using Event = alpaka::Event<Queue>;
     using ScopedContextGetterBase = impl::ScopedContextGetterBase<Queue>;
     using ScopedContextGetterBase::device;
+    using ScopedContextGetterBase::stream;
     using ScopedContextGetterBase::streamPtr;
 
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
-    explicit ScopedContextProduce(ContextState<Queue>& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
+    explicit ScopedContextProduce(ContextState<Queue>& state)
+        : ScopedContextGetterBase(state.releaseStreamPtr()), event_{getEventCache<Event>().get(device())} {}
 
-    explicit ScopedContextProduce(ProductBase<Queue> const& data) : ScopedContextGetterBase(data) {}
+    explicit ScopedContextProduce(ProductBase<Queue> const& data)
+        : ScopedContextGetterBase(data), event_{getEventCache<Event>().get(device())} {}
 
-    explicit ScopedContextProduce(edm::StreamID streamID) : ScopedContextGetterBase(streamID) {}
+    explicit ScopedContextProduce(edm::StreamID streamID)
+        : ScopedContextGetterBase(streamID), event_{getEventCache<Event>().get(device())} {}
 
-    /// Record the CUDA event, all asynchronous work must have been queued before the destructor
+    /// Record the event, all asynchronous work must have been queued before the destructor
     ~ScopedContextProduce() {
-      // Intentionally not checking the return value to avoid throwing
-      // exceptions. If this call would fail, we should get failures
-      // elsewhere as well.
-      //TODO
-      //cudaEventRecord(event_.get(), stream());
-      //alpaka::enqueue(stream(), getEvent(::ALPAKA_ACCELERATOR_NAMESPACE::Device).get());
+      // FIXME: this may throw an execption if the underlaying call fails.
+      alpaka::enqueue(stream(), *event_);
     }
 
     template <typename T>
@@ -237,20 +236,17 @@ namespace cms::alpakatools {
     }
 
     template <typename T, typename... Args>
-    auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
-      // return iEvent.emplace(token, streamPtr(), getEvent(acc), std::forward<Args>(args)...);
-      return iEvent.emplace(token, std::forward<Args>(args)...);
-      // TODO
+    auto emplace(edm::Event& iEvent, edm::EDPutTokenT<Product<Queue, T>> token, Args&&... args) {
+      return iEvent.emplace(token, streamPtr(), event_, std::forward<Args>(args)...);
     }
 
   private:
     friend class ::ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest::TestScopedContext;
 
-    explicit ScopedContextProduce(std::shared_ptr<Queue> stream) : ScopedContextGetterBase(std::move(stream)) {}
+    explicit ScopedContextProduce(std::shared_ptr<Queue> stream)
+        : ScopedContextGetterBase(std::move(stream)), event_{getEventCache<Event>().get(device())} {}
 
-    auto getEvent() { return getEventCache<::ALPAKA_ACCELERATOR_NAMESPACE::Event>().get(device()); }
-
-    // create the CUDA Event upfront to catch possible errors from its creation
+    std::shared_ptr<Event> event_;
   };
 
   /**

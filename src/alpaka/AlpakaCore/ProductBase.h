@@ -64,7 +64,7 @@ namespace cms::alpakatools {
       if (not event_) {
         return false;
       }
-      return eventWorkHasCompleted(*(event_.get()));
+      return alpaka::isComplete(*event_);
     }
 
     Device device() const { return alpaka::getDev(stream()); }
@@ -73,13 +73,13 @@ namespace cms::alpakatools {
     // mutable access is needed even if the ScopedContext itself
     // would be const. Therefore it is ok to return a non-const
     // pointer from a const method here.
-    Queue& stream() const { return *(stream_.get()); }
+    Queue& stream() const { return *stream_; }
 
     // cudaEvent_t is a pointer to a thread-safe object, for which a
     // mutable access is needed even if the ScopedContext itself
     // would be const. Therefore it is ok to return a non-const
     // pointer from a const method here.
-    Event& event() const { return *(event_.get()); }
+    Event& event() const { return *event_; }
 
   protected:
     explicit ProductBase(std::shared_ptr<Queue> stream, std::shared_ptr<Event> event)

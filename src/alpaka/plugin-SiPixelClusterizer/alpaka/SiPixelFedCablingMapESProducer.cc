@@ -32,14 +32,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // TODO FIXME use the correct device
     Queue queue(devices[0]);
 
-    auto cablingMap_h{cms::alpakatools::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};
-    auto cablingMap_d{cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(alpaka::getDev(queue), 1u)};
+    auto cablingMap_h{::cms::alpakatools::createHostView<SiPixelFedCablingMapGPU>(&obj, 1u)};
+    auto cablingMap_d{::cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(alpaka::getDev(queue), 1u)};
     alpaka::prepareForAsyncCopy(cablingMap_d);
     alpaka::memcpy(queue, cablingMap_d, cablingMap_h, 1u);
     eventSetup.put(std::make_unique<SiPixelFedCablingMapGPUWrapper>(std::move(cablingMap_d), true));
 
-    auto modToUnp_h{cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
-    auto modToUnp_d{cms::alpakatools::allocDeviceBuf<unsigned char>(alpaka::getDev(queue), modToUnpDefSize)};
+    auto modToUnp_h{::cms::alpakatools::createHostView<unsigned char>(modToUnpDefault.data(), modToUnpDefSize)};
+    auto modToUnp_d{::cms::alpakatools::allocDeviceBuf<unsigned char>(alpaka::getDev(queue), modToUnpDefSize)};
     alpaka::prepareForAsyncCopy(modToUnp_d);
     alpaka::memcpy(queue, modToUnp_d, modToUnp_h, modToUnpDefSize);
 

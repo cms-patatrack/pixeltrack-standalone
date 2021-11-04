@@ -1,3 +1,10 @@
+#include <atomic>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+
+#include "AlpakaCore/Product.h"
+#include "AlpakaCore/ScopedContext.h"
 #include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
@@ -6,15 +13,10 @@
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
 #include "DataFormats/VertexCount.h"
-#include "Framework/EventSetup.h"
-#include "Framework/Event.h"
-#include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
-
-#include <atomic>
-#include <iostream>
-#include <mutex>
-#include <sstream>
+#include "Framework/Event.h"
+#include "Framework/EventSetup.h"
+#include "Framework/PluginFactory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -30,8 +32,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDGetTokenT<TrackCount> trackCountToken_;
     edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-    edm::EDGetTokenT<SiPixelDigisAlpaka> digiToken_;
-    edm::EDGetTokenT<SiPixelClustersAlpaka> clusterToken_;
+    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiToken_;
+    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterToken_;
     edm::EDGetTokenT<PixelTrackHost> trackToken_;
     edm::EDGetTokenT<ZVertexHost> vertexToken_;
 
@@ -53,8 +55,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
         vertexCountToken_(reg.consumes<VertexCount>()),
-        digiToken_(reg.consumes<SiPixelDigisAlpaka>()),
-        clusterToken_(reg.consumes<SiPixelClustersAlpaka>()),
+        digiToken_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
+        clusterToken_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
         trackToken_(reg.consumes<PixelTrackHost>()),
         vertexToken_(reg.consumes<ZVertexHost>()) {}
 
@@ -71,10 +73,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ss << "Event " << iEvent.eventID() << " ";
 
+    auto const& pdigis = iEvent.get(digiToken_);
+    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{pdigis};
     {
       auto const& count = iEvent.get(digiClusterCountToken_);
-      auto const& digis = iEvent.get(digiToken_);
-      auto const& clusters = iEvent.get(clusterToken_);
+      auto const& digis = ctx.get(iEvent, digiToken_);
+      auto const& clusters = ctx.get(iEvent, clusterToken_);
 
       if (digis.nModules() != count.nModules()) {
         ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();

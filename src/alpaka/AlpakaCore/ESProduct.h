@@ -6,9 +6,10 @@
 #include <mutex>
 #include <vector>
 
+#include <alpaka/alpaka.hpp>
+
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
-#include "AlpakaCore/eventWorkHasCompleted.h"
 
 namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -20,7 +21,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
     ESProduct() : gpuDataPerDevice_(::ALPAKA_ACCELERATOR_NAMESPACE::devices.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
+        gpuDataPerDevice_[i].m_event =
+            ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
       }
     }
 
@@ -31,7 +33,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // to the CUDA stream
     template <typename F>
     const T& dataForDeviceAsync(Queue queue, F transferAsync) const {
-      auto device = cms::alpakatools::getDevIndex(alpaka::getDev(queue));
+      auto device = ::cms::alpakatools::getDevIndex(alpaka::getDev(queue));
       auto& data = gpuDataPerDevice_[device];
 
       // If GPU data has already been filled, we can return it
@@ -49,7 +51,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
           // Someone else is filling
 
           // Check first if the recorded event has occurred
-          if (eventWorkHasCompleted(data.m_event.get())) {
+          if (alpaka::isComplete(data.m_event.get())) {
             // It was, so data is accessible from all CUDA streams on
             // the device. Set the 'filled' for all subsequent calls and
             // return the value

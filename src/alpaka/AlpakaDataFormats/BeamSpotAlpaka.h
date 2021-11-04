@@ -1,33 +1,38 @@
 #ifndef AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
 #define AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
 
+#include <alpaka/alpaka.hpp>
+
 #include "AlpakaCore/alpakaCommon.h"
 #include "DataFormats/BeamSpotPOD.h"
-
-#include <cstring>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class BeamSpotAlpaka {
   public:
+    // default constructor, required by ::cms::alpakatools::Product<Queue, BeamSpotAlpaka>
     BeamSpotAlpaka() = default;
 
-    BeamSpotAlpaka(BeamSpotPOD const* data, Queue& queue)
-        : data_d{cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(alpaka::getDev(queue), 1u)} {
-      auto data_h{cms::alpakatools::createHostView<const BeamSpotPOD>(data, 1u)};
+    // constructor that allocates cached device memory on the given queue
+    BeamSpotAlpaka(Queue const& queue)
+        : data_d_{::cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(alpaka::getDev(queue), 1u)} {}
 
-      alpaka::memcpy(queue, data_d, data_h, 1u);
-      // alpaka::wait(queue);
-    }
+    // movable, non-copiable
+    BeamSpotAlpaka(BeamSpotAlpaka const&) = delete;
+    BeamSpotAlpaka(BeamSpotAlpaka&&) = default;
+    BeamSpotAlpaka& operator=(BeamSpotAlpaka const&) = delete;
+    BeamSpotAlpaka& operator=(BeamSpotAlpaka&&) = default;
 
-    //TODO ANTONIO
+    BeamSpotPOD* data() { return alpaka::getPtrNative(data_d_); }
+    BeamSpotPOD const* data() const { return alpaka::getPtrNative(data_d_); }
 
-    const BeamSpotPOD* data() const { return alpaka::getPtrNative(data_d); }
+    AlpakaDeviceBuf<BeamSpotPOD>& buf() { return data_d_; }
+    AlpakaDeviceBuf<BeamSpotPOD> const& buf() const { return data_d_; }
 
   private:
-    AlpakaDeviceBuf<BeamSpotPOD> data_d;
+    AlpakaDeviceBuf<BeamSpotPOD> data_d_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
+#endif  // AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h

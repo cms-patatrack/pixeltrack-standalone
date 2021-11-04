@@ -1,9 +1,8 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
-#include "AlpakaCore/alpakaCommon.h"
-
 #include "AlpakaCore/SimpleVector.h"
+#include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 

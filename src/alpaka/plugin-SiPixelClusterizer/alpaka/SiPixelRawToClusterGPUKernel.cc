@@ -585,11 +585,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
-        auto word_d = cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), wordCounter);
+        auto word_d = ::cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.
         // However, only the first half of elements end up eventually used:
         // hence, here, only wordCounter/2 elements are allocated.
-        auto fedId_d = cms::alpakatools::allocDeviceBuf<uint8_t>(alpaka::getDev(queue), wordCounter / 2);
+        auto fedId_d = ::cms::alpakatools::allocDeviceBuf<uint8_t>(alpaka::getDev(queue), wordCounter / 2);
 
         alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
         alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter / 2);
@@ -673,7 +673,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         wordCounter));
 
         auto moduleStartFirstElement =
-            cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
+            ::cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
 
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
 
@@ -732,7 +732,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         clusters_d->clusModuleStart()));
 
         // last element holds the number of all clusters
-        auto clusModuleStartView = cms::alpakatools::createDeviceView<uint32_t>(
+        auto clusModuleStartView = ::cms::alpakatools::createDeviceView<uint32_t>(
             alpaka::getDev(queue), clusters_d->clusModuleStart(), gpuClustering::MaxNumModules + 1);
         const auto clusModuleStartLastElement =
             AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
