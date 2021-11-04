@@ -107,7 +107,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // std::cout << "producing Vertices on GPU" << std::endl;
       ALPAKA_ASSERT_OFFLOAD(tksoa);
 
-      ZVertexAlpaka vertices{::cms::alpakatools::allocDeviceBuf<ZVertexSoA>(alpaka::getDev(queue), 1u)};
+      ZVertexAlpaka vertices = ::cms::alpakatools::allocDeviceBuf<ZVertexSoA>(alpaka::getDev(queue), 1u);
       auto* soa = alpaka::getPtrNative(vertices);
       ALPAKA_ASSERT_OFFLOAD(soa);
 
@@ -181,6 +181,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(finderSorterWorkDiv, sortByPt2Kernel(), soa, ws_d));
       }
 
+      // FIXME: the wait is needed to avoid that ws_dBuf goes out of scope before the kernels have run
       alpaka::wait(queue);
       return vertices;
     }
