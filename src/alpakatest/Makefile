@@ -40,26 +40,37 @@ define LIB_template
 $(1)_SRC := $$(wildcard $(TARGET_DIR)/$(1)/*.cc)
 $(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
 $(1)_DEP := $$($(1)_OBJ:$.o=$.d)
+$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1).so
+LIBS += $$($(1)_LIB)
+$(1)_LDFLAGS := -l$(1)
 # portable alpaka code
 $(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/$(1)/alpaka/*.cc)
+ifneq ($$(strip $$($(1)_PORTABLE_SRC)),)
 # serial backend
 $(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
 $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
+$(1)_SERIAL_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_serial.so
+LIBS += $$($(1)_SERIAL_LIB)
+$(1)_SERIAL_LDFLAGS := -l$(1)_serial
 # TBB backend
 $(1)_TBB_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.tbb.o))
 $(1)_TBB_DEP := $$($(1)_TBB_OBJ:$.o=$.d)
+$(1)_TBB_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_tbb.so
+LIBS += $$($(1)_TBB_LIB)
+$(1)_TBB_LDFLAGS := -l$(1)_tbb
 # CUDA backend
 ifdef CUDA_BASE
 $(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
 $(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
+$(1)_CUDA_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_cuda.so
+LIBS += $$($(1)_CUDA_LIB)
+$(1)_CUDA_LDFLAGS := -l$(1)_cuda
 #
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/$(1)/lib$(1)_cudalink.o)
 endif
+endif # if PORTABLE_SRC is not empty
 ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
-$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1).so
-LIBS += $$($(1)_LIB)
-$(1)_LDFLAGS := -l$(1)
 endef
 $(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 
@@ -69,25 +80,36 @@ define PLUGIN_template
 $(1)_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/*.cc)
 $(1)_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_SRC:%=%.o))
 $(1)_DEP := $$($(1)_OBJ:$.o=$.d)
+$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
+PLUGINS += $$($(1)_LIB)
 # portable alpaka code
 $(1)_PORTABLE_SRC := $$(wildcard $(TARGET_DIR)/plugin-$(1)/alpaka/*.cc)
+ifneq ($$(strip $$($(1)_PORTABLE_SRC)),)
 # serial backend
 $(1)_SERIAL_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.serial.o))
 $(1)_SERIAL_DEP := $$($(1)_SERIAL_OBJ:$.o=$.d)
+$(1)_SERIAL_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_serial.so
+PLUGINS += $$($(1)_SERIAL_LIB)
+PLUGINNAMES += $(1)_serial
 # TBB backend
 $(1)_TBB_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.tbb.o))
 $(1)_TBB_DEP := $$($(1)_TBB_OBJ:$.o=$.d)
+$(1)_TBB_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_tbb.so
+PLUGINS += $$($(1)_TBB_LIB)
+PLUGINNAMES += $(1)_tbb
 # CUDA backend
 ifdef CUDA_BASE
 $(1)_CUDA_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.cuda.o))
 $(1)_CUDA_DEP := $$($(1)_CUDA_OBJ:$.o=$.d)
+$(1)_CUDA_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_cuda.so
+PLUGINS += $$($(1)_CUDA_LIB)
+PLUGINNAMES += $(1)_cuda
 #
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 endif
+endif # if PORTABLE_SRC is empty
 ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
-$(1)_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1).so
-PLUGINS += $$($(1)_LIB)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
@@ -146,9 +168,21 @@ $(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CUDA_NVCC) $(CUDA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
 
-$$($(1)_LIB): $$($(1)_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_TBB_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
+$$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $$($(1)_SERIAL_OBJ) $$($(1)_TBB_OBJ) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
+$$($(1)_SERIAL_LIB): $$($(1)_SERIAL_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_SERIAL_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
+$$($(1)_TBB_LIB): $$($(1)_TBB_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_TBB_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_TBB_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_TBB_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
+$$($(1)_CUDA_LIB): $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 # Anything depending on Alpaka
 # Portable code, for serial backend
