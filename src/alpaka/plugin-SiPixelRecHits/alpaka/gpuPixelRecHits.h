@@ -137,10 +137,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cl -= startClus;
             ALPAKA_ASSERT_OFFLOAD(cl >= 0);
             ALPAKA_ASSERT_OFFLOAD(cl < MaxHitsInIter);
-            alpaka::atomicMin(acc, &clusParams.minRow[cl], x, alpaka::hierarchy::Blocks{});
-            alpaka::atomicMax(acc, &clusParams.maxRow[cl], x, alpaka::hierarchy::Blocks{});
-            alpaka::atomicMin(acc, &clusParams.minCol[cl], y, alpaka::hierarchy::Blocks{});
-            alpaka::atomicMax(acc, &clusParams.maxCol[cl], y, alpaka::hierarchy::Blocks{});
+            alpaka::atomicMin(acc, &clusParams.minRow[cl], x, alpaka::hierarchy::Threads{});
+            alpaka::atomicMax(acc, &clusParams.maxRow[cl], x, alpaka::hierarchy::Threads{});
+            alpaka::atomicMin(acc, &clusParams.minCol[cl], y, alpaka::hierarchy::Threads{});
+            alpaka::atomicMax(acc, &clusParams.maxCol[cl], y, alpaka::hierarchy::Threads{});
           }
 
           alpaka::syncBlockThreads(acc);
@@ -168,15 +168,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             const int32_t ch = std::min(digis.adc(i), pixmx);
-            alpaka::atomicAdd(acc, &clusParams.charge[cl], ch, alpaka::hierarchy::Blocks{});
+            alpaka::atomicAdd(acc, &clusParams.charge[cl], ch, alpaka::hierarchy::Threads{});
             if (clusParams.minRow[cl] == x)
-              alpaka::atomicAdd(acc, &clusParams.Q_f_X[cl], ch, alpaka::hierarchy::Blocks{});
+              alpaka::atomicAdd(acc, &clusParams.Q_f_X[cl], ch, alpaka::hierarchy::Threads{});
             if (clusParams.maxRow[cl] == x)
-              alpaka::atomicAdd(acc, &clusParams.Q_l_X[cl], ch, alpaka::hierarchy::Blocks{});
+              alpaka::atomicAdd(acc, &clusParams.Q_l_X[cl], ch, alpaka::hierarchy::Threads{});
             if (clusParams.minCol[cl] == y)
-              alpaka::atomicAdd(acc, &clusParams.Q_f_Y[cl], ch, alpaka::hierarchy::Blocks{});
+              alpaka::atomicAdd(acc, &clusParams.Q_f_Y[cl], ch, alpaka::hierarchy::Threads{});
             if (clusParams.maxCol[cl] == y)
-              alpaka::atomicAdd(acc, &clusParams.Q_l_Y[cl], ch, alpaka::hierarchy::Blocks{});
+              alpaka::atomicAdd(acc, &clusParams.Q_l_Y[cl], ch, alpaka::hierarchy::Threads{});
           }
 
           alpaka::syncBlockThreads(acc);

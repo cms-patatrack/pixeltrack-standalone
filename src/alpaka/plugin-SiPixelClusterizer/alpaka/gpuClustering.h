@@ -94,7 +94,7 @@ namespace gpuClustering {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
         if (id[i] != thisModuleId) {  // find the first pixel in a different module
-          alpaka::atomicMin(acc, &msize, i, alpaka::hierarchy::Blocks{});
+          alpaka::atomicMin(acc, &msize, i, alpaka::hierarchy::Threads{});
           break;
         }
       }
@@ -312,7 +312,7 @@ namespace gpuClustering {
           acc, msize, firstPixel, [&](uint32_t i) {
             if (id[i] != InvId) {  // skip invalid pixels
               if (clusterId[i] == static_cast<int>(i)) {
-                auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Blocks{});
+                auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Threads{});
                 clusterId[i] = -(old + 1);
               }
             }

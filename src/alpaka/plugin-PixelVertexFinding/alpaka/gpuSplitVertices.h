@@ -72,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // copy to local
         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t k) {
           if (iv[k] == int(kv)) {
-            auto old = alpaka::atomicInc(acc, &nq, MAXTK, alpaka::hierarchy::Blocks{});
+            auto old = alpaka::atomicInc(acc, &nq, MAXTK, alpaka::hierarchy::Threads{});
             zz[old] = zt[k] - zv[kv];
             newV[old] = zz[old] < 0 ? 0 : 1;
             ww[old] = 1.f / ezt2[k];
@@ -102,8 +102,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
             auto i = newV[k];
-            alpaka::atomicAdd(acc, &znew[i], zz[k] * ww[k], alpaka::hierarchy::Blocks{});
-            alpaka::atomicAdd(acc, &wnew[i], ww[k], alpaka::hierarchy::Blocks{});
+            alpaka::atomicAdd(acc, &znew[i], zz[k] * ww[k], alpaka::hierarchy::Threads{});
+            alpaka::atomicAdd(acc, &wnew[i], ww[k], alpaka::hierarchy::Threads{});
           });
           alpaka::syncBlockThreads(acc);
 

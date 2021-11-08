@@ -61,7 +61,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] > 9990) {
           if (verbose)
-            alpaka::atomicAdd(acc, &noise, 1, alpaka::hierarchy::Blocks{});
+            alpaka::atomicAdd(acc, &noise, 1, alpaka::hierarchy::Threads{});
         } else {
           ALPAKA_ASSERT_OFFLOAD(iv[i] >= 0);
           ALPAKA_ASSERT_OFFLOAD(iv[i] < int(foundClusters));
