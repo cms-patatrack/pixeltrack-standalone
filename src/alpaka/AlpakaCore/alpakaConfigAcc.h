@@ -9,6 +9,7 @@ namespace alpaka_cuda_async {
   using namespace alpaka_common;
   using Acc1D = alpaka::AccGpuCudaRt<Dim1D, Extent>;
   using Acc2D = alpaka::AccGpuCudaRt<Dim2D, Extent>;
+  using Acc3D = alpaka::AccGpuCudaRt<Dim3D, Extent>;
   using Queue = alpaka::QueueCudaRtNonBlocking;
 }  // namespace alpaka_cuda_async
 
@@ -25,6 +26,7 @@ namespace alpaka_serial_sync {
   using namespace alpaka_common;
   using Acc1D = alpaka::AccCpuSerial<Dim1D, Extent>;
   using Acc2D = alpaka::AccCpuSerial<Dim2D, Extent>;
+  using Acc3D = alpaka::AccCpuSerial<Dim3D, Extent>;
   using Queue = alpaka::QueueCpuBlocking;
 }  // namespace alpaka_serial_sync
 
@@ -41,6 +43,7 @@ namespace alpaka_tbb_async {
   using namespace alpaka_common;
   using Acc1D = alpaka::AccCpuTbbBlocks<Dim1D, Extent>;
   using Acc2D = alpaka::AccCpuTbbBlocks<Dim2D, Extent>;
+  using Acc3D = alpaka::AccCpuTbbBlocks<Dim3D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_tbb_async
 
@@ -57,6 +60,7 @@ namespace alpaka_omp2_async {
   using namespace alpaka_common;
   using Acc1D = alpaka::AccCpuOmp2Blocks<Dim1D, Extent>;
   using Acc2D = alpaka::AccCpuOmp2Blocks<Dim2D, Extent>;
+  using Acc3D = alpaka::AccCpuOmp2Blocks<Dim3D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp2_async
 
@@ -73,6 +77,7 @@ namespace alpaka_omp4_async {
   using namespace alpaka_common;
   using Acc1D = alpaka::AccCpuOmp4<Dim1D, Extent>;
   using Acc2D = alpaka::AccCpuOmp4<Dim2D, Extent>;
+  using Acc3D = alpaka::AccCpuOmp4<Dim3D, Extent>;
   using Queue = alpaka::QueueCpuNonBlocking;
 }  // namespace alpaka_omp4_async
 
@@ -92,11 +97,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using Device = alpaka::Dev<Acc1D>;
   using Platform = alpaka::Pltf<Device>;
   static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
+                STRINGIFY(alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
+                    alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
+  static_assert(std::is_same_v<Device, alpaka::Dev<Acc3D>>,
+                STRINGIFY(alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
+                    alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc3D>) " are different types.");
   static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+                STRINGIFY(alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
+                    alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc3D>>>,
+                STRINGIFY(alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
+                    alpaka::Pltf<alpaka::Dev<ALPAKA_ACCELERATOR_NAMESPACE::Acc3D>>) " are different types.");
 
   using Event = alpaka::Event<Queue>;
   static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
