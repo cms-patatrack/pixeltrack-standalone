@@ -141,6 +141,7 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "TestProducer2");
         */
         edmodules.emplace_back(prefix + "TestProducerIsolated");
+        edmodules.emplace_back(prefix + "TestProducerIsolatedMember");
       }
     };
 
