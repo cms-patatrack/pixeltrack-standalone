@@ -69,6 +69,7 @@ public:
       auto i = cellNeighbors.extend();  // maybe waisted....
       if (i > 0) {
         cellNeighbors[i].reset();
+        Kokkos::memory_fence();
 #ifdef KOKKOS_BACKEND_SERIAL
         // cuda/cudacompat also do direct assignment when compiling for CPU
         theOuterNeighbors = &cellNeighbors[i];
@@ -92,6 +93,7 @@ public:
       auto i = cellTracks.extend();  // maybe waisted....
       if (i > 0) {
         cellTracks[i].reset();
+        Kokkos::memory_fence();
 #ifdef KOKKOS_BACKEND_SERIAL
         // cuda/cudacompat also do direct assignment when compiling for CPU
         theTracks = &cellTracks[i];
