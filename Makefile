@@ -96,8 +96,8 @@ export EIGEN_LDFLAGS :=
 export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
 
 BOOST_BASE := /usr
-# Minimum required version of Boost, e.g. 1.65.1
-BOOST_MIN_VERSION := 106501
+# Minimum required version of Boost, e.g. 1.73.0
+BOOST_MIN_VERSION := 107300
 # Check if an external version of Boost is present and recent enough
 ifeq ($(wildcard $(BOOST_BASE)/include/boost/version.hpp),)
 NEED_BOOST := true

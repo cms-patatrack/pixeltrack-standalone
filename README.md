@@ -77,7 +77,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | `sycltest`   | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |                                                                |                                                   |
 
 
-1. Boost libraries from the system can also be used, but they need to be newer than 1.65.1
+1. Boost libraries from the system can also be used, but they need to be version 1.73.0 or newer
 2. `kokkos` and `kokkostest` have an optional dependence on hwloc, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 
 The input data set consists of a minimal binary dump of 1000 events of
