@@ -143,6 +143,7 @@ int main(int argc, char** argv) {
         edmodules.emplace_back(prefix + "TestProducerIsolated");
         edmodules.emplace_back(prefix + "TestProducerIsolatedMember");
         edmodules.emplace_back(prefix + "TestProducerProduce");
+        edmodules.emplace_back(prefix + "TestProducerConsume");
       }
     };
 

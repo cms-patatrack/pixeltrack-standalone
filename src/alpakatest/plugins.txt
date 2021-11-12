@@ -17,3 +17,6 @@ alpaka_cuda_async::TestProducerIsolatedMember pluginTest3_cuda.so
 alpaka_serial_sync::TestProducerProduce pluginTest3_serial.so
 alpaka_tbb_async::TestProducerProduce pluginTest3_tbb.so
 alpaka_cuda_async::TestProducerProduce pluginTest3_cuda.so
+alpaka_serial_sync::TestProducerConsume pluginTest3_serial.so
+alpaka_tbb_async::TestProducerConsume pluginTest3_tbb.so
+alpaka_cuda_async::TestProducerConsume pluginTest3_cuda.so
