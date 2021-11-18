@@ -25,18 +25,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const SiPixelGainForHLTonGPU *getGPUProductAsync(Queue *queue) const {
       const auto &data = gpuData_.dataForDeviceAsync(queue, [this](Queue *queue) {
-        using namespace ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE;
-
         GPUData gpuData(*queue, numDecodingStructures_);
         auto gainDataView(::cms::alpakatools::createHostView(h_gainData.data(), numDecodingStructures_));
         alpaka::memcpy(*queue, gpuData.v_pedestalsGPU, gainDataView, numDecodingStructures_);
 
-        std::memcpy(alpaka::getPtrNative(gpuData.gainDataOnGPU),
-                    alpaka::getPtrNative(gainForHLTonHost),
-                    sizeof(SiPixelGainForHLTonGPU));
-
+        *alpaka::getPtrNative(gpuData.gainDataOnGPU) = *alpaka::getPtrNative(gainForHLTonHost);
         alpaka::getPtrNative(gpuData.gainDataOnGPU)->v_pedestals = alpaka::getPtrNative(gpuData.v_pedestalsGPU);
-        alpaka::prepareForAsyncCopy(gpuData.gainDataOnGPU);
 
         alpaka::memcpy(*queue, gpuData.gainForHLTonGPU, gpuData.gainDataOnGPU, 1u);
         return gpuData;
@@ -56,7 +50,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           : gainForHLTonGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU>(alpaka::getDev(queue), 1u)},
             gainDataOnGPU{::cms::alpakatools::allocHostBuf<SiPixelGainForHLTonGPU>(1u)},
             v_pedestalsGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU_DecodingStructure>(
-                alpaka::getDev(queue), numDecodingStructures)} {};
+                alpaka::getDev(queue), numDecodingStructures)} {
+        alpaka::prepareForAsyncCopy(gainDataOnGPU);
+      };
 
       ~GPUData(){};
 
