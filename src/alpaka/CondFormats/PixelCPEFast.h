@@ -59,7 +59,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::memcpy(queue, gpuData.d_detParams, detParams_h, ndetParams);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_detParams = alpaka::getPtrNative(gpuData.d_detParams);
 
-        alpaka::prepareForAsyncCopy(gpuData.h_paramsOnGPU);
         alpaka::memcpy(queue, gpuData.d_paramsOnGPU, gpuData.h_paramsOnGPU, 1u);
 
         return gpuData;
@@ -87,8 +86,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             d_averageGeometry{
                 ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(alpaka::getDev(queue), 1u)},
             d_detParams{
-                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(alpaka::getDev(queue), ndetParams)} {};
-      ~GPUData(){};
+                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(alpaka::getDev(queue), ndetParams)} {
+        alpaka::prepareForAsyncCopy(h_paramsOnGPU);
+      };
+      ~GPUData() = default;
 
     public:
       AlpakaHostBuf<pixelCPEforGPU::ParamsOnGPU> h_paramsOnGPU;
