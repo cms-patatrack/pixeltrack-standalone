@@ -489,9 +489,9 @@ namespace pixelgpudetails {
       ALPAKA_ASSERT_OFFLOAD(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
 
 #ifndef NDEBUG
-      const uint32_t blockIdxLocal(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      [[maybe_unused]] const uint32_t blockIdxLocal(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       ALPAKA_ASSERT_OFFLOAD(0 == blockIdxLocal);
-      const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+      [[maybe_unused]] const uint32_t gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       ALPAKA_ASSERT_OFFLOAD(1 == gridDimension);
 #endif
 

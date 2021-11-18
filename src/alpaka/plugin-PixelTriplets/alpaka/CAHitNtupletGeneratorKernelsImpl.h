@@ -533,11 +533,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // fill hit indices
       auto const &hh = *hhp;
 #ifndef NDEBUG
-      auto nhits = hh.nHits();
+      [[maybe_unused]] auto nhits = hh.nHits();
 #endif
       ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
           acc, tuples->size(), [&](uint32_t idx) {
+#ifndef NDEBUG
             ALPAKA_ASSERT_OFFLOAD(tuples->bins[idx] < nhits);
+#endif
             hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
           });
     }
