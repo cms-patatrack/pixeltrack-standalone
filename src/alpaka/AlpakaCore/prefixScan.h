@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 #define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
 
+#include <algorithm>
 #include <cstdint>
 
 #include "AlpakaCore/alpakaConfig.h"

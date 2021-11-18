@@ -3,6 +3,7 @@
 #include <atomic>
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 // Function for testing RunningAverage
 namespace test_average {

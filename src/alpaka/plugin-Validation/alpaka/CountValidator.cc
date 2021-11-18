@@ -1,7 +1,9 @@
 #include <atomic>
+#include <cmath>
 #include <iostream>
 #include <mutex>
 #include <sstream>
+#include <stdexcept>
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"

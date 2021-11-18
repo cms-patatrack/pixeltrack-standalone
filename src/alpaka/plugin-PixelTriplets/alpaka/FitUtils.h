@@ -1,6 +1,8 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
 #define RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
 
+#include <cmath>
+
 #include "../choleskyInversion.h"
 #include "FitResult.h"
 

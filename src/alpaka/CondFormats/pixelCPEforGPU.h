@@ -1,6 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
 #define RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>

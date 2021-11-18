@@ -1,6 +1,8 @@
 #ifndef alpakaConfigAcc_h_
 #define alpakaConfigAcc_h_
 
+#include <type_traits>
+
 #include "AlpakaCore/alpakaConfigCommon.h"
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED

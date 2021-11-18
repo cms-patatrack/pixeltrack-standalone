@@ -2,6 +2,8 @@
 #define HeterogeneousCore_AlpakaCore_ContextState_h
 
 #include <memory>
+#include <stdexcept>
+#include <utility>
 
 #include <alpaka/alpaka.hpp>
 

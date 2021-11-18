@@ -2,6 +2,7 @@
 #define AlpakaDataFormats_Common_Product_h
 
 #include <memory>
+#include <utility>
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/ProductBase.h"

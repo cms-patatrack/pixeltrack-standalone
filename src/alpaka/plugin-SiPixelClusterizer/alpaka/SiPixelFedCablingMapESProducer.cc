@@ -1,13 +1,16 @@
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
-#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
-#include "Framework/ESProducer.h"
-#include "Framework/EventSetup.h"
-#include "Framework/ESPluginFactory.h"
+#include <fstream>
+#include <ios>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "AlpakaCore/alpakaCommon.h"
-
-#include <fstream>
-#include <memory>
+#include "CondFormats/SiPixelFedCablingMapGPU.h"
+#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
+#include "Framework/ESPluginFactory.h"
+#include "Framework/ESProducer.h"
+#include "Framework/EventSetup.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class SiPixelFedCablingMapESProducer : public edm::ESProducer {

@@ -7,10 +7,13 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/threadfence.h"
+#include <cmath>
+#include <limits>
+
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/VecArray.h"
+#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/threadfence.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 

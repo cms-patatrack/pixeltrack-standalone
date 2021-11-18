@@ -11,16 +11,22 @@
 #include "AlpakaCore/alpakastdAlgorithm.h"
 #include "AlpakaCore/prefixScan.h"
 
+//#define __restrict__
+
 namespace cms {
   namespace alpakatools {
 
     struct countFromVector {
       template <typename T_Acc, typename Histo, typename T>
       ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                    Histo *__restrict__ h,
+                                    //Histo *__restrict__ h,
+                                    Histo * h,
                                     uint32_t nh,
-                                    T const *__restrict__ v,
-                                    uint32_t const *__restrict__ offsets) const {
+                                    //T const *__restrict__ v,
+                                    T const * v,
+                                    //uint32_t const *__restrict__ offsets)
+                                    uint32_t const * offsets)
+      const {
         const uint32_t nt = offsets[nh];
         ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
@@ -110,14 +116,18 @@ namespace cms {
       const WorkDiv1D &workDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
           blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
+      auto k1 = countFromVector();
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, countFromVector(), h, nh, v, offsets));
+                          workDiv, k1, h, nh, v, offsets));
       launchFinalize(h, queue);
 
+      /*
+      auto k2 = fillFromVector();
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, fillFromVector(), h, nh, v, offsets));
+                          workDiv, k2, h, nh, v, offsets));
+      */
     }
 
     struct finalizeBulk {
@@ -325,5 +335,7 @@ namespace cms {
 
   }  // namespace alpakatools
 }  // namespace cms
+
+//#undef __restrict__
 
 #endif  // HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h

@@ -1,6 +1,8 @@
 #ifndef HeterogeneousCore_AlpakaUtilities_alpakastdAlgorithm_h
 #define HeterogeneousCore_AlpakaUtilities_alpakastdAlgorithm_h
 
+#include <algorithm>
+#include <functional>
 #include <utility>
 
 #include <alpaka/alpaka.hpp>

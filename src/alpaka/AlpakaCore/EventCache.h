@@ -1,6 +1,8 @@
 #ifndef HeterogeneousCore_AlpakaUtilities_EventCache_h
 #define HeterogeneousCore_AlpakaUtilities_EventCache_h
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <alpaka/alpaka.hpp>

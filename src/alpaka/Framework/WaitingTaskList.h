@@ -72,6 +72,8 @@
 
 // system include files
 #include <atomic>
+#include <exception>
+#include <memory>
 
 // user include files
 #include "Framework/WaitingTask.h"

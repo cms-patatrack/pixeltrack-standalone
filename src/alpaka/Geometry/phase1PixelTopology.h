@@ -1,8 +1,10 @@
 #ifndef Geometry_TrackerGeometryBuilder_phase1PixelTopology_h
 #define Geometry_TrackerGeometryBuilder_phase1PixelTopology_h
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <utility>
 
 namespace phase1PixelTopology {
 

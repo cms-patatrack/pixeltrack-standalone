@@ -1,6 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 

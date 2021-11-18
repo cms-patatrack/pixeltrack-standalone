@@ -1,6 +1,9 @@
-#include "PluginFactory.h"
-
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "PluginFactory.h"
 
 namespace edm {
   namespace PluginFactory {

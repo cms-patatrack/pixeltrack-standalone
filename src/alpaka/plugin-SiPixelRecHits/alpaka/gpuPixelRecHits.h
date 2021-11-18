@@ -1,6 +1,8 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <limits>

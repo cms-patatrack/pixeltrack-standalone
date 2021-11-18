@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_AlpakaUtilities_StreamCache_h
 #define HeterogeneousCore_AlpakaUtilities_StreamCache_h
 
+#include <memory>
 #include <vector>
 
 #include "AlpakaCore/alpakaConfig.h"

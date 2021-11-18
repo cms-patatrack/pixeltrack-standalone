@@ -20,6 +20,8 @@
 
 // system include files
 #include <cassert>
+#include <exception>
+#include <utility>
 
 // user include files
 #include "Framework/WaitingTask.h"
