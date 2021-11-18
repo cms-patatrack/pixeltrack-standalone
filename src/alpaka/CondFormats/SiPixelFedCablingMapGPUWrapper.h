@@ -15,11 +15,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CablingMapHostBuf = AlpakaHostBuf<SiPixelFedCablingMapGPU>;
 
     explicit SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU cablingMap, std::vector<unsigned char> modToUnp)
-        : cablingMapHost_{::cms::alpakatools::allocHostBuf<SiPixelFedCablingMapGPU>(1u)},
-          modToUnpDefault(modToUnp.size()),
-          hasQuality_(true) {
+        : modToUnpDefault_(modToUnp.size()),
+          cablingMapHost_{::cms::alpakatools::allocHostBuf<SiPixelFedCablingMapGPU>(1u)},
+          hasQuality_{true} {
       std::memcpy(alpaka::getPtrNative(cablingMapHost_), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
-      std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault.begin());
+      std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault_.begin());
     }
     ~SiPixelFedCablingMapGPUWrapper() = default;
 
@@ -40,10 +40,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const unsigned char* getModToUnpAllAsync(Queue* queue) const {
       const auto& data = modToUnp_.dataForDeviceAsync(queue, [this](Queue* queue) {
-        unsigned int modToUnpSize = this->modToUnpDefault.size();
+        unsigned int modToUnpSize = this->modToUnpDefault_.size();
         ModulesToUnpack modToUnp(*queue, modToUnpSize);
         auto modToUnpDefault_view{
-            ::cms::alpakatools::createHostView<const unsigned char>(this->modToUnpDefault.data(), modToUnpSize)};
+            ::cms::alpakatools::createHostView<const unsigned char>(this->modToUnpDefault_.data(), modToUnpSize)};
         alpaka::memcpy(*queue, modToUnp.modToUnpDefault, modToUnpDefault_view, modToUnpSize);
         return modToUnp;
       });
@@ -51,10 +51,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
   private:
-    std::vector<unsigned char> modToUnpDefault;
-    bool hasQuality_;
-
+    std::vector<unsigned char> modToUnpDefault_;
     CablingMapHostBuf cablingMapHost_;
+    bool hasQuality_;
 
     struct GPUData {
     public:
@@ -84,4 +83,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
+#endif  // RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
