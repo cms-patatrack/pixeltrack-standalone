@@ -5,14 +5,13 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  struct SiPixelGainForHLTonGPU_DecodingStructure {
-    uint8_t gain;
-    uint8_t ped;
-  };
-
   class SiPixelGainForHLTonGPU {
   public:
-    using DecodingStructure = SiPixelGainForHLTonGPU_DecodingStructure;
+    struct DecodingStructure {
+      uint8_t gain;
+      uint8_t ped;
+    };
+
     using Range = std::pair<uint32_t, uint32_t>;
     using RangeAndCols = std::pair<Range, int>;
 
@@ -41,7 +40,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       return std::make_pair(decodePed(s.ped & 0xFF), decodeGain(s.gain & 0xFF));
     }
 
-    ALPAKA_FN_INLINE ALPAKA_FN_ACC float decodeGain(unsigned int gain) const { return gain * gainPrecision_ + minGain_; }
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC float decodeGain(unsigned int gain) const {
+      return gain * gainPrecision_ + minGain_;
+    }
     ALPAKA_FN_INLINE ALPAKA_FN_ACC float decodePed(unsigned int ped) const { return ped * pedPrecision_ + minPed_; }
 
     DecodingStructure* pedestals_;

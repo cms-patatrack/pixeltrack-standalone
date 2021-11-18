@@ -21,14 +21,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   void SiPixelGainCalibrationForHLTESProducer::produce(edm::EventSetup& eventSetup) {
+    using DecodingStructure = SiPixelGainForHLTonGPU::DecodingStructure;
+
     std::ifstream in((data_ / "gain.bin"), std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
     SiPixelGainForHLTonGPU gain;
     in.read(reinterpret_cast<char*>(&gain), sizeof(SiPixelGainForHLTonGPU));
     unsigned int nbytes;
     in.read(reinterpret_cast<char*>(&nbytes), sizeof(unsigned int));
-    std::vector<SiPixelGainForHLTonGPU_DecodingStructure> gainData(nbytes /
-                                                                   sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
+    std::vector<DecodingStructure> gainData(nbytes / sizeof(DecodingStructure));
     in.read(reinterpret_cast<char*>(gainData.data()), nbytes);
     eventSetup.put(std::make_unique<SiPixelGainCalibrationForHLTGPU>(gain, std::move(gainData)));
   }
