@@ -97,8 +97,8 @@ namespace cms {
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void fillManyFromVector(
         Histo *__restrict__ h,
         uint32_t nh,
-        T const* v,
-        uint32_t const* offsets,
+        T const *v,
+        uint32_t const *offsets,
         uint32_t totSize,
         unsigned int nthreads,
         ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {

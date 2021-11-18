@@ -43,7 +43,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto& data = modToUnp_.dataForDeviceAsync(queue, [this](Queue& queue) {
         unsigned int modToUnpSize = modToUnpDefault_.size();
         ModulesToUnpack modToUnp(queue, modToUnpSize);
-        auto modToUnpDefault_view = ::cms::alpakatools::createHostView<const unsigned char>(modToUnpDefault_.data(), modToUnpSize);
+        auto modToUnpDefault_view =
+            ::cms::alpakatools::createHostView<const unsigned char>(modToUnpDefault_.data(), modToUnpSize);
         alpaka::memcpy(queue, modToUnp.modToUnpDefault, modToUnpDefault_view, modToUnpSize);
         return modToUnp;
       });
