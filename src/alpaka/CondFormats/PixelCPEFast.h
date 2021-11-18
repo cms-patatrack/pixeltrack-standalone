@@ -71,7 +71,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
   private:
-    // allocate it with posix malloc to be ocmpatible with cpu wf
+    // allocate it with posix malloc to be compatible with cpu wf
     std::vector<pixelCPEforGPU::DetParams> m_detParamsGPU;
     AlpakaHostBuf<pixelCPEforGPU::CommonParams> m_commonParamsGPU;
     AlpakaHostBuf<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
