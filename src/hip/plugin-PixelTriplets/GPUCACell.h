@@ -70,6 +70,7 @@ public:
       auto i = cellNeighbors.extend();  // maybe waisted....
       if (i > 0) {
         cellNeighbors[i].reset();
+        __threadfence();
 #ifdef __HIPCC__
         auto zero = (ptrAsInt)(&cellNeighbors[0]);
         atomicCAS((ptrAsInt*)(&theOuterNeighbors),
@@ -90,6 +91,7 @@ public:
       auto i = cellTracks.extend();  // maybe waisted....
       if (i > 0) {
         cellTracks[i].reset();
+        __threadfence();
 #ifdef __HIPCC__
         auto zero = (ptrAsInt)(&cellTracks[0]);
         atomicCAS((ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
