@@ -30,7 +30,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::memcpy(queue, gpuData.v_pedestalsGPU, gainDataView, numDecodingStructures_);
 
         *alpaka::getPtrNative(gpuData.gainDataOnGPU) = *alpaka::getPtrNative(gainForHLTonHost);
-        alpaka::getPtrNative(gpuData.gainDataOnGPU)->v_pedestals = alpaka::getPtrNative(gpuData.v_pedestalsGPU);
+        alpaka::getPtrNative(gpuData.gainDataOnGPU)->pedestals_ = alpaka::getPtrNative(gpuData.v_pedestalsGPU);
 
         alpaka::memcpy(queue, gpuData.gainForHLTonGPU, gpuData.gainDataOnGPU, 1u);
         return gpuData;
