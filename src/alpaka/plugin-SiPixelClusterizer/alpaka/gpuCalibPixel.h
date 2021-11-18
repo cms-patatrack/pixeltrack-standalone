@@ -28,10 +28,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     uint16_t const* __restrict__ x,
                                     uint16_t const* __restrict__ y,
                                     uint16_t* adc,
-                                    //SiPixelGainForHLTonGPU const* __restrict__ ped,
-                                    const SiPixelGainForHLTonGPU::DecodingStructure* __restrict__ v_pedestals,
-                                    const SiPixelGainForHLTonGPU::RangeAndCols* __restrict__ rangeAndCols,
-                                    const SiPixelGainForHLTonGPU::Fields* __restrict__ fields,
+                                    SiPixelGainForHLTonGPU const* __restrict__ ped,
                                     int numElements,
                                     uint32_t* __restrict__ moduleStart,        // just to zero first
                                     uint32_t* __restrict__ nClustersInModule,  // just to zero them
@@ -57,8 +54,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
                 int row = x[i];
                 int col = y[i];
-                auto ret = SiPixelGainForHLTonGPU::getPedAndGain(
-                    v_pedestals, rangeAndCols, fields, id[i], col, row, isDeadColumn, isNoisyColumn);
+                auto ret = ped->getPedAndGain(id[i], col, row, isDeadColumn, isNoisyColumn);
                 float pedestal = ret.first;
                 float gain = ret.second;
                 // float pedestal = 0; float gain = 1.;

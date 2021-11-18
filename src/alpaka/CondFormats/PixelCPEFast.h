@@ -13,93 +13,94 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class PixelCPEFast {
   public:
-    PixelCPEFast(AlpakaDeviceBuf<pixelCPEforGPU::CommonParams> commonParams,
-                 AlpakaDeviceBuf<pixelCPEforGPU::DetParams> detParams,
-                 AlpakaDeviceBuf<pixelCPEforGPU::LayerGeometry> layerGeometry,
-                 AlpakaDeviceBuf<pixelCPEforGPU::AverageGeometry> averageGeometry,
-                 AlpakaDeviceBuf<pixelCPEforGPU::ParamsOnGPU> params)
-        : m_commonParams(std::move(commonParams)),
-          m_detParams(std::move(detParams)),
-          m_layerGeometry(std::move(layerGeometry)),
-          m_averageGeometry(std::move(averageGeometry)),
-          m_params(std::move(params)) {}
+    PixelCPEFast(std::string const &path)
+        : m_commonParamsGPU(::cms::alpakatools::allocHostBuf<pixelCPEforGPU::CommonParams>(1u)),
+          m_layerGeometry(::cms::alpakatools::allocHostBuf<pixelCPEforGPU::LayerGeometry>(1u)),
+          m_averageGeometry(::cms::alpakatools::allocHostBuf<pixelCPEforGPU::AverageGeometry>(1u))
+
+    {
+      std::ifstream in(path, std::ios::binary);
+      in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
+      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_commonParamsGPU)), sizeof(pixelCPEforGPU::CommonParams));
+      unsigned int ndetParams;
+      in.read(reinterpret_cast<char *>(&ndetParams), sizeof(unsigned int));
+      m_detParamsGPU.resize(ndetParams);
+      in.read(reinterpret_cast<char *>(m_detParamsGPU.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
+      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_averageGeometry)),
+              sizeof(pixelCPEforGPU::AverageGeometry));
+      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_layerGeometry)), sizeof(pixelCPEforGPU::LayerGeometry));
+
+      alpaka::prepareForAsyncCopy(m_commonParamsGPU);
+      alpaka::prepareForAsyncCopy(m_layerGeometry);
+      alpaka::prepareForAsyncCopy(m_averageGeometry);
+    }
 
     ~PixelCPEFast() = default;
 
-    pixelCPEforGPU::ParamsOnGPU const *params() const { return alpaka::getPtrNative(m_params); }
-
-#ifdef TODO
-    template <typename Data>
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<Data> getGPUData() const {
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<Data> gpuData;
-      return gpuData;
-    }
-
     // The return value can only be used safely in kernels launched on
     // the same cudaStream, or after cudaStreamSynchronize.
-    const pixelCPEforGPU::ParamsOnGPU getGPUProductAsync(Queue queue) const {
-      auto gpuData = getGPUData<GPUData>();
+    const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(Queue &queue) const {
+      const auto &data = gpuData_.dataForDeviceAsync(queue, [this](Queue &queue) {
+        unsigned int ndetParams = m_detParamsGPU.size();
+        GPUData gpuData(queue, ndetParams);
 
-      auto const& data = gpuData_.dataForDeviceAsync(queue, [this](GPUData &data, Queue queue) {
-        using namespace ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE;
-        // and now copy to device...
-        auto cParams = allocDeviceBuf<pixelCPEforGPU::CommonParams>(1u);
-        data.h_paramsOnGPU.m_commonParams = alpaka::getPtrNative(cParams);
+        alpaka::memcpy(queue, gpuData.d_commonParams, m_commonParamsGPU, 1u);
+        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_commonParams = alpaka::getPtrNative(gpuData.d_commonParams);
 
-        uint32_t size_detParams = alpaka::extent::getExtentVec(this->m_detParams)[0u];
-        auto detParams = allocDeviceBuf<pixelCPEforGPU::DetParams>(size_detParams);
-        data.h_paramsOnGPU.m_detParams = alpaka::getPtrNative(detParams);
+        alpaka::memcpy(queue, gpuData.d_layerGeometry, m_layerGeometry, 1u);
+        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_layerGeometry = alpaka::getPtrNative(gpuData.d_layerGeometry);
 
-        auto avgGeom = allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(1u);
-        data.h_paramsOnGPU.m_averageGeometry = alpaka::getPtrNative(avgGeom);
+        alpaka::memcpy(queue, gpuData.d_averageGeometry, m_averageGeometry, 1u);
+        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_averageGeometry =
+            alpaka::getPtrNative(gpuData.d_averageGeometry);
 
-        auto layerGeom = allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(1u);
-        data.h_paramsOnGPU.m_layerGeometry = alpaka::getPtrNative(layerGeom);
+        auto detParams_h =
+            ::cms::alpakatools::createHostView<const pixelCPEforGPU::DetParams>(m_detParamsGPU.data(), ndetParams);
+        alpaka::memcpy(queue, gpuData.d_detParams, detParams_h, ndetParams);
+        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_detParams = alpaka::getPtrNative(gpuData.d_detParams);
 
-        auto parGPU = allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(1u);
-        data.d_paramsOnGPU = alpaka::getPtrNative(parGPU);
+        alpaka::memcpy(queue, gpuData.d_paramsOnGPU, gpuData.h_paramsOnGPU, 1u);
 
-        alpaka::prepareForAsyncCopy(cParams);
-        alpaka::prepareForAsyncCopy(detParams);
-        alpaka::prepareForAsyncCopy(avgGeom);
-        alpaka::prepareForAsyncCopy(layerGeom);
-        alpaka::prepareForAsyncCopy(parGPU);
-
-        alpaka::memcpy(queue, parGPU, data.h_paramsOnGPU, 1u);
-        alpaka::memcpy(queue, data.h_paramsOnGPU.m_commonParams, this->m_commonParams, 1u);
-        alpaka::memcpy(queue, data.h_paramsOnGPU.m_averageGeometry, this->m_averageGeometry, 1u);
-        alpaka::memcpy(queue, data.h_paramsOnGPU.m_layerGeometry, this->m_layerGeometry, 1u);
-        alpaka::memcpy(queue, data.h_paramsOnGPU.m_detParams, alpaka::getPtrNative(this->m_detParams), size_detParams);
+        return gpuData;
       });
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      return *data.d_paramsOnGPU;
-#else
-      return data.h_paramsOnGPU;
-#endif
+      return alpaka::getPtrNative(data.d_paramsOnGPU);
     }
-#endif  // TODO
 
   private:
-    AlpakaDeviceBuf<pixelCPEforGPU::CommonParams> m_commonParams;
-    AlpakaDeviceBuf<pixelCPEforGPU::DetParams> m_detParams;
-    AlpakaDeviceBuf<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
-    AlpakaDeviceBuf<pixelCPEforGPU::AverageGeometry> m_averageGeometry;
-    AlpakaDeviceBuf<pixelCPEforGPU::ParamsOnGPU> m_params;
+    // allocate it with posix malloc to be compatible with cpu wf
+    std::vector<pixelCPEforGPU::DetParams> m_detParamsGPU;
+    AlpakaHostBuf<pixelCPEforGPU::CommonParams> m_commonParamsGPU;
+    AlpakaHostBuf<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
+    AlpakaHostBuf<pixelCPEforGPU::AverageGeometry> m_averageGeometry;
 
-#ifdef TODO
     struct GPUData {
       // not needed if not used on CPU...
-      pixelCPEforGPU::ParamsOnGPU h_paramsOnGPU;
-      pixelCPEforGPU::ParamsOnGPU *d_paramsOnGPU = nullptr;  // copy of the above on the Device
-      ~GPUData() {
-        if (d_paramsOnGPU != nullptr) {
-          //cudafree
-        }
-      }
+    public:
+      GPUData() = delete;
+      GPUData(Queue &queue, unsigned int ndetParams)
+          : h_paramsOnGPU{::cms::alpakatools::allocHostBuf<pixelCPEforGPU::ParamsOnGPU>(1u)},
+            d_paramsOnGPU{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(alpaka::getDev(queue), 1u)},
+            d_commonParams{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(alpaka::getDev(queue), 1u)},
+            d_layerGeometry{
+                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(alpaka::getDev(queue), 1u)},
+            d_averageGeometry{
+                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(alpaka::getDev(queue), 1u)},
+            d_detParams{
+                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(alpaka::getDev(queue), ndetParams)} {
+        alpaka::prepareForAsyncCopy(h_paramsOnGPU);
+      };
+      ~GPUData() = default;
+
+    public:
+      AlpakaHostBuf<pixelCPEforGPU::ParamsOnGPU> h_paramsOnGPU;
+      AlpakaDeviceBuf<pixelCPEforGPU::ParamsOnGPU> d_paramsOnGPU;  // copy of the above on the Device
+      AlpakaDeviceBuf<pixelCPEforGPU::CommonParams> d_commonParams;
+      AlpakaDeviceBuf<pixelCPEforGPU::LayerGeometry> d_layerGeometry;
+      AlpakaDeviceBuf<pixelCPEforGPU::AverageGeometry> d_averageGeometry;
+      AlpakaDeviceBuf<pixelCPEforGPU::DetParams> d_detParams;
     };
 
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::ESProduct<GPUData> gpuData_;
-#endif  // TODO
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

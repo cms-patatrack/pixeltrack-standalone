@@ -41,7 +41,7 @@ public:
     unsigned int numberOfDataBlocksToSkip = row / numberOfRowsAveragedOver_;
 
     auto offset = range.first + col * lengthOfColumnData + lengthOfAveragedDataInEachColumn * numberOfDataBlocksToSkip;
-
+    
     assert(offset < range.second);
     assert(offset < 3088384);
     assert(0 == offset % 2);

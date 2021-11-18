@@ -11,6 +11,7 @@
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
 #include "CondFormats/SiPixelFedIds.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "DataFormats/FEDNumbering.h"
 #include "DataFormats/FEDRawData.h"
 #include "DataFormats/FEDRawDataCollection.h"
@@ -77,12 +78,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
     }
     // get the GPU product already here so that the async transfer can begin
-    const auto* gpuMap = hgpuMap.cablingMap();
-    const unsigned char* gpuModulesToUnpack = alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
-    const auto* gpuGains = &(iSetup.get<SiPixelGainForHLTonGPU>());
-
+    const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
+    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
+    auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
+    const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
     auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
-
     const auto& buffers = iEvent.get(rawGetToken_);
 
     errors_.clear();
