@@ -1,11 +1,13 @@
-#include "DataFormats/BeamSpotPOD.h"
-
-#include "Framework/ESProducer.h"
-#include "Framework/EventSetup.h"
-#include "Framework/ESPluginFactory.h"
-
 #include <filesystem>
 #include <fstream>
+#include <ios>
+#include <memory>
+#include <utility>
+
+#include "DataFormats/BeamSpotPOD.h"
+#include "Framework/ESPluginFactory.h"
+#include "Framework/ESProducer.h"
+#include "Framework/EventSetup.h"
 
 class BeamSpotESProducer : public edm::ESProducer {
 public:

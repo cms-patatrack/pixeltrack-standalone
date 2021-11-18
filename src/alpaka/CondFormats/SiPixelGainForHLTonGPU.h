@@ -1,6 +1,8 @@
 #ifndef CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 #define CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 
+#include <utility>
+
 #include "AlpakaCore/alpakaCommon.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

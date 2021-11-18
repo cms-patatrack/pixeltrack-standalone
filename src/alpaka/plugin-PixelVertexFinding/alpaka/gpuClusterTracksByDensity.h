@@ -1,9 +1,11 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
 
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include <algorithm>
+#include <cmath>
 
 #include "AlpakaCore/HistoContainer.h"
+#include "AlpakaCore/alpakaKernelCommon.h"
 
 #include "gpuVertexFinder.h"
 

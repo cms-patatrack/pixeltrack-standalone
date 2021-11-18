@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
 #include "AlpakaCore/alpakaCommon.h"

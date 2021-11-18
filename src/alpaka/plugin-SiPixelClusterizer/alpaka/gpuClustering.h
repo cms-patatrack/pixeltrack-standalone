@@ -1,8 +1,10 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <type_traits>
 
 #include "AlpakaCore/alpakaKernelCommon.h"
 #include "AlpakaCore/HistoContainer.h"

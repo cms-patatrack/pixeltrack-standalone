@@ -1,6 +1,8 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 #define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 
+#include <utility>
+
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 #include "AlpakaCore/alpakaCommon.h"

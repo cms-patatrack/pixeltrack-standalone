@@ -2,15 +2,15 @@
 // Author: Felice Pantaleo, CERN
 //
 
+#include <cmath>
 #include <cstdint>
 
 #include "AlpakaCore/alpakaKernelCommon.h"
-
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
-#include "RiemannFit.h"
 #include "HelixFitOnGPU.h"
+#include "RiemannFit.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

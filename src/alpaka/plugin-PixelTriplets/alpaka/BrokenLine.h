@@ -1,6 +1,12 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
 #define RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
 
+#include <algorithm>
+#include <cmath>
+#ifdef CPP_DUMP
+#include <iostream>
+#endif
+
 #include <Eigen/Eigenvalues>
 
 #include "FitUtils.h"

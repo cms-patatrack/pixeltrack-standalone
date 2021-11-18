@@ -1,6 +1,9 @@
 #ifndef AlpakaCore_alpakaWorkDivHelper_h
 #define AlpakaCore_alpakaWorkDivHelper_h
 
+#include <algorithm>
+#include <utility>
+
 #include "AlpakaCore/alpakaConfig.h"
 
 using namespace alpaka_common;

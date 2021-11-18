@@ -21,6 +21,7 @@
 
 #include <exception>
 #include <memory>
+#include <utility>
 
 #include <tbb/task_arena.h>
 

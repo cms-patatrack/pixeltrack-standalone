@@ -19,6 +19,7 @@
 */
 
 #include <cmath>
+#include <utility>
 
 template <typename T>
 class CircleEq {

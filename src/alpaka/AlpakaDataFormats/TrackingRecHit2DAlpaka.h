@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
+#include <memory>
+
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/alpakaCommon.h"

@@ -5,8 +5,11 @@
    \date 28 Jun 2005
 */
 
-#include "DataFormats/FEDRawData.h"
 #include <iostream>
+#include <stdexcept>
+#include <string>
+
+#include "DataFormats/FEDRawData.h"
 
 using namespace std;
 

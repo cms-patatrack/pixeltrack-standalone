@@ -1,5 +1,7 @@
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "AlpakaCore/Product.h"

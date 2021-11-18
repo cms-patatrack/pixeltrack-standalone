@@ -1,4 +1,8 @@
+#include <exception>
 //#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <tbb/task.h>
 

@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
