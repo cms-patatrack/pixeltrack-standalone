@@ -31,7 +31,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto& data = gpuData_.dataForDeviceAsync(queue, [this](Queue& queue) {
         // allocate
         GPUData gpuData(queue);
-        alpaka::memcpy(queue, gpuData.cablingMapDevice, this->cablingMapHost_, 1u);
+        alpaka::memcpy(queue, gpuData.cablingMapDevice, cablingMapHost_, 1u);
 
         return gpuData;
       });
@@ -40,10 +40,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const unsigned char* getModToUnpAllAsync(Queue& queue) const {
       const auto& data = modToUnp_.dataForDeviceAsync(queue, [this](Queue& queue) {
-        unsigned int modToUnpSize = this->modToUnpDefault_.size();
+        unsigned int modToUnpSize = modToUnpDefault_.size();
         ModulesToUnpack modToUnp(queue, modToUnpSize);
         auto modToUnpDefault_view{
-            ::cms::alpakatools::createHostView<const unsigned char>(this->modToUnpDefault_.data(), modToUnpSize)};
+            ::cms::alpakatools::createHostView<const unsigned char>(modToUnpDefault_.data(), modToUnpSize)};
         alpaka::memcpy(queue, modToUnp.modToUnpDefault, modToUnpDefault_view, modToUnpSize);
         return modToUnp;
       });
