@@ -44,7 +44,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
 
         if (data.m_filled.load()) {
           // Other thread marked it filled while we were locking the mutex, so we're free to return it
-          return *(data.m_data);
+          return *data.m_data;
         }
 
         if (data.m_fillingStream != nullptr) {
@@ -85,7 +85,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
           // must be synchronized by the caller
         }
       }
-      return *(data.m_data);
+      return *data.m_data;
     }
 
   private:

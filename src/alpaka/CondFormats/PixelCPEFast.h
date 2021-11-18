@@ -41,19 +41,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // the same cudaStream, or after cudaStreamSynchronize.
     const pixelCPEforGPU::ParamsOnGPU *getGPUProductAsync(Queue &queue) const {
       const auto &data = gpuData_.dataForDeviceAsync(queue, [this](Queue &queue) {
-        using namespace ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE;
         unsigned int ndetParams = m_detParamsGPU.size();
         GPUData gpuData(queue, ndetParams);
 
-        alpaka::memcpy(queue, gpuData.d_commonParams, this->m_commonParamsGPU, 1u);
+        alpaka::memcpy(queue, gpuData.d_commonParams, m_commonParamsGPU, 1u);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_commonParams =
             std::move(alpaka::getPtrNative(gpuData.d_commonParams));
 
-        alpaka::memcpy(queue, gpuData.d_layerGeometry, this->m_layerGeometry, 1u);
+        alpaka::memcpy(queue, gpuData.d_layerGeometry, m_layerGeometry, 1u);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_layerGeometry =
             std::move(alpaka::getPtrNative(gpuData.d_layerGeometry));
 
-        alpaka::memcpy(queue, gpuData.d_averageGeometry, this->m_averageGeometry, 1u);
+        alpaka::memcpy(queue, gpuData.d_averageGeometry, m_averageGeometry, 1u);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_averageGeometry =
             std::move(alpaka::getPtrNative(gpuData.d_averageGeometry));
 
