@@ -78,11 +78,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
     }
     // get the GPU product already here so that the async transfer can begin
-    const auto* gpuMap = hgpuMap.getGPUProductAsync(&ctx.stream());
-    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(
-        &ctx.stream());  //alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
+    const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
+    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
     auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
-    const auto* gpuGains = hgains.getGPUProductAsync(&ctx.stream());
+    const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
     auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
     const auto& buffers = iEvent.get(rawGetToken_);
 

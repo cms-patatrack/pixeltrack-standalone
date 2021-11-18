@@ -23,16 +23,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ~SiPixelGainCalibrationForHLTGPU() = default;
 
-    const SiPixelGainForHLTonGPU *getGPUProductAsync(Queue *queue) const {
-      const auto &data = gpuData_.dataForDeviceAsync(queue, [this](Queue *queue) {
-        GPUData gpuData(*queue, numDecodingStructures_);
+    const SiPixelGainForHLTonGPU *getGPUProductAsync(Queue& queue) const {
+      const auto &data = gpuData_.dataForDeviceAsync(queue, [this](Queue& queue) {
+        GPUData gpuData(queue, numDecodingStructures_);
         auto gainDataView(::cms::alpakatools::createHostView(h_gainData.data(), numDecodingStructures_));
-        alpaka::memcpy(*queue, gpuData.v_pedestalsGPU, gainDataView, numDecodingStructures_);
+        alpaka::memcpy(queue, gpuData.v_pedestalsGPU, gainDataView, numDecodingStructures_);
 
         *alpaka::getPtrNative(gpuData.gainDataOnGPU) = *alpaka::getPtrNative(gainForHLTonHost);
         alpaka::getPtrNative(gpuData.gainDataOnGPU)->v_pedestals = alpaka::getPtrNative(gpuData.v_pedestalsGPU);
 
-        alpaka::memcpy(*queue, gpuData.gainForHLTonGPU, gpuData.gainDataOnGPU, 1u);
+        alpaka::memcpy(queue, gpuData.gainForHLTonGPU, gpuData.gainDataOnGPU, 1u);
         return gpuData;
       });
       return alpaka::getPtrNative(data.gainForHLTonGPU);
@@ -46,7 +46,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     struct GPUData {
     public:
       GPUData() = delete;
-      GPUData(Queue &queue, unsigned int numDecodingStructures)
+      GPUData(Queue const& queue, unsigned int numDecodingStructures)
           : gainForHLTonGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU>(alpaka::getDev(queue), 1u)},
             gainDataOnGPU{::cms::alpakatools::allocHostBuf<SiPixelGainForHLTonGPU>(1u)},
             v_pedestalsGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU_DecodingStructure>(

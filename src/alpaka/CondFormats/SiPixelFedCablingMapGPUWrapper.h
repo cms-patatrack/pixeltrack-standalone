@@ -27,24 +27,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapHost_); }
 
-    const SiPixelFedCablingMapGPU* getGPUProductAsync(Queue* queue) const {
-      const auto& data = gpuData_.dataForDeviceAsync(queue, [this](Queue* queue) {
+    const SiPixelFedCablingMapGPU* getGPUProductAsync(Queue& queue) const {
+      const auto& data = gpuData_.dataForDeviceAsync(queue, [this](Queue& queue) {
         // allocate
-        GPUData gpuData(*queue);
-        alpaka::memcpy(*queue, gpuData.cablingMapDevice, this->cablingMapHost_, 1u);
+        GPUData gpuData(queue);
+        alpaka::memcpy(queue, gpuData.cablingMapDevice, this->cablingMapHost_, 1u);
 
         return gpuData;
       });
       return alpaka::getPtrNative(data.cablingMapDevice);
     }
 
-    const unsigned char* getModToUnpAllAsync(Queue* queue) const {
-      const auto& data = modToUnp_.dataForDeviceAsync(queue, [this](Queue* queue) {
+    const unsigned char* getModToUnpAllAsync(Queue& queue) const {
+      const auto& data = modToUnp_.dataForDeviceAsync(queue, [this](Queue& queue) {
         unsigned int modToUnpSize = this->modToUnpDefault_.size();
-        ModulesToUnpack modToUnp(*queue, modToUnpSize);
+        ModulesToUnpack modToUnp(queue, modToUnpSize);
         auto modToUnpDefault_view{
             ::cms::alpakatools::createHostView<const unsigned char>(this->modToUnpDefault_.data(), modToUnpSize)};
-        alpaka::memcpy(*queue, modToUnp.modToUnpDefault, modToUnpDefault_view, modToUnpSize);
+        alpaka::memcpy(queue, modToUnp.modToUnpDefault, modToUnpDefault_view, modToUnpSize);
         return modToUnp;
       });
       return alpaka::getPtrNative(data.modToUnpDefault);
@@ -58,7 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     struct GPUData {
     public:
       GPUData() = delete;
-      GPUData(Queue& queue)
+      GPUData(Queue const& queue)
           : cablingMapDevice{::cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(alpaka::getDev(queue), 1u)} {
         alpaka::prepareForAsyncCopy(cablingMapDevice);
       };
@@ -71,7 +71,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     struct ModulesToUnpack {
     public:
       ModulesToUnpack() = delete;
-      ModulesToUnpack(Queue& queue, unsigned int modToUnpSize)
+      ModulesToUnpack(Queue const& queue, unsigned int modToUnpSize)
           : modToUnpDefault{::cms::alpakatools::allocDeviceBuf<unsigned char>(alpaka::getDev(queue), modToUnpSize)} {};
 
     public:
