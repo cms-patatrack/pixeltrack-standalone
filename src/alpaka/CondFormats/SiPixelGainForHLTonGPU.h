@@ -15,13 +15,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using DecodingStructure = SiPixelGainForHLTonGPU_DecodingStructure;
     using Range = std::pair<uint32_t, uint32_t>;
     using RangeAndCols = std::pair<Range, int>;
-      
-    ALPAKA_FN_INLINE ALPAKA_FN_ACC std::pair<float, float> getPedAndGain(uint32_t moduleInd,
-                                                                                int col,
-                                                                                int row,
-                                                                                bool& isDeadColumn,
-                                                                                bool& isNoisyColumn) const {
-      
+
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC std::pair<float, float> getPedAndGain(
+        uint32_t moduleInd, int col, int row, bool& isDeadColumn, bool& isNoisyColumn) const {
       auto range = rangeAndCols[moduleInd].first;
       auto nCols = rangeAndCols[moduleInd].second;
 
@@ -45,8 +41,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       return std::make_pair(decodePed(s.ped & 0xFF), decodeGain(s.gain & 0xFF));
     }
 
-    ALPAKA_FN_INLINE  ALPAKA_FN_ACC float decodeGain(unsigned int gain) const { return gain * gainPrecision + minGain_; }
-    ALPAKA_FN_INLINE  ALPAKA_FN_ACC float decodePed(unsigned int ped) const { return ped * pedPrecision + minPed_; }
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC float decodeGain(unsigned int gain) const { return gain * gainPrecision + minGain_; }
+    ALPAKA_FN_INLINE ALPAKA_FN_ACC float decodePed(unsigned int ped) const { return ped * pedPrecision + minPed_; }
 
     DecodingStructure* v_pedestals;
 
@@ -60,7 +56,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     unsigned int nBinsToUseForEncoding_;
     unsigned int deadFlag_;
     unsigned int noisyFlag_;
-
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

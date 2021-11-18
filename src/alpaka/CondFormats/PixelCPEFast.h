@@ -21,16 +21,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     {
       std::ifstream in(path, std::ios::binary);
       in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
-      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_commonParamsGPU)),
-              sizeof(pixelCPEforGPU::CommonParams));
+      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_commonParamsGPU)), sizeof(pixelCPEforGPU::CommonParams));
       unsigned int ndetParams;
       in.read(reinterpret_cast<char *>(&ndetParams), sizeof(unsigned int));
       m_detParamsGPU.resize(ndetParams);
       in.read(reinterpret_cast<char *>(m_detParamsGPU.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
       in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_averageGeometry)),
               sizeof(pixelCPEforGPU::AverageGeometry));
-      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_layerGeometry)),
-              sizeof(pixelCPEforGPU::LayerGeometry));
+      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_layerGeometry)), sizeof(pixelCPEforGPU::LayerGeometry));
 
       alpaka::prepareForAsyncCopy(m_commonParamsGPU);
       alpaka::prepareForAsyncCopy(m_layerGeometry);
@@ -46,11 +44,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         using namespace ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE;
         unsigned int ndetParams = m_detParamsGPU.size();
         GPUData gpuData(*queue, ndetParams);
-        
+
         alpaka::memcpy(*queue, gpuData.d_commonParams, this->m_commonParamsGPU, 1u);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_commonParams =
             std::move(alpaka::getPtrNative(gpuData.d_commonParams));
-        
+
         alpaka::memcpy(*queue, gpuData.d_layerGeometry, this->m_layerGeometry, 1u);
         alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_layerGeometry =
             std::move(alpaka::getPtrNative(gpuData.d_layerGeometry));
@@ -86,8 +84,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       GPUData(Queue &queue, unsigned int ndetParams)
           : h_paramsOnGPU{::cms::alpakatools::allocHostBuf<pixelCPEforGPU::ParamsOnGPU>(1u)},
             d_paramsOnGPU{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(alpaka::getDev(queue), 1u)},
-            d_commonParams{
-                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(alpaka::getDev(queue), 1u)},
+            d_commonParams{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(alpaka::getDev(queue), 1u)},
             d_layerGeometry{
                 ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(alpaka::getDev(queue), 1u)},
             d_averageGeometry{

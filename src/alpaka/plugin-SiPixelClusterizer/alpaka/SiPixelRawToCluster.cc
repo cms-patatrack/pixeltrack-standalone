@@ -79,7 +79,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
     // get the GPU product already here so that the async transfer can begin
     const auto* gpuMap = hgpuMap.getGPUProductAsync(&ctx.stream());
-    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(&ctx.stream());//alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
+    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(
+        &ctx.stream());  //alpaka::getPtrNative(iSetup.get<AlpakaDeviceBuf<unsigned char>>());
     auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
     const auto* gpuGains = hgains.getGPUProductAsync(&ctx.stream());
     auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
@@ -159,7 +160,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                includeErrors_,
                                false,  // debug
                                ctx.stream());
-
   }
 
   void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {

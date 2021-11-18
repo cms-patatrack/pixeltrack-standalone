@@ -16,7 +16,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::EventSetup& eventSetup);
 
   private:
-  std::filesystem::path data_;
+    std::filesystem::path data_;
   };
 
   void SiPixelFedCablingMapESProducer::produce(edm::EventSetup& eventSetup) {

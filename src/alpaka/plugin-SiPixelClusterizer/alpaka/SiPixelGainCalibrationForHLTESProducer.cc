@@ -13,7 +13,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelGainCalibrationForHLTESProducer : public edm::ESProducer {
   public:
-    explicit SiPixelGainCalibrationForHLTESProducer(  std::filesystem::path const& datadir) : data_(datadir) {}
+    explicit SiPixelGainCalibrationForHLTESProducer(std::filesystem::path const& datadir) : data_(datadir) {}
     void produce(edm::EventSetup& eventSetup);
 
   private:
@@ -24,10 +24,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::ifstream in((data_ / "gain.bin"), std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
     SiPixelGainForHLTonGPU gain;
-    in.read(reinterpret_cast<char*>(&gain), sizeof(SiPixelGainForHLTonGPU));       
+    in.read(reinterpret_cast<char*>(&gain), sizeof(SiPixelGainForHLTonGPU));
     unsigned int nbytes;
     in.read(reinterpret_cast<char*>(&nbytes), sizeof(unsigned int));
-    std::vector<SiPixelGainForHLTonGPU_DecodingStructure> gainData(nbytes / sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
+    std::vector<SiPixelGainForHLTonGPU_DecodingStructure> gainData(nbytes /
+                                                                   sizeof(SiPixelGainForHLTonGPU_DecodingStructure));
     in.read(reinterpret_cast<char*>(gainData.data()), nbytes);
     eventSetup.put(std::make_unique<SiPixelGainCalibrationForHLTGPU>(gain, std::move(gainData)));
   }
