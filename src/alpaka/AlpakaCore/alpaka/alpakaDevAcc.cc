@@ -2,7 +2,8 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  static std::vector<ALPAKA_ACCELERATOR_NAMESPACE::Device> enumerate() {
+  static
+  std::vector<ALPAKA_ACCELERATOR_NAMESPACE::Device> enumerate() {
     std::vector<ALPAKA_ACCELERATOR_NAMESPACE::Device> devices;
     uint32_t n = alpaka::getDevCount<ALPAKA_ACCELERATOR_NAMESPACE::Platform>();
     devices.reserve(n);
@@ -13,4 +14,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   const std::vector<Device> devices = enumerate();
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}
