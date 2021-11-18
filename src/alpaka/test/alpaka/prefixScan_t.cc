@@ -40,7 +40,7 @@ struct testPrefixScan {
     ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, size, 1u, [&](uint32_t i) {
       assert(c[i] == c[i - 1] + 1);
       assert(c[i] == i + 1);
-      assert(c[i] = co[i]);
+      assert(c[i] == co[i]);
     });
   }
 };
@@ -75,7 +75,7 @@ struct testWarpPrefixScan {
         printf(format_traits<T>::failed_msg, size, i, blockDimension, c[i], c[i - 1]);
       assert(c[i] == c[i - 1] + 1);
       assert(c[i] == i + 1);
-      assert(c[i] = co[i]);
+      assert(c[i] == co[i]);
     }
   }
 };
