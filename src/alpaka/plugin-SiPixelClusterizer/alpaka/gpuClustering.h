@@ -178,7 +178,7 @@ namespace gpuClustering {
 #endif
 
 #ifndef NDEBUG
-      const uint32_t runTimeThreadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
+      [[maybe_unused]] const uint32_t runTimeThreadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
       ALPAKA_ASSERT_OFFLOAD(runTimeThreadDimension <= threadDimension);
 #endif
 
@@ -295,7 +295,7 @@ namespace gpuClustering {
           n0 = nloops;
         alpaka::syncBlockThreads(acc);
 #ifndef NDEBUG
-        auto ok = n0 == nloops;
+        [[maybe_unused]] auto ok = n0 == nloops;
         ALPAKA_ASSERT_OFFLOAD(alpaka::syncBlockThreadsPredicate<alpaka::BlockAnd>(acc, ok));
 #endif
         if (thisModuleId % 100 == 1)

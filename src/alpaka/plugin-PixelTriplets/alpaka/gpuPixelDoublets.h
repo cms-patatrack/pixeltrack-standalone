@@ -81,12 +81,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (0 == threadIdx) {
           cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
           cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
-          auto i = cellNeighbors->extend(
-              acc);  // NB: Increases cellNeighbors size by 1, returns previous size which should be 0.
+          // NB: Increases cellNeighbors size by 1, returns previous size which should be 0.
+          [[maybe_unused]] auto i = cellNeighbors->extend(acc);
           ALPAKA_ASSERT_OFFLOAD(0 == i);
           (*cellNeighbors)[0].reset();
-          auto ii =
-              cellTracks->extend(acc);  // NB: Increases cellTracks size by 1, returns previous size which should be 0.
+          // NB: Increases cellTracks size by 1, returns previous size which should be 0
+          [[maybe_unused]] auto ii = cellTracks->extend(acc);
           ALPAKA_ASSERT_OFFLOAD(0 == ii);
           (*cellTracks)[0].reset();
         }

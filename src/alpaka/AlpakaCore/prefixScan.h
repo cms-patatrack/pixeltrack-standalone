@@ -51,7 +51,6 @@ namespace cms {
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
       uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
@@ -99,7 +98,6 @@ namespace cms {
     ) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
       uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      uint32_t const gridBlockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
       assert(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
@@ -146,7 +144,7 @@ namespace cms {
         auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
         // first each block does a scan of size 1024; (better be enough blocks....)
 #ifndef NDEBUG
-        uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
+        [[maybe_unused]] uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         ALPAKA_ASSERT_OFFLOAD(gridDimension / threadDimension <= 1024);
 #endif
         int off = blockDimension * blockIdx * threadDimension;
