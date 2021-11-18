@@ -1,3 +1,5 @@
+//#include <iostream>
+
 #include "AlpakaCore/alpakaCommon.h"
 
 #include "gpuVertexFinder.h"

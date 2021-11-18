@@ -1,6 +1,8 @@
 #ifndef EDProducerBase_h
 #define EDProducerBase_h
 
+#include <utility>
+
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
 namespace edm {

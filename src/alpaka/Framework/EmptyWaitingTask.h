@@ -1,7 +1,8 @@
 #ifndef EmptyWaitingTask_h
 #define EmptyWaitingTask_h
 
-// from FWCore/Concurrency/interface/WaitingTaskList.h
+#include <memory>
+
 #include "Framework/WaitingTask.h"
 
 namespace edm {

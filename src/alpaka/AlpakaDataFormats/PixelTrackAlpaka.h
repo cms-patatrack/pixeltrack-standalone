@@ -1,6 +1,8 @@
 #ifndef CUDADataFormatsTrackTrackHeterogeneous_H
 #define CUDADataFormatsTrackTrackHeterogeneous_H
 
+#include <cmath>
+
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaDataFormats/TrajectoryStateSoA.h"

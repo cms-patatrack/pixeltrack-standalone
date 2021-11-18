@@ -1,6 +1,9 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
 #define RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
 
+#include <algorithm>
+#include <cmath>
+
 #include "FitUtils.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

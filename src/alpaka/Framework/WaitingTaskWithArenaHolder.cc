@@ -6,6 +6,10 @@
 // Original Author:  W. David Dagenhart
 //         Created:  6 December 2017
 
+#include <exception>
+#include <memory>
+#include <utility>
+
 #include "WaitingTaskWithArenaHolder.h"
 #include "WaitingTask.h"
 #include "WaitingTaskHolder.h"

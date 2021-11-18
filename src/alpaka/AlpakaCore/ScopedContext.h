@@ -1,18 +1,20 @@
 #ifndef HeterogeneousCore_AlpakaCore_ScopedContext_h
 #define HeterogeneousCore_AlpakaCore_ScopedContext_h
 
-#include <optional>
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
-#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/ContextState.h"
 #include "AlpakaCore/EventCache.h"
 #include "AlpakaCore/Product.h"
+#include "AlpakaCore/StreamCache.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/chooseDevice.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
 #include "Framework/Event.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
-#include "chooseDevice.h"
-#include "AlpakaCore/StreamCache.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest {
   class TestScopedContext;

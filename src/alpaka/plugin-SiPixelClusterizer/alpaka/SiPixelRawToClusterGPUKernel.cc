@@ -7,6 +7,7 @@
 **/
 
 // C++ includes
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
@@ -16,6 +17,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <utility>
 
 // Alpaka includes
 #include "AlpakaCore/prefixScan.h"

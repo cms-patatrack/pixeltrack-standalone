@@ -1,11 +1,13 @@
 #ifndef EventSetup_h
 #define EventSetup_h
 
+#include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <typeindex>
 #include <unordered_map>
-
-#include <iostream>
+#include <utility>
 
 namespace edm {
   // This is very different from CMSSW, but (hopefully) good-enough

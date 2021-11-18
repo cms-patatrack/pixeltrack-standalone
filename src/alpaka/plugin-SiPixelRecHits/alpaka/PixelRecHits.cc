@@ -1,3 +1,7 @@
+#ifdef GPU_DEBUG
+#include <iostream>
+#endif
+
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "PixelRecHits.h"

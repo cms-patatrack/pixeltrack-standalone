@@ -5,6 +5,8 @@
 // Author: Felice Pantaleo, CERN
 //
 
+#include <utility>
+
 #include "AlpakaCore/alpakaConfig.h"
 
 namespace cms::alpakatools {

@@ -4,6 +4,7 @@
 
 // #define BROKENLINE_DEBUG
 
+#include <cmath>
 #include <cstdint>
 
 #include "AlpakaCore/alpakaKernelCommon.h"

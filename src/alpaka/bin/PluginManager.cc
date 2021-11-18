@@ -1,5 +1,8 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
 
 #include "PluginManager.h"
 

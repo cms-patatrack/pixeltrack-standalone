@@ -2,6 +2,7 @@
 #define DataFormats_SiPixelDigi_interface_SiPixelDigisSoA_h
 
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
 class SiPixelDigisSoA {

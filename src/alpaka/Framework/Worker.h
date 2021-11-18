@@ -2,8 +2,10 @@
 #define Worker_h
 
 #include <atomic>
-#include <vector>
+#include <exception>
 //#include <iostream>
+#include <utility>
+#include <vector>
 
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"

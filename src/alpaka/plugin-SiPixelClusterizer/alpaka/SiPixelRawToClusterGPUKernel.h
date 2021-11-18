@@ -2,6 +2,8 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
+#include <optional>
+#include <utility>
 
 #include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"

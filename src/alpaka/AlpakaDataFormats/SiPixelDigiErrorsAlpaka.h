@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
 
+#include <utility>
+
 #include "DataFormats/PixelErrors.h"
 #include "AlpakaCore/SimpleVector.h"
 

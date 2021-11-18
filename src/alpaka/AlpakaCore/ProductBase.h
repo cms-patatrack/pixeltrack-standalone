@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <utility>
 
 #include <alpaka/alpaka.hpp>
 

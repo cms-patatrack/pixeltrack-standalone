@@ -5,6 +5,8 @@
 #include <cassert>
 #include <exception>
 #include <ostream>
+#include <string>
+#include <stdexcept>
 #include <vector>
 
 class SimpleAtomicHisto {

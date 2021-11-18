@@ -1,10 +1,10 @@
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <iostream>
-#include <random>
 #include <limits>
-#include <array>
 #include <memory>
+#include <random>
 
 #include "AlpakaCore/HistoContainer.h"
 

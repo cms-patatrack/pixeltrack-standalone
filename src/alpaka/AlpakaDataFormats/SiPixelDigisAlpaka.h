@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
 
+#include <memory>
+
 #include "AlpakaCore/alpakaCommon.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

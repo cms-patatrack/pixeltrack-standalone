@@ -4,6 +4,7 @@
 
 // #define NTUPLE_DEBUG
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 

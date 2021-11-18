@@ -1,7 +1,13 @@
-#include "CAHitNtupletGeneratorKernels.h"
-#include "CAHitNtupletGeneratorKernelsImpl.h"
+#include <algorithm>
+#include <atomic>
+#ifdef NTUPLE_DEBUG
+#include <iostream>
+#endif
 
 #include "AlpakaCore/alpakaCommon.h"
+
+#include "CAHitNtupletGeneratorKernels.h"
+#include "CAHitNtupletGeneratorKernelsImpl.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
