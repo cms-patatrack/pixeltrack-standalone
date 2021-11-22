@@ -34,15 +34,19 @@ result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) second
 Measurement = collections.namedtuple("Measurement", ["events", "time", "throughput"])
 GPU = collections.namedtuple("GPU", ["id", "name", "driver_version"])
 GPUStatus = collections.namedtuple("GPUStatus", ["utilization", "temperature", "power", "clock"])
+BackgroundJob = collections.namedtuple("BackgroundJob", ["handle", "logfile", "cores"])
+
 
 class Monitor:
     def __init__(self, opts, cudaDevices=[]):
         self._intervalSeconds = opts.monitorSeconds
         self._monitorMemory = opts.monitorMemory
+        self._monitorClock = opts.monitorClock
         self._monitorCuda = opts.monitorCuda
 
         self._timeStamp = []
         self._dataMemory = []
+        self._dataClock = {x: [] for x in range(0, multiprocessing.cpu_count())}
         self._dataCuda = {x: [] for x in cudaDevices}
 
     def setIntervalSeconds(self, interval):
@@ -59,6 +63,10 @@ class Monitor:
         if self._monitorMemory:
             rss = processRss(pid) if pid is not None else 0
             self._dataMemory.append(dict(rss=rss))
+        if self._monitorClock:
+            clocks = processClock()
+            for key, lst in self._dataClock.items():
+                lst.append(dict(clock=clocks.get(key, -1.0)))
 
         if self._monitorCuda:
             for dev in cudaDevices:
@@ -72,8 +80,12 @@ class Monitor:
         data = {}
         if self._intervalSeconds is not None:
             data["time"] = self._timeStamp
-            if self._monitorMemory:
-                data["host"] = self._dataMemory
+            if self._monitorMemory or self._monitorClock:
+                data["host"] = {}
+                if self._monitorMemory:
+                    data["host"]["process"] = self._dataMemory
+                if self._monitorClock:
+                    data["host"]["cpu"] = self._dataClock
             if self._monitorCuda:
                 data["cuda"] = self._dataCuda
         return data
@@ -143,6 +155,19 @@ def processRss(pid):
     memusage = content.split('VmRSS:')[1].split('\n')[0][:-3]
     return float(memusage.strip())/1024.0
 
+def processClock():
+    """In MHz"""
+    ret = {}
+    with open("/proc/cpuinfo") as f:
+        cpuId = -1
+        for line in f:
+            if "processor" in line:
+                cpuid = int(int(line.split(":")[1]))
+            elif "cpu MHz" in line:
+                ret[cpuid] = float(line.split(":")[1])
+                cpuid = -1
+    return ret
+
 def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices=[]):
     nth = len(cores_main)
     with open(logfilename, "w") as logfile:
@@ -192,29 +217,43 @@ def runEvents(nev, *args, **kwargs):
 def runMinutes(mins, *args, **kwargs):
     return _run(["--runForMinutes", str(mins)], *args, **kwargs)
 
-def launchBackground(opts, cores_bkg, logfile):
+def launchBackground(opts, cores_bkg, logfilepattern):
     if opts.fill <= 0:
-        return None
+        return []
     nth = len(cores_bkg)
     if nth == 0:
-        return None
+        return []
     nev = background_events_per_thread * nth
     taskset = []
     exe = os.path.join(os.path.dirname(opts.program), "serial")
-    command = [exe, "--maxEvents", str(nev), "--numberOfThreads", str(nth)]
-    if opts.taskset:
-        taskset = ["taskset", "-c", ",".join(cores_bkg)]
-    if opts.bkgNice is not None:
-        taskset.extend(["nice", "-n", str(opts.bkgNice)])
 
-    logfile.write(" ".join(taskset+command))
-    logfile.write("\n----\n")
-    logfile.flush()
-    if opts.dryRun:
-        print(" ".join(taskset+command))
-        return None
-    serial = subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True)
-    return serial
+    serials = []
+    nth_per_process = nth
+    if opts.bkgThreads > 0 and opts.bkgThreads < nth:
+        nth_per_process = opts.bkgThreads
+    nprocesses = nth // nth_per_process
+    if nth % nth_per_process != 0:
+        nprocesses += 1
+    for ibkg in range(0, nprocesses):
+        logfile = open(logfilepattern.format(ibkg), "w")
+        cores = cores_bkg[ibkg*nth_per_process:(ibkg+1)*nth_per_process]
+        nth_this = len(cores)
+
+        command = [exe, "--maxEvents", str(nev), "--numberOfThreads", str(nth_this)]
+        if opts.taskset:
+            taskset = ["taskset", "-c", ",".join(cores)]
+        if opts.bkgNice is not None:
+            taskset.extend(["nice", "-n", str(opts.bkgNice)])
+
+        logfile.write(" ".join(taskset+command))
+        logfile.write("\n----\n")
+        logfile.flush()
+        if opts.dryRun:
+            print(" ".join(taskset+command))
+            continue
+        serials.append(BackgroundJob(subprocess.Popen(taskset+command, stdout=logfile, stderr=subprocess.STDOUT, universal_newlines=True),
+                                     logfile, cores))
+    return serials
 
 def getEventsPerStream(program, opts):
     ret = opts.eventsPerStream
@@ -304,73 +343,78 @@ def main(opts):
           print()
           opts.warmup = False
 
-        with open(opts.output+"_log_nstr{}_nth{}_bkg.txt".format(nstr, nth), "w") as bkglogfile:
-            backgroundJob = launchBackground(opts, cores_bkg, bkglogfile)
-            if backgroundJob is not None:
-                msg = "Background serial pid {}".format(backgroundJob.pid)
+        backgroundJobs = launchBackground(opts, cores_bkg, opts.output+"_log_nstr{}_nth{}_bkg".format(nstr, nth)+"{}.txt")
+        if len(backgroundJobs) > 0:
+            msg = "Background serial\n"
+            for job in backgroundJobs:
+                msg += " pid {}".format(job.handle.pid)
                 if opts.taskset:
-                    msg +=", running on cores " + ",".join(cores_bkg)
-                printMessage(msg)
+                    msg +=", running on cores " + ",".join(job.cores)
+                msg += "\n"
+            printMessage(msg)
 
-            try:
-                msg = "Number of streams {} threads {}".format(nstr, nth)
-                if nev >= 0:
-                    msg += " events {}".format(nev)
-                else:
-                    msg += " minutes {}".format(mins)
-                if opts.taskset:
-                    msg += ", running on cores " + ",".join(cores_main)
-                if len(opts.cudaDevices) > 0:
-                    msg += ", running on devices " + ",".join(opts.cudaDevices)
-                printMessage(msg)
-                throughputs = []
-                for i in range(opts.repeat):
-                    tryAgain = opts.tryAgain
-                    while tryAgain > 0:
-                        try:
-                            monitor = Monitor(opts, cudaDevices=opts.cudaDevices)
-                            measurement = run("_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i), monitor=monitor, cudaDevices=opts.cudaDevices)
-                            break
-                        except Exception as e:
-                            tryAgain -= 1
-                            if tryAgain == 0:
-                                raise
-                            print("Got exception (see below), trying again ({} times left)".format(tryAgain))
-                            print("--------------------")
-                            print(str(e))
-                            print("--------------------")
-
-                    if opts.dryRun:
-                        continue
-                    throughputs.append(measurement.throughput)
-                    d = dict(
-                        hostname=hostname,
-                        threads=nth,
-                        streams=nstr,
-                        events=measurement.events,
-                        throughput=measurement.throughput,
-                    )
-                    if monitor.intervalSeconds() is not None:
-                        d["monitor"]=monitor.toArrays()
-                    if len(opts.cudaDevices) > 0:
-                        d["cudaDevices"] = {
-                            x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
-                        }
-                    data["results"].append(d)
-                    # Save results after each test
-                    with open(outputJson, "w") as out:
-                        json.dump(data, out, indent=2)
-                    if opts.stopAfterWallTime > 0 and measurement.time > opts.stopAfterWallTime:
-                        stop = True
-                        break
-            finally:
-                if backgroundJob is not None:
-                    printMessage("Run complete, terminating background serial")
+        try:
+            msg = "Number of streams {} threads {}".format(nstr, nth)
+            if nev >= 0:
+                msg += " events {}".format(nev)
+            else:
+                msg += " minutes {}".format(mins)
+            if opts.taskset:
+                msg += ", running on cores " + ",".join(cores_main)
+            if len(opts.cudaDevices) > 0:
+                msg += ", running on devices " + ",".join(opts.cudaDevices)
+            printMessage(msg)
+            throughputs = []
+            for i in range(opts.repeat):
+                tryAgain = opts.tryAgain
+                while tryAgain > 0:
                     try:
-                        backgroundJob.terminate()
-                    except OSError:
-                        pass
-                    backgroundJob.wait()
+                        monitor = Monitor(opts, cudaDevices=opts.cudaDevices)
+                        measurement = run("_log_nstr{}_nth{}_n{}.txt".format(nstr, nth, i), monitor=monitor, cudaDevices=opts.cudaDevices)
+                        break
+                    except Exception as e:
+                        tryAgain -= 1
+                        if tryAgain == 0:
+                            raise
+                        print("Got exception (see below), trying again ({} times left)".format(tryAgain))
+                        print("--------------------")
+                        print(str(e))
+                        print("--------------------")
+
+                if opts.dryRun:
+                    continue
+                throughputs.append(measurement.throughput)
+                d = dict(
+                    hostname=hostname,
+                    threads=nth,
+                    streams=nstr,
+                    events=measurement.events,
+                    throughput=measurement.throughput,
+                )
+                if monitor.intervalSeconds() is not None:
+                    d["monitor"]=monitor.toArrays()
+                if len(opts.cudaDevices) > 0:
+                    d["cudaDevices"] = {
+                        x: dict(name=cudaDevices[x].name, driver_version=cudaDevices[x].driver_version) for x in opts.cudaDevices
+                    }
+                data["results"].append(d)
+                # Save results after each test
+                with open(outputJson, "w") as out:
+                    json.dump(data, out, indent=2)
+                if opts.stopAfterWallTime > 0 and measurement.time > opts.stopAfterWallTime:
+                    stop = True
+                    break
+        finally:
+            if len(backgroundJobs) > 0:
+                printMessage("Run complete, terminating background serial jobs")
+                try:
+                    for job in backgroundJobs:
+                        job.handle.terminate()
+                except OSError:
+                    pass
+                for job in backgroundJobs:
+                    job.handle.wait()
+                    job.logfile.close()
 
         thr = 0
         stdev = 0
@@ -400,6 +444,8 @@ def addCommonArguments(parser):
                                help="Store monitoring data with intervals of this many seconds (default -1 for disabled)")
     monitor_group.add_argument("--monitorMemory", action="store_true",
                                help="Enable monitoring of host memory")
+    monitor_group.add_argument("--monitorClock", action="store_true",
+                               help="Enable monitoring of CPU core clocks")
     monitor_group.add_argument("--monitorCuda", action="store_true",
                                help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
 
@@ -457,6 +503,8 @@ Note that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices in
                             help="Launch serial program in the background so that this many threads are always running. If given, this will also become the upper limit for the number of threads instead of the number of cores of the machine. (default: -1 to disable")
     fill_group.add_argument("--bkgNice", type=int, default=None,
                             help="If given, use this 'nice' level for the background program")
+    fill_group.add_argument("--bkgThreads", type=int, default=-1,
+                            help="If given, use this many threads/process for the background program(s). (default: -1 for one process with necessary number of threads)")
     fill_group.add_argument("--cudaDevices", type=str, default="",
                             help="Comma-separeted list of CUDA devices (as in nvidia-smi) to use (default empty is to use all devices).")
 

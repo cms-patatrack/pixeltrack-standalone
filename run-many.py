@@ -8,16 +8,19 @@ import argparse
 import importlib
 import subprocess
 import collections
+import multiprocessing
 
 scan = importlib.import_module("run-scan")
 
 RunningProgram = collections.namedtuple("RunningProgram", ["program", "index", "handle"])
 
 class Program:
-    def __init__(self, description):
+    def __init__(self, description, opts):
         s = description.split(":")
-        self._program = s[0]
-        self._options = ["threads","streams","numa","cores","cudaDevices"]
+        s2 = s[0].split(" ")
+        self._program = s2[0]
+        self._programArgs = s2[1:]
+        self._options = ["events", "eventsPerStream", "threads","streams","numa","cores","cudaDevices"]
         valid = set(self._options)
         for o in s[1:]:
             (name, value) = o.split("=")
@@ -27,10 +30,18 @@ class Program:
             valid.remove(name)
         for o in valid:
             setattr(self, "_"+o, None)
+        if opts.runForMinutes > 0:
+            if self._events is not None or self._eventsPerStream is not None:
+                raise Exception("--runForMinutes argument conflicts with 'events'/'eventsPerStream'")
+        elif self._events is None:
+            self._events = 1000
         if self._threads is None:
             self._threads = 1
         if self._streams is None:
             self._streams = self._threads
+        if self._eventsPerStream is not None:
+            self._events = int(self._eventsPerStream)*int(self._streams)
+            self._eventsPerStream = None
         self._cudaDevices = self._cudaDevices.split(",") if self._cudaDevices is not None else []
 
     def program(self):
@@ -39,17 +50,25 @@ class Program:
     def programShort(self):
         return os.path.basename(self._program)
 
+    def events(self):
+        return self._events
+
     def cudaDevices(self):
         return self._cudaDevices
 
-    def makeCommandMessage(self, processUntil):
-        command = [self._program] + processUntil + ["--numberOfThreads", str(self._threads), "--numberOfStreams", str(self._streams)]
+    def makeCommandMessage(self, opts):
+        command = [self._program] + self._programArgs
+        if opts.runForMinutes > 0:
+            command.extend(["--runForMinutes", str(opts.runForMinutes)])
+        else:
+            command.extend(["--maxEvents", str(self._events)])
+        command.extend(["--numberOfThreads", str(self._threads), "--numberOfStreams", str(self._streams)])
         msg = "Program {} threads {} streams {}".format(self.programShort(), self._threads, self._streams)
         if self._numa is not None:
             command = ["numactl", "--cpunodebind={}".format(self._numa), "--membind={}".format(self._numa)] + command
             msg += " NUMA node {}".format(self._numa)
         if self._cores is not None:
-            command = ["taskset", "-c", self._cores]
+            command = ["taskset", "-c", self._cores] + command
             msg += " cores {}".format(self._cores)
         if len(self._cudaDevices) > 0:
             msg += " CUDA devices {}".format(",".join(self._cudaDevices))
@@ -88,11 +107,13 @@ class Monitor:
     def __init__(self, opts, programs, cudaDevices=[]):
         self._intervalSeconds = opts.monitorSeconds
         self._monitorMemory = opts.monitorMemory
+        self._monitorClock = opts.monitorClock
         self._monitorCuda = opts.monitorCuda
         self._allPrograms = programs
 
         self._timeStamp = []
         self._dataMemory = [[] for p in programs]
+        self._dataClock = {x: [] for x in range(0, multiprocessing.cpu_count())}
         self._dataCuda = {x: [] for x in cudaDevices}
         self._dataCudaProcs = [{x: [] for x in p.cudaDevices()} for p in programs]
 
@@ -113,6 +134,10 @@ class Monitor:
                 update[rp.index]["rss"] = scan.processRss(rp.handle.pid)
             for i, u in enumerate(update):
                 self._dataMemory[i].append(u)
+        if self._monitorClock:
+            clocks = scan.processClock()
+            for key, lst in self._dataClock.items():
+                lst.append(dict(clock=clocks.get(key, -1.0)))
 
         if self._monitorCuda:
             for dev in self._dataCuda.keys():
@@ -129,8 +154,12 @@ class Monitor:
         data = {}
         if self._intervalSeconds is not None:
             data["time"] = self._timeStamp
-            if self._monitorMemory:
-                data["host"] = self._dataMemory
+            if self._monitorMemory or self._monitorClock:
+                data["host"] = {}
+                if self._monitorMemory:
+                    data["host"]["processes"] = self._dataMemory
+                if self._monitorClock:
+                    data["host"]["cpu"] = self._dataClock
             if self._monitorCuda:
                 data["cuda"] = dict(
                     device = self._dataCuda,
@@ -138,15 +167,19 @@ class Monitor:
                 )
         return data
 
-def runMany(programs, processUntil, opts, logfilenamebase, monitor):
+def runMany(programs, opts, logfilenamebase, monitor):
     logfiles = []
     for i in range(0, len(programs)):
         logfiles.append(open(logfilenamebase.format(i), "w"))
 
     running_programs = []
     for i, (prog, logfile) in enumerate(zip(programs, logfiles)):
-        (command, msg) = prog.makeCommandMessage(processUntil)
-        msg = str(i) + " "+ msg + " minutes {}".format(opts.runForMinutes)
+        (command, msg) = prog.makeCommandMessage(opts)
+        msg = str(i) + " "+ msg
+        if opts.runForMinutes > 0:
+            msg += " minutes {}".format(opts.runForMinutes)
+        else:
+            msg += " events {}".format(prog.events())
         scan.printMessage(msg)
         logfile.write(" ".join(command))
         logfile.write("\n----\n")
@@ -212,7 +245,7 @@ def main(opts):
             num = int(s[0])
             x = s[1]
         for i in range(0, num):
-            p = Program(x)
+            p = Program(x, opts)
             programs.append(p)
             cudaDevicesInPrograms.update(p.cudaDevices())
     cudaDevicesInPrograms = list(cudaDevicesInPrograms)
@@ -226,7 +259,6 @@ def main(opts):
             raise Exception("Some program asked device {} but there is no device with that id".format(d))
 
     data = dict(
-        args=" ".join(opts.args),
         results=[]
     )
     outputJson = opts.output+".json"
@@ -239,15 +271,11 @@ def main(opts):
 
     hostname = socket.gethostname()
 
-    if opts.runForMinutes < 0:
-        raise Exception("currently --runForMinutes is required")
-    mins = opts.runForMinutes
-
     tryAgain = opts.tryAgain
     while tryAgain > 0:
         try:
             monitor = Monitor(opts, programs, cudaDevices=cudaDevicesInPrograms)
-            measurements = runMany(programs, ["--runForMinutes", str(mins)], opts, opts.output+"_log_{}.txt", monitor=monitor)
+            measurements = runMany(programs, opts, opts.output+"_log_{}.txt", monitor=monitor)
             break
         except Exception as e:
             tryAgain -= 1
@@ -291,18 +319,24 @@ Note that this program does not honor CUDA_VISIBLE_DEVICES, use cudaDevices inst
 Measuring combined throughput of multiple programs
 [M]<program>:threads=N:streams=N:numa=N:cores=<list>:cudaDevices=<list>;<program>:...
 
-  <program>   (Path to) the program to run
-  threads     Number host threads (default: 1)
-  streams     Number of streams (concurrent events) (default: same as threads)
-  numa        NUMA node, uses 'numactl' (default: not set)
-  cores       List of CPU cores to pin, uses 'taskset' (default: not set)
-  cudaDevices List of CUDA devices to use (default: not set)
+  <program>       (Path to) the program to run
+  events          Number of events to process (default 1000 if --runForMinutes is not specified)
+  eventsPerStream Number of events per stream to process
+  threads         Number host threads (default: 1)
+  streams         Number of streams (concurrent events) (default: same as threads)
+  numa            NUMA node, uses 'numactl' (default: not set)
+  cores           List of CPU cores to pin, uses 'taskset' (default: not set)
+  cudaDevices     List of CUDA devices to use (default: not set)
   M copies
 """, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("programs", type=str,
                         help="Declaration of many programs to run (for syntax see above).")
 
     scan.addCommonArguments(parser)
+
+    parser.add_argument("--runForMinutes", type=int, default=-1,
+                        help="Process the set of events until this many minutes has elapsed. Conflicts with 'events'. (default -1 for disabled)")
+
     opts = scan.parseCommonArguments(parser)
 
     main(opts)
