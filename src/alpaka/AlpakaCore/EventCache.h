@@ -6,7 +6,6 @@
 #include <vector>
 
 #include <alpaka/alpaka.hpp>
-#include "alpaka/alpaka_ex.hpp"
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/getDevIndex.h"
