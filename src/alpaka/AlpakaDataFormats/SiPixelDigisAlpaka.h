@@ -10,14 +10,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class SiPixelDigisAlpaka {
   public:
     SiPixelDigisAlpaka() = default;
-    explicit SiPixelDigisAlpaka(Device const &device, size_t maxFedWords)
-        : xx_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          yy_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          adc_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          moduleInd_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(device, maxFedWords)},
-          clus_d{::cms::alpakatools::allocDeviceBuf<int32_t>(device, maxFedWords)},
-          pdigi_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)},
-          rawIdArr_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(device, maxFedWords)} {}
+    explicit SiPixelDigisAlpaka(Queue &queue, size_t maxFedWords)
+        : xx_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
+          yy_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
+          adc_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
+          moduleInd_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
+          clus_d{::cms::alpakatools::allocDeviceBuf<int32_t>(queue, maxFedWords)},
+          pdigi_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxFedWords)},
+          rawIdArr_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxFedWords)} {}
     ~SiPixelDigisAlpaka() = default;
 
     SiPixelDigisAlpaka(const SiPixelDigisAlpaka &) = delete;
@@ -110,4 +110,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
+#endif  // CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h

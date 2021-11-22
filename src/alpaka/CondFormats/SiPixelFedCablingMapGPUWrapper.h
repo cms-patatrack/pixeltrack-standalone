@@ -60,7 +60,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       GPUData() = delete;
       GPUData(Queue const& queue)
-          : cablingMapDevice{::cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(alpaka::getDev(queue), 1u)} {
+          : cablingMapDevice{::cms::alpakatools::allocDeviceBuf<SiPixelFedCablingMapGPU>(queue, 1u)} {
         alpaka::prepareForAsyncCopy(cablingMapDevice);
       };
       ~GPUData() = default;
@@ -73,7 +73,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       ModulesToUnpack() = delete;
       ModulesToUnpack(Queue const& queue, unsigned int modToUnpSize)
-          : modToUnpDefault{::cms::alpakatools::allocDeviceBuf<unsigned char>(alpaka::getDev(queue), modToUnpSize)} {};
+          : modToUnpDefault{::cms::alpakatools::allocDeviceBuf<unsigned char>(queue, modToUnpSize)} {};
       ~ModulesToUnpack() = default;
 
       AlpakaDeviceBuf<unsigned char> modToUnpDefault;  // pointer to GPU

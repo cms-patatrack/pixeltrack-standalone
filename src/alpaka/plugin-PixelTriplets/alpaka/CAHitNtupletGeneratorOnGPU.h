@@ -34,8 +34,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   public:
     CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg);
-
-    ~CAHitNtupletGeneratorOnGPU();
+    ~CAHitNtupletGeneratorOnGPU() = default;
 
     PixelTrackAlpaka makeTuplesAsync(TrackingRecHit2DAlpaka const& hits_d, float bfield, Queue& queue) const;
 

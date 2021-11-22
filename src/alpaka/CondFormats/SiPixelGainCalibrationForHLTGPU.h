@@ -43,10 +43,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       GPUData() = delete;
       GPUData(Queue const& queue, unsigned int numDecodingStructures)
-          : gainForHLTonGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU>(alpaka::getDev(queue), 1u)},
+          : gainForHLTonGPU{::cms::alpakatools::allocDeviceBuf<SiPixelGainForHLTonGPU>(queue, 1u)},
             gainDataOnGPU{::cms::alpakatools::allocHostBuf<SiPixelGainForHLTonGPU>(1u)},
-            v_pedestalsGPU{
-                ::cms::alpakatools::allocDeviceBuf<DecodingStructure>(alpaka::getDev(queue), numDecodingStructures)} {
+            v_pedestalsGPU{::cms::alpakatools::allocDeviceBuf<DecodingStructure>(queue, numDecodingStructures)} {
         alpaka::prepareForAsyncCopy(gainDataOnGPU);
       };
       ~GPUData() = default;

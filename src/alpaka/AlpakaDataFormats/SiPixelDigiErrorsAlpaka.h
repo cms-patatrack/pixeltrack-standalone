@@ -13,9 +13,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class SiPixelDigiErrorsAlpaka {
   public:
     SiPixelDigiErrorsAlpaka() = default;
-    explicit SiPixelDigiErrorsAlpaka(Device const& device, size_t maxFedWords, PixelFormatterErrors errors, Queue& queue)
-        : data_d{::cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(device, maxFedWords)},
-          error_d{::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(device, 1u)},
+    explicit SiPixelDigiErrorsAlpaka(Queue& queue, size_t maxFedWords, PixelFormatterErrors errors)
+        : data_d{::cms::alpakatools::allocDeviceBuf<PixelErrorCompact>(queue, maxFedWords)},
+          error_d{::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue, 1u)},
           error_h{::cms::alpakatools::allocHostBuf<::cms::alpakatools::SimpleVector<PixelErrorCompact>>(1u)},
           formatterErrors_h{std::move(errors)} {
       auto perror_h = alpaka::getPtrNative(error_h);

@@ -163,37 +163,32 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           //////////////////////////////////////////////////////////
           // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
           //////////////////////////////////////////////////////////
-          counters_{::cms::alpakatools::allocDeviceBuf<Counters>(alpaka::getDev(queue), 1u)},
+          counters_{::cms::alpakatools::allocDeviceBuf<Counters>(queue, 1u)},
 
-          device_hitToTuple_{::cms::alpakatools::allocDeviceBuf<HitToTuple>(alpaka::getDev(queue), 1u)},
-          device_tupleMultiplicity_{::cms::alpakatools::allocDeviceBuf<TupleMultiplicity>(alpaka::getDev(queue), 1u)},
+          device_hitToTuple_{::cms::alpakatools::allocDeviceBuf<HitToTuple>(queue, 1u)},
+          device_tupleMultiplicity_{::cms::alpakatools::allocDeviceBuf<TupleMultiplicity>(queue, 1u)},
 
-          device_theCells_{
-              ::cms::alpakatools::allocDeviceBuf<GPUCACell>(alpaka::getDev(queue), params.maxNumberOfDoublets_)},
+          device_theCells_{::cms::alpakatools::allocDeviceBuf<GPUCACell>(queue, params.maxNumberOfDoublets_)},
           // in principle we can use "nhits" to heuristically dimension the workspace...
-          device_isOuterHitOfCell_{::cms::alpakatools::allocDeviceBuf<GPUCACell::OuterHitOfCell>(alpaka::getDev(queue),
-                                                                                                 std::max(1U, nhits))},
+          device_isOuterHitOfCell_{
+              ::cms::alpakatools::allocDeviceBuf<GPUCACell::OuterHitOfCell>(queue, std::max(1U, nhits))},
 
-          device_theCellNeighbors_{
-              ::cms::alpakatools::allocDeviceBuf<CAConstants::CellNeighborsVector>(alpaka::getDev(queue), 1u)},
-          device_theCellTracks_{
-              ::cms::alpakatools::allocDeviceBuf<CAConstants::CellTracksVector>(alpaka::getDev(queue), 1u)},
+          device_theCellNeighbors_{::cms::alpakatools::allocDeviceBuf<CAConstants::CellNeighborsVector>(queue, 1u)},
+          device_theCellTracks_{::cms::alpakatools::allocDeviceBuf<CAConstants::CellTracksVector>(queue, 1u)},
 
-          //cellStorage_{::cms::alpakatools::allocDeviceBuf<unsigned char>(alpaka::getDev(queue), CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
+          //cellStorage_{::cms::alpakatools::allocDeviceBuf<unsigned char>(queue, CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
           device_theCellNeighborsContainer_{::cms::alpakatools::allocDeviceBuf<CAConstants::CellNeighbors>(
-              alpaka::getDev(queue), CAConstants::maxNumOfActiveDoublets())},
+              queue, CAConstants::maxNumOfActiveDoublets())},
           device_theCellTracksContainer_{::cms::alpakatools::allocDeviceBuf<CAConstants::CellTracks>(
-              alpaka::getDev(queue), CAConstants::maxNumOfActiveDoublets())},
+              queue, CAConstants::maxNumOfActiveDoublets())},
 
-          //device_storage_{::cms::alpakatools::allocDeviceBuf<::ALPAKA_ACCELERATOR_NAMESPACE::cmscuda::AtomicPairCounter::c_type>(alpaka::getDev(queue), 3u)},
+          //device_storage_{::cms::alpakatools::allocDeviceBuf<::ALPAKA_ACCELERATOR_NAMESPACE::cmscuda::AtomicPairCounter::c_type>(queue, 3u)},
           //device_hitTuple_apc_ = (::cms::alpakatools::AtomicPairCounter*)device_storage_.get()},
           //device_hitToTuple_apc_ = (::cms::alpakatools::AtomicPairCounter*)device_storage_.get() + 1;
           //device_nCells_ = (uint32_t*)(device_storage_.get() + 2)},
-          device_hitTuple_apc_{
-              ::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(alpaka::getDev(queue), 1u)},
-          device_hitToTuple_apc_{
-              ::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(alpaka::getDev(queue), 1u)},
-          device_nCells_{::cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), 1u)} {
+          device_hitTuple_apc_{::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(queue, 1u)},
+          device_hitToTuple_apc_{::cms::alpakatools::allocDeviceBuf<::cms::alpakatools::AtomicPairCounter>(queue, 1u)},
+          device_nCells_{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, 1u)} {
       alpaka::memset(queue, counters_, 0, 1u);
 
       alpaka::memset(queue, device_nCells_, 0, 1u);

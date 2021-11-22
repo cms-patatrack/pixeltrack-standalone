@@ -565,12 +565,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-      digis_d = SiPixelDigisAlpaka(alpaka::getDev(queue), pixelgpudetails::MAX_FED_WORDS);
+      digis_d = SiPixelDigisAlpaka(queue, pixelgpudetails::MAX_FED_WORDS);
       if (includeErrors) {
-        digiErrors_d =
-            SiPixelDigiErrorsAlpaka(alpaka::getDev(queue), pixelgpudetails::MAX_FED_WORDS, std::move(errors), queue);
+        digiErrors_d = SiPixelDigiErrorsAlpaka(queue, pixelgpudetails::MAX_FED_WORDS, std::move(errors));
       }
-      clusters_d = SiPixelClustersAlpaka(alpaka::getDev(queue), gpuClustering::MaxNumModules);
+      clusters_d = SiPixelClustersAlpaka(queue, gpuClustering::MaxNumModules);
 
       if (wordCounter)  // protect in case of empty event....
       {
@@ -587,11 +586,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
-        auto word_d = ::cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), wordCounter);
+        auto word_d = ::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.
         // However, only the first half of elements end up eventually used:
         // hence, here, only wordCounter/2 elements are allocated.
-        auto fedId_d = ::cms::alpakatools::allocDeviceBuf<uint8_t>(alpaka::getDev(queue), wordCounter / 2);
+        auto fedId_d = ::cms::alpakatools::allocDeviceBuf<uint8_t>(queue, wordCounter / 2);
 
         alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
         alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter / 2);

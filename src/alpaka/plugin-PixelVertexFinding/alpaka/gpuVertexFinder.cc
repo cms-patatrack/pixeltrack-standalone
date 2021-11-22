@@ -109,11 +109,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // std::cout << "producing Vertices on GPU" << std::endl;
       ALPAKA_ASSERT_OFFLOAD(tksoa);
 
-      ZVertexAlpaka vertices = ::cms::alpakatools::allocDeviceBuf<ZVertexSoA>(alpaka::getDev(queue), 1u);
+      ZVertexAlpaka vertices = ::cms::alpakatools::allocDeviceBuf<ZVertexSoA>(queue, 1u);
       auto* soa = alpaka::getPtrNative(vertices);
       ALPAKA_ASSERT_OFFLOAD(soa);
 
-      auto ws_dBuf{::cms::alpakatools::allocDeviceBuf<WorkSpace>(alpaka::getDev(queue), 1u)};
+      auto ws_dBuf{::cms::alpakatools::allocDeviceBuf<WorkSpace>(queue, 1u)};
       auto ws_d = alpaka::getPtrNative(ws_dBuf);
 
       auto nvFinalVerticesView =
