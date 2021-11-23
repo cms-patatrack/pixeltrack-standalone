@@ -29,8 +29,7 @@ SiPixelDigisCUDA::HostStoreAndBuffer::HostStoreAndBuffer(size_t maxFedWords, cud
 {}
 
 void SiPixelDigisCUDA::HostStoreAndBuffer::reset() {
-  hostStore_.~HostDeviceStore();
-  new(&hostStore_) HostDeviceStore(nullptr, 0);
+  hostStore_ = HostDeviceStore();
   data_h.reset();
 }
 
