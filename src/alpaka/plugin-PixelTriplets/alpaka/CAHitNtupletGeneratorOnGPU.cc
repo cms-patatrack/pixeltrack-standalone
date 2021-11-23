@@ -111,8 +111,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       kernels.printCounters(queue);
     }
 
-    // FIXME: the wait is needed to avoid that the device buffers inside "kernels" go out of scope before the kernels have run
-    alpaka::wait(queue);
     return tracks;
   }
 

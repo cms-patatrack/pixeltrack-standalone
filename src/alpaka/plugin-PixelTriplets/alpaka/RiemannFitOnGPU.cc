@@ -186,9 +186,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         alpaka::getPtrNative(circle_fit_resultsGPU_),
                                                         offset));
       }
-
-      // FIXME: the wait is needed to avoid that the device buffers go out of scope before the kernels have run
-      alpaka::wait(queue);
     }
   }
 

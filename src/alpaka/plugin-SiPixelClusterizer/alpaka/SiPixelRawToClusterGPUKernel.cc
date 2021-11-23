@@ -624,7 +624,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           digiErrors_d.copyErrorToHostAsync(stream);
         }
 #endif
-        alpaka::wait(queue);  // Wait for work to be completed before end of scope.
       }
       // End of Raw2Digi and passing data for clustering
 
@@ -730,19 +729,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         clusters_d->clusModuleStart()));
 
         // last element holds the number of all clusters
-        auto clusModuleStartView = ::cms::alpakatools::createDeviceView<uint32_t>(
-            alpaka::getDev(queue), clusters_d->clusModuleStart(), gpuClustering::MaxNumModules + 1);
-        const auto clusModuleStartLastElement =
-            AlpakaDeviceSubView<uint32_t>(clusModuleStartView, 1u, gpuClustering::MaxNumModules);
-        // slice on host
-        auto nModules_Clusters_1_h{::cms::alpakatools::allocHostBuf<uint32_t>(1u)};
-        auto p_nModules_Clusters_1_h = alpaka::getPtrNative(nModules_Clusters_1_h);
+        const auto clusModuleStartLastElement = ::cms::alpakatools::createDeviceView<uint32_t>(
+            alpaka::getDev(queue),
+            const_cast<uint32_t const *>(clusters_d->clusModuleStart() + gpuClustering::MaxNumModules),
+            1u);
+        auto nModules_Clusters_h_1 =
+            ::cms::alpakatools::createHostView<uint32_t>(alpaka::getPtrNative(nModules_Clusters_h) + 1, 1u);
+        alpaka::memcpy(queue, nModules_Clusters_h_1, clusModuleStartLastElement, 1u);
 
-        alpaka::memcpy(queue, nModules_Clusters_1_h, clusModuleStartLastElement, 1u);
-        // Wait for memory transfer to host to complete before looking at host data!
-        alpaka::wait(queue);
-        auto p_nModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-        p_nModules_Clusters_h[1] = p_nModules_Clusters_1_h[0];
       }  // end clusterizer scope
     }
   }  // namespace pixelgpudetails

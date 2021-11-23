@@ -129,9 +129,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
     }  // loop on concurrent fits
-
-    // FIXME: the wait is needed to avoid that the device buffers go out of scope before the kernels have run
-    alpaka::wait(queue);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
