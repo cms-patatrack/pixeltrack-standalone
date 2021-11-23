@@ -46,7 +46,7 @@ public:
   );
 
   /* Device pixel view: this is a second generation view (view from view) */
-  generate_SoA_const_view(DevicePixelView,
+  generate_SoA_const_view(DevicePixelConstView,
     /* We get out data from the DeviceFullStore */
     SoA_view_store_list(
       SoA_view_store(DeviceFullView, deviceFullView)
@@ -110,7 +110,7 @@ public:
    // Special copy for validation
    cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
 
-  const DevicePixelView& pixelView() const { return devicePixelView_; }
+  const DevicePixelConstView& pixelConstView() const { return devicePixelConstView_; }
 
 private:
   // These are consumed by downstream device code
@@ -118,7 +118,7 @@ private:
   DeviceOnlyStore deviceOnlyStore_d;
   HostDeviceStore hostDeviceStore_d;
   DeviceFullView deviceFullView_;
-  DevicePixelView devicePixelView_;
+  DevicePixelConstView devicePixelConstView_;
   uint32_t nModules_h = 0;
   uint32_t nDigis_h = 0;
 };

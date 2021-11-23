@@ -16,7 +16,7 @@ namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisCUDA::DevicePixelView pdigis,
+                          SiPixelDigisCUDA::DevicePixelConstView pdigis,
                           int numElements,
                           SiPixelClustersCUDA::DeviceStore const pclusters,
                           TrackingRecHit2DSOAStore* phits) {

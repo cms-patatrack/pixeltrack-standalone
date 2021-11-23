@@ -12,11 +12,11 @@ SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream)
       deviceOnlyStore_d(data_d.get(), maxFedWords),
       hostDeviceStore_d(deviceOnlyStore_d.soaMetadata().nextByte(), maxFedWords),
       deviceFullView_(deviceOnlyStore_d, hostDeviceStore_d),
-      devicePixelView_(deviceFullView_)
+      devicePixelConstView_(deviceFullView_)
 {}
 
 SiPixelDigisCUDA::SiPixelDigisCUDA()
-    : data_d(),deviceOnlyStore_d(), hostDeviceStore_d(), deviceFullView_(), devicePixelView_()
+    : data_d(),deviceOnlyStore_d(), hostDeviceStore_d(), deviceFullView_(), devicePixelConstView_()
 {}
 
 SiPixelDigisCUDA::HostStoreAndBuffer::HostStoreAndBuffer()
