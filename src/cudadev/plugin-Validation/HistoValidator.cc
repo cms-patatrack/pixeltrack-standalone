@@ -38,7 +38,7 @@ private:
   uint32_t nHits;
   cms::cuda::host::unique_ptr<uint16_t[]> h_adc;
   cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
-  TrackingRecHit2DHostSOAView h_hits;
+  TrackingRecHit2DHostSOAStore h_hits;
 
   static std::map<std::string, SimpleAtomicHisto> histos;
 };

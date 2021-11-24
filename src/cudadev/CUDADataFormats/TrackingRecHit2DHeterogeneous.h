@@ -3,7 +3,7 @@
 
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 #include "CUDADataFormats/HeterogeneousSoA.h"
-#include "CUDADataFormats/TrackingRecHit2DHostSOAView.h"
+#include "CUDADataFormats/TrackingRecHit2DHostSOAStore.h"
 
 template <typename Traits>
 class TrackingRecHit2DHeterogeneous {
@@ -39,7 +39,7 @@ public:
   auto iphi() { return m_iphi; }
 
   // Transfer the local and global coordinates, charge and size
-  TrackingRecHit2DHostSOAView hitsToHostAsync(cudaStream_t stream) const;
+  TrackingRecHit2DHostSOAStore hitsToHostAsync(cudaStream_t stream) const;
   
   // apparently unused
   //cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
