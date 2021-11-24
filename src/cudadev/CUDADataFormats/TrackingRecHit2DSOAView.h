@@ -95,10 +95,10 @@ public:
   );
   
   // Shortcut operator saving the explicit calls to view in usage.
-  __device__ __forceinline__ HitsAndSupportView::element operator[] (size_t index) { 
+  __device__ __forceinline__ HitsAndSupportView::element operator[] (size_t index) {
     return m_hitsAndSupportView[index]; 
   }
-  __device__ __forceinline__ const HitsAndSupportView::const_element operator[] (size_t index) const { 
+  __device__ __forceinline__ HitsAndSupportView::const_element operator[] (size_t index) const {
     return m_hitsAndSupportView[index];
   }
   
