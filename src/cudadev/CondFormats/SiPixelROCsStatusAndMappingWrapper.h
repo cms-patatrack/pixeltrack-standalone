@@ -34,9 +34,7 @@ private:
     void allocate(size_t size, cudaStream_t stream) {
       cablingMapDeviceBuffer = cms::cuda::make_device_unique<std::byte[]>(
               SiPixelROCsStatusAndMapping::computeDataSize(size), stream);
-      // Explicit call to destructor before overwriting the object.
-      cablingMapDevice.~SiPixelROCsStatusAndMapping();
-      new(&cablingMapDevice) SiPixelROCsStatusAndMapping(cablingMapDeviceBuffer.get(), size);
+      cablingMapDevice = SiPixelROCsStatusAndMapping(cablingMapDeviceBuffer.get(), size);
     }
     cms::cuda::device::unique_ptr<std::byte[]> cablingMapDeviceBuffer;
     SiPixelROCsStatusAndMapping cablingMapDevice = SiPixelROCsStatusAndMapping(nullptr, 0); // map struct in GPU
