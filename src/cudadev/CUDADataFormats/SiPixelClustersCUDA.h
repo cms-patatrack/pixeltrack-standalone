@@ -5,6 +5,7 @@
 #include "CUDACore/host_unique_ptr.h"
 #include "CUDACore/cudaCompat.h"
 #include "DataFormats/SoAStore.h"
+#include "DataFormats/SoAView.h"
 
 #include <cuda_runtime.h>
 
@@ -17,6 +18,18 @@ public:
 
     // originally from rechits
     SoA_column(uint32_t, clusModuleStart) // index of the first cluster of each module
+  );
+
+  generate_SoA_const_view(DeviceConstView,
+    SoA_view_store_list(SoA_view_store(DeviceStore, deviceStore)),
+    SoA_view_value_list(
+      SoA_view_value(deviceStore, moduleStart, moduleStart),  // index of the first pixel of each module
+      SoA_view_value(deviceStore, clusInModule, clusInModule), // number of clusters found in each module
+      SoA_view_value(deviceStore, moduleId, moduleId),     // module id of each module
+
+      // originally from rechits
+      SoA_view_value(deviceStore, clusModuleStart, clusModuleStart) // index of the first cluster of each module
+    )
   );
 
   explicit SiPixelClustersCUDA();
@@ -42,7 +55,7 @@ public:
   uint32_t const *moduleId() const { return deviceStore_.moduleId(); }
   uint32_t const *clusModuleStart() const { return deviceStore_.clusModuleStart(); }
 
-  const DeviceStore store() const { return deviceStore_; }
+  DeviceConstView view() const { return DeviceConstView(deviceStore_); }
 
 private:
   cms::cuda::device::unique_ptr<std::byte[]> data_d;         // Single SoA storage

@@ -18,7 +18,7 @@ namespace gpuPixelRecHits {
                           BeamSpotPOD const* __restrict__ bs,
                           SiPixelDigisCUDA::DevicePixelConstView pdigis,
                           int numElements,
-                          SiPixelClustersCUDA::DeviceStore const pclusters,
+                          SiPixelClustersCUDA::DeviceConstView const pclusters,
                           TrackingRecHit2DSOAStore* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)

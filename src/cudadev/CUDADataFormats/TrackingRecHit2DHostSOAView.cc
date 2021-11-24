@@ -6,7 +6,7 @@ TrackingRecHit2DHostSOAView::TrackingRecHit2DHostSOAView():
 
 void TrackingRecHit2DHostSOAView::reset() {
   hits_h.reset();
-  hitsStore_.~HitsStore();
+  hitsStore_ = TrackingRecHit2DSOAStore::HitsStore();
 }
 
 TrackingRecHit2DHostSOAView::TrackingRecHit2DHostSOAView(size_t size, cudaStream_t stream):
