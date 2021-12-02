@@ -441,6 +441,7 @@
       _ITERATE_ON_ALL(_DECLARE_ELEMENT_VALUE_MEMBER, ~, __VA_ARGS__)                                                                      \
     };                                                                                                                                    \
                                                                                                                                           \
+private:\
     /* AoS-like accessor (non-const) */                                                                                                   \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
     element operator[](size_t index) {                                                                                                    \
@@ -448,6 +449,7 @@
       return element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_CONSTR_CALL, ~, __VA_ARGS__));                                         \
     }                                                                                                                                     \
                                                                                                                                           \
+/*public:*/\
     /* AoS-like accessor (const) */                                                                                                       \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
     const const_element operator[](size_t index) const {                                                                                  \
@@ -459,6 +461,7 @@
     _ITERATE_ON_ALL(_DECLARE_SOA_ACCESSOR, ~, __VA_ARGS__)                                                                                \
     _ITERATE_ON_ALL(_DECLARE_SOA_CONST_ACCESSOR, ~, __VA_ARGS__)                                                                          \
                                                                                                                                           \
+public:\
     /* dump the SoA internal structure */                                                                                                 \
     template <typename T>                                                                                                                 \
     SOA_HOST_ONLY friend void dump();                                                                                                     \

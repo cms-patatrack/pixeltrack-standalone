@@ -11,16 +11,16 @@
 
 class SiPixelDigisCUDA {
 public:
-  generate_SoA_store(DeviceOnlyStoreTemplate,
+  generate_SoA_store(DeviceOnlyLayoutTemplate,
     /* These are consumed by downstream device code                                                   */
     SoA_column(uint16_t, xx),         /* local coordinates of each pixel                              */
     SoA_column(uint16_t, yy),         /*                                                              */
     SoA_column(uint16_t, moduleInd)   /* module id of each pixel                                      */
   );
   
-  using DeviceOnlyStore = DeviceOnlyStoreTemplate<>;
+  using DeviceOnlyLayout = DeviceOnlyLayoutTemplate<>;
   
-  generate_SoA_store(HostDeviceStoreTemplate,
+  generate_SoA_store(HostDeviceLayoutTemplate,
     /* These are also transferred to host (see HostDataView) */
     SoA_column(uint16_t, adc),        /* ADC of each pixel                                            */
     SoA_column(int32_t, clus),        /* cluster id of each pixel                                     */
@@ -30,12 +30,26 @@ public:
     SoA_column(uint32_t, rawIdArr)   /* DetId of each pixel                                           */
   );
   
-  using HostDeviceStore = HostDeviceStoreTemplate<>;
+  using HostDeviceLayout = HostDeviceLayoutTemplate<>;
+  
+  generate_SoA_view(HostDeviceViewTemplate,
+    SoA_view_store_list(
+      SoA_view_store(HostDeviceLayout, hostDevice)
+    ),
+    SoA_view_value_list(
+      SoA_view_value(hostDevice, adc),      /* ADC of each pixel                                      */
+      SoA_view_value(hostDevice, clus),     /* cluster id of each pixel                               */
+      SoA_view_value(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
+      SoA_view_value(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
+    )    
+  );
+  
+  using HostDeviceView = HostDeviceViewTemplate<>;
   
   generate_SoA_view(DeviceFullViewTemplate,
     SoA_view_store_list(
-      SoA_view_store(DeviceOnlyStore, deviceOnly),
-      SoA_view_store(HostDeviceStore, hostDevice)
+      SoA_view_store(DeviceOnlyLayout, deviceOnly),
+      SoA_view_store(HostDeviceLayout, hostDevice)
     ),
     SoA_view_value_list(
       SoA_view_value(deviceOnly, xx),       /* local coordinates of each pixel                        */
@@ -45,7 +59,6 @@ public:
       SoA_view_value(hostDevice, clus),     /* cluster id of each pixel                               */
       SoA_view_value(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
       SoA_view_value(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
-      /* TODO: simple, no rename interface */
     )    
   );
   
@@ -106,12 +119,14 @@ public:
     friend SiPixelDigisCUDA;
   public:
     HostStoreAndBuffer();
-    const SiPixelDigisCUDA::HostDeviceStore store() { return hostStore_; }
+    const SiPixelDigisCUDA::HostDeviceLayout store() { return hostLayout_; }
     void reset();
   private:
     HostStoreAndBuffer(size_t maxFedWords, cudaStream_t stream);
     cms::cuda::host::unique_ptr<std::byte[]> data_h;
-    HostDeviceStore hostStore_;
+    HostDeviceLayout hostLayout_;
+    HostDeviceView hostView_;
+    
   };
   HostStoreAndBuffer dataToHostAsync(cudaStream_t stream) const;
 
@@ -123,8 +138,8 @@ public:
 private:
   // These are consumed by downstream device code
   cms::cuda::device::unique_ptr<std::byte[]> data_d;      // Single SoA storage
-  DeviceOnlyStore deviceOnlyStore_d;
-  HostDeviceStore hostDeviceStore_d;
+  DeviceOnlyLayout deviceOnlyLayout_d;
+  HostDeviceLayout hostDeviceLayout_d;
   DeviceFullView deviceFullView_;
   DevicePixelConstView devicePixelConstView_;
   uint32_t nModules_h = 0;
