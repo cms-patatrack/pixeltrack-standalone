@@ -11,7 +11,7 @@
 
 class SiPixelClustersCUDA {
 public:
-  generate_SoA_store(DeviceStore,
+  generate_SoA_store(DeviceStoreTemplate,
     SoA_column(uint32_t, moduleStart),  // index of the first pixel of each module
     SoA_column(uint32_t, clusInModule), // number of clusters found in each module
     SoA_column(uint32_t, moduleId),     // module id of each module
@@ -19,19 +19,24 @@ public:
     // originally from rechits
     SoA_column(uint32_t, clusModuleStart) // index of the first cluster of each module
   );
+  
+  // We use all defaults for the template parameters.
+  using DeviceStore = DeviceStoreTemplate<>;
 
-  generate_SoA_const_view(DeviceConstView,
+  generate_SoA_const_view(DeviceConstViewTemplate,
     SoA_view_store_list(SoA_view_store(DeviceStore, deviceStore)),
     SoA_view_value_list(
-      SoA_view_value(deviceStore, moduleStart, moduleStart),  // index of the first pixel of each module
-      SoA_view_value(deviceStore, clusInModule, clusInModule), // number of clusters found in each module
-      SoA_view_value(deviceStore, moduleId, moduleId),     // module id of each module
-
+      SoA_view_value(deviceStore, moduleStart),  // index of the first pixel of each module
+      SoA_view_value(deviceStore, clusInModule), // number of clusters found in each module
+      SoA_view_value(deviceStore, moduleId),     // module id of each module
+  
       // originally from rechits
-      SoA_view_value(deviceStore, clusModuleStart, clusModuleStart) // index of the first cluster of each module
+      SoA_view_value(deviceStore, clusModuleStart) // index of the first cluster of each module
     )
   );
-
+  
+  using DeviceConstView = DeviceConstViewTemplate<>;
+  
   explicit SiPixelClustersCUDA();
   explicit SiPixelClustersCUDA(size_t maxModules, cudaStream_t stream);
   ~SiPixelClustersCUDA() = default;

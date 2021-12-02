@@ -31,7 +31,7 @@ public:
   // Sill, we need the 32 bits integers to be aligned, so we simply declare the SoA with the 32 bits fields first
   // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte 
   // alignment of 1)
-  generate_SoA_store(HitsStore,
+  generate_SoA_store(HitsStoreTemplate,
     // 32 bits section
     // local coord
     SoA_column(float, xLocal),
@@ -54,7 +54,10 @@ public:
     SoA_column(int16_t, clusterSizeY)
   );
   
-  generate_SoA_store(SupportObjectsStore,
+  // The hits store does not use default alignment but a more relaxed one.
+  using HitsStore = HitsStoreTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
+  
+  generate_SoA_store(SupportObjectsStoreTemplate,
     // This is the end of the data which is transferred to host. The following columns are supporting 
     // objects, not transmitted 
     
@@ -68,31 +71,36 @@ public:
     SoA_column(uint16_t, detectorIndex)
   );
   
-  generate_SoA_view(HitsAndSupportView,
+  // The support objects store also not use default alignment but a more relaxed one.
+  using SupportObjectsStore = SupportObjectsStoreTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
+  
+  generate_SoA_view(HitsAndSupportViewTemplate,
     SoA_view_store_list(
       SoA_view_store(HitsStore, hitsStore),
       SoA_view_store(SupportObjectsStore, supportObjectsStore)
     ),
     SoA_view_value_list(
-      SoA_view_value(hitsStore, xLocal, xLocal),
-      SoA_view_value(hitsStore, yLocal, yLocal),
-      SoA_view_value(hitsStore, xerrLocal, xerrLocal),
-      SoA_view_value(hitsStore, yerrLocal, yerrLocal),
+      SoA_view_value(hitsStore, xLocal),
+      SoA_view_value(hitsStore, yLocal),
+      SoA_view_value(hitsStore, xerrLocal),
+      SoA_view_value(hitsStore, yerrLocal),
       
-      SoA_view_value(hitsStore, xGlobal, xGlobal),
-      SoA_view_value(hitsStore, yGlobal, yGlobal),
-      SoA_view_value(hitsStore, zGlobal, zGlobal),
-      SoA_view_value(hitsStore, rGlobal, rGlobal),
+      SoA_view_value(hitsStore, xGlobal),
+      SoA_view_value(hitsStore, yGlobal),
+      SoA_view_value(hitsStore, zGlobal),
+      SoA_view_value(hitsStore, rGlobal),
       
-      SoA_view_value(hitsStore, charge, charge),
-      SoA_view_value(hitsStore, clusterSizeX, clusterSizeX),
-      SoA_view_value(hitsStore, clusterSizeY, clusterSizeY),
+      SoA_view_value(hitsStore, charge),
+      SoA_view_value(hitsStore, clusterSizeX),
+      SoA_view_value(hitsStore, clusterSizeY),
       
-      SoA_view_value(supportObjectsStore, phiBinnerStorage, phiBinnerStorage),
-      SoA_view_value(supportObjectsStore, iphi, iphi),
-      SoA_view_value(supportObjectsStore, detectorIndex, detectorIndex)
+      SoA_view_value(supportObjectsStore, phiBinnerStorage),
+      SoA_view_value(supportObjectsStore, iphi),
+      SoA_view_value(supportObjectsStore, detectorIndex)
     )
   );
+  
+  using HitsAndSupportView = HitsAndSupportViewTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
   // Shortcut operator saving the explicit calls to view in usage.
   __device__ __forceinline__ HitsAndSupportView::element operator[] (size_t index) {

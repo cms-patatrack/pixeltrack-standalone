@@ -16,7 +16,7 @@
 // local include(s)
 #include "SiPixelClusterThresholds.h"
 
-struct SiPixelROCsStatusAndMapping;
+struct SiPixelROCsStatusAndMappingConstView;
 class SiPixelGainForHLTonGPU;
 
 namespace pixelgpudetails {
@@ -135,7 +135,7 @@ namespace pixelgpudetails {
 
     void makeClustersAsync(bool isRun2,
                            const SiPixelClusterThresholds clusterThresholds,
-                           const SiPixelROCsStatusAndMapping &cablingMap,
+                           SiPixelROCsStatusAndMappingConstView & cablingMap,
                            const unsigned char* modToUnp,
                            const SiPixelGainForHLTonGPU* gains,
                            const WordFedAppender& wordFed,

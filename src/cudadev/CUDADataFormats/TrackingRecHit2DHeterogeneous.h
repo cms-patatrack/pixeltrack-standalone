@@ -108,24 +108,20 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   // In order to simplify code, we align all to the minimum necessary size (sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)).
   {
     // Simplify a bit following computations
-    const size_t align = sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type);
     const size_t phiBinnerByteSize =
       (phase1PixelTopology::numberOfLayers + 1) * sizeof (TrackingRecHit2DSOAStore::PhiBinner::index_type);
     // Allocate the buffer
     m_hitsSupportLayerStartStore = Traits::template make_device_unique<std::byte[]> (
-      TrackingRecHit2DSOAStore::HitsStore::computeDataSize(m_nHits, align) +
-        TrackingRecHit2DSOAStore::SupportObjectsStore::computeDataSize(m_nHits, align) +
+      TrackingRecHit2DSOAStore::HitsStore::computeDataSize(m_nHits) +
+        TrackingRecHit2DSOAStore::SupportObjectsStore::computeDataSize(m_nHits) +
         phiBinnerByteSize, 
       stream);
     // Split the buffer in stores and array
-    store->m_hitsStore.~HitsStore();
-    new (&store->m_hitsStore) TrackingRecHit2DSOAStore::HitsStore(m_hitsSupportLayerStartStore.get(), nHits, align);
-    store->m_supportObjectsStore.~SupportObjectsStore();
-    new (&store->m_supportObjectsStore) TrackingRecHit2DSOAStore::SupportObjectsStore(store->m_hitsStore.soaMetadata().nextByte(), nHits, 1);
+    store->m_hitsStore = TrackingRecHit2DSOAStore::HitsStore(m_hitsSupportLayerStartStore.get(), nHits);
+    store->m_supportObjectsStore = TrackingRecHit2DSOAStore::SupportObjectsStore(store->m_hitsStore.soaMetadata().nextByte(), nHits);
     m_hitsLayerStart = store->m_hitsLayerStart = reinterpret_cast<uint32_t *> (store->m_supportObjectsStore.soaMetadata().nextByte());
     // Record additional references
-    store->m_hitsAndSupportView.~HitsAndSupportView();
-    new (&store->m_hitsAndSupportView) TrackingRecHit2DSOAStore::HitsAndSupportView(
+    store->m_hitsAndSupportView = TrackingRecHit2DSOAStore::HitsAndSupportView(
       store->m_hitsStore,
       store->m_supportObjectsStore
     );

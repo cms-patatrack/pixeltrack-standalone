@@ -31,13 +31,15 @@ void SiPixelROCsStatusAndMappingWrapperESProducer::produce(edm::EventSetup& even
     std::ifstream in(data_ / "cablingMap.bin", std::ios::binary);
     in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
     // We use default alignment
-    auto objBuffer = std::make_unique<std::byte[]>(SiPixelROCsStatusAndMapping::computeDataSize(pixelgpudetails::MAX_SIZE));
-    SiPixelROCsStatusAndMapping obj(objBuffer.get(), pixelgpudetails::MAX_SIZE);
+    auto objBuffer = std::make_unique<std::byte[]>(SiPixelROCsStatusAndMappingStore::computeDataSize(pixelgpudetails::MAX_SIZE));
+    SiPixelROCsStatusAndMappingStore obj(objBuffer.get(), pixelgpudetails::MAX_SIZE);
     in.read(reinterpret_cast<char *>(obj.soaMetadata().data()), obj.soaMetadata().byteSize());
     unsigned int modToUnpDefSize;
     in.read(reinterpret_cast<char*>(&modToUnpDefSize), sizeof(unsigned int));
     std::vector<unsigned char> modToUnpDefault(modToUnpDefSize);
     in.read(reinterpret_cast<char*>(modToUnpDefault.data()), modToUnpDefSize);
+    // SiPixelROCsStatusAndMappingWrapper constructor will copy the objBuffer to a pinned host memory buffer
+    // the deallocation of objBuffer at the end of this scope is intentional.
     eventSetup.put(std::make_unique<SiPixelROCsStatusAndMappingWrapper>(obj, std::move(modToUnpDefault)));
   }
 }

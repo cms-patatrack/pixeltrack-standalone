@@ -11,14 +11,16 @@
 
 class SiPixelDigisCUDA {
 public:
-  generate_SoA_store(DeviceOnlyStore,
+  generate_SoA_store(DeviceOnlyStoreTemplate,
     /* These are consumed by downstream device code                                                   */
     SoA_column(uint16_t, xx),         /* local coordinates of each pixel                              */
     SoA_column(uint16_t, yy),         /*                                                              */
     SoA_column(uint16_t, moduleInd)   /* module id of each pixel                                      */
   );
   
-  generate_SoA_store(HostDeviceStore,
+  using DeviceOnlyStore = DeviceOnlyStoreTemplate<>;
+  
+  generate_SoA_store(HostDeviceStoreTemplate,
     /* These are also transferred to host (see HostDataView) */
     SoA_column(uint16_t, adc),        /* ADC of each pixel                                            */
     SoA_column(int32_t, clus),        /* cluster id of each pixel                                     */
@@ -28,38 +30,44 @@ public:
     SoA_column(uint32_t, rawIdArr)   /* DetId of each pixel                                           */
   );
   
-  generate_SoA_view(DeviceFullView,
+  using HostDeviceStore = HostDeviceStoreTemplate<>;
+  
+  generate_SoA_view(DeviceFullViewTemplate,
     SoA_view_store_list(
       SoA_view_store(DeviceOnlyStore, deviceOnly),
       SoA_view_store(HostDeviceStore, hostDevice)
     ),
     SoA_view_value_list(
-      SoA_view_value(deviceOnly, xx, xx),    /* local coordinates of each pixel                       */
-      SoA_view_value(deviceOnly, yy, yy),    /*                                                       */
-      SoA_view_value(deviceOnly, moduleInd, moduleInd),  /* module id of each pixel                   */
-      SoA_view_value(hostDevice, adc, adc),  /* ADC of each pixel                                     */
-      SoA_view_value(hostDevice, clus, clus),/* cluster id of each pixel                              */
-      SoA_view_value(hostDevice, pdigi, pdigi), /* packed digi (row, col, adc) of each pixel          */
-      SoA_view_value(hostDevice, rawIdArr, rawIdArr)  /* DetId of each pixel                          */
+      SoA_view_value(deviceOnly, xx),       /* local coordinates of each pixel                        */
+      SoA_view_value(deviceOnly, yy),       /*                                                        */
+      SoA_view_value(deviceOnly, moduleInd),/* module id of each pixel                                */
+      SoA_view_value(hostDevice, adc),      /* ADC of each pixel                                      */
+      SoA_view_value(hostDevice, clus),     /* cluster id of each pixel                               */
+      SoA_view_value(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
+      SoA_view_value(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
       /* TODO: simple, no rename interface */
     )    
   );
+  
+  using DeviceFullView = DeviceFullViewTemplate<>;
 
   /* Device pixel view: this is a second generation view (view from view) */
-  generate_SoA_const_view(DevicePixelConstView,
+  generate_SoA_const_view(DevicePixelConstViewTemplate,
     /* We get out data from the DeviceFullStore */
     SoA_view_store_list(
       SoA_view_store(DeviceFullView, deviceFullView)
     ),
     /* These are consumed by downstream device code                                                   */
     SoA_view_value_list(
-      SoA_view_value(deviceFullView, xx, xx),    /* local coordinates of each pixel                   */
-      SoA_view_value(deviceFullView, yy, yy),    /*                                                   */
-      SoA_view_value(deviceFullView, moduleInd, moduleInd),  /* module id of each pixel               */
-      SoA_view_value(deviceFullView, adc, adc),  /* ADC of each pixel                                 */
-      SoA_view_value(deviceFullView, clus, clus) /* cluster id of each pixel                          */
+      SoA_view_value(deviceFullView, xx),    /* local coordinates of each pixel                       */
+      SoA_view_value(deviceFullView, yy),    /*                                                       */
+      SoA_view_value(deviceFullView, moduleInd),  /* module id of each pixel                          */
+      SoA_view_value(deviceFullView, adc),  /* ADC of each pixel                                      */
+      SoA_view_value(deviceFullView, clus) /* cluster id of each pixel                                */
     )
   );
+  
+  using DevicePixelConstView = DevicePixelConstViewTemplate<>;
 
   explicit SiPixelDigisCUDA();
   explicit SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream);

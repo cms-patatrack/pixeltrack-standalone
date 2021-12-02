@@ -39,6 +39,31 @@
  *    
  */
 
+/* Traits for the different column type scenarios */
+/* Value traits passes the class as is in the case of column type and return 
+ * an empty class with functions returning non-scalar as accessors. */
+template <class C, SoAColumnType COLUMN_TYPE>
+struct ConstValueTraits {};
+
+template <class C>
+struct ConstValueTraits<C, SoAColumnType::column> : public C { using C::C; };
+
+template <class C>
+struct ConstValueTraits<C, SoAColumnType::scalar> {
+  // Just take to SoAValue type to generate the right constructor.
+  ConstValueTraits(size_t, const typename C::valueType *) {}
+  // Any attempt to do anything with the "scalar" value a const element will fail.
+};
+
+template <class C>
+struct ConstValueTraits<C, SoAColumnType::eigen> {
+  // Just take to SoAValue type to generate the right constructor.
+  ConstValueTraits(size_t, const typename C::valueType *) {}
+  // TODO: implement
+  // Any attempt to do anything with the eigen value a const element will fail.
+};
+
+#include <memory_resource>
 /*
  * Members definitions macros for viewa
  */
@@ -57,15 +82,14 @@
 #define _DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME, DATA)               \
   typedef typename BOOST_PP_CAT(TypeOf_, STORE_NAME)::SoAMetadata::BOOST_PP_CAT(TypeOf_, STORE_MEMBER) \
       BOOST_PP_CAT(TypeOf_, LOCAL_NAME);                                                               \
-  static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                                 \
+  constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                                 \
       BOOST_PP_CAT(TypeOf_, STORE_NAME)::SoAMetadata::BOOST_PP_CAT(ColumnTypeOf_, STORE_MEMBER);       \
   SOA_HOST_DEVICE_INLINE                                                                               \
   DATA BOOST_PP_CAT(TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {              \
     return parent_.BOOST_PP_CAT(LOCAL_NAME, _);                                                        \
   };                                                                                                   \
   static_assert(BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != SoAColumnType::eigen,                       \
-                "Eigen columns not supported in views.");                                              \
-  static_assert(BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != SoAColumnType::scalar, "Scalars not supported in views.");
+                "Eigen columns not supported in views.");
 
 #define _DECLARE_VIEW_MEMBER_TYPE_ALIAS(R, DATA, STORE_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL BOOST_PP_TUPLE_PUSH_BACK(STORE_MEMBER_NAME, DATA))
@@ -104,8 +128,6 @@
   (BOOST_PP_CAT(NAME, _)([&]() -> auto {                                                   \
     static_assert(BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, NAME) != SoAColumnType::eigen,  \
                   "Eigen values not supported in views");                                  \
-    static_assert(BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, NAME) != SoAColumnType::scalar, \
-                  "Scalar values not supported in views");                                 \
     auto addr = STORE.soaMetadata().BOOST_PP_CAT(addressOf_, MEMBER)();                    \
     if constexpr (alignmentEnforcement == AlignmentEnforcement::Enforced)                  \
       if (reinterpret_cast<intptr_t>(addr) % byteAlignment)                                \
@@ -179,7 +201,10 @@
  * Declaration of the private members of the const element subclass
  */
 #define _DECLARE_VIEW_CONST_ELEMENT_VALUE_MEMBER_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME) \
-  const SoAConstValueWithConf<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)> BOOST_PP_CAT(LOCAL_NAME, _);
+  const ConstValueTraits<                                                                   \
+    SoAConstValueWithConf<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>,         \
+    BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)                                    \
+  > BOOST_PP_CAT(LOCAL_NAME, _);
 
 #define _DECLARE_VIEW_CONST_ELEMENT_VALUE_MEMBER(R, DATA, STORE_MEMBER_NAME) \
   _DECLARE_VIEW_CONST_ELEMENT_VALUE_MEMBER_IMPL STORE_MEMBER_NAME
@@ -212,14 +237,18 @@
 /**
  * Direct access to column pointer and indexed access
  */
-#define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME)                                 \
-  /* Column */                                                                                                \
-  SOA_HOST_DEVICE_INLINE typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) * LOCAL_NAME() {             \
-    return BOOST_PP_CAT(LOCAL_NAME, _);                                                                       \
-  }                                                                                                           \
-  SOA_HOST_DEVICE_INLINE typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) & LOCAL_NAME(size_t index) { \
-    return BOOST_PP_CAT(LOCAL_NAME, _)[index];                                                                \
-  }
+#define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME)                  \
+  /* Column or scalar */                                                                       \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() {                                                   \
+    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
+        template AccessType<SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();      \
+  }                                                                                            \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) {                                       \
+    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
+        template AccessType<SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index); \
+  } 
 
 #define _DECLARE_VIEW_SOA_ACCESSOR(R, DATA, STORE_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_ACCESSOR_IMPL STORE_MEMBER_NAME)
@@ -228,13 +257,17 @@
  * Direct access to column pointer (const) and indexed access.
  */
 #define _DECLARE_VIEW_SOA_CONST_ACCESSOR_IMPL(STORE_NAME, STORE_MEMBER, LOCAL_NAME)                               \
-  /* Column */                                                                                                    \
-  SOA_HOST_DEVICE_INLINE typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) const* LOCAL_NAME() const {      \
-    return BOOST_PP_CAT(LOCAL_NAME, _);                                                                           \
-  }                                                                                                               \
-  SOA_HOST_DEVICE_INLINE typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) LOCAL_NAME(size_t index) const { \
-    return *(BOOST_PP_CAT(LOCAL_NAME, _) + index);                                                                \
-  }
+  /* Column or scalar */                                                                       \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() const {                                                   \
+    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
+        template AccessType<SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();      \
+  }                                                                                            \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) const {                                       \
+    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
+        template AccessType<SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index); \
+  } 
 
 #define _DECLARE_VIEW_SOA_CONST_ACCESSOR(R, DATA, STORE_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_CONST_ACCESSOR_IMPL STORE_MEMBER_NAME)

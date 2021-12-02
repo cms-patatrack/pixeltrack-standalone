@@ -174,6 +174,70 @@ enum class SoAColumnType { scalar = _VALUE_TYPE_SCALAR, column = _VALUE_TYPE_COL
           IF_COLUMN,                                                       \
           BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_EIGEN_COLUMN), IF_EIGEN_COLUMN, BOOST_PP_EMPTY())))
 
+/* Column accessors: templates implementing the global accesors (soa::x() and soa::x(index) */
+enum class SoAAccessType: bool { mutableAccess, constAccess };
+
+template <typename, SoAColumnType, SoAAccessType>
+struct SoAColumnAccessorsImpl {};
+
+
+// Todo: add alignment support.
+// Sfinae based const/non const variants.
+// Column
+template <typename T>
+struct SoAColumnAccessorsImpl<T, SoAColumnType::column, SoAAccessType::mutableAccess> {
+  SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(T * baseAddress): baseAddress_(baseAddress) {}
+  SOA_HOST_DEVICE_INLINE T * operator()() { return baseAddress_; }
+  SOA_HOST_DEVICE_INLINE T & operator()(size_t index) { return baseAddress_[index]; }
+private:
+  T * baseAddress_;
+};
+
+// Const column
+template <typename T>
+struct SoAColumnAccessorsImpl<T, SoAColumnType::column, SoAAccessType::constAccess> {
+  SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const T * baseAddress): baseAddress_(baseAddress) {}
+  SOA_HOST_DEVICE_INLINE const T * operator()() const { return baseAddress_; }
+  SOA_HOST_DEVICE_INLINE T operator()(size_t index) const { return baseAddress_[index]; }
+private:
+  const T * baseAddress_;
+};
+
+// Scalar
+template <typename T>
+struct SoAColumnAccessorsImpl<T, SoAColumnType::scalar, SoAAccessType::mutableAccess> {
+  SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(T * baseAddress): baseAddress_(baseAddress) {}
+  SOA_HOST_DEVICE_INLINE T & operator() () { return *baseAddress_; }
+  SOA_HOST_DEVICE_INLINE void operator() (size_t index) const { assert (false && "Indexed access impossible for SoA scalars."); }
+private:
+  T * baseAddress_;
+};
+
+// Const scalar
+template <typename T>
+struct SoAColumnAccessorsImpl<T, SoAColumnType::scalar, SoAAccessType::constAccess> {
+  SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const T * baseAddress): baseAddress_(baseAddress) {}
+  SOA_HOST_DEVICE_INLINE T operator() () const { return *baseAddress_; }
+  SOA_HOST_DEVICE_INLINE void operator() (size_t index) const { assert (false && "Indexed access impossible for SoA scalars."); }
+private:
+  const T * baseAddress_;
+};
+
+/* A helper template stager avoiding comma in macros */
+template <typename T>
+struct SoAAccessors{
+  using myInt = int;
+  template <auto columnType>
+  struct ColumnType {
+    using myInt = int;
+    template <auto accessType>
+    struct AccessType: public SoAColumnAccessorsImpl<T, columnType, accessType> {
+      using myInt = int;
+      using SoAColumnAccessorsImpl<T, columnType, accessType>::SoAColumnAccessorsImpl; 
+    };
+  };
+};
+
 /* Enum parameters allowing templated control of store/view behaviors */
 /* Alignement enforcement verifies every column is aligned, and 
  * hints the compiler that it can expect column pointers to be aligned */

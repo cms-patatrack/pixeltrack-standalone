@@ -13,13 +13,14 @@
 
 class SiPixelROCsStatusAndMappingWrapper {
 public:
-  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const &cablingMap,
+  /* This is using a store as the size is needed. TODO: use views when views start embedding size. */
+  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingStore const &cablingMap,
                                           std::vector<unsigned char> modToUnp);
 
   bool hasQuality() const { return hasQuality_; }
 
   // returns pointer to GPU memory
-  const SiPixelROCsStatusAndMapping & getGPUProductAsync(cudaStream_t cudaStream) const;
+  SiPixelROCsStatusAndMappingConstView getGPUProductAsync(cudaStream_t cudaStream) const;
 
   // returns pointer to GPU memory
   const unsigned char *getModToUnpAllAsync(cudaStream_t cudaStream) const;
@@ -33,11 +34,11 @@ private:
   struct GPUData {
     void allocate(size_t size, cudaStream_t stream) {
       cablingMapDeviceBuffer = cms::cuda::make_device_unique<std::byte[]>(
-              SiPixelROCsStatusAndMapping::computeDataSize(size), stream);
-      cablingMapDevice = SiPixelROCsStatusAndMapping(cablingMapDeviceBuffer.get(), size);
+              SiPixelROCsStatusAndMappingStore::computeDataSize(size), stream);
+      cablingMapDevice = SiPixelROCsStatusAndMappingStore(cablingMapDeviceBuffer.get(), size);
     }
     cms::cuda::device::unique_ptr<std::byte[]> cablingMapDeviceBuffer;
-    SiPixelROCsStatusAndMapping cablingMapDevice = SiPixelROCsStatusAndMapping(nullptr, 0); // map struct in GPU
+    SiPixelROCsStatusAndMappingStore cablingMapDevice = SiPixelROCsStatusAndMappingStore(nullptr, 0); // map struct in GPU
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 

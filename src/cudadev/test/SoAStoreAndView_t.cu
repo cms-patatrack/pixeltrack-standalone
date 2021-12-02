@@ -10,7 +10,7 @@
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
 
-generate_SoA_store(SoA1,
+generate_SoA_store(SoA1Template,
   // predefined static scalars
   // size_t size;
   // size_t alignment;
@@ -33,42 +33,48 @@ generate_SoA_store(SoA1,
   SoA_scalar(uint32_t, someNumber)
 );
 
+using SoA1 = SoA1Template<>;
+
 // A 1 to 1 view of the store (except for unsupported types).
-generate_SoA_view(SoA1View,
+generate_SoA_view(SoA1ViewTemplate,
   SoA_view_store_list(
     SoA_view_store(SoA1, soa1)
   ),
   SoA_view_value_list(
-    SoA_view_value(soa1, x, x),
-    SoA_view_value(soa1, y, y),
-    SoA_view_value(soa1, z, z),
-    SoA_view_value(soa1, color, color),
-    SoA_view_value(soa1, value, value),
-    SoA_view_value(soa1, py, py),
-    SoA_view_value(soa1, count, count),
-    SoA_view_value(soa1, anotherCount, anotherCount), 
-    SoA_view_value(soa1, description, description),
-    SoA_view_value(soa1, someNumber, someNumber)
+    SoA_view_value(soa1, x),
+    SoA_view_value(soa1, y),
+    SoA_view_value(soa1, z),
+    SoA_view_value(soa1, color),
+    SoA_view_value(soa1, value),
+    SoA_view_value(soa1, py),
+    SoA_view_value(soa1, count),
+    SoA_view_value(soa1, anotherCount), 
+    SoA_view_value(soa1, description),
+    SoA_view_value(soa1, someNumber)
   )
 );
 
+using SoA1View = SoA1ViewTemplate<>;
+
 // A partial view (artificial mix of store and view)
-generate_SoA_view(SoA1View2G,
+generate_SoA_view(SoA1View2GTemplate,
   SoA_view_store_list(
     SoA_view_store(SoA1, soa1),
     SoA_view_store(SoA1View, soa1v)
   ),
   SoA_view_value_list(
-    SoA_view_value(soa1, x, x),
-    SoA_view_value(soa1v, y, y),
-    SoA_view_value(soa1, color, color),
-    SoA_view_value(soa1v, value, value),
-    SoA_view_value(soa1v, count, count),
-    SoA_view_value(soa1, anotherCount, anotherCount), 
-    SoA_view_value(soa1v, description, description),
-    SoA_view_value(soa1, someNumber, someNumber)
+    SoA_view_value(soa1, x),
+    SoA_view_value(soa1v, y),
+    SoA_view_value(soa1, color),
+    SoA_view_value(soa1v, value),
+    SoA_view_value(soa1v, count),
+    SoA_view_value(soa1, anotherCount), 
+    SoA_view_value(soa1v, description),
+    SoA_view_value(soa1, someNumber)
   )
 );
+
+using SoA1View2G = SoA1View2GTemplate<>;
 
 
 
@@ -79,18 +85,18 @@ generate_SoA_const_view(SoA1View2Gconst,
     SoA_view_store(SoA1View, soa1v)
   ),
   SoA_view_value_list(
-    SoA_view_value(soa1, x, x),
-    SoA_view_value(soa1v, y, y),
+    SoA_view_value(soa1, x),
+    SoA_view_value(soa1v, y),
 /* Eigen columns are not supported in views.    
     SoA_view_value(soa1, a, a),
     SoA_view_value(soa1, b, b),
     SoA_view_value(soa1, r, r), */
-    SoA_view_value(soa1, color, color),
-    SoA_view_value(soa1v, value, value),
-    SoA_view_value(soa1v, count, count),
-    SoA_view_value(soa1, anotherCount, anotherCount), 
-    SoA_view_value(soa1v, description, description),
-    SoA_view_value(soa1, someNumber, someNumber)
+    SoA_view_value(soa1, color),
+    SoA_view_value(soa1v, value),
+    SoA_view_value(soa1v, count),
+    SoA_view_value(soa1, anotherCount), 
+    SoA_view_value(soa1v, description),
+    SoA_view_value(soa1, someNumber)
   )
 );
 

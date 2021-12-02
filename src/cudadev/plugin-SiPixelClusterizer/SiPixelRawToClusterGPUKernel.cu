@@ -182,7 +182,7 @@ namespace pixelgpudetails {
   __device__ uint8_t checkROC(uint32_t errorWord,
                               uint8_t fedId,
                               uint32_t link,
-                              const SiPixelROCsStatusAndMapping &cablingMap,
+                              SiPixelROCsStatusAndMappingConstView &cablingMap,
                               bool debug = false) {
     uint8_t errorType = (errorWord >> sipixelconstants::ROC_shift) & sipixelconstants::ERROR_mask;
     if (errorType < 25)
@@ -262,7 +262,7 @@ namespace pixelgpudetails {
   __device__ uint32_t getErrRawID(uint8_t fedId,
                                   uint32_t errWord,
                                   uint32_t errorType,
-                                  const SiPixelROCsStatusAndMapping &cablingMap,
+                                  SiPixelROCsStatusAndMappingConstView &cablingMap,
                                   bool debug = false) {
     uint32_t rID = 0xffffffff;
 
@@ -329,7 +329,7 @@ namespace pixelgpudetails {
   }
 
   // Kernel to perform Raw to Digi conversion
-  __global__ void RawToDigi_kernel(const SiPixelROCsStatusAndMapping cablingMap,
+  __global__ void RawToDigi_kernel(SiPixelROCsStatusAndMappingConstView cablingMap,
                                    const unsigned char *modToUnp,
                                    const uint32_t wordCounter,
                                    const uint32_t *word,
@@ -494,7 +494,7 @@ namespace pixelgpudetails {
   // Interface to outside
   void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
                                                        const SiPixelClusterThresholds clusterThresholds,
-                                                       const SiPixelROCsStatusAndMapping &cablingMap,
+                                                       SiPixelROCsStatusAndMappingConstView & cablingMap,
                                                        const unsigned char *modToUnp,
                                                        const SiPixelGainForHLTonGPU *gains,
                                                        const WordFedAppender &wordFed,

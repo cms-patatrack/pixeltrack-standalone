@@ -15,7 +15,7 @@
 #include "CondFormats/SiPixelROCsStatusAndMappingWrapper.h"
 #include "CUDACore/copyAsync.h"
 
-SiPixelROCsStatusAndMappingWrapper::SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const& cablingMap,
+SiPixelROCsStatusAndMappingWrapper::SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingStore const& cablingMap,
                                                                        std::vector<unsigned char> modToUnp)
     : modToUnpDefault(modToUnp.size()), hasQuality_(true) {
   // TODO: check if cudaStreamDefault is appropriate
@@ -25,7 +25,7 @@ SiPixelROCsStatusAndMappingWrapper::SiPixelROCsStatusAndMappingWrapper(SiPixelRO
   std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault.begin());
 }
 
-const SiPixelROCsStatusAndMapping & SiPixelROCsStatusAndMappingWrapper::getGPUProductAsync(cudaStream_t cudaStream) const {
+SiPixelROCsStatusAndMappingConstView SiPixelROCsStatusAndMappingWrapper::getGPUProductAsync(cudaStream_t cudaStream) const {
   const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, 
     [this](GPUData& data, cudaStream_t stream) {
       // allocate
@@ -35,7 +35,7 @@ const SiPixelROCsStatusAndMapping & SiPixelROCsStatusAndMappingWrapper::getGPUPr
         data.cablingMapDevice.soaMetadata().byteSize(), stream);
     }
   );
-  return data.cablingMapDevice;
+  return SiPixelROCsStatusAndMappingConstView(data.cablingMapDevice);
 }
 
 const unsigned char* SiPixelROCsStatusAndMappingWrapper::getModToUnpAllAsync(cudaStream_t cudaStream) const {

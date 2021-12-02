@@ -98,19 +98,19 @@
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;              \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::scalar;                           \
+      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::scalar;                       \
       CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Column */       \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                     \
                ParentClass::byteAlignment;                                                                            \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::column;                           \
+      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::column;                       \
       CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Eigen column */ \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *             \
                ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      static const SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::eigen;                            \
+      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::eigen;                        \
       CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); })
 
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME

@@ -2,6 +2,7 @@
 #define CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
 
 #include "DataFormats/SoAStore.h"
+#include "DataFormats/SoAView.h"
 
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
@@ -13,7 +14,7 @@ namespace pixelgpudetails {
   constexpr unsigned int MAX_SIZE_BYTE_BOOL = MAX_SIZE * sizeof(unsigned char);
 }  // namespace pixelgpudetails
 
-generate_SoA_store(SiPixelROCsStatusAndMapping,
+generate_SoA_store(SiPixelROCsStatusAndMappingStoreTemplate,
   SoA_column(unsigned int, fed),
   SoA_column(unsigned int, link),
   SoA_column(unsigned int, roc),
@@ -23,5 +24,26 @@ generate_SoA_store(SiPixelROCsStatusAndMapping,
   SoA_column(unsigned char, badRocs),
   SoA_scalar(unsigned int, size)
 );
+
+using SiPixelROCsStatusAndMappingStore = SiPixelROCsStatusAndMappingStoreTemplate<>;
+
+generate_SoA_const_view(SiPixelROCsStatusAndMappingConstViewTemplate,
+  SoA_view_store_list(SoA_view_store(SiPixelROCsStatusAndMappingStore, mappingStore)),
+  SoA_view_value_list(
+    SoA_view_value(mappingStore, fed),
+    SoA_view_value(mappingStore, link),
+    SoA_view_value(mappingStore, roc),
+    SoA_view_value(mappingStore, rawId),
+    SoA_view_value(mappingStore, rocInDet),
+    SoA_view_value(mappingStore, moduleId),
+    SoA_view_value(mappingStore, badRocs),
+    SoA_view_value(mappingStore, size)
+  )
+);
+
+// Slightly more complex than using, but allows forward declarations.
+struct SiPixelROCsStatusAndMappingConstView: public SiPixelROCsStatusAndMappingConstViewTemplate<> { 
+  using SiPixelROCsStatusAndMappingConstViewTemplate<>::SiPixelROCsStatusAndMappingConstViewTemplate;
+};
 
 #endif  // CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
