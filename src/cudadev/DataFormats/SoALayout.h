@@ -3,8 +3,8 @@
  * with compile-time size and alignment, and accessors to the "rows" and "columns".
  */
 
-#ifndef DataStructures_SoAStore_h
-#define DataStructures_SoAStore_h
+#ifndef DataStructures_SoALayout_h
+#define DataStructures_SoALayout_h
 
 #include "SoACommon.h"
 
@@ -13,27 +13,27 @@
 
 /* dump SoA fields information; these should expand to, for columns:
  * Example:
- * generate_SoA_store(SoA,
+ * GENERATE_SOA_LAYOUT(SoA,
  *   // predefined static scalars
  *   // size_t size;
  *   // size_t alignment;
  *
  *   // columns: one value per element
- *   SoA_FundamentalTypeColumn(double, x),
- *   SoA_FundamentalTypeColumn(double, y),
- *   SoA_FundamentalTypeColumn(double, z),
- *   SoA_eigenColumn(Eigen::Vector3d, a),
- *   SoA_eigenColumn(Eigen::Vector3d, b),
- *   SoA_eigenColumn(Eigen::Vector3d, r),
- *   SoA_column(uint16_t, colour),
- *   SoA_column(int32_t, value),
- *   SoA_column(double *, py),
- *   SoA_FundamentalTypeColumn(uint32_t, count),
- *   SoA_FundamentalTypeColumn(uint32_t, anotherCount),
+ *   SOA_COLUMN(double, x),
+ *   SOA_COLUMN(double, y),
+ *   SOA_COLUMN(double, z),
+ *   SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+ *   SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+ *   SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
+ *   SOA_COLUMN(uint16_t, colour),
+ *   SOA_COLUMN(int32_t, value),
+ *   SOA_COLUMN(double *, py),
+ *   SOA_COLUMN(uint32_t, count),
+ *   SOA_COLUMN(uint32_t, anotherCount),
  *
  *   // scalars: one value for the whole structure
- *   SoA_scalar(const char *, description),
- *   SoA_scalar(uint32_t, someNumber)
+ *   SOA_SCALAR(const char *, description),
+ *   SOA_SCALAR(uint32_t, someNumber)
  * );
  * 
  * dumps as:
@@ -144,7 +144,7 @@
                                                 byteAlignment / sizeof(CPP_TYPE::Scalar);)                            \
   if constexpr (alignmentEnforcement == AlignmentEnforcement::Enforced)                                               \
     if (reinterpret_cast<intptr_t>(BOOST_PP_CAT(NAME, _)) % byteAlignment)                                            \
-      throw std::out_of_range("In store constructor: misaligned column: " #NAME);
+      throw std::out_of_range("In layout constructor: misaligned column: " #NAME);
 
 #define _ASSIGN_SOA_COLUMN_OR_SCALAR(R, DATA, TYPE_NAME) _ASSIGN_SOA_COLUMN_OR_SCALAR_IMPL TYPE_NAME
 
@@ -161,118 +161,6 @@
                          CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;)
 
 #define _ACCUMULATE_SOA_ELEMENT(R, DATA, TYPE_NAME) _ACCUMULATE_SOA_ELEMENT_IMPL TYPE_NAME
-
-/**
- * Value accessor of the const_element subclass.
- */
-#define _DECLARE_SOA_CONST_ELEMENT_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                      \
-  SOA_HOST_DEVICE_INLINE                                                                                          \
-  _SWITCH_ON_TYPE(                                                                                                \
-      VALUE_TYPE,                                     /* Scalar */                                                \
-      CPP_TYPE const& NAME() { return soa_.NAME(); }, /* Column */                                                \
-      CPP_TYPE const& NAME() { return *(soa_.NAME() + index_); },                                                 \
-      /* Eigen column */ /* Ugly hack with a helper template to avoid having commas inside the macro parameter */ \
-      EigenConstMapMaker<CPP_TYPE>::Type const NAME() {                                                           \
-        return EigenConstMapMaker<CPP_TYPE>::withData(soa_.NAME() + index_)                                       \
-            .withStride(soa_.BOOST_PP_CAT(NAME, Stride)());                                                       \
-      })
-
-#define _DECLARE_SOA_CONST_ELEMENT_ACCESSOR(R, DATA, TYPE_NAME) _DECLARE_SOA_CONST_ELEMENT_ACCESSOR_IMPL TYPE_NAME
-
-/**
- * Generator of parameters for (non-const) element subclass (expanded comma separated).
- */
-#define _DECLARE_ELEMENT_VALUE_ARG_IMPL(VALUE_TYPE, CPP_TYPE, NAME) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,        /* Scalar */                   \
-                  BOOST_PP_EMPTY(),  /* Column */                   \
-                  (CPP_TYPE * NAME), /* Eigen column */             \
-                  (CPP_TYPE::Scalar * NAME)(size_t BOOST_PP_CAT(NAME, Stride)))
-
-#define _DECLARE_ELEMENT_VALUE_ARG(R, DATA, TYPE_NAME) _DECLARE_ELEMENT_VALUE_ARG_IMPL TYPE_NAME
-
-/**
- * Generator of member initialization for constructor of element subclass
- */
-#define _DECLARE_ELEMENT_VALUE_MEMBER_INITIALISATION_IMPL(VALUE_TYPE, CPP_TYPE, NAME, DATA) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,         /* Scalar */                                          \
-                  BOOST_PP_EMPTY(),   /* Column */                                          \
-                  (NAME(DATA, NAME)), /* Eigen column */                                    \
-                  (NAME(DATA, NAME, BOOST_PP_CAT(NAME, Stride))))
-
-/* declare AoS-like element value args for contructor; these should expand,for columns only */
-#define _DECLARE_ELEMENT_VALUE_MEMBER_INITIALISATION(R, DATA, TYPE_NAME) \
-  BOOST_PP_EXPAND(_DECLARE_ELEMENT_VALUE_MEMBER_INITIALISATION_IMPL BOOST_PP_TUPLE_PUSH_BACK(TYPE_NAME, DATA))
-
-/**
- * Generator of member initialization for constructor of const element subclass
- */
-#define _DECLARE_CONST_ELEMENT_VALUE_MEMBER_INITIALISATION_IMPL(VALUE_TYPE, CPP_TYPE, NAME, DATA) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,                          /* Scalar */                               \
-                  BOOST_PP_EMPTY(),                    /* Column */                               \
-                  (BOOST_PP_CAT(NAME, _)(DATA, NAME)), /* Eigen column */                         \
-                  (BOOST_PP_CAT(NAME, _)(DATA, NAME, BOOST_PP_CAT(NAME, Stride))))
-
-/* declare AoS-like element value args for contructor; these should expand,for columns only */
-#define _DECLARE_CONST_ELEMENT_VALUE_MEMBER_INITIALISATION(R, DATA, TYPE_NAME) \
-  BOOST_PP_EXPAND(_DECLARE_CONST_ELEMENT_VALUE_MEMBER_INITIALISATION_IMPL BOOST_PP_TUPLE_PUSH_BACK(TYPE_NAME, DATA))
-/**
- * Generator of the member-by-member copy operator of the element subclass.
- */
-#define _DECLARE_ELEMENT_VALUE_COPY_IMPL(VALUE_TYPE, CPP_TYPE, NAME) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,       /* Scalar */                     \
-                  BOOST_PP_EMPTY(), /* Column */                     \
-                  NAME() = other.NAME();                             \
-                  , /* Eigen column */                               \
-                  static_cast<CPP_TYPE>(NAME) = static_cast<std::add_const<CPP_TYPE>::type&>(other.NAME);)
-
-#define _DECLARE_ELEMENT_VALUE_COPY(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_ELEMENT_VALUE_COPY_IMPL TYPE_NAME)
-
-/**
- * Declaration of the private members of the const element subclass
- */
-#define _DECLARE_CONST_ELEMENT_VALUE_MEMBER_IMPL(VALUE_TYPE, CPP_TYPE, NAME) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,       /* Scalar */                             \
-                  BOOST_PP_EMPTY(), /* Column */                             \
-                  const SoAValueWithConf<CPP_TYPE> BOOST_PP_CAT(NAME, _);    \
-                  , /* Eigen column */                                       \
-                  const SoAEigenValueWithConf<CPP_TYPE> BOOST_PP_CAT(NAME, _);)
-
-#define _DECLARE_CONST_ELEMENT_VALUE_MEMBER(R, DATA, TYPE_NAME) _DECLARE_CONST_ELEMENT_VALUE_MEMBER_IMPL TYPE_NAME
-
-/**
- * Declaration of the members accessors of the const element subclass
- */
-#define _DECLARE_CONST_ELEMENT_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                   \
-  _SWITCH_ON_TYPE(                                                                                         \
-      VALUE_TYPE,                                                                       /* Scalar */       \
-      BOOST_PP_EMPTY(),                                                                 /* Column */       \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return BOOST_PP_CAT(NAME, _)(); }, /* Eigen column */ \
-      SOA_HOST_DEVICE_INLINE const SoAEigenValueWithConf<CPP_TYPE> NAME() const { return BOOST_PP_CAT(NAME, _); })
-
-#define _DECLARE_CONST_ELEMENT_ACCESSOR(R, DATA, TYPE_NAME) _DECLARE_CONST_ELEMENT_ACCESSOR_IMPL TYPE_NAME
-
-/**
- * Declaration of the members of the element subclass
- */
-#define _DECLARE_ELEMENT_VALUE_MEMBER_IMPL(VALUE_TYPE, CPP_TYPE, NAME) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,       /* Scalar */                       \
-                  BOOST_PP_EMPTY(), /* Column */                       \
-                  SoAValueWithConf<CPP_TYPE> NAME;                     \
-                  , /* Eigen column */                                 \
-                  SoAEigenValueWithConf<CPP_TYPE> NAME;)
-
-#define _DECLARE_ELEMENT_VALUE_MEMBER(R, DATA, TYPE_NAME) _DECLARE_ELEMENT_VALUE_MEMBER_IMPL TYPE_NAME
-
-/**
- * Parameters passed to element subclass constructor in operator[]
- */
-#define _DECLARE_ELEMENT_CONSTR_CALL_IMPL(VALUE_TYPE, CPP_TYPE, NAME) \
-  _SWITCH_ON_TYPE(VALUE_TYPE,              /* Scalar */               \
-                  BOOST_PP_EMPTY(),        /* Column */               \
-                  (BOOST_PP_CAT(NAME, _)), /* Eigen column */         \
-                  (BOOST_PP_CAT(NAME, _))(BOOST_PP_CAT(NAME, Stride_)))
-
-#define _DECLARE_ELEMENT_CONSTR_CALL(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_ELEMENT_CONSTR_CALL_IMPL TYPE_NAME)
 
 /**
  * Direct access to column pointer and indexed access
@@ -326,9 +214,9 @@
 #endif
 
 /*
- * A macro defining a SoA store (collection of scalars and columns of equal lengths
+ * A macro defining a SoA layout (collection of scalars and columns of equal lengths)
  */
-#define generate_SoA_store(CLASS, ...)                                                                                                    \
+#define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                    \
   template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                           \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
@@ -417,50 +305,6 @@
       _ITERATE_ON_ALL(_ASSIGN_SOA_COLUMN_OR_SCALAR, ~, __VA_ARGS__)                                                                       \
     }                                                                                                                                     \
                                                                                                                                           \
-    struct const_element {                                                                                                                \
-      SOA_HOST_DEVICE_INLINE                                                                                                              \
-      const_element(size_t index, /* Declare parameters */                                                                                \
-                    _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_VALUE_ARG, index, __VA_ARGS__))                                                \
-          : _ITERATE_ON_ALL_COMMA(_DECLARE_CONST_ELEMENT_VALUE_MEMBER_INITIALISATION, index, __VA_ARGS__) {}                              \
-      _ITERATE_ON_ALL(_DECLARE_CONST_ELEMENT_ACCESSOR, ~, __VA_ARGS__)                                                                    \
-                                                                                                                                          \
-    private:                                                                                                                              \
-      _ITERATE_ON_ALL(_DECLARE_CONST_ELEMENT_VALUE_MEMBER, ~, __VA_ARGS__)                                                                \
-    };                                                                                                                                    \
-                                                                                                                                          \
-    struct element {                                                                                                                      \
-      SOA_HOST_DEVICE_INLINE                                                                                                              \
-      element(size_t index, /* Declare parameters */                                                                                      \
-              _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_VALUE_ARG, index, __VA_ARGS__))                                                      \
-          : _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_VALUE_MEMBER_INITIALISATION, index, __VA_ARGS__) {}                                    \
-      SOA_HOST_DEVICE_INLINE                                                                                                              \
-      element& operator=(const element& other) {                                                                                          \
-        _ITERATE_ON_ALL(_DECLARE_ELEMENT_VALUE_COPY, ~, __VA_ARGS__)                                                                      \
-        return *this;                                                                                                                     \
-      }                                                                                                                                   \
-      _ITERATE_ON_ALL(_DECLARE_ELEMENT_VALUE_MEMBER, ~, __VA_ARGS__)                                                                      \
-    };                                                                                                                                    \
-                                                                                                                                          \
-private:\
-    /* AoS-like accessor (non-const) */                                                                                                   \
-    SOA_HOST_DEVICE_INLINE                                                                                                                \
-    element operator[](size_t index) {                                                                                                    \
-      rangeCheck(index);                                                                                                                  \
-      return element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_CONSTR_CALL, ~, __VA_ARGS__));                                         \
-    }                                                                                                                                     \
-                                                                                                                                          \
-    /* AoS-like accessor (const) */                                                                                                       \
-    SOA_HOST_DEVICE_INLINE                                                                                                                \
-    const const_element operator[](size_t index) const {                                                                                  \
-      rangeCheck(index);                                                                                                                  \
-      return const_element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_CONSTR_CALL, ~, __VA_ARGS__));                                   \
-    }                                                                                                                                     \
-                                                                                                                                          \
-    /* accessors */                                                                                                                       \
-    _ITERATE_ON_ALL(_DECLARE_SOA_ACCESSOR, ~, __VA_ARGS__)                                                                                \
-    _ITERATE_ON_ALL(_DECLARE_SOA_CONST_ACCESSOR, ~, __VA_ARGS__)                                                                          \
-                                                                                                                                          \
-public:\
     /* dump the SoA internal structure */                                                                                                 \
     template <typename T>                                                                                                                 \
     SOA_HOST_ONLY friend void dump();                                                                                                     \
@@ -484,4 +328,4 @@ public:\
     _ITERATE_ON_ALL(_DECLARE_SOA_DATA_MEMBER, ~, __VA_ARGS__)                                                                             \
   }
 
-#endif  // ndef DataStructures_SoAStore_h
+#endif  // ndef DataStructures_SoALayout_h

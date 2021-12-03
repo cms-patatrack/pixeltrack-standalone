@@ -117,13 +117,13 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
         phiBinnerByteSize, 
       stream);
     // Split the buffer in stores and array
-    store->m_hitsStore = TrackingRecHit2DSOAStore::HitsLayout(m_hitsSupportLayerStartStore.get(), nHits);
-    store->m_supportObjectsStore = TrackingRecHit2DSOAStore::SupportObjectsLayout(store->m_hitsStore.soaMetadata().nextByte(), nHits);
-    m_hitsLayerStart = store->m_hitsLayerStart = reinterpret_cast<uint32_t *> (store->m_supportObjectsStore.soaMetadata().nextByte());
+    store->m_hitsLayout = TrackingRecHit2DSOAStore::HitsLayout(m_hitsSupportLayerStartStore.get(), nHits);
+    store->m_supportObjectsLayout = TrackingRecHit2DSOAStore::SupportObjectsLayout(store->m_hitsLayout.soaMetadata().nextByte(), nHits);
+    m_hitsLayerStart = store->m_hitsLayerStart = reinterpret_cast<uint32_t *> (store->m_supportObjectsLayout.soaMetadata().nextByte());
     // Record additional references
     store->m_hitsAndSupportView = TrackingRecHit2DSOAStore::HitsAndSupportView(
-      store->m_hitsStore,
-      store->m_supportObjectsStore
+      store->m_hitsLayout,
+      store->m_supportObjectsLayout
     );
     m_phiBinnerStorage = store->m_phiBinnerStorage = store->m_hitsAndSupportView.phiBinnerStorage();
     m_iphi = store->m_hitsAndSupportView.iphi();

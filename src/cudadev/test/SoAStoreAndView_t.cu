@@ -1,4 +1,4 @@
-#include "DataFormats/SoAStore.h"
+#include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
 #include <memory>
 #include <cstdlib>
@@ -10,47 +10,47 @@
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
 
-generate_SoA_store(SoA1LayoutTemplate,
+GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
   // predefined static scalars
   // size_t size;
   // size_t alignment;
 
   // columns: one value per element
-  SoA_column(double, x),
-  SoA_column(double, y),
-  SoA_column(double, z),
-  SoA_eigenColumn(Eigen::Vector3d, a),
-  SoA_eigenColumn(Eigen::Vector3d, b),
-  SoA_eigenColumn(Eigen::Vector3d, r),
-  SoA_column(uint16_t, color),
-  SoA_column(int32_t, value),
-  SoA_column(double *, py),
-  SoA_column(uint32_t, count),
-  SoA_column(uint32_t, anotherCount),
+  SOA_COLUMN(double, x),
+  SOA_COLUMN(double, y),
+  SOA_COLUMN(double, z),
+  SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+  SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+  SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
+  SOA_COLUMN(uint16_t, color),
+  SOA_COLUMN(int32_t, value),
+  SOA_COLUMN(double *, py),
+  SOA_COLUMN(uint32_t, count),
+  SOA_COLUMN(uint32_t, anotherCount),
 
   // scalars: one value for the whole structure
-  SoA_scalar(const char *, description),
-  SoA_scalar(uint32_t, someNumber)
+  SOA_SCALAR(const char *, description),
+  SOA_SCALAR(uint32_t, someNumber)
 );
 
 using SoA1Layout = SoA1LayoutTemplate<>;
 
 // A 1 to 1 view of the store (except for unsupported types).
 generate_SoA_view(SoA1ViewTemplate,
-  SoA_view_store_list(
-    SoA_view_store(SoA1Layout, soa1)
+  SOA_VIEW_LAYOUT_LIST(
+    SOA_VIEW_LAYOUT(SoA1Layout, soa1)
   ),
-  SoA_view_value_list(
-    SoA_view_value(soa1, x),
-    SoA_view_value(soa1, y),
-    SoA_view_value(soa1, z),
-    SoA_view_value(soa1, color),
-    SoA_view_value(soa1, value),
-    SoA_view_value(soa1, py),
-    SoA_view_value(soa1, count),
-    SoA_view_value(soa1, anotherCount), 
-    SoA_view_value(soa1, description),
-    SoA_view_value(soa1, someNumber)
+  SOA_VIEW_VALUE_LIST(
+    SOA_VIEW_VALUE(soa1, x),
+    SOA_VIEW_VALUE(soa1, y),
+    SOA_VIEW_VALUE(soa1, z),
+    SOA_VIEW_VALUE(soa1, color),
+    SOA_VIEW_VALUE(soa1, value),
+    SOA_VIEW_VALUE(soa1, py),
+    SOA_VIEW_VALUE(soa1, count),
+    SOA_VIEW_VALUE(soa1, anotherCount), 
+    SOA_VIEW_VALUE(soa1, description),
+    SOA_VIEW_VALUE(soa1, someNumber)
   )
 );
 
@@ -58,19 +58,19 @@ using SoA1View = SoA1ViewTemplate<>;
 
 // A partial view (artificial mix of store and view)
 generate_SoA_view(SoA1View2GTemplate,
-  SoA_view_store_list(
-    SoA_view_store(SoA1Layout, soa1),
-    SoA_view_store(SoA1View, soa1v)
+  SOA_VIEW_LAYOUT_LIST(
+    SOA_VIEW_LAYOUT(SoA1Layout, soa1),
+    SOA_VIEW_LAYOUT(SoA1View, soa1v)
   ),
-  SoA_view_value_list(
-    SoA_view_value(soa1, x),
-    SoA_view_value(soa1v, y),
-    SoA_view_value(soa1, color),
-    SoA_view_value(soa1v, value),
-    SoA_view_value(soa1v, count),
-    SoA_view_value(soa1, anotherCount), 
-    SoA_view_value(soa1v, description),
-    SoA_view_value(soa1, someNumber)
+  SOA_VIEW_VALUE_LIST(
+    SOA_VIEW_VALUE(soa1, x),
+    SOA_VIEW_VALUE(soa1v, y),
+    SOA_VIEW_VALUE(soa1, color),
+    SOA_VIEW_VALUE(soa1v, value),
+    SOA_VIEW_VALUE(soa1v, count),
+    SOA_VIEW_VALUE(soa1, anotherCount), 
+    SOA_VIEW_VALUE(soa1v, description),
+    SOA_VIEW_VALUE(soa1, someNumber)
   )
 );
 
@@ -80,23 +80,23 @@ using SoA1View2G = SoA1View2GTemplate<>;
 
 // Same partial view, yet const.
 generate_SoA_const_view(SoA1View2Gconst,
-  SoA_view_store_list(
-    SoA_view_store(SoA1Layout, soa1),
-    SoA_view_store(SoA1View, soa1v)
+  SOA_VIEW_LAYOUT_LIST(
+    SOA_VIEW_LAYOUT(SoA1Layout, soa1),
+    SOA_VIEW_LAYOUT(SoA1View, soa1v)
   ),
-  SoA_view_value_list(
-    SoA_view_value(soa1, x),
-    SoA_view_value(soa1v, y),
+  SOA_VIEW_VALUE_LIST(
+    SOA_VIEW_VALUE(soa1, x),
+    SOA_VIEW_VALUE(soa1v, y),
 /* Eigen columns are not supported in views.    
     SoA_view_value(soa1, a, a),
     SoA_view_value(soa1, b, b),
     SoA_view_value(soa1, r, r), */
-    SoA_view_value(soa1, color),
-    SoA_view_value(soa1v, value),
-    SoA_view_value(soa1v, count),
-    SoA_view_value(soa1, anotherCount), 
-    SoA_view_value(soa1v, description),
-    SoA_view_value(soa1, someNumber)
+    SOA_VIEW_VALUE(soa1, color),
+    SOA_VIEW_VALUE(soa1v, value),
+    SOA_VIEW_VALUE(soa1v, count),
+    SOA_VIEW_VALUE(soa1, anotherCount), 
+    SOA_VIEW_VALUE(soa1v, description),
+    SOA_VIEW_VALUE(soa1, someNumber)
   )
 );
 

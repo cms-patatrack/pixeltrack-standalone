@@ -15,7 +15,7 @@
 #include "CondFormats/SiPixelROCsStatusAndMappingWrapper.h"
 #include "CUDACore/copyAsync.h"
 
-SiPixelROCsStatusAndMappingWrapper::SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingStore const& cablingMap,
+SiPixelROCsStatusAndMappingWrapper::SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingLayout const& cablingMap,
                                                                        std::vector<unsigned char> modToUnp)
     : modToUnpDefault(modToUnp.size()), hasQuality_(true) {
   // TODO: check if cudaStreamDefault is appropriate

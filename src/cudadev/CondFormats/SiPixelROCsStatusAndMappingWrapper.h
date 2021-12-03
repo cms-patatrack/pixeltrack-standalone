@@ -13,8 +13,8 @@
 
 class SiPixelROCsStatusAndMappingWrapper {
 public:
-  /* This is using a store as the size is needed. TODO: use views when views start embedding size. */
-  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingStore const &cablingMap,
+  /* This is using a layout as the size is needed. TODO: use views when views start embedding size. */
+  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingLayout const &cablingMap,
                                           std::vector<unsigned char> modToUnp);
 
   bool hasQuality() const { return hasQuality_; }
@@ -34,11 +34,11 @@ private:
   struct GPUData {
     void allocate(size_t size, cudaStream_t stream) {
       cablingMapDeviceBuffer = cms::cuda::make_device_unique<std::byte[]>(
-              SiPixelROCsStatusAndMappingStore::computeDataSize(size), stream);
-      cablingMapDevice = SiPixelROCsStatusAndMappingStore(cablingMapDeviceBuffer.get(), size);
+              SiPixelROCsStatusAndMappingLayout::computeDataSize(size), stream);
+      cablingMapDevice = SiPixelROCsStatusAndMappingLayout(cablingMapDeviceBuffer.get(), size);
     }
     cms::cuda::device::unique_ptr<std::byte[]> cablingMapDeviceBuffer;
-    SiPixelROCsStatusAndMappingStore cablingMapDevice = SiPixelROCsStatusAndMappingStore(nullptr, 0); // map struct in GPU
+    SiPixelROCsStatusAndMappingLayout cablingMapDevice = SiPixelROCsStatusAndMappingLayout(nullptr, 0); // map struct in GPU
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 

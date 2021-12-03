@@ -22,7 +22,7 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
   edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
 
-  SiPixelDigisCUDA::HostStoreAndBuffer digis_;
+  SiPixelDigisCUDA::HostStore digis_;
 
   size_t nDigis_;
 };
@@ -54,7 +54,7 @@ void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   //     host memory to be allocated without a CUDA stream
   // - What if a CPU algorithm would produce the same SoA? We can't
   //   use cudaMallocHost without a GPU...
-  auto dv = digis_.store();
+  auto dv = digis_.view();
   iEvent.emplace(digiPutToken_, nDigis_, dv.pdigi(), dv.rawIdArr(), dv.adc(), dv.clus());
 
   digis_.reset();

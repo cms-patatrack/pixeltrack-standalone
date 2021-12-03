@@ -1,7 +1,7 @@
 #ifndef CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
 #define CondFormats_SiPixelObjects_interface_SiPixelROCsStatusAndMapping_h
 
-#include "DataFormats/SoAStore.h"
+#include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
 
 namespace pixelgpudetails {
@@ -14,30 +14,30 @@ namespace pixelgpudetails {
   constexpr unsigned int MAX_SIZE_BYTE_BOOL = MAX_SIZE * sizeof(unsigned char);
 }  // namespace pixelgpudetails
 
-generate_SoA_store(SiPixelROCsStatusAndMappingStoreTemplate,
-  SoA_column(unsigned int, fed),
-  SoA_column(unsigned int, link),
-  SoA_column(unsigned int, roc),
-  SoA_column(unsigned int, rawId),
-  SoA_column(unsigned int, rocInDet),
-  SoA_column(unsigned int, moduleId),
-  SoA_column(unsigned char, badRocs),
-  SoA_scalar(unsigned int, size)
+GENERATE_SOA_LAYOUT(SiPixelROCsStatusAndMappingLayoutTemplate,
+  SOA_COLUMN(unsigned int, fed),
+  SOA_COLUMN(unsigned int, link),
+  SOA_COLUMN(unsigned int, roc),
+  SOA_COLUMN(unsigned int, rawId),
+  SOA_COLUMN(unsigned int, rocInDet),
+  SOA_COLUMN(unsigned int, moduleId),
+  SOA_COLUMN(unsigned char, badRocs),
+  SOA_SCALAR(unsigned int, size)
 );
 
-using SiPixelROCsStatusAndMappingStore = SiPixelROCsStatusAndMappingStoreTemplate<>;
+using SiPixelROCsStatusAndMappingLayout = SiPixelROCsStatusAndMappingLayoutTemplate<>;
 
 generate_SoA_const_view(SiPixelROCsStatusAndMappingConstViewTemplate,
-  SoA_view_store_list(SoA_view_store(SiPixelROCsStatusAndMappingStore, mappingStore)),
-  SoA_view_value_list(
-    SoA_view_value(mappingStore, fed),
-    SoA_view_value(mappingStore, link),
-    SoA_view_value(mappingStore, roc),
-    SoA_view_value(mappingStore, rawId),
-    SoA_view_value(mappingStore, rocInDet),
-    SoA_view_value(mappingStore, moduleId),
-    SoA_view_value(mappingStore, badRocs),
-    SoA_view_value(mappingStore, size)
+  SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SiPixelROCsStatusAndMappingLayout, mappingLayout)),
+  SOA_VIEW_VALUE_LIST(
+    SOA_VIEW_VALUE(mappingLayout, fed),
+    SOA_VIEW_VALUE(mappingLayout, link),
+    SOA_VIEW_VALUE(mappingLayout, roc),
+    SOA_VIEW_VALUE(mappingLayout, rawId),
+    SOA_VIEW_VALUE(mappingLayout, rocInDet),
+    SOA_VIEW_VALUE(mappingLayout, moduleId),
+    SOA_VIEW_VALUE(mappingLayout, badRocs),
+    SOA_VIEW_VALUE(mappingLayout, size)
   )
 );
 

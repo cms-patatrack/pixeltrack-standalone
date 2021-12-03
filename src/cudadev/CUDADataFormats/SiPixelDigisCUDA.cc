@@ -19,17 +19,17 @@ SiPixelDigisCUDA::SiPixelDigisCUDA()
     : data_d(),deviceOnlyLayout_d(), hostDeviceLayout_d(), deviceFullView_(), devicePixelConstView_()
 {}
 
-SiPixelDigisCUDA::HostStoreAndBuffer::HostStoreAndBuffer()
+SiPixelDigisCUDA::HostStore::HostStore()
      : data_h(), hostLayout_(nullptr, 0), hostView_(hostLayout_)
 {}
 
-SiPixelDigisCUDA::HostStoreAndBuffer::HostStoreAndBuffer(size_t maxFedWords, cudaStream_t stream)
+SiPixelDigisCUDA::HostStore::HostStore(size_t maxFedWords, cudaStream_t stream)
      : data_h(cms::cuda::make_host_unique<std::byte[]>(SiPixelDigisCUDA::HostDeviceLayout::computeDataSize(maxFedWords), stream)),
        hostLayout_(data_h.get(), maxFedWords),
        hostView_(hostLayout_)
 {}
 
-void SiPixelDigisCUDA::HostStoreAndBuffer::reset() {
+void SiPixelDigisCUDA::HostStore::reset() {
   hostLayout_ = HostDeviceLayout();
   hostView_ = HostDeviceView(hostLayout_);
   data_h.reset();
@@ -42,11 +42,11 @@ cms::cuda::host::unique_ptr<uint16_t[]> SiPixelDigisCUDA::adcToHostAsync(cudaStr
   return ret;
 }
 
-SiPixelDigisCUDA::HostStoreAndBuffer SiPixelDigisCUDA::dataToHostAsync(cudaStream_t stream) const {
+SiPixelDigisCUDA::HostStore SiPixelDigisCUDA::dataToHostAsync(cudaStream_t stream) const {
   // Allocate the needed space only and build the compact data in place in host memory (from the larger device memory).
   // Due to the compaction with the 2D copy, we need to know the precise geometry, and hence operate on the store (as opposed
   // to the view, which is unaware of the column pitches.
-  HostStoreAndBuffer ret(nDigis(), stream);
+  HostStore ret(nDigis(), stream);
   auto rhlsm = ret.hostLayout_.soaMetadata();
   auto hdlsm_d = hostDeviceLayout_d.soaMetadata();
   cudaCheck(cudaMemcpyAsync(rhlsm.addressOf_adc(), hdlsm_d.addressOf_adc(), nDigis_h * sizeof(*rhlsm.addressOf_adc()),

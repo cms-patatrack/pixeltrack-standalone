@@ -154,9 +154,9 @@ inline size_t alignSize(size_t size, size_t alignment = 128) {
 
 enum class SoAColumnType { scalar = _VALUE_TYPE_SCALAR, column = _VALUE_TYPE_COLUMN, eigen = _VALUE_TYPE_EIGEN_COLUMN };
 
-#define SoA_scalar(TYPE, NAME) (_VALUE_TYPE_SCALAR, TYPE, NAME)
-#define SoA_column(TYPE, NAME) (_VALUE_TYPE_COLUMN, TYPE, NAME)
-#define SoA_eigenColumn(TYPE, NAME) (_VALUE_TYPE_EIGEN_COLUMN, TYPE, NAME)
+#define SOA_SCALAR(TYPE, NAME) (_VALUE_TYPE_SCALAR, TYPE, NAME)
+#define SOA_COLUMN(TYPE, NAME) (_VALUE_TYPE_COLUMN, TYPE, NAME)
+#define SOA_EIGEN_COLUMN(TYPE, NAME) (_VALUE_TYPE_EIGEN_COLUMN, TYPE, NAME)
 
 /* Iterate on the macro MACRO and return the result as a comma separated list */
 #define _ITERATE_ON_ALL_COMMA(MACRO, DATA, ...) \
@@ -238,7 +238,7 @@ struct SoAAccessors{
   };
 };
 
-/* Enum parameters allowing templated control of store/view behaviors */
+/* Enum parameters allowing templated control of layout/view behaviors */
 /* Alignement enforcement verifies every column is aligned, and 
  * hints the compiler that it can expect column pointers to be aligned */
 enum class AlignmentEnforcement : bool { Relaxed, Enforced };

@@ -6,59 +6,59 @@
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
-#include "DataFormats/SoAStore.h"
+#include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
 
 class SiPixelDigisCUDA {
 public:
-  generate_SoA_store(DeviceOnlyLayoutTemplate,
+  GENERATE_SOA_LAYOUT(DeviceOnlyLayoutTemplate,
     /* These are consumed by downstream device code                                                   */
-    SoA_column(uint16_t, xx),         /* local coordinates of each pixel                              */
-    SoA_column(uint16_t, yy),         /*                                                              */
-    SoA_column(uint16_t, moduleInd)   /* module id of each pixel                                      */
+    SOA_COLUMN(uint16_t, xx),         /* local coordinates of each pixel                              */
+    SOA_COLUMN(uint16_t, yy),         /*                                                              */
+    SOA_COLUMN(uint16_t, moduleInd)   /* module id of each pixel                                      */
   );
   
   using DeviceOnlyLayout = DeviceOnlyLayoutTemplate<>;
   
-  generate_SoA_store(HostDeviceLayoutTemplate,
+  GENERATE_SOA_LAYOUT(HostDeviceLayoutTemplate,
     /* These are also transferred to host (see HostDataView) */
-    SoA_column(uint16_t, adc),        /* ADC of each pixel                                            */
-    SoA_column(int32_t, clus),        /* cluster id of each pixel                                     */
+    SOA_COLUMN(uint16_t, adc),        /* ADC of each pixel                                            */
+    SOA_COLUMN(int32_t, clus),        /* cluster id of each pixel                                     */
     /* These are for CPU output; should we (eventually) place them to a                               */
     /* separate product?                                                                              */
-    SoA_column(uint32_t, pdigi),     /* packed digi (row, col, adc) of each pixel                     */
-    SoA_column(uint32_t, rawIdArr)   /* DetId of each pixel                                           */
+    SOA_COLUMN(uint32_t, pdigi),     /* packed digi (row, col, adc) of each pixel                     */
+    SOA_COLUMN(uint32_t, rawIdArr)   /* DetId of each pixel                                           */
   );
   
   using HostDeviceLayout = HostDeviceLayoutTemplate<>;
   
   generate_SoA_view(HostDeviceViewTemplate,
-    SoA_view_store_list(
-      SoA_view_store(HostDeviceLayout, hostDevice)
+    SOA_VIEW_LAYOUT_LIST(
+      SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)
     ),
-    SoA_view_value_list(
-      SoA_view_value(hostDevice, adc),      /* ADC of each pixel                                      */
-      SoA_view_value(hostDevice, clus),     /* cluster id of each pixel                               */
-      SoA_view_value(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
-      SoA_view_value(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
+    SOA_VIEW_VALUE_LIST(
+      SOA_VIEW_VALUE(hostDevice, adc),      /* ADC of each pixel                                      */
+      SOA_VIEW_VALUE(hostDevice, clus),     /* cluster id of each pixel                               */
+      SOA_VIEW_VALUE(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
+      SOA_VIEW_VALUE(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
     )    
   );
   
   using HostDeviceView = HostDeviceViewTemplate<>;
   
   generate_SoA_view(DeviceFullViewTemplate,
-    SoA_view_store_list(
-      SoA_view_store(DeviceOnlyLayout, deviceOnly),
-      SoA_view_store(HostDeviceLayout, hostDevice)
+    SOA_VIEW_LAYOUT_LIST(
+      SOA_VIEW_LAYOUT(DeviceOnlyLayout, deviceOnly),
+      SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)
     ),
-    SoA_view_value_list(
-      SoA_view_value(deviceOnly, xx),       /* local coordinates of each pixel                        */
-      SoA_view_value(deviceOnly, yy),       /*                                                        */
-      SoA_view_value(deviceOnly, moduleInd),/* module id of each pixel                                */
-      SoA_view_value(hostDevice, adc),      /* ADC of each pixel                                      */
-      SoA_view_value(hostDevice, clus),     /* cluster id of each pixel                               */
-      SoA_view_value(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
-      SoA_view_value(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
+    SOA_VIEW_VALUE_LIST(
+      SOA_VIEW_VALUE(deviceOnly, xx),       /* local coordinates of each pixel                        */
+      SOA_VIEW_VALUE(deviceOnly, yy),       /*                                                        */
+      SOA_VIEW_VALUE(deviceOnly, moduleInd),/* module id of each pixel                                */
+      SOA_VIEW_VALUE(hostDevice, adc),      /* ADC of each pixel                                      */
+      SOA_VIEW_VALUE(hostDevice, clus),     /* cluster id of each pixel                               */
+      SOA_VIEW_VALUE(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
+      SOA_VIEW_VALUE(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
     )    
   );
   
@@ -66,17 +66,17 @@ public:
 
   /* Device pixel view: this is a second generation view (view from view) */
   generate_SoA_const_view(DevicePixelConstViewTemplate,
-    /* We get out data from the DeviceFullStore */
-    SoA_view_store_list(
-      SoA_view_store(DeviceFullView, deviceFullView)
+    /* We get out data from the DeviceFullView */
+    SOA_VIEW_LAYOUT_LIST(
+      SOA_VIEW_LAYOUT(DeviceFullView, deviceFullView)
     ),
     /* These are consumed by downstream device code                                                   */
-    SoA_view_value_list(
-      SoA_view_value(deviceFullView, xx),    /* local coordinates of each pixel                       */
-      SoA_view_value(deviceFullView, yy),    /*                                                       */
-      SoA_view_value(deviceFullView, moduleInd),  /* module id of each pixel                          */
-      SoA_view_value(deviceFullView, adc),  /* ADC of each pixel                                      */
-      SoA_view_value(deviceFullView, clus) /* cluster id of each pixel                                */
+    SOA_VIEW_VALUE_LIST(
+      SOA_VIEW_VALUE(deviceFullView, xx),    /* local coordinates of each pixel                       */
+      SOA_VIEW_VALUE(deviceFullView, yy),    /*                                                       */
+      SOA_VIEW_VALUE(deviceFullView, moduleInd),  /* module id of each pixel                          */
+      SOA_VIEW_VALUE(deviceFullView, adc),  /* ADC of each pixel                                      */
+      SOA_VIEW_VALUE(deviceFullView, clus) /* cluster id of each pixel                                */
     )
   );
   
@@ -115,20 +115,20 @@ public:
   uint32_t const *pdigi() const { return deviceFullView_.pdigi(); }
   uint32_t const *rawIdArr() const { return deviceFullView_.rawIdArr(); }
 
-  class HostStoreAndBuffer {
+  class HostStore {
     friend SiPixelDigisCUDA;
   public:
-    HostStoreAndBuffer();
-    const SiPixelDigisCUDA::HostDeviceView store() { return hostView_; }
+    HostStore();
+    const SiPixelDigisCUDA::HostDeviceView view() { return hostView_; }
     void reset();
   private:
-    HostStoreAndBuffer(size_t maxFedWords, cudaStream_t stream);
+    HostStore(size_t maxFedWords, cudaStream_t stream);
     cms::cuda::host::unique_ptr<std::byte[]> data_h;
     HostDeviceLayout hostLayout_;
     HostDeviceView hostView_;
     
   };
-  HostStoreAndBuffer dataToHostAsync(cudaStream_t stream) const;
+  HostStore dataToHostAsync(cudaStream_t stream) const;
 
    // Special copy for validation
    cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;

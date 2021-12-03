@@ -7,7 +7,7 @@
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cudaCompat.h"
 #include "Geometry/phase1PixelTopology.h"
-#include "DataFormats/SoAStore.h"
+#include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
 
 namespace pixelCPEforGPU {
@@ -31,95 +31,95 @@ public:
   // Sill, we need the 32 bits integers to be aligned, so we simply declare the SoA with the 32 bits fields first
   // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte 
   // alignment of 1)
-  generate_SoA_store(HitsLayoutTemplate,
+  GENERATE_SOA_LAYOUT(HitsLayoutTemplate,
     // 32 bits section
     // local coord
-    SoA_column(float, xLocal),
-    SoA_column(float, yLocal),
-    SoA_column(float, xerrLocal),
-    SoA_column(float, yerrLocal),
+    SOA_COLUMN(float, xLocal),
+    SOA_COLUMN(float, yLocal),
+    SOA_COLUMN(float, xerrLocal),
+    SOA_COLUMN(float, yerrLocal),
     
     // global coord
-    SoA_column(float, xGlobal),
-    SoA_column(float, yGlobal),
-    SoA_column(float, zGlobal),
-    SoA_column(float, rGlobal),
+    SOA_COLUMN(float, xGlobal),
+    SOA_COLUMN(float, yGlobal),
+    SOA_COLUMN(float, zGlobal),
+    SOA_COLUMN(float, rGlobal),
     // global coordinates continue in the 16 bits section
 
     // cluster properties
-    SoA_column(int32_t, charge),
+    SOA_COLUMN(int32_t, charge),
           
     // 16 bits section (and cluster properties immediately continued)
-    SoA_column(int16_t, clusterSizeX),
-    SoA_column(int16_t, clusterSizeY)
+    SOA_COLUMN(int16_t, clusterSizeX),
+    SOA_COLUMN(int16_t, clusterSizeY)
   );
   
-  // The hits store does not use default alignment but a more relaxed one.
+  // The hits layout does not use default alignment but a more relaxed one.
   using HitsLayout = HitsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
   generate_SoA_view(HitsViewTemplate,
-    SoA_view_store_list(
-      SoA_view_store(HitsLayout, hitsLayout)
+    SOA_VIEW_LAYOUT_LIST(
+      SOA_VIEW_LAYOUT(HitsLayout, hitsLayout)
     ),
-    SoA_view_value_list(
-      SoA_view_value(hitsLayout, xLocal),
-      SoA_view_value(hitsLayout, yLocal),
-      SoA_view_value(hitsLayout, xerrLocal),
-      SoA_view_value(hitsLayout, yerrLocal),
+    SOA_VIEW_VALUE_LIST(
+      SOA_VIEW_VALUE(hitsLayout, xLocal),
+      SOA_VIEW_VALUE(hitsLayout, yLocal),
+      SOA_VIEW_VALUE(hitsLayout, xerrLocal),
+      SOA_VIEW_VALUE(hitsLayout, yerrLocal),
       
-      SoA_view_value(hitsLayout, xGlobal),
-      SoA_view_value(hitsLayout, yGlobal),
-      SoA_view_value(hitsLayout, zGlobal),
-      SoA_view_value(hitsLayout, rGlobal),
+      SOA_VIEW_VALUE(hitsLayout, xGlobal),
+      SOA_VIEW_VALUE(hitsLayout, yGlobal),
+      SOA_VIEW_VALUE(hitsLayout, zGlobal),
+      SOA_VIEW_VALUE(hitsLayout, rGlobal),
       
-      SoA_view_value(hitsLayout, charge),
-      SoA_view_value(hitsLayout, clusterSizeX),
-      SoA_view_value(hitsLayout, clusterSizeY)
+      SOA_VIEW_VALUE(hitsLayout, charge),
+      SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
+      SOA_VIEW_VALUE(hitsLayout, clusterSizeY)
     )
   );
   
   using HitsView = HitsViewTemplate<>;
   
-  generate_SoA_store(SupportObjectsLayoutTemplate,
+  GENERATE_SOA_LAYOUT(SupportObjectsLayoutTemplate,
     // This is the end of the data which is transferred to host. The following columns are supporting 
     // objects, not transmitted 
     
     // Supporting data (32 bits aligned)
-    SoA_column(TrackingRecHit2DSOAStore::PhiBinner::index_type, phiBinnerStorage),
+    SOA_COLUMN(TrackingRecHit2DSOAStore::PhiBinner::index_type, phiBinnerStorage),
           
     // global coordinates (not transmitted)
-    SoA_column(int16_t, iphi),
+    SOA_COLUMN(int16_t, iphi),
           
     // cluster properties (not transmitted)
-    SoA_column(uint16_t, detectorIndex)
+    SOA_COLUMN(uint16_t, detectorIndex)
   );
   
-  // The support objects store also not use default alignment but a more relaxed one.
+  // The support objects layouts also not use default alignment but a more relaxed one.
   using SupportObjectsLayout = SupportObjectsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
   generate_SoA_view(HitsAndSupportViewTemplate,
-    SoA_view_store_list(
-      SoA_view_store(HitsLayout, hitsLayout),
-      SoA_view_store(SupportObjectsLayout, supportObjectsStore)
+    SOA_VIEW_LAYOUT_LIST(
+      SOA_VIEW_LAYOUT(HitsLayout, hitsLayout),
+      SOA_VIEW_LAYOUT(SupportObjectsLayout, supportObjectsLayout)
     ),
-    SoA_view_value_list(
-      SoA_view_value(hitsLayout, xLocal),
-      SoA_view_value(hitsLayout, yLocal),
-      SoA_view_value(hitsLayout, xerrLocal),
-      SoA_view_value(hitsLayout, yerrLocal),
+    SOA_VIEW_VALUE_LIST(
+      SOA_VIEW_VALUE(hitsLayout, xLocal),
+      SOA_VIEW_VALUE(hitsLayout, yLocal),
+      SOA_VIEW_VALUE(hitsLayout, xerrLocal),
+      SOA_VIEW_VALUE(hitsLayout, yerrLocal),
       
-      SoA_view_value(hitsLayout, xGlobal),
-      SoA_view_value(hitsLayout, yGlobal),
-      SoA_view_value(hitsLayout, zGlobal),
-      SoA_view_value(hitsLayout, rGlobal),
+      SOA_VIEW_VALUE(hitsLayout, xGlobal),
+      SOA_VIEW_VALUE(hitsLayout, yGlobal),
+      SOA_VIEW_VALUE(hitsLayout, zGlobal),
+      SOA_VIEW_VALUE(hitsLayout, rGlobal),
       
-      SoA_view_value(hitsLayout, charge),
-      SoA_view_value(hitsLayout, clusterSizeX),
-      SoA_view_value(hitsLayout, clusterSizeY),
+      SOA_VIEW_VALUE(hitsLayout, charge),
+      SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
+      SOA_VIEW_VALUE(hitsLayout, clusterSizeY),
       
-      SoA_view_value(supportObjectsStore, phiBinnerStorage),
-      SoA_view_value(supportObjectsStore, iphi),
-      SoA_view_value(supportObjectsStore, detectorIndex)
+      SOA_VIEW_VALUE(supportObjectsLayout, phiBinnerStorage),
+      SOA_VIEW_VALUE(supportObjectsLayout, iphi),
+      SOA_VIEW_VALUE(supportObjectsLayout, detectorIndex)
     )
   );
   
@@ -147,10 +147,10 @@ public:
   __device__ __forceinline__ AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
 
 private:
-  // hits store
-  HitsLayout m_hitsStore;
-  // supporting objects store
-  SupportObjectsLayout m_supportObjectsStore;
+  // hits layout
+  HitsLayout m_hitsLayout;
+  // supporting objects layout
+  SupportObjectsLayout m_supportObjectsLayout;
   // Global view simplifying usage
   HitsAndSupportView m_hitsAndSupportView;
   
