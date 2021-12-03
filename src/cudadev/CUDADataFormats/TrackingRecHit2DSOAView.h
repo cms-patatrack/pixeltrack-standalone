@@ -31,7 +31,7 @@ public:
   // Sill, we need the 32 bits integers to be aligned, so we simply declare the SoA with the 32 bits fields first
   // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte 
   // alignment of 1)
-  generate_SoA_store(HitsStoreTemplate,
+  generate_SoA_store(HitsLayoutTemplate,
     // 32 bits section
     // local coord
     SoA_column(float, xLocal),
@@ -55,9 +55,32 @@ public:
   );
   
   // The hits store does not use default alignment but a more relaxed one.
-  using HitsStore = HitsStoreTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
+  using HitsLayout = HitsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
-  generate_SoA_store(SupportObjectsStoreTemplate,
+  generate_SoA_view(HitsViewTemplate,
+    SoA_view_store_list(
+      SoA_view_store(HitsLayout, hitsLayout)
+    ),
+    SoA_view_value_list(
+      SoA_view_value(hitsLayout, xLocal),
+      SoA_view_value(hitsLayout, yLocal),
+      SoA_view_value(hitsLayout, xerrLocal),
+      SoA_view_value(hitsLayout, yerrLocal),
+      
+      SoA_view_value(hitsLayout, xGlobal),
+      SoA_view_value(hitsLayout, yGlobal),
+      SoA_view_value(hitsLayout, zGlobal),
+      SoA_view_value(hitsLayout, rGlobal),
+      
+      SoA_view_value(hitsLayout, charge),
+      SoA_view_value(hitsLayout, clusterSizeX),
+      SoA_view_value(hitsLayout, clusterSizeY)
+    )
+  );
+  
+  using HitsView = HitsViewTemplate<>;
+  
+  generate_SoA_store(SupportObjectsLayoutTemplate,
     // This is the end of the data which is transferred to host. The following columns are supporting 
     // objects, not transmitted 
     
@@ -72,27 +95,27 @@ public:
   );
   
   // The support objects store also not use default alignment but a more relaxed one.
-  using SupportObjectsStore = SupportObjectsStoreTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
+  using SupportObjectsLayout = SupportObjectsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
   generate_SoA_view(HitsAndSupportViewTemplate,
     SoA_view_store_list(
-      SoA_view_store(HitsStore, hitsStore),
-      SoA_view_store(SupportObjectsStore, supportObjectsStore)
+      SoA_view_store(HitsLayout, hitsLayout),
+      SoA_view_store(SupportObjectsLayout, supportObjectsStore)
     ),
     SoA_view_value_list(
-      SoA_view_value(hitsStore, xLocal),
-      SoA_view_value(hitsStore, yLocal),
-      SoA_view_value(hitsStore, xerrLocal),
-      SoA_view_value(hitsStore, yerrLocal),
+      SoA_view_value(hitsLayout, xLocal),
+      SoA_view_value(hitsLayout, yLocal),
+      SoA_view_value(hitsLayout, xerrLocal),
+      SoA_view_value(hitsLayout, yerrLocal),
       
-      SoA_view_value(hitsStore, xGlobal),
-      SoA_view_value(hitsStore, yGlobal),
-      SoA_view_value(hitsStore, zGlobal),
-      SoA_view_value(hitsStore, rGlobal),
+      SoA_view_value(hitsLayout, xGlobal),
+      SoA_view_value(hitsLayout, yGlobal),
+      SoA_view_value(hitsLayout, zGlobal),
+      SoA_view_value(hitsLayout, rGlobal),
       
-      SoA_view_value(hitsStore, charge),
-      SoA_view_value(hitsStore, clusterSizeX),
-      SoA_view_value(hitsStore, clusterSizeY),
+      SoA_view_value(hitsLayout, charge),
+      SoA_view_value(hitsLayout, clusterSizeX),
+      SoA_view_value(hitsLayout, clusterSizeY),
       
       SoA_view_value(supportObjectsStore, phiBinnerStorage),
       SoA_view_value(supportObjectsStore, iphi),
@@ -125,9 +148,9 @@ public:
 
 private:
   // hits store
-  HitsStore m_hitsStore;
+  HitsLayout m_hitsStore;
   // supporting objects store
-  SupportObjectsStore m_supportObjectsStore;
+  SupportObjectsLayout m_supportObjectsStore;
   // Global view simplifying usage
   HitsAndSupportView m_hitsAndSupportView;
   

@@ -112,21 +112,21 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
       (phase1PixelTopology::numberOfLayers + 1) * sizeof (TrackingRecHit2DSOAStore::PhiBinner::index_type);
     // Allocate the buffer
     m_hitsSupportLayerStartStore = Traits::template make_device_unique<std::byte[]> (
-      TrackingRecHit2DSOAStore::HitsStore::computeDataSize(m_nHits) +
-        TrackingRecHit2DSOAStore::SupportObjectsStore::computeDataSize(m_nHits) +
+      TrackingRecHit2DSOAStore::HitsLayout::computeDataSize(m_nHits) +
+        TrackingRecHit2DSOAStore::SupportObjectsLayout::computeDataSize(m_nHits) +
         phiBinnerByteSize, 
       stream);
     // Split the buffer in stores and array
-    store->m_hitsStore = TrackingRecHit2DSOAStore::HitsStore(m_hitsSupportLayerStartStore.get(), nHits);
-    store->m_supportObjectsStore = TrackingRecHit2DSOAStore::SupportObjectsStore(store->m_hitsStore.soaMetadata().nextByte(), nHits);
+    store->m_hitsStore = TrackingRecHit2DSOAStore::HitsLayout(m_hitsSupportLayerStartStore.get(), nHits);
+    store->m_supportObjectsStore = TrackingRecHit2DSOAStore::SupportObjectsLayout(store->m_hitsStore.soaMetadata().nextByte(), nHits);
     m_hitsLayerStart = store->m_hitsLayerStart = reinterpret_cast<uint32_t *> (store->m_supportObjectsStore.soaMetadata().nextByte());
     // Record additional references
     store->m_hitsAndSupportView = TrackingRecHit2DSOAStore::HitsAndSupportView(
       store->m_hitsStore,
       store->m_supportObjectsStore
     );
-    m_phiBinnerStorage = store->m_phiBinnerStorage = store->m_supportObjectsStore.phiBinnerStorage();
-    m_iphi = store->m_supportObjectsStore.iphi();
+    m_phiBinnerStorage = store->m_phiBinnerStorage = store->m_hitsAndSupportView.phiBinnerStorage();
+    m_iphi = store->m_hitsAndSupportView.iphi();
   }
   m_PhiBinnerStore = Traits::template make_device_unique<TrackingRecHit2DSOAStore::PhiBinner>(stream);
 

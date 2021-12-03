@@ -449,7 +449,6 @@ private:\
       return element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_ELEMENT_CONSTR_CALL, ~, __VA_ARGS__));                                         \
     }                                                                                                                                     \
                                                                                                                                           \
-/*public:*/\
     /* AoS-like accessor (const) */                                                                                                       \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
     const const_element operator[](size_t index) const {                                                                                  \

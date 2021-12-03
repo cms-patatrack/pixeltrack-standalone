@@ -14,12 +14,13 @@ struct TrackingRecHit2DHostSOAStore {
 public:
   TrackingRecHit2DHostSOAStore();
   void reset();
-  __device__ __forceinline__ const auto operator[](size_t i) const  { return hitsStore_[i]; }
-  __device__ __forceinline__ size_t size() { return hitsStore_.soaMetadata().size(); }
+  __device__ __forceinline__ const auto operator[](size_t i) const  { return hitsView_[i]; }
+  __device__ __forceinline__ size_t size() { return /* TODO: move to view when view will embed size */hitsLayout_.soaMetadata().size(); }
 private:
   TrackingRecHit2DHostSOAStore(size_t size, cudaStream_t stream);
   cms::cuda::host::unique_ptr<std::byte[]> hits_h;
-  TrackingRecHit2DSOAStore::HitsStore hitsStore_;
+  TrackingRecHit2DSOAStore::HitsLayout hitsLayout_;
+  TrackingRecHit2DSOAStore::HitsView hitsView_;
 };
 
 

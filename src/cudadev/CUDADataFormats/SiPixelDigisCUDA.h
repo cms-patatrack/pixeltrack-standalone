@@ -119,7 +119,7 @@ public:
     friend SiPixelDigisCUDA;
   public:
     HostStoreAndBuffer();
-    const SiPixelDigisCUDA::HostDeviceLayout store() { return hostLayout_; }
+    const SiPixelDigisCUDA::HostDeviceView store() { return hostView_; }
     void reset();
   private:
     HostStoreAndBuffer(size_t maxFedWords, cudaStream_t stream);
