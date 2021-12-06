@@ -36,7 +36,7 @@ GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
 using SoA1Layout = SoA1LayoutTemplate<>;
 
 // A 1 to 1 view of the store (except for unsupported types).
-generate_SoA_view(SoA1ViewTemplate,
+GENERATE_SOA_VIEW(SoA1ViewTemplate,
   SOA_VIEW_LAYOUT_LIST(
     SOA_VIEW_LAYOUT(SoA1Layout, soa1)
   ),
@@ -57,7 +57,7 @@ generate_SoA_view(SoA1ViewTemplate,
 using SoA1View = SoA1ViewTemplate<>;
 
 // A partial view (artificial mix of store and view)
-generate_SoA_view(SoA1View2GTemplate,
+GENERATE_SOA_VIEW(SoA1View2GTemplate,
   SOA_VIEW_LAYOUT_LIST(
     SOA_VIEW_LAYOUT(SoA1Layout, soa1),
     SOA_VIEW_LAYOUT(SoA1View, soa1v)
@@ -79,7 +79,7 @@ using SoA1View2G = SoA1View2GTemplate<>;
 
 
 // Same partial view, yet const.
-generate_SoA_const_view(SoA1View2Gconst,
+GENERATE_SOA_CONST_VIEW(SoA1View2Gconst,
   SOA_VIEW_LAYOUT_LIST(
     SOA_VIEW_LAYOUT(SoA1Layout, soa1),
     SOA_VIEW_LAYOUT(SoA1View, soa1v)

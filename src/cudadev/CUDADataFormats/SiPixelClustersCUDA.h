@@ -23,7 +23,7 @@ public:
   // We use all defaults for the template parameters.
   using DeviceLayout = DeviceLayoutTemplate<>;
 
-    generate_SoA_view(DeviceViewTemplate,
+    GENERATE_SOA_VIEW(DeviceViewTemplate,
     SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(DeviceLayout, deviceLayout)),
     SOA_VIEW_VALUE_LIST(
       SOA_VIEW_VALUE(deviceLayout, moduleStart),  // index of the first pixel of each module
@@ -37,7 +37,7 @@ public:
   
   using DeviceView = DeviceViewTemplate<>;
   
-  generate_SoA_const_view(DeviceConstViewTemplate,
+  GENERATE_SOA_CONST_VIEW(DeviceConstViewTemplate,
     SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(DeviceView, deviceView)),
     SOA_VIEW_VALUE_LIST(
       SOA_VIEW_VALUE(deviceView, moduleStart),  // index of the first pixel of each module

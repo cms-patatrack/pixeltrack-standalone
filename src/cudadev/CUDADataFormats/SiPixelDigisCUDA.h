@@ -32,7 +32,7 @@ public:
   
   using HostDeviceLayout = HostDeviceLayoutTemplate<>;
   
-  generate_SoA_view(HostDeviceViewTemplate,
+  GENERATE_SOA_VIEW(HostDeviceViewTemplate,
     SOA_VIEW_LAYOUT_LIST(
       SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)
     ),
@@ -46,7 +46,7 @@ public:
   
   using HostDeviceView = HostDeviceViewTemplate<>;
   
-  generate_SoA_view(DeviceFullViewTemplate,
+  GENERATE_SOA_VIEW(DeviceFullViewTemplate,
     SOA_VIEW_LAYOUT_LIST(
       SOA_VIEW_LAYOUT(DeviceOnlyLayout, deviceOnly),
       SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)
@@ -65,7 +65,7 @@ public:
   using DeviceFullView = DeviceFullViewTemplate<>;
 
   /* Device pixel view: this is a second generation view (view from view) */
-  generate_SoA_const_view(DevicePixelConstViewTemplate,
+  GENERATE_SOA_CONST_VIEW(DevicePixelConstViewTemplate,
     /* We get out data from the DeviceFullView */
     SOA_VIEW_LAYOUT_LIST(
       SOA_VIEW_LAYOUT(DeviceFullView, deviceFullView)

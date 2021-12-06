@@ -280,7 +280,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 #define _DECLARE_VIEW_SOA_MEMBER(R, DATA, LAYOUT_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_MEMBER_IMPL BOOST_PP_TUPLE_PUSH_BACK(LAYOUT_MEMBER_NAME, DATA))
 
-#define generate_SoA_view(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
+#define GENERATE_SOA_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
   template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                           \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
@@ -382,7 +382,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, BOOST_PP_EMPTY(), VALUE_LIST)                                                               \
   }
 
-#define generate_SoA_const_view(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
+#define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
   template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                         \
   struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \

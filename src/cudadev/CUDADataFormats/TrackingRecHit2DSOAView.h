@@ -57,7 +57,7 @@ public:
   // The hits layout does not use default alignment but a more relaxed one.
   using HitsLayout = HitsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
-  generate_SoA_view(HitsViewTemplate,
+  GENERATE_SOA_VIEW(HitsViewTemplate,
     SOA_VIEW_LAYOUT_LIST(
       SOA_VIEW_LAYOUT(HitsLayout, hitsLayout)
     ),
@@ -97,7 +97,7 @@ public:
   // The support objects layouts also not use default alignment but a more relaxed one.
   using SupportObjectsLayout = SupportObjectsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
   
-  generate_SoA_view(HitsAndSupportViewTemplate,
+  GENERATE_SOA_VIEW(HitsAndSupportViewTemplate,
     SOA_VIEW_LAYOUT_LIST(
       SOA_VIEW_LAYOUT(HitsLayout, hitsLayout),
       SOA_VIEW_LAYOUT(SupportObjectsLayout, supportObjectsLayout)

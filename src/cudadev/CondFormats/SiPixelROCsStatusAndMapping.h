@@ -27,7 +27,7 @@ GENERATE_SOA_LAYOUT(SiPixelROCsStatusAndMappingLayoutTemplate,
 
 using SiPixelROCsStatusAndMappingLayout = SiPixelROCsStatusAndMappingLayoutTemplate<>;
 
-generate_SoA_const_view(SiPixelROCsStatusAndMappingConstViewTemplate,
+GENERATE_SOA_CONST_VIEW(SiPixelROCsStatusAndMappingConstViewTemplate,
   SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SiPixelROCsStatusAndMappingLayout, mappingLayout)),
   SOA_VIEW_VALUE_LIST(
     SOA_VIEW_VALUE(mappingLayout, fed),
