@@ -14,6 +14,17 @@ namespace pixelgpudetails {
   constexpr unsigned int MAX_SIZE_BYTE_BOOL = MAX_SIZE * sizeof(unsigned char);
 }  // namespace pixelgpudetails
 
+struct SiPixelROCsStatusAndMapping {
+  alignas(128) unsigned int fed[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int link[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int roc[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int rawId[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int rocInDet[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int moduleId[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned char badRocs[pixelgpudetails::MAX_SIZE];
+  alignas(128) unsigned int size = 0;
+};
+
 GENERATE_SOA_LAYOUT(SiPixelROCsStatusAndMappingLayoutTemplate,
   SOA_COLUMN(unsigned int, fed),
   SOA_COLUMN(unsigned int, link),

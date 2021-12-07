@@ -14,7 +14,7 @@
 class SiPixelROCsStatusAndMappingWrapper {
 public:
   /* This is using a layout as the size is needed. TODO: use views when views start embedding size. */
-  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMappingLayout const &cablingMap,
+  explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const &cablingMap,
                                           std::vector<unsigned char> modToUnp);
 
   bool hasQuality() const { return hasQuality_; }
@@ -29,16 +29,27 @@ private:
   std::vector<unsigned char, cms::cuda::HostAllocator<unsigned char>> modToUnpDefault;
   bool hasQuality_;
 
-  cms::cuda::host::unique_ptr<std::byte[]> cablingMapHostBuffer;  // host pined memory for cabling map.
+  cms::cuda::host::unique_ptr<SiPixelROCsStatusAndMapping> cablingMapHost;  // host pined memory for cabling map.
 
   struct GPUData {
-    void allocate(size_t size, cudaStream_t stream) {
-      cablingMapDeviceBuffer = cms::cuda::make_device_unique<std::byte[]>(
-              SiPixelROCsStatusAndMappingLayout::computeDataSize(size), stream);
-      cablingMapDevice = SiPixelROCsStatusAndMappingLayout(cablingMapDeviceBuffer.get(), size);
+    void allocate(cudaStream_t stream) {
+      cablingMapDevice = cms::cuda::make_device_unique<SiPixelROCsStatusAndMapping>(stream);
+      // Populate the view with individual column pointers
+      auto & cmd = *cablingMapDevice;
+      cablingMapDeviceView = SiPixelROCsStatusAndMappingConstView(
+        cmd.fed, // Those are array pointers (in device, but we won't dereference them here).
+        cmd.link,
+        cmd.roc,
+        cmd.rawId,
+        cmd.rocInDet,
+        cmd.moduleId,
+        cmd.badRocs,
+        &cmd.size // This is a scalar, we need the address-of operator
+      );
     }
-    cms::cuda::device::unique_ptr<std::byte[]> cablingMapDeviceBuffer;
-    SiPixelROCsStatusAndMappingLayout cablingMapDevice = SiPixelROCsStatusAndMappingLayout(nullptr, 0); // map struct in GPU
+    cms::cuda::device::unique_ptr<SiPixelROCsStatusAndMapping> cablingMapDevice;
+    SiPixelROCsStatusAndMappingConstView cablingMapDeviceView; // map struct in GPU
+    
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 
