@@ -24,25 +24,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // NON-OWNING DEVICE POINTERS:
           m_hitsModuleStart(hitsModuleStart),
           // OWNING DEVICE POINTERS:
-          m_xl{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_yl{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_xerr{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_yerr{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_xg{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_yg{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_zg{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_rg{::cms::alpakatools::allocDeviceBuf<float>(alpaka::getDev(queue), nHits)},
-          m_iphi{::cms::alpakatools::allocDeviceBuf<int16_t>(alpaka::getDev(queue), nHits)},
-          m_charge{::cms::alpakatools::allocDeviceBuf<int32_t>(alpaka::getDev(queue), nHits)},
-          m_xsize{::cms::alpakatools::allocDeviceBuf<int16_t>(alpaka::getDev(queue), nHits)},
-          m_ysize{::cms::alpakatools::allocDeviceBuf<int16_t>(alpaka::getDev(queue), nHits)},
-          m_detInd{::cms::alpakatools::allocDeviceBuf<uint16_t>(alpaka::getDev(queue), nHits)},
-          m_averageGeometry{
-              ::cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView::AverageGeometry>(alpaka::getDev(queue), 1u)},
-          m_hitsLayerStart{::cms::alpakatools::allocDeviceBuf<uint32_t>(alpaka::getDev(queue), nHits)},
-          m_hist{::cms::alpakatools::allocDeviceBuf<Hist>(alpaka::getDev(queue), 1u)},
+          m_xl{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_yl{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_xerr{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_yerr{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_xg{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_yg{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_zg{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_rg{::cms::alpakatools::allocDeviceBuf<float>(queue, nHits)},
+          m_iphi{::cms::alpakatools::allocDeviceBuf<int16_t>(queue, nHits)},
+          m_charge{::cms::alpakatools::allocDeviceBuf<int32_t>(queue, nHits)},
+          m_xsize{::cms::alpakatools::allocDeviceBuf<int16_t>(queue, nHits)},
+          m_ysize{::cms::alpakatools::allocDeviceBuf<int16_t>(queue, nHits)},
+          m_detInd{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, nHits)},
+          m_averageGeometry{::cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView::AverageGeometry>(queue, 1u)},
+          m_hitsLayerStart{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, nHits)},
+          m_hist{::cms::alpakatools::allocDeviceBuf<Hist>(queue, 1u)},
           // SoA view:
-          m_view{::cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView>(alpaka::getDev(queue), 1u)},
+          m_view{::cms::alpakatools::allocDeviceBuf<TrackingRecHit2DSOAView>(queue, 1u)},
           m_view_h{::cms::alpakatools::allocHostBuf<TrackingRecHit2DSOAView>(1u)} {
       // the hits are actually accessed in order only in building
       // if ordering is relevant they may have to be stored phi-ordered by layer or so

@@ -19,9 +19,9 @@ namespace cms::alpakatools {
     return alpaka::ViewPlainPtr<DevHost, TData, Dim1D, Idx>(data, host, extent);
   }
 
-  template <typename TData, typename TDevice>
-  auto allocDeviceBuf(TDevice const& device, Extent extent) {
-    return alpaka::allocBuf<TData, Idx>(device, extent);
+  template <typename TData, typename TQueue>
+  auto allocDeviceBuf(TQueue& queue, Extent extent) {
+    return alpaka::allocAsyncBuf<TData, Idx>(queue, extent);
   }
 
   template <typename TData, typename TDevice>

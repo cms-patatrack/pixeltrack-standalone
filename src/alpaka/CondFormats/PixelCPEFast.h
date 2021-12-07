@@ -79,14 +79,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       GPUData() = delete;
       GPUData(Queue &queue, unsigned int ndetParams)
           : h_paramsOnGPU{::cms::alpakatools::allocHostBuf<pixelCPEforGPU::ParamsOnGPU>(1u)},
-            d_paramsOnGPU{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(alpaka::getDev(queue), 1u)},
-            d_commonParams{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(alpaka::getDev(queue), 1u)},
-            d_layerGeometry{
-                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(alpaka::getDev(queue), 1u)},
-            d_averageGeometry{
-                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(alpaka::getDev(queue), 1u)},
-            d_detParams{
-                ::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(alpaka::getDev(queue), ndetParams)} {
+            d_paramsOnGPU{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::ParamsOnGPU>(queue, 1u)},
+            d_commonParams{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::CommonParams>(queue, 1u)},
+            d_layerGeometry{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::LayerGeometry>(queue, 1u)},
+            d_averageGeometry{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::AverageGeometry>(queue, 1u)},
+            d_detParams{::cms::alpakatools::allocDeviceBuf<pixelCPEforGPU::DetParams>(queue, ndetParams)} {
         alpaka::prepareForAsyncCopy(h_paramsOnGPU);
       };
       ~GPUData() = default;

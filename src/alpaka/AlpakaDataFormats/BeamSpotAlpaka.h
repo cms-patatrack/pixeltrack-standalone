@@ -14,8 +14,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka() = default;
 
     // constructor that allocates cached device memory on the given queue
-    BeamSpotAlpaka(Queue const& queue)
-        : data_d_{::cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(alpaka::getDev(queue), 1u)} {}
+    BeamSpotAlpaka(Queue const& queue) : data_d_{::cms::alpakatools::allocDeviceBuf<BeamSpotPOD>(queue, 1u)} {}
 
     // movable, non-copiable
     BeamSpotAlpaka(BeamSpotAlpaka const&) = delete;

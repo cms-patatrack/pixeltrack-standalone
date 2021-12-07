@@ -106,14 +106,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
                 STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
 
-  template <class TData>
-  using AlpakaAccBuf1D = alpaka::Buf<Device, TData, Dim1D, Idx>;
-
-  template <class TData>
-  using AlpakaAccBuf2D = alpaka::Buf<Device, TData, Dim2D, Idx>;
-
   template <typename TData>
-  using AlpakaDeviceBuf = AlpakaAccBuf1D<TData>;
+  using AlpakaDeviceBuf = alpaka::Buf<Device, TData, Dim1D, Idx>;
 
   template <typename TData>
   using AlpakaDeviceView = alpaka::ViewPlainPtr<Device, TData, Dim1D, Idx>;

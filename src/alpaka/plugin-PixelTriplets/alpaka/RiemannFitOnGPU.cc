@@ -19,20 +19,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     //  Fit internals
     auto hitsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
-
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
     auto hits_geGPU_ = ::cms::alpakatools::allocDeviceBuf<float>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
-
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
     auto fast_fit_resultsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
 
     //auto circle_fit_resultsGPU_holder =
     //::cms::alpakatools::make_device_unique<char[]>(maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit), stream);
     //Rfit::circle_fit *circle_fit_resultsGPU_ = (Rfit::circle_fit *)(circle_fit_resultsGPU_holder.get());
-    //auto circle_fit_resultsGPU_holder = ::cms::alpakatools::allocDeviceBuf<char>(alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit));
+    //auto circle_fit_resultsGPU_holder = ::cms::alpakatools::allocDeviceBuf<char>(queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit));
     auto circle_fit_resultsGPU_ =
-        ::cms::alpakatools::allocDeviceBuf<Rfit::circle_fit>(alpaka::getDev(queue), maxNumberOfConcurrentFits_);
+        ::cms::alpakatools::allocDeviceBuf<Rfit::circle_fit>(queue, maxNumberOfConcurrentFits_);
 
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
       // triplets
@@ -188,9 +186,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         alpaka::getPtrNative(circle_fit_resultsGPU_),
                                                         offset));
       }
-
-      // FIXME: the wait is needed to avoid that the device buffers go out of scope before the kernels have run
-      alpaka::wait(queue);
     }
   }
 

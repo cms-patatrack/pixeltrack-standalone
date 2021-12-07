@@ -19,13 +19,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     //  Fit internals
     auto hitsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
-
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
     auto hits_geGPU_ = ::cms::alpakatools::allocDeviceBuf<float>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
-
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
     auto fast_fit_resultsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
-        alpaka::getDev(queue), maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
+        queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
 
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
       // fit triplets
@@ -131,9 +129,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
     }  // loop on concurrent fits
-
-    // FIXME: the wait is needed to avoid that the device buffers go out of scope before the kernels have run
-    alpaka::wait(queue);
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
