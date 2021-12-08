@@ -38,6 +38,8 @@
  *    
  */
 
+namespace cms::soa {
+
 /* Traits for the different column type scenarios */
 /* Value traits passes the class as is in the case of column type and return 
  * an empty class with functions returning non-scalar as accessors. */
@@ -62,6 +64,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   // Any attempt to do anything with the eigen value a const element will fail.
 };
 
+} // namespace cms::soa;
+
 #include <memory_resource>
 /*
  * Members definitions macros for viewa
@@ -81,13 +85,13 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 #define _DECLARE_VIEW_MEMBER_TYPE_ALIAS_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME, DATA)               \
   typedef typename BOOST_PP_CAT(TypeOf_, LAYOUT_NAME)::SoAMetadata::BOOST_PP_CAT(TypeOf_, LAYOUT_MEMBER) \
       BOOST_PP_CAT(TypeOf_, LOCAL_NAME);                                                               \
-  constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                                 \
+  constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                     \
       BOOST_PP_CAT(TypeOf_, LAYOUT_NAME)::SoAMetadata::BOOST_PP_CAT(ColumnTypeOf_, LAYOUT_MEMBER);       \
   SOA_HOST_DEVICE_INLINE                                                                               \
   DATA BOOST_PP_CAT(TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {              \
     return parent_.BOOST_PP_CAT(LOCAL_NAME, _);                                                        \
   };                                                                                                   \
-  static_assert(BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != SoAColumnType::eigen,                       \
+  static_assert(BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != cms::soa::SoAColumnType::eigen,             \
                 "Eigen columns not supported in views.");
 
 #define _DECLARE_VIEW_MEMBER_TYPE_ALIAS(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -123,15 +127,15 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
  * Generator of member initialization from constructor.
  * We use a lambda with auto return type to handle multiple possible return types.
  */
-#define _DECLARE_VIEW_MEMBER_INITIALIZERS_IMPL(LAYOUT, MEMBER, NAME)                        \
-  (BOOST_PP_CAT(NAME, _)([&]() -> auto {                                                   \
-    static_assert(BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, NAME) != SoAColumnType::eigen,  \
-                  "Eigen values not supported in views");                                  \
-    auto addr = LAYOUT.soaMetadata().BOOST_PP_CAT(addressOf_, MEMBER)();                    \
-    if constexpr (alignmentEnforcement == AlignmentEnforcement::Enforced)                  \
-      if (reinterpret_cast<intptr_t>(addr) % byteAlignment)                                \
-        throw std::out_of_range("In constructor by layout: misaligned column: " #NAME);        \
-    return addr;                                                                           \
+#define _DECLARE_VIEW_MEMBER_INITIALIZERS_IMPL(LAYOUT, MEMBER, NAME)                                 \
+  (BOOST_PP_CAT(NAME, _)([&]() -> auto {                                                             \
+    static_assert(BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, NAME) != cms::soa::SoAColumnType::eigen,  \
+                  "Eigen values not supported in views");                                            \
+    auto addr = LAYOUT.soaMetadata().BOOST_PP_CAT(addressOf_, MEMBER)();                             \
+    if constexpr (alignmentEnforcement == AlignmentEnforcement::Enforced)                            \
+      if (reinterpret_cast<intptr_t>(addr) % byteAlignment)                                          \
+        throw std::out_of_range("In constructor by layout: misaligned column: " #NAME);              \
+    return addr;                                                                                     \
   }()))
 
 #define _DECLARE_VIEW_MEMBER_INITIALIZERS(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -200,8 +204,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
  * Declaration of the private members of the const element subclass
  */
 #define _DECLARE_VIEW_CONST_ELEMENT_VALUE_MEMBER_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME) \
-  const ConstValueTraits<                                                                   \
-    SoAConstValueWithConf<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>,         \
+  const cms::soa::ConstValueTraits<                                                           \
+    SoAConstValueWithConf<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>,           \
     BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)                                    \
   > BOOST_PP_CAT(LOCAL_NAME, _);
 
@@ -236,17 +240,17 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 /**
  * Direct access to column pointer and indexed access
  */
-#define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                  \
-  /* Column or scalar */                                                                       \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() {                                                   \
-    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
-      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
-        template AccessType<SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();      \
-  }                                                                                            \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) {                                       \
-    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
-      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
-        template AccessType<SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index); \
+#define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                          \
+  /* Column or scalar */                                                                                 \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() {                                                             \
+    return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::                        \
+        template AccessType<cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();      \
+  }                                                                                                      \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) {                                                 \
+    return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::                        \
+        template AccessType<cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index); \
   } 
 
 #define _DECLARE_VIEW_SOA_ACCESSOR(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -255,17 +259,17 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 /**
  * Direct access to column pointer (const) and indexed access.
  */
-#define _DECLARE_VIEW_SOA_CONST_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                               \
-  /* Column or scalar */                                                                       \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() const {                                                   \
-    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
-      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
-        template AccessType<SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();      \
-  }                                                                                            \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) const {                                       \
-    return typename SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
-      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::              \
-        template AccessType<SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index); \
+#define _DECLARE_VIEW_SOA_CONST_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                    \
+  /* Column or scalar */                                                                                 \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() const {                                                       \
+    return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::                        \
+        template AccessType<cms::soa::SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))();        \
+  }                                                                                                      \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) const {                                           \
+    return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::    \
+      template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::                        \
+        template AccessType<cms::soa::SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, _))(index);   \
   } 
 
 #define _DECLARE_VIEW_SOA_CONST_ACCESSOR(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -281,11 +285,12 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_MEMBER_IMPL BOOST_PP_TUPLE_PUSH_BACK(LAYOUT_MEMBER_NAME, DATA))
 
 #define GENERATE_SOA_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
-  template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                           \
+  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>        \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
-                                                                                                                                          \
+    typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
+                                                                                                                                        \
     /* For CUDA applications, we align to the 128 bytes of the cache lines.                                                             \
    * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
    * up to compute capability 8.X.                                                                                                      \
@@ -297,13 +302,13 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
-    using SoAValueWithConf = SoAValue<C, conditionalAlignment>;                                                                           \
+    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = SoAConstValue<C, conditionalAlignment>;                                                                 \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAEigenValueWithConf = SoAEigenValue<C, conditionalAlignment>;                                                                 \
+    using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
     /**                                                                                                                                   \
    * Helper/friend class allowing SoA introspection.                                                                                      \
    */   \
@@ -383,10 +388,11 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   }
 
 #define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
-  template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                         \
+  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>      \
   struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \
     using self_type = CLASS;                                                                                                            \
+    typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
                                                                                                                                           \
     /* For CUDA applications, we align to the 128 bytes of the cache lines.                                                             \
    * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
@@ -399,13 +405,13 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
-    using SoAValueWithConf = SoAValue<C, conditionalAlignment>;                                                                           \
+    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = SoAConstValue<C, conditionalAlignment>;                                                                 \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAEigenValueWithConf = SoAEigenValue<C, conditionalAlignment>;                                                                 \
+    using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
                                                                                                                                           \
   /**                                                                                                                               \
    * Helper/friend class allowing SoA introspection.                                                                                \

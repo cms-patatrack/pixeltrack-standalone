@@ -98,19 +98,19 @@
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;              \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::scalar;                       \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;   \
       CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Column */       \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                     \
                ParentClass::byteAlignment;                                                                            \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::column;                       \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column;   \
       CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Eigen column */ \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *             \
                ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      constexpr static SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = SoAColumnType::eigen;                        \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;    \
       CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); })
 
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
@@ -217,10 +217,11 @@
  * A macro defining a SoA layout (collection of scalars and columns of equal lengths)
  */
 #define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                    \
-  template <size_t ALIGNMENT = 128, AlignmentEnforcement ALIGNMENT_ENFORCEMENT = AlignmentEnforcement::Relaxed>                           \
+  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>        \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
+    typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
                                                                                                                                           \
     /* For CUDA applications, we align to the 128 bytes of the cache lines.                                                             \
    * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
@@ -233,13 +234,13 @@
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
-    using SoAValueWithConf = SoAValue<C, conditionalAlignment>;                                                                           \
+    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = SoAConstValue<C, conditionalAlignment>;                                                                 \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAEigenValueWithConf = SoAEigenValue<C, conditionalAlignment>;                                                                 \
+    using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
     /* dump the SoA internal structure */                                                                                                 \
     SOA_HOST_ONLY                                                                                                                         \
     static void dump(size_t nElements) {                                                                                                  \

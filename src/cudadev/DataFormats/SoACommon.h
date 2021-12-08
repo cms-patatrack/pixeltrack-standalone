@@ -36,6 +36,8 @@
 
 // compile-time sized SoA
 
+namespace cms::soa {
+
 // Helper template managing the value within it column
 // The optional compile time alignment parameter enables informing the
 // compiler of alignment (enforced by caller).
@@ -147,12 +149,18 @@ inline size_t alignSize(size_t size, size_t alignment = 128) {
     return 0;
 }
 
+} // namespace cms::soa
+
 /* declare "scalars" (one value shared across the whole SoA) and "columns" (one value per element) */
 #define _VALUE_TYPE_SCALAR 0
 #define _VALUE_TYPE_COLUMN 1
 #define _VALUE_TYPE_EIGEN_COLUMN 2
 
+namespace cms::soa {
+
 enum class SoAColumnType { scalar = _VALUE_TYPE_SCALAR, column = _VALUE_TYPE_COLUMN, eigen = _VALUE_TYPE_EIGEN_COLUMN };
+
+} // namespace cms::soa
 
 #define SOA_SCALAR(TYPE, NAME) (_VALUE_TYPE_SCALAR, TYPE, NAME)
 #define SOA_COLUMN(TYPE, NAME) (_VALUE_TYPE_COLUMN, TYPE, NAME)
@@ -173,6 +181,8 @@ enum class SoAColumnType { scalar = _VALUE_TYPE_SCALAR, column = _VALUE_TYPE_COL
           BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_COLUMN),                  \
           IF_COLUMN,                                                       \
           BOOST_PP_IF(BOOST_PP_EQUAL(VALUE_TYPE, _VALUE_TYPE_EIGEN_COLUMN), IF_EIGEN_COLUMN, BOOST_PP_EMPTY())))
+
+namespace cms::soa {
 
 /* Column accessors: templates implementing the global accesors (soa::x() and soa::x(index) */
 enum class SoAAccessType: bool { mutableAccess, constAccess };
@@ -242,5 +252,7 @@ struct SoAAccessors{
 /* Alignement enforcement verifies every column is aligned, and 
  * hints the compiler that it can expect column pointers to be aligned */
 enum class AlignmentEnforcement : bool { Relaxed, Enforced };
+
+} // namespace cms::soa
 
 #endif  // ndef DataStructures_SoACommon_h
