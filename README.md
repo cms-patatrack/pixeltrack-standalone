@@ -30,7 +30,7 @@ tracking application. The version here corresponds to
 
 The application is designed to require minimal dependencies on the system. All programs require
 * GNU Make, `curl`, `md5sum`, `tar`
-* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, in the current setup this means GCC 8, 9 or 10
+* C++17 capable compiler. For programs using CUDA that must work with `nvcc`, this means GCC 8, 9, 10 or 11 (since CUDA 11.4.1).
   * testing is currently done with GCC 8
   * not that due to a bug in GCC, GCC 10.3 is not supported
 
@@ -86,6 +86,37 @@ ttbar+PU events from of
 dataset from the [CMS](https://cms.cern/)
 [Open Data](http://opendata.cern.ch/docs/about-cms). The data are
 downloaded automatically during the build process.
+
+### Newer GCC versions
+
+RHEL 7.x / CentOS 7.x use GCC 4.8 as their system compiler.
+More recent versions can be used from the "Developer Toolset" software collections:
+```bash
+# list available software collections
+$ scl -l
+devtoolset-9
+
+# load the GCC 9.x environment
+$ source scl_source enable devtoolset-9
+$ gcc --version
+gcc (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)
+Copyright (C) 2019 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+Various versions of GCC are also available from the SFT CVMFS area, for example:
+```bash
+$ source /cvmfs/sft.cern.ch/lcg/contrib/gcc/8.3.0/x86_64-centos7/setup.sh
+$ $ gcc --version
+gcc (GCC) 8.3.0
+Copyright (C) 2018 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+RHEL 8.x / CentOS 8.x use GCC 8 as their system compiler.
+
 
 ## Status
 
