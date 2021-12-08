@@ -1,8 +1,28 @@
 export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-# Build flags
+# Compiler
 export CC  := gcc
 export CXX := g++
+CXX_MAJOR:=$(shell $(CXX) -dM -E -x c++ - < /dev/null | awk '/__GNUC__/ { print $$3; }')
+CXX_MINOR:=$(shell $(CXX) -dM -E -x c++ - < /dev/null | awk '/__GNUC_MINOR__/ { print $$3; }')
+CXX_VERSION:=$(shell echo $$(( $(CXX_MAJOR) * 100 + $(CXX_MINOR) )) )
+
+CXX_REQUIRED_MAJOR:=8
+CXX_REQUIRED_MINOR:=0
+CXX_REQUIRED_VERSION:=$(shell echo $$(( $(CXX_REQUIRED_MAJOR) * 100 + $(CXX_REQUIRED_MINOR) )) )
+
+CXX_SUPPORTED:=$(shell (( $(CXX_VERSION) >= $(CXX_REQUIRED_VERSION) )) && echo true || echo false)
+ifeq ($(CXX_SUPPORTED),false)
+$(error This program requires GCC $(CXX_REQUIRED_MAJOR).$(CXX_REQUIRED_MINOR) or later, but the current compiler is GCC $(CXX_MAJOR).$(CXX_MINOR))
+endif
+
+# special case: issue a warning for GCC 10.3
+# Do not prevent from using it, because the version bundled with CMSSW has been patched
+ifeq ($(CXX_VERSION),1003)
+$(warning GCC 10.3 is known to have issues compiled CUDA code, please consider using a different compiler)
+endif
+
+# Build flags
 USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
