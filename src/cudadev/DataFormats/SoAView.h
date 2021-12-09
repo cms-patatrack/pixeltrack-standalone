@@ -319,12 +319,17 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                           \
       /* Alias member types to name-derived identifyer to allow simpler definitions */                                                    \
       _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, BOOST_PP_EMPTY(), VALUE_LIST)                                                      \
+                                                                                                                                          \
+      /* Forbid copying to avoid const correctness evasion */                                                                             \
+      SoAMetadata & operator=(const SoAMetadata &) = delete;                                                                              \
+      SoAMetadata(const SoAMetadata &) = delete;                                                                                          \
     private:                                                                                                                              \
       SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                        \
       const CLASS& parent_;                                                                                                               \
     };                                                                                                                                    \
     friend SoAMetadata;                                                                                                                   \
     SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                           \
+    SOA_HOST_DEVICE_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                                       \
                                                                                                                                           \
     /* Trivial constuctor */                                                                                                              \
     CLASS() : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_TRIVIAL_CONSTRUCTION, ~, VALUE_LIST) {}                                          \
@@ -423,6 +428,9 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                         \
       /* Alias member types to name-derived identifyer to allow simpler definitions */                                                  \
       _ITERATE_ON_ALL(_DECLARE_VIEW_MEMBER_TYPE_ALIAS, const, VALUE_LIST)                                                               \
+                                                                                                                                        \
+      SoAMetadata & operator=(const SoAMetadata &) = delete;                                                                            \
+      SoAMetadata(const SoAMetadata &) = delete;                                                                                        \
     private:                                                                                                                            \
       SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                      \
       const CLASS& parent_;                                                                                                             \

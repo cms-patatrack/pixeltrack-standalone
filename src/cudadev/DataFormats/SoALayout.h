@@ -94,24 +94,35 @@
  */
 #define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                     \
   _SWITCH_ON_TYPE(                                                                                                    \
-      VALUE_TYPE, /* Scalar */                                                                                        \
+      VALUE_TYPE,                                                                                                     \
+      /* Scalar */                                                                                                    \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;              \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;   \
-      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Column */       \
+      CPP_TYPE const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }               \
+      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                           \
+      ,                                                                                                               \
+      /* Column */                                                                                                    \
+      CPP_TYPE const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }               \
+      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                           \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                     \
                ParentClass::byteAlignment;                                                                            \
-      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
+      }                                                                                                               \
+      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                   \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column;   \
-      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }, /* Eigen column */ \
+      ,                                                                                                               \
+      /* Eigen column */                                                                                              \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
         return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *             \
                ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                \
-      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
+      }                                                                                                               \
+      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                   \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;    \
-      CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); })
+      CPP_TYPE::Scalar const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }       \
+      CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                   \
+    )   
 
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
 
@@ -267,11 +278,14 @@
       SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                           \
       SOA_HOST_DEVICE_INLINE size_t byteSize() const { return parent_.byteSize_; }                                                        \
       SOA_HOST_DEVICE_INLINE size_t byteAlignment() const { return CLASS::byteAlignment; }                                                \
-      SOA_HOST_DEVICE_INLINE std::byte* data() const { return parent_.mem_; }                                                             \
+      SOA_HOST_DEVICE_INLINE std::byte* data()  { return parent_.mem_; }                                                                  \
+      SOA_HOST_DEVICE_INLINE const std::byte* data() const { return parent_.mem_; }                                                       \
       SOA_HOST_DEVICE_INLINE std::byte* nextByte() const { return parent_.mem_ + parent_.byteSize_; }                                     \
       SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) const { return CLASS(addr, parent_.nElements_); }                   \
       _ITERATE_ON_ALL(_DEFINE_METADATA_MEMBERS, ~, __VA_ARGS__)                                                                           \
                                                                                                                                           \
+      SoAMetadata & operator=(const SoAMetadata &) = delete;                                                                              \
+      SoAMetadata(const SoAMetadata &) = delete;                                                                                          \
     private:                                                                                                                              \
       SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                        \
       const CLASS& parent_;                                                                                                               \
@@ -279,6 +293,7 @@
     };                                                                                                                                    \
     friend SoAMetadata;                                                                                                                   \
     SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                           \
+    SOA_HOST_DEVICE_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                                       \
                                                                                                                                           \
     /* Trivial constuctor */                                                                                                              \
     CLASS()                                                                                                                               \
