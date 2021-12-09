@@ -52,14 +52,14 @@ struct ConstValueTraits<C, SoAColumnType::column> : public C { using C::C; };
 template <class C>
 struct ConstValueTraits<C, SoAColumnType::scalar> {
   // Just take to SoAValue type to generate the right constructor.
-  ConstValueTraits(size_t, const typename C::valueType *) {}
+  SOA_HOST_DEVICE_INLINE ConstValueTraits(size_t, const typename C::valueType *) {}
   // Any attempt to do anything with the "scalar" value a const element will fail.
 };
 
 template <class C>
 struct ConstValueTraits<C, SoAColumnType::eigen> {
   // Just take to SoAValue type to generate the right constructor.
-  ConstValueTraits(size_t, const typename C::valueType *) {}
+  SOA_HOST_DEVICE_INLINE ConstValueTraits(size_t, const typename C::valueType *) {}
   // TODO: implement
   // Any attempt to do anything with the eigen value a const element will fail.
 };
