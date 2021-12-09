@@ -43,12 +43,12 @@ public:
   View<uint32_t const*> c_hitsLayerStart() { return cms::kokkos::to_view(m_hitsLayerStart); }
   View<int16_t const*> c_iphi() { return cms::kokkos::to_view(m_iphi); }
 
-#define TO_HOST_ASYNC(name)                                  \
-  template <typename ExecSpace>                              \
-  auto name##ToHostAsync(ExecSpace const& execSpace) const { \
-    auto host = cms::kokkos::make_mirror_shared(m_##name);   \
-    cms::kokkos::deep_copy(execSpace, host, m_##name);       \
-    return host;                                             \
+#define TO_HOST_ASYNC(name)                                           \
+  template <typename ExecSpace>                                       \
+  auto name##ToHostAsync(ExecSpace const& execSpace) const {          \
+    auto host = cms::kokkos::make_mirror_shared(m_##name, execSpace); \
+    cms::kokkos::deep_copy(execSpace, host, m_##name);                \
+    return host;                                                      \
   }
   TO_HOST_ASYNC(xl);
   TO_HOST_ASYNC(yl);
@@ -110,24 +110,25 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
     View<uint32_t const*> hitsModuleStart,
     ExecSpace const& execSpace)
     : m_nHits(nHits),
-      m_xl(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_yl(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_xerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_yerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_xg(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_yg(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_zg(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_rg(cms::kokkos::make_shared<float[], MemorySpace>(nHits)),
-      m_iphi(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits)),
-      m_charge(cms::kokkos::make_shared<int32_t[], MemorySpace>(nHits)),
-      m_xsize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits)),
-      m_ysize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits)),
-      m_detInd(cms::kokkos::make_shared<uint16_t[], MemorySpace>(nHits)),
-      m_AverageGeometryStore(cms::kokkos::make_shared<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace>()),
-      m_view(cms::kokkos::make_shared<TrackingRecHit2DSOAView, MemorySpace>()),
+      m_xl(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yl(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_xerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_xg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_zg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_rg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_iphi(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_charge(cms::kokkos::make_shared<int32_t[], MemorySpace>(nHits, execSpace)),
+      m_xsize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_ysize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_detInd(cms::kokkos::make_shared<uint16_t[], MemorySpace>(nHits, execSpace)),
+      m_AverageGeometryStore(
+          cms::kokkos::make_shared<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace>(execSpace)),
+      m_view(cms::kokkos::make_shared<TrackingRecHit2DSOAView, MemorySpace>(execSpace)),
       m_hitsModuleStart(std::move(hitsModuleStart)),
-      m_hist(cms::kokkos::make_shared<Hist, MemorySpace>()),
-      m_hitsLayerStart(cms::kokkos::make_shared<uint32_t[], MemorySpace>(nHits)) {
+      m_hist(cms::kokkos::make_shared<Hist, MemorySpace>(execSpace)),
+      m_hitsLayerStart(cms::kokkos::make_shared<uint32_t[], MemorySpace>(nHits, execSpace)) {
   // should I deal with no hits case?
 
   // the hits are actually accessed in order only in building
@@ -135,7 +136,7 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   // this will break 1to1 correspondence with cluster and module locality
   // so unless proven VERY inefficient we keep it ordered as generated
 
-  auto view_h = cms::kokkos::make_mirror_shared(m_view);
+  auto view_h = cms::kokkos::make_mirror_shared(m_view, execSpace);
 #define SET(name) view_h->name = name.get()
   SET(m_xl);
   SET(m_yl);

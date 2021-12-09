@@ -14,14 +14,15 @@ public:
   using View = Kokkos::View<T, MemorySpace, RestrictUnmanaged>;
 
   SiPixelDigisKokkos() = default;
-  explicit SiPixelDigisKokkos(size_t maxFedWords)
-      : xx_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords)},
-        yy_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords)},
-        adc_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords)},
-        moduleInd_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords)},
-        clus_d{cms::kokkos::make_shared<int32_t[], MemorySpace>(maxFedWords)},
-        pdigi_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxFedWords)},
-        rawIdArr_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxFedWords)} {}
+  template <typename ExecSpace>
+  explicit SiPixelDigisKokkos(size_t maxFedWords, ExecSpace const& execSpace)
+      : xx_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords, execSpace)},
+        yy_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords, execSpace)},
+        adc_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords, execSpace)},
+        moduleInd_d{cms::kokkos::make_shared<uint16_t[], MemorySpace>(maxFedWords, execSpace)},
+        clus_d{cms::kokkos::make_shared<int32_t[], MemorySpace>(maxFedWords, execSpace)},
+        pdigi_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxFedWords, execSpace)},
+        rawIdArr_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxFedWords, execSpace)} {}
   ~SiPixelDigisKokkos() = default;
 
   SiPixelDigisKokkos(const SiPixelDigisKokkos&) = delete;
@@ -63,7 +64,7 @@ public:
 
   template <typename ExecSpace>
   auto adcToHostAsync(ExecSpace const& execSpace) const {
-    auto host = cms::kokkos::make_mirror_shared(adc_d);
+    auto host = cms::kokkos::make_mirror_shared(adc_d, execSpace);
     cms::kokkos::deep_copy(execSpace, host, adc_d);
     return host;
   }

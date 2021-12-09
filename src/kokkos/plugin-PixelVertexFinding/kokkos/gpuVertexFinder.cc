@@ -122,9 +122,9 @@ namespace KOKKOS_NAMESPACE {
         float ptMin,
         KokkosExecSpace const& execSpace) const {
       // std::cout << "producing Vertices on GPU" << std::endl;
-      auto vertices_d_ptr = cms::kokkos::make_shared<ZVertexSoA, KokkosDeviceMemSpace>();
-      auto vertices_h_ptr = cms::kokkos::make_mirror_shared(vertices_d_ptr);
-      auto workspace_d_ptr = cms::kokkos::make_shared<WorkSpace, KokkosDeviceMemSpace>();
+      auto vertices_d_ptr = cms::kokkos::make_shared<ZVertexSoA, KokkosDeviceMemSpace>(execSpace);
+      auto vertices_h_ptr = cms::kokkos::make_mirror_shared(vertices_d_ptr, execSpace);
+      auto workspace_d_ptr = cms::kokkos::make_shared<WorkSpace, KokkosDeviceMemSpace>(execSpace);
 
       auto vertices_d = cms::kokkos::to_view(vertices_d_ptr);
       auto vertices_h = cms::kokkos::to_view(vertices_h_ptr);

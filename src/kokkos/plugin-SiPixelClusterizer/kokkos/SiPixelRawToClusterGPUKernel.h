@@ -145,7 +145,7 @@ namespace KOKKOS_NAMESPACE {
     public:
       class WordFedAppender {
       public:
-        WordFedAppender();
+        WordFedAppender(KokkosExecSpace const& execSpace);
         ~WordFedAppender() = default;
 
         void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);

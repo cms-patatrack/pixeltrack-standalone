@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Framework/Event.h"
+#include "KokkosCore/ExecSpaceCache.h"
 #include "KokkosCore/ViewHelpers.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
@@ -64,8 +65,10 @@ namespace KOKKOS_NAMESPACE {
                  0.0328407224959,   // hardCurvCut
                  0.15000000596,     // dcaCutInnerTriplet
                  0.25,              // dcaCutOuterTriplet
-                 makeQualityCuts()),
-        m_counters(cms::kokkos::make_shared<Counters, KokkosDeviceMemSpace>()) {
+                 makeQualityCuts()) {
+    auto const& execSpaceWrapped = cms::kokkos::getExecSpaceCache<KokkosExecSpace>().get();
+    auto const& execSpace = execSpaceWrapped->space();
+    m_counters = cms::kokkos::make_shared<Counters, KokkosDeviceMemSpace>(execSpace);
 #ifdef DUMP_GPU_TK_TUPLES
     printf("TK: %s %s % %s %s %s %s %s %s %s %s %s %s %s %s %s\n",
            "tid",
@@ -85,10 +88,10 @@ namespace KOKKOS_NAMESPACE {
            "h5");
 #endif
 
-    auto tmp = cms::kokkos::make_mirror_shared(m_counters);
+    auto tmp = cms::kokkos::make_mirror_shared(m_counters, execSpace);
     memset(tmp.get(), 0, sizeof(Counters));
-    cms::kokkos::deep_copy(KokkosExecSpace(), m_counters, tmp);
-    KokkosExecSpace().fence();
+    cms::kokkos::deep_copy(execSpace, m_counters, tmp);
+    execSpace.fence();
   }
 
   CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
@@ -99,7 +102,7 @@ namespace KOKKOS_NAMESPACE {
 
   cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosDeviceMemSpace> CAHitNtupletGeneratorOnGPU::makeTuples(
       TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace) {
-    auto tracks = cms::kokkos::make_shared<pixelTrack::TrackSoA, KokkosDeviceMemSpace>();
+    auto tracks = cms::kokkos::make_shared<pixelTrack::TrackSoA, KokkosDeviceMemSpace>(execSpace);
 
     CAHitNtupletGeneratorKernels kernels(m_params);
     kernels.counters_ = m_counters.get();

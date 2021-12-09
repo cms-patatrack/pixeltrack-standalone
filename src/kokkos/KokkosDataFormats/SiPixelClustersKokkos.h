@@ -14,11 +14,12 @@ public:
   using View = Kokkos::View<T, MemorySpace, RestrictUnmanaged>;
 
   SiPixelClustersKokkos() = default;
-  explicit SiPixelClustersKokkos(size_t maxClusters)
-      : moduleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1)},
-        clusInModule_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters)},
-        moduleId_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters)},
-        clusModuleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1)} {}
+  template <typename ExecSpace>
+  explicit SiPixelClustersKokkos(size_t maxClusters, ExecSpace const &execSpace)
+      : moduleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1, execSpace)},
+        clusInModule_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters, execSpace)},
+        moduleId_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters, execSpace)},
+        clusModuleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1, execSpace)} {}
   ~SiPixelClustersKokkos() = default;
 
   SiPixelClustersKokkos(const SiPixelClustersKokkos &) = delete;
@@ -47,7 +48,7 @@ public:
 
   template <typename ExecSpace>
   auto clusInModuleToHostAsync(ExecSpace const &execSpace) const {
-    auto host = cms::kokkos::make_mirror_shared(clusInModule_d);
+    auto host = cms::kokkos::make_mirror_shared(clusInModule_d, execSpace);
     cms::kokkos::deep_copy(execSpace, host, clusInModule_d);
     return host;
   }

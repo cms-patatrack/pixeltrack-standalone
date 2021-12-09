@@ -14,9 +14,9 @@ public:
   SiPixelDigiErrorsKokkos() = default;
   template <typename ExecSpace>
   explicit SiPixelDigiErrorsKokkos(size_t maxFedWords, PixelFormatterErrors errors, ExecSpace const& execSpace)
-      : data_d{cms::kokkos::make_shared<PixelErrorCompact[], MemorySpace>(maxFedWords)},
-        error_d{cms::kokkos::make_shared<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace>()},
-        error_h{cms::kokkos::make_mirror_shared(error_d)},
+      : data_d{cms::kokkos::make_shared<PixelErrorCompact[], MemorySpace>(maxFedWords, execSpace)},
+        error_d{cms::kokkos::make_shared<cms::kokkos::SimpleVector<PixelErrorCompact>, MemorySpace>(execSpace)},
+        error_h{cms::kokkos::make_mirror_shared(error_d, execSpace)},
         formatterErrors_h{std::move(errors)} {
     error_h->construct(maxFedWords, data_d.get());
     assert(error_h->empty());

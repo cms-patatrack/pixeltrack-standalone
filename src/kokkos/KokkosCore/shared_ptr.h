@@ -59,28 +59,28 @@ namespace cms::kokkos {
     size_t size_ = 0;
   };
 
-  template <typename T, typename MemSpace>
-  std::enable_if_t<!std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared() {
+  template <typename T, typename MemSpace, typename ExecSpace>
+  std::enable_if_t<!std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared(ExecSpace const& execSpace) {
     void* mem = Kokkos::kokkos_malloc<MemSpace>(sizeof(T));
     return shared_ptr<T, MemSpace>(static_cast<T*>(mem), impl::Deleter<MemSpace>());
   }
 
-  template <typename T, typename MemSpace>
-  std::enable_if_t<std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared(size_t n) {
+  template <typename T, typename MemSpace, typename ExecSpace>
+  std::enable_if_t<std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared(size_t n, ExecSpace const& execSpace) {
     using element_type = typename std::remove_extent<T>::type;
     void* mem = Kokkos::kokkos_malloc<MemSpace>(sizeof(element_type) * n);
     return shared_ptr<T, MemSpace>(static_cast<element_type*>(mem), n, impl::Deleter<MemSpace>());
   }
 
-  template <typename T, typename MemSpace>
-  auto make_mirror_shared(shared_ptr<T, MemSpace> const& src) {
+  template <typename T, typename MemSpace, typename ExecSpace>
+  auto make_mirror_shared(shared_ptr<T, MemSpace> const& src, ExecSpace const& execSpace) {
     using MirrorSpace = typename MemSpaceTraits<MemSpace>::HostSpace;
     if constexpr (std::is_same_v<MemSpace, MirrorSpace>) {
       return src;
     } else if constexpr (std::is_array_v<T>) {
-      return make_shared<T, MirrorSpace>(src.size());
+      return make_shared<T, MirrorSpace>(src.size(), execSpace);
     } else {
-      return make_shared<T, MirrorSpace>();
+      return make_shared<T, MirrorSpace>(execSpace);
     }
     return shared_ptr<T, MirrorSpace>();
   }

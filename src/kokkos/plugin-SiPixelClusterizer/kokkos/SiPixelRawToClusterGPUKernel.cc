@@ -33,9 +33,9 @@ namespace KOKKOS_NAMESPACE {
   namespace pixelgpudetails {
     constexpr uint32_t MAX_FED_WORDS = ::pixelgpudetails::MAX_FED * ::pixelgpudetails::MAX_WORD;
 
-    SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_(cms::kokkos::make_shared<unsigned int[], KokkosHostMemSpace>(MAX_FED_WORDS)),
-          fedId_(cms::kokkos::make_shared<unsigned char[], KokkosHostMemSpace>(MAX_FED_WORDS)) {}
+    SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender(KokkosExecSpace const &execSpace)
+        : word_(cms::kokkos::make_shared<unsigned int[], KokkosHostMemSpace>(MAX_FED_WORDS, execSpace)),
+          fedId_(cms::kokkos::make_shared<unsigned char[], KokkosHostMemSpace>(MAX_FED_WORDS, execSpace)) {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,
@@ -577,12 +577,12 @@ namespace KOKKOS_NAMESPACE {
       std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-      digis_d = SiPixelDigisKokkos<KokkosDeviceMemSpace>(pixelgpudetails::MAX_FED_WORDS);
+      digis_d = SiPixelDigisKokkos<KokkosDeviceMemSpace>(pixelgpudetails::MAX_FED_WORDS, execSpace);
       if (includeErrors) {
         digiErrors_d =
             SiPixelDigiErrorsKokkos<KokkosDeviceMemSpace>(pixelgpudetails::MAX_FED_WORDS, std::move(errors), execSpace);
       }
-      clusters_d = SiPixelClustersKokkos<KokkosDeviceMemSpace>(::gpuClustering::MaxNumModules);
+      clusters_d = SiPixelClustersKokkos<KokkosDeviceMemSpace>(::gpuClustering::MaxNumModules, execSpace);
 
       if (wordCounter)  // protect in case of empty event....
       {
@@ -590,8 +590,8 @@ namespace KOKKOS_NAMESPACE {
         // wordCounter is the total no of words in each event to be trasfered on device
 
         // TODO: can not deep_copy Views of different size
-        auto word_d_ptr = cms::kokkos::make_shared<unsigned int[], KokkosDeviceMemSpace>(MAX_FED_WORDS);
-        auto fedId_d_ptr = cms::kokkos::make_shared<unsigned char[], KokkosDeviceMemSpace>(MAX_FED_WORDS);
+        auto word_d_ptr = cms::kokkos::make_shared<unsigned int[], KokkosDeviceMemSpace>(MAX_FED_WORDS, execSpace);
+        auto fedId_d_ptr = cms::kokkos::make_shared<unsigned char[], KokkosDeviceMemSpace>(MAX_FED_WORDS, execSpace);
         auto word_d = cms::kokkos::to_view(word_d_ptr);
         auto fedId_d = cms::kokkos::to_view(fedId_d_ptr);
         Kokkos::deep_copy(execSpace, word_d, wordFed.word());

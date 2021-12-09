@@ -15,8 +15,8 @@ public:
   BeamSpotKokkos() = default;
   template <typename ExecSpace>
   BeamSpotKokkos(BeamSpotPOD const* data, ExecSpace const& execSpace)
-      : data_d{cms::kokkos::make_shared<BeamSpotPOD, MemorySpace>()} {
-    auto data_h = cms::kokkos::make_mirror_shared(data_d);
+      : data_d{cms::kokkos::make_shared<BeamSpotPOD, MemorySpace>(execSpace)} {
+    auto data_h = cms::kokkos::make_mirror_shared(data_d, execSpace);
     std::memcpy(data_h.get(), data, sizeof(BeamSpotPOD));
     cms::kokkos::deep_copy(execSpace, data_d, data_h);
   }

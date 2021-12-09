@@ -42,7 +42,7 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    m_soa = cms::kokkos::make_shared<ZVertexSoA, KokkosHostMemSpace>();
+    m_soa = cms::kokkos::make_shared<ZVertexSoA, KokkosHostMemSpace>(ctx.execSpace());
     cms::kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
   }
 
