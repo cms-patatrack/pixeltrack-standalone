@@ -81,6 +81,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
 #endif
 
+      // FIXME this is required to keep the host buffer inside hits_d alive; it could be removed once the host buffers are also stream-ordered
+      alpaka::wait(queue);
       return hits_d;
     }
 
