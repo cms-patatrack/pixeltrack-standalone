@@ -269,7 +269,7 @@
       SOA_HOST_DEVICE_INLINE size_t byteAlignment() const { return CLASS::byteAlignment; }                                                \
       SOA_HOST_DEVICE_INLINE std::byte* data() const { return parent_.mem_; }                                                             \
       SOA_HOST_DEVICE_INLINE std::byte* nextByte() const { return parent_.mem_ + parent_.byteSize_; }                                     \
-      SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) { return CLASS(addr, parent_.nElements_); }                         \
+      SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) const { return CLASS(addr, parent_.nElements_); }                   \
       _ITERATE_ON_ALL(_DEFINE_METADATA_MEMBERS, ~, __VA_ARGS__)                                                                           \
                                                                                                                                           \
     private:                                                                                                                              \
