@@ -16,6 +16,7 @@
 #include <tbb/task_arena.h>
 
 #include "AlpakaCore/alpakaConfigCommon.h"
+#include "AlpakaCore/initialise.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -45,6 +46,9 @@ namespace {
 }  // namespace
 
 int main(int argc, char** argv) {
+  // Initialiase all supported devices
+  initialise();
+
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   std::vector<Backend> backends;
