@@ -11,7 +11,7 @@ CXX_REQUIRED_MAJOR:=8
 CXX_REQUIRED_MINOR:=0
 CXX_REQUIRED_VERSION:=$(shell echo $$(( $(CXX_REQUIRED_MAJOR) * 100 + $(CXX_REQUIRED_MINOR) )) )
 
-CXX_SUPPORTED:=$(shell (( $(CXX_VERSION) >= $(CXX_REQUIRED_VERSION) )) && echo true || echo false)
+CXX_SUPPORTED:=$(shell [ $(CXX_VERSION) -ge $(CXX_REQUIRED_VERSION) ] && echo true || echo false)
 ifeq ($(CXX_SUPPORTED),false)
 $(error This program requires GCC $(CXX_REQUIRED_MAJOR).$(CXX_REQUIRED_MINOR) or later, but the current compiler is GCC $(CXX_MAJOR).$(CXX_MINOR))
 endif
@@ -123,7 +123,7 @@ BOOST_MIN_VERSION := 107300
 ifeq ($(wildcard $(BOOST_BASE)/include/boost/version.hpp),)
 NEED_BOOST := true
 else
-NEED_BOOST := $(shell awk '/\#define BOOST_VERSION\>/ { if ($$3 < $(BOOST_MIN_VERSION)) print "true" }' $(BOOST_BASE)/include/boost/version.hpp )
+NEED_BOOST := $(shell awk '/.define *BOOST_VERSION\>/ { if ($$3 < $(BOOST_MIN_VERSION)) print "true"; else print "false"; }' $(BOOST_BASE)/include/boost/version.hpp )
 endif
 ifeq ($(NEED_BOOST),true)
 BOOST_BASE := $(EXTERNAL_BASE)/boost
