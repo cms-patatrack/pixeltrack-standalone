@@ -228,7 +228,8 @@
  * A macro defining a SoA layout (collection of scalars and columns of equal lengths)
  */
 #define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                    \
-  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>        \
+  template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
+    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                       \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \

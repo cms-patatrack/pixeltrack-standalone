@@ -253,6 +253,14 @@ struct SoAAccessors{
  * hints the compiler that it can expect column pointers to be aligned */
 enum class AlignmentEnforcement : bool { Relaxed, Enforced };
 
+struct CacheLineSize {
+  static constexpr size_t NvidiaGPU = 128;
+  static constexpr size_t IntelCPU = 64;
+  static constexpr size_t AMDCPU = 64;
+  static constexpr size_t ARMCPU = 64;
+  static constexpr size_t defaultSize = NvidiaGPU;
+};
+
 } // namespace cms::soa
 
 #endif  // ndef DataStructures_SoACommon_h

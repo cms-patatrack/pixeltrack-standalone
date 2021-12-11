@@ -285,7 +285,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_MEMBER_IMPL BOOST_PP_TUPLE_PUSH_BACK(LAYOUT_MEMBER_NAME, DATA))
 
 #define GENERATE_SOA_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
-  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>        \
+  template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
+    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                       \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
@@ -295,7 +296,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
    * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
    * up to compute capability 8.X.                                                                                                      \
    */ \
-    constexpr static size_t defaultAlignment = 128;                                                                                       \
+    constexpr static size_t defaultAlignment = cms::soa::CacheLineSize::defaultSize;                                                      \
     constexpr static size_t byteAlignment = ALIGNMENT;                                                                                    \
     constexpr static AlignmentEnforcement alignmentEnforcement = ALIGNMENT_ENFORCEMENT;                                                   \
     constexpr static size_t conditionalAlignment =                                                                                        \
@@ -393,7 +394,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   }
 
 #define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
-  template <size_t ALIGNMENT = 128, cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>      \
+  template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                     \
+    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                      \
   struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \
     using self_type = CLASS;                                                                                                            \
@@ -403,7 +405,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
    * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
    * up to compute capability 8.X.                                                                                                      \
    */ \
-    constexpr static size_t defaultAlignment = 128;                                                                                       \
+    constexpr static size_t defaultAlignment = cms::soa::CacheLineSize::defaultSize;                                                      \
     constexpr static size_t byteAlignment = ALIGNMENT;                                                                                    \
     constexpr static AlignmentEnforcement alignmentEnforcement = ALIGNMENT_ENFORCEMENT;                                                   \
     constexpr static size_t conditionalAlignment =                                                                                        \
