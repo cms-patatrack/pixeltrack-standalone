@@ -26,9 +26,15 @@ namespace {
         << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer] [--validation]\n\n"
         << "Options\n"
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
         << " --serial            Use CPU Serial backend\n"
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
         << " --tbb               Use CPU TBB backend\n"
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
         << " --cuda              Use CUDA backend\n"
+#endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -46,9 +52,6 @@ namespace {
 }  // namespace
 
 int main(int argc, char** argv) {
-  // Initialiase all supported devices
-  initialise();
-
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   std::vector<Backend> backends;
@@ -65,12 +68,18 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -120,44 +129,59 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // NB: The choice & tuning of device at runtime needs to be handled properly
-  // inside a ALPAKA_ACCELERATOR_NAMESPACE.
-  // For now, the choice is made at run time
-  // with --serial, --tbb, --cuda (1 GPU only).
+  // Initialiase the selected backends
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+  if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
+    alpaka_serial_sync::initialise();
+  }
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+  if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
+    alpaka_tbb_async::initialise();
+  }
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+  if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
+    alpaka_cuda_async::initialise();
+  }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
     esmodules = {"BeamSpotESProducer", "SiPixelFedIdsESProducer"};
-    if (not backends.empty()) {
-      auto addModules = [&](std::string const& prefix, Backend backend) {
-        if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-          edmodules.emplace_back(prefix + "BeamSpotToAlpaka");
-          edmodules.emplace_back(prefix + "SiPixelRawToCluster");
-          edmodules.emplace_back(prefix + "SiPixelRecHitAlpaka");
-          edmodules.emplace_back(prefix + "CAHitNtupletAlpaka");
-          edmodules.emplace_back(prefix + "PixelVertexProducerAlpaka");
-          if (transfer) {
-            edmodules.emplace_back(prefix + "PixelTrackSoAFromAlpaka");
-            edmodules.emplace_back(prefix + "PixelVertexSoAFromAlpaka");
-          }
-          if (validation) {
-            edmodules.emplace_back(prefix + "CountValidator");
-          }
-          if (histogram) {
-            edmodules.emplace_back(prefix + "HistoValidator");
-          }
-
-          esmodules.emplace_back(prefix + "SiPixelFedCablingMapESProducer");
-          esmodules.emplace_back(prefix + "SiPixelGainCalibrationForHLTESProducer");
-          esmodules.emplace_back(prefix + "PixelCPEFastESProducer");
+    auto addModules = [&](std::string const& accelerator_namespace, Backend backend) {
+      if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
+        edmodules.emplace_back(accelerator_namespace + "::" + "BeamSpotToAlpaka");
+        edmodules.emplace_back(accelerator_namespace + "::" + "SiPixelRawToCluster");
+        edmodules.emplace_back(accelerator_namespace + "::" + "SiPixelRecHitAlpaka");
+        edmodules.emplace_back(accelerator_namespace + "::" + "CAHitNtupletAlpaka");
+        edmodules.emplace_back(accelerator_namespace + "::" + "PixelVertexProducerAlpaka");
+        if (transfer) {
+          edmodules.emplace_back(accelerator_namespace + "::" + "PixelTrackSoAFromAlpaka");
+          edmodules.emplace_back(accelerator_namespace + "::" + "PixelVertexSoAFromAlpaka");
         }
-      };
-      addModules("alpaka_serial_sync::", Backend::SERIAL);
-      addModules("alpaka_tbb_async::", Backend::TBB);
-      addModules("alpaka_cuda_async::", Backend::CUDA);
-    }
+        if (validation) {
+          edmodules.emplace_back(accelerator_namespace + "::" + "CountValidator");
+        }
+        if (histogram) {
+          edmodules.emplace_back(accelerator_namespace + "::" + "HistoValidator");
+        }
+        esmodules.emplace_back(accelerator_namespace + "::" + "SiPixelFedCablingMapESProducer");
+        esmodules.emplace_back(accelerator_namespace + "::" + "SiPixelGainCalibrationForHLTESProducer");
+        esmodules.emplace_back(accelerator_namespace + "::" + "PixelCPEFastESProducer");
+      }
+    };
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+    addModules("alpaka_serial_sync", Backend::SERIAL);
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+    addModules("alpaka_tbb_async", Backend::TBB);
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+    addModules("alpaka_cuda_async", Backend::CUDA);
+#endif
   }
   edm::EventProcessor processor(
       maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
