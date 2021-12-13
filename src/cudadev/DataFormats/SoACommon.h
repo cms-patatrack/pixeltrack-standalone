@@ -91,6 +91,7 @@ private:
 };
 
 // Helper template managing the value within it column
+// TODO Create a const variant to avoid leaking mutable access.
 template <class C, size_t ALIGNMENT>
 class SoAEigenValue {
 public:
@@ -126,7 +127,7 @@ private:
 // Helper template to avoid commas in macro
 template <class C>
 struct EigenConstMapMaker {
-  typedef Eigen::Map<const C, 0, Eigen::InnerStride<Eigen::Dynamic>> Type;
+  typedef Eigen::Map<const C, Eigen::AlignmentType::Unaligned, Eigen::InnerStride<Eigen::Dynamic>> Type;
   class DataHolder {
   public:
     DataHolder(const typename C::Scalar* data) : data_(data) {}

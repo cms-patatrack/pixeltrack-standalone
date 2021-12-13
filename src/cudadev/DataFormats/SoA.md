@@ -142,4 +142,5 @@ scenarios where only a subset of columns are used in a given GPU kernel.
 - `__restrict__` compiler hinting will be added later.
 - Optional range checking will be added later. This implies adding support for size to views and will restrict views to columns of 
 equal size.
-- Eigen access was validated with an earlier scheme, but will be ported back to the current one later.
+- Eigen access was validated with an earlier scheme, but will be ported back to the current one later. Some alignment information can be 
+passed to Eigen strcutures. Const variants of access classes should be created to ensure we cannot leak mutable access to const products.
