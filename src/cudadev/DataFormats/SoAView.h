@@ -377,7 +377,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                           \
     /* AoS-like accessor (const) */                                                                                                       \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
-    const const_element operator[](size_t index) const {                                                                                  \
+    const_element operator[](size_t index) const {                                                                                  \
       return const_element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_CONSTR_CALL, ~, VALUE_LIST));                               \
     }                                                                                                                                     \
                                                                                                                                           \
