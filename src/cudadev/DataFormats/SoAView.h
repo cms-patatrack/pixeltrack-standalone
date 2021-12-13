@@ -215,7 +215,9 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 /**
  * Generator of the member-by-member copy operator of the element subclass.
  */
-#define _DECLARE_VIEW_ELEMENT_VALUE_COPY_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME) LOCAL_NAME() = other.LOCAL_NAME();
+#define _DECLARE_VIEW_ELEMENT_VALUE_COPY_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                     \
+  if constexpr (SoAMetadata:: BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) != cms::soa::SoAColumnType::scalar) \
+    LOCAL_NAME() = other.LOCAL_NAME();
 
 #define _DECLARE_VIEW_ELEMENT_VALUE_COPY(R, DATA, LAYOUT_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_ELEMENT_VALUE_COPY_IMPL LAYOUT_MEMBER_NAME)
