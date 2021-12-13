@@ -16,9 +16,9 @@ namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisCUDA::DevicePixelConstView pdigis,
+                          SiPixelDigisCUDA::DevicePixelConstView digis,
                           int numElements,
-                          SiPixelClustersCUDA::DeviceConstView const pclusters,
+                          SiPixelClustersCUDA::DeviceConstView clusters,
                           TrackingRecHit2DSOAStore* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
@@ -29,9 +29,6 @@ namespace gpuPixelRecHits {
     assert(cpeParams);
 
     auto& hits = *phits;
-
-    auto const digis = pdigis;  // the copy is intentional!
-    auto const& clusters = pclusters;
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
     if (0 == blockIdx.x) {
