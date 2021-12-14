@@ -38,40 +38,91 @@
 
 namespace cms::soa {
 
+enum class CacheAccessStyle : char { Default, NonCoherent, Streaming };
+
+enum class RestrictQualify : bool { Enabled, Disabled, Default = Disabled };
+
+template <typename T, RestrictQualify RESTRICT_QUALIFY>
+struct add_restrict {};
+
+template <typename T>
+struct add_restrict<T, RestrictQualify::Enabled> {
+  typedef T Value;
+  typedef T * __restrict__ Pointer;
+  typedef T & __restrict__ Reference;
+  typedef const T ConstValue;
+  typedef const T * __restrict__ PointerToConst;
+  typedef const T & __restrict__ ReferenceToConst;
+};
+
+template <typename T>
+struct add_restrict<T, RestrictQualify::Disabled> {
+  typedef T Value;
+  typedef T * Pointer;
+  typedef T & Reference;
+  typedef const T ConstValue;
+  typedef const T * PointerToConst;
+  typedef const T & ReferenceToConst;
+};
+
+template <typename T, CacheAccessStyle CACHE_ACCESS_STYLE>
+SOA_HOST_DEVICE_INLINE T readWithCacheStyle (const T * addr) {
+  if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::NonCoherent) {
+    return LOAD_INCOHERENT(addr);
+  } else if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::Streaming) {
+    return LOAD_STREAMED(addr);
+  }
+  return *addr;
+}
+
 // Helper template managing the value within it column
 // The optional compile time alignment parameter enables informing the
 // compiler of alignment (enforced by caller).
-template <typename T, size_t ALIGNMENT>
+template <typename T, size_t ALIGNMENT,
+  CacheAccessStyle CACHE_STYLE = CacheAccessStyle::Default, 
+  RestrictQualify RESTRICT_QUALIFY = RestrictQualify::Disabled>
 class SoAValue {
 public:
+  typedef add_restrict<T, RESTRICT_QUALIFY> Restr;
+  typedef typename Restr::Value Val;
+  typedef typename Restr::Pointer Ptr;
+  typedef typename Restr::Reference Ref;
+  typedef typename Restr::PointerToConst PtrToConst;
   SOA_HOST_DEVICE_INLINE SoAValue(size_t i, T* col) : idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
-  SOA_HOST_DEVICE_INLINE T& operator()() { return alignedCol()[idx_]; }
-  SOA_HOST_DEVICE_INLINE T operator()() const { return *(alignedCol() + idx_); }
-  SOA_HOST_DEVICE_INLINE T* operator&() { return &alignedCol()[idx_]; }
-  SOA_HOST_DEVICE_INLINE const T* operator&() const { return &alignedCol()[idx_]; }
+  SOA_HOST_DEVICE_INLINE Ref operator()() { return alignedCol()[idx_]; }
+  SOA_HOST_DEVICE_INLINE Val operator()() const { return *(alignedCol() + idx_); }
+  SOA_HOST_DEVICE_INLINE Ptr operator&() { return &alignedCol()[idx_]; }
+  SOA_HOST_DEVICE_INLINE PtrToConst operator&() const { return &alignedCol()[idx_]; }
   template <typename T2>
-  SOA_HOST_DEVICE_INLINE T& operator=(const T2& v) {
+  SOA_HOST_DEVICE_INLINE Ref operator=(const T2& v) {
     return alignedCol()[idx_] = v;
   }
-  typedef T valueType;
+  typedef Val valueType;
   static constexpr auto valueSize = sizeof(T);
 
 private:
-  SOA_HOST_DEVICE_INLINE T* alignedCol() const {
+  SOA_HOST_DEVICE_INLINE Ptr alignedCol() const {
     if constexpr (ALIGNMENT) {
-      return reinterpret_cast<T*>(__builtin_assume_aligned(col_, ALIGNMENT));
+      return reinterpret_cast<Ptr>(__builtin_assume_aligned(col_, ALIGNMENT));
     }
-    return col_;
+    return reinterpret_cast<Ptr>(col_);
   }
   size_t idx_;
   T* col_;
 };
 
 // Helper template managing the value within it column
-template <typename T, size_t ALIGNMENT>
+template <typename T, size_t ALIGNMENT,
+  CacheAccessStyle CACHE_STYLE = CacheAccessStyle::Default, 
+  RestrictQualify RESTRICT_QUALIFY = RestrictQualify::Disabled>
 class SoAConstValue {
 public:
+  typedef add_restrict<T, RESTRICT_QUALIFY> Restr;
+  typedef typename Restr::Value Val;
+  typedef typename Restr::Pointer Ptr;
+  typedef typename Restr::Reference Ref;
+  typedef typename Restr::PointerToConst PtrToConst;
   SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, const T* col) : idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
   SOA_HOST_DEVICE_INLINE T operator()() const { return *(alignedCol() + idx_); }
@@ -80,11 +131,11 @@ public:
   static constexpr auto valueSize = sizeof(T);
 
 private:
-  SOA_HOST_DEVICE_INLINE const T* alignedCol() const {
+  SOA_HOST_DEVICE_INLINE PtrToConst alignedCol() const {
     if constexpr (ALIGNMENT) {
-      return __builtin_assume_aligned(col_, ALIGNMENT);
+      return reinterpret_cast<PtrToConst>(__builtin_assume_aligned(col_, ALIGNMENT));
     }
-    return col_;
+    return reinterpret_cast<PtrToConst>(col_) ;
   }
   size_t idx_;
   const T* col_;

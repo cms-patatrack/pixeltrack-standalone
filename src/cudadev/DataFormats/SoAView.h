@@ -397,7 +397,9 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 
 #define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                     \
-    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                      \
+    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed,                                      \
+    cms::soa::CacheAccessStyle CACHE_ACCESS_STYLE = cms::soa::CacheAccessStyle::NonCoherent,                                             \
+    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Enabled>                                                      \
   struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \
     using self_type = CLASS;                                                                                                            \
@@ -412,12 +414,14 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     constexpr static AlignmentEnforcement alignmentEnforcement = ALIGNMENT_ENFORCEMENT;                                                   \
     constexpr static size_t conditionalAlignment =                                                                                        \
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
+    constexpr static cms::soa::CacheAccessStyle cacheAccessStyle = CACHE_ACCESS_STYLE;                                                    \
+    constexpr static cms::soa::RestrictQualify restrictQualify = RESTRICT_QUALIFY;                                                        \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
-    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
+    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment, cacheAccessStyle, restrictQualify>;                              \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment, cacheAccessStyle, restrictQualify>;                    \
                                                                                                                                           \
     template <class C>                                                                                                                    \
     using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
