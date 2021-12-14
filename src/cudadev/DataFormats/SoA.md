@@ -144,3 +144,5 @@ scenarios where only a subset of columns are used in a given GPU kernel.
 equal size.
 - Eigen access was validated with an earlier scheme, but will be ported back to the current one later. Some alignment information can be 
 passed to Eigen strcutures. Const variants of access classes should be created to ensure we cannot leak mutable access to const products.
+- Improve `dump()` function and turn it into a more classic `operator<<()`.
+- Create a mechanism to derive trivial views and const views from a single layout.
