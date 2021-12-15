@@ -25,13 +25,13 @@
 
 #if defined(__CUDACC__) && defined(__CUDA_ARCH__)
 // Read a pointer content via read-only (non coherent) cache.
-#define LOAD_INCOHERENT(A) __ldg(A)
-#define LOAD_STREAMED(A) __ldcs(A)
-#define STORE_STREAMED(A, V) __stcs(A, V)
+#define LOAD_NONCOHERENT(A) __ldg(A)
+#define LOAD_STREAMING(A) __ldcs(A)
+#define STORE_STREAMING(A, V) __stcs(A, V)
 #else
-#define LOAD_INCOHERENT(A) *(A)
-#define LOAD_STREAMED(A) *(A)
-#define STORE_STREAMED(A, V) *(A) = (V)
+#define LOAD_NONCOHERENT(A) *(A)
+#define LOAD_STREAMING(A) *(A)
+#define STORE_STREAMING(A, V) *(A) = (V)
 #endif
 
 // compile-time sized SoA
@@ -70,7 +70,7 @@ SOA_HOST_DEVICE_INLINE T readWithCacheStyle (const T * addr) {
   if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::NonCoherent) {
     return LOAD_INCOHERENT(addr);
   } else if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::Streaming) {
-    return LOAD_STREAMED(addr);
+    return LOAD_STREAMING(addr);
   }
   return *addr;
 }
@@ -88,10 +88,19 @@ public:
   typedef typename Restr::Pointer Ptr;
   typedef typename Restr::Reference Ref;
   typedef typename Restr::PointerToConst PtrToConst;
+  typedef typename Restr::ReferenceToConst RefToConst;
   SOA_HOST_DEVICE_INLINE SoAValue(size_t i, T* col) : idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
-  SOA_HOST_DEVICE_INLINE Ref operator()() { return alignedCol()[idx_]; }
-  SOA_HOST_DEVICE_INLINE Val operator()() const { return *(alignedCol() + idx_); }
+  SOA_HOST_DEVICE_INLINE Ref operator()() { 
+    // Ptr type will add the restrict qualifyer if needed
+    Ptr col = alignedCol();
+    return col[idx_];
+  }
+  SOA_HOST_DEVICE_INLINE RefToConst operator()() const {
+    // PtrToConst type will add the restrict qualifyer if needed
+    PtrToConst col = alignedCol();
+    return col[idx_];
+  }
   SOA_HOST_DEVICE_INLINE Ptr operator&() { return &alignedCol()[idx_]; }
   SOA_HOST_DEVICE_INLINE PtrToConst operator&() const { return &alignedCol()[idx_]; }
   template <typename T2>
@@ -123,9 +132,14 @@ public:
   typedef typename Restr::Pointer Ptr;
   typedef typename Restr::Reference Ref;
   typedef typename Restr::PointerToConst PtrToConst;
+  typedef typename Restr::ReferenceToConst RefToConst;
   SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, const T* col) : idx_(i), col_(col) {}
   /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
-  SOA_HOST_DEVICE_INLINE T operator()() const { return *(alignedCol() + idx_); }
+  SOA_HOST_DEVICE_INLINE RefToConst operator()() const {
+    // Ptr type will add the restrict qualifyer if needed
+    PtrToConst col = alignedCol();
+    return col[idx_];
+  }
   SOA_HOST_DEVICE_INLINE const T* operator&() const { return &alignedCol()[idx_]; }
   typedef T valueType;
   static constexpr auto valueSize = sizeof(T);

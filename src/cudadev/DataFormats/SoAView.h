@@ -193,7 +193,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
  * Declaration of the members accessors of the const element subclass
  */
 #define _DECLARE_VIEW_CONST_ELEMENT_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)               \
-  SOA_HOST_DEVICE_INLINE typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) LOCAL_NAME() const { \
+  SOA_HOST_DEVICE_INLINE typename SoAConstValueWithConf<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::RefToConst LOCAL_NAME() const { \
     return BOOST_PP_CAT(LOCAL_NAME, _)();                                                             \
   }
 
@@ -286,9 +286,13 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 #define _DECLARE_VIEW_SOA_MEMBER(R, DATA, LAYOUT_MEMBER_NAME) \
   BOOST_PP_EXPAND(_DECLARE_VIEW_SOA_MEMBER_IMPL BOOST_PP_TUPLE_PUSH_BACK(LAYOUT_MEMBER_NAME, DATA))
 
+/* ---- MUTABLE VIEW -------------------------------------------------------------------------------------------------------------------- */
+
 #define GENERATE_SOA_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
-    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                       \
+    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed,                                       \
+    cms::soa::CacheAccessStyle CACHE_ACCESS_STYLE = cms::soa::CacheAccessStyle::Default,                                                  \
+    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Disabled>                                                     \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
@@ -303,12 +307,14 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     constexpr static AlignmentEnforcement alignmentEnforcement = ALIGNMENT_ENFORCEMENT;                                                   \
     constexpr static size_t conditionalAlignment =                                                                                        \
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
-    /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
+    constexpr static cms::soa::CacheAccessStyle cacheAccessStyle = CACHE_ACCESS_STYLE;                                                    \
+    constexpr static cms::soa::RestrictQualify restrictQualify = RESTRICT_QUALIFY;                                                        \
+/* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
-    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
+    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment, cacheAccessStyle, restrictQualify>;                              \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment, cacheAccessStyle, restrictQualify>;                    \
                                                                                                                                           \
     template <class C>                                                                                                                    \
     using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
@@ -395,11 +401,13 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, BOOST_PP_EMPTY(), VALUE_LIST)                                                               \
   }
 
+/* ---- CONST VIEW --------------------------------------------------------------------------------------------------------------------- */
+
 #define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                     \
     cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed,                                      \
     cms::soa::CacheAccessStyle CACHE_ACCESS_STYLE = cms::soa::CacheAccessStyle::NonCoherent,                                             \
-    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Enabled>                                                      \
+    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Enabled>                                                     \
   struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \
     using self_type = CLASS;                                                                                                            \

@@ -19,6 +19,8 @@ GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
   SOA_COLUMN(double, x),
   SOA_COLUMN(double, y),
   SOA_COLUMN(double, z),
+  SOA_COLUMN(double, sum),
+  SOA_COLUMN(double, prod),
   SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
   SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
   SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
@@ -44,6 +46,8 @@ GENERATE_SOA_VIEW(SoA1ViewTemplate,
     SOA_VIEW_VALUE(soa1, x),
     SOA_VIEW_VALUE(soa1, y),
     SOA_VIEW_VALUE(soa1, z),
+    SOA_VIEW_VALUE(soa1, sum),
+    SOA_VIEW_VALUE(soa1, prod),
     SOA_VIEW_VALUE(soa1, color),
     SOA_VIEW_VALUE(soa1, value),
     SOA_VIEW_VALUE(soa1, py),
@@ -99,6 +103,48 @@ GENERATE_SOA_CONST_VIEW(SoA1View2Gconst,
     SOA_VIEW_VALUE(soa1, someNumber)
   )
 );
+
+// Parameter reusing kernels.  The disassembly will indicate whether the compiler uses the wanted cache hits and uses
+// `restrict` hints avoid multiple reduce loads.
+// The PTX can be obtained using -ptx insterad of -c when compiling.
+template <typename T>
+__device__ void addAndMulTemplate (
+    T soa, size_t size) {
+    auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= size) return;
+    auto si = soa[idx];
+    si.sum() = si.x() + si.y();
+    si.prod() = si.x() * si.y();
+  }
+
+__global__ void aAMDef(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
+    cms::soa::AlignmentEnforcement::Relaxed,
+    cms::soa::CacheAccessStyle::Default,
+    cms::soa::RestrictQualify::Disabled> soa, size_t size) {
+  addAndMulTemplate(soa, size);
+}
+
+__global__ void aAMRestrict(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
+    cms::soa::AlignmentEnforcement::Relaxed,
+    cms::soa::CacheAccessStyle::Default,
+    cms::soa::RestrictQualify::Enabled> soa, size_t size) {
+  addAndMulTemplate(soa, size);
+}
+
+__global__ void aAMNC(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
+    cms::soa::AlignmentEnforcement::Relaxed,
+    cms::soa::CacheAccessStyle::NonCoherent,
+    cms::soa::RestrictQualify::Disabled> soa, size_t size) {
+  addAndMulTemplate(soa, size);
+}
+
+__global__ void aAMRestrict(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
+    cms::soa::AlignmentEnforcement::Relaxed,
+    cms::soa::CacheAccessStyle::NonCoherent,
+    cms::soa::RestrictQualify::Enabled> soa, size_t size) {
+  addAndMulTemplate(soa, size);
+}
+
 
 const size_t size=10000;
 
