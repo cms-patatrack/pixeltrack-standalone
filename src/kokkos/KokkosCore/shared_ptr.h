@@ -6,13 +6,68 @@
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/memoryTraits.h"
 
+#ifdef KOKKOS_ENABLE_CUDA
+#include "CUDACore/allocate_device.h"
+#include "CUDACore/allocate_host.h"
+#endif
+
 namespace cms::kokkos {
   namespace impl {
     template <typename MemSpace>
-    class Deleter {
-    public:
+    struct Deleter {
       void operator()(void* ptr) const { Kokkos::kokkos_free<MemSpace>(ptr); }
     };
+
+    template <typename MemSpace>
+    struct Allocate {
+      template <typename ExecSpace>
+      static void* allocate(size_t bytes, ExecSpace const& execSpace) {
+        return Kokkos::kokkos_malloc<MemSpace>(bytes);
+      }
+
+      template <typename ExecSpace>
+      static Deleter<MemSpace> make_deleter(ExecSpace const& execSpace) {
+        return Deleter<MemSpace>();
+      }
+    };
+
+#ifdef KOKKOS_ENABLE_CUDA
+    template <>
+    struct Deleter<Kokkos::CudaSpace> {
+      Deleter(cudaStream_t stream) : stream_{stream} {}
+
+      void operator()(void* ptr) const { cms::cuda::free_device(ptr, stream_); }
+
+    private:
+      cudaStream_t stream_ = cudaStreamDefault;
+    };
+    template <>
+    struct Deleter<Kokkos::CudaHostPinnedSpace> {
+      void operator()(void* ptr) const { cms::cuda::free_host(ptr); }
+    };
+
+    template <>
+    struct Allocate<Kokkos::CudaSpace> {
+      static void* allocate(size_t bytes, Kokkos::Cuda const& execSpace) {
+        return cms::cuda::allocate_device(execSpace.cuda_device(), bytes, execSpace.cuda_stream());
+      }
+
+      static Deleter<Kokkos::CudaSpace> make_deleter(Kokkos::Cuda const& execSpace) {
+        return Deleter<Kokkos::CudaSpace>(execSpace.cuda_stream());
+      }
+    };
+    template <>
+    struct Allocate<Kokkos::CudaHostPinnedSpace> {
+      static void* allocate(size_t bytes, Kokkos::Cuda const& execSpace) {
+        return cms::cuda::allocate_host(execSpace.cuda_device(), bytes, execSpace.cuda_stream());
+      }
+
+      static Deleter<Kokkos::CudaHostPinnedSpace> make_deleter(Kokkos::Cuda const& execSpace) {
+        return Deleter<Kokkos::CudaHostPinnedSpace>();
+      }
+    };
+
+#endif
   }  // namespace impl
 
   template <typename T, typename MemorySpace>
@@ -61,15 +116,17 @@ namespace cms::kokkos {
 
   template <typename T, typename MemSpace, typename ExecSpace>
   std::enable_if_t<!std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared(ExecSpace const& execSpace) {
-    void* mem = Kokkos::kokkos_malloc<MemSpace>(sizeof(T));
-    return shared_ptr<T, MemSpace>(static_cast<T*>(mem), impl::Deleter<MemSpace>());
+    using Allocator = impl::Allocate<MemSpace>;
+    void* mem = Allocator::allocate(sizeof(T), execSpace);
+    return shared_ptr<T, MemSpace>(static_cast<T*>(mem), Allocator::make_deleter(execSpace));
   }
 
   template <typename T, typename MemSpace, typename ExecSpace>
   std::enable_if_t<std::is_array_v<T>, shared_ptr<T, MemSpace>> make_shared(size_t n, ExecSpace const& execSpace) {
+    using Allocator = impl::Allocate<MemSpace>;
     using element_type = typename std::remove_extent<T>::type;
-    void* mem = Kokkos::kokkos_malloc<MemSpace>(sizeof(element_type) * n);
-    return shared_ptr<T, MemSpace>(static_cast<element_type*>(mem), n, impl::Deleter<MemSpace>());
+    void* mem = Allocator::allocate(sizeof(element_type) * n, execSpace);
+    return shared_ptr<T, MemSpace>(static_cast<element_type*>(mem), n, Allocator::make_deleter(execSpace));
   }
 
   template <typename T, typename MemSpace, typename ExecSpace>
