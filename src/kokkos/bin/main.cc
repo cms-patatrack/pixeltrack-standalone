@@ -191,8 +191,7 @@ int main(int argc, char** argv) {
   tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
                                       static_cast<std::size_t>(numberOfThreads)};
 #else
-  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
-                                      static_cast<std::size_t>(1)};
+  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism, static_cast<std::size_t>(1)};
 #endif
 
   // Run work

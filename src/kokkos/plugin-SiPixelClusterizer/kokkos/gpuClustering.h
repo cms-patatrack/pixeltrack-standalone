@@ -138,7 +138,7 @@ namespace KOKKOS_NAMESPACE::gpuClustering {
           // effective maximum number of iterations is 16*256 for
           // Serial case.
           // TODO: maybe this works well-enough for PTHREAD case too (even if it is number of threads/team too large)?
-          constexpr uint32_t maxiterSize = 16*256;
+          constexpr uint32_t maxiterSize = 16 * 256;
 #else
           constexpr uint32_t maxiter = 16;
           constexpr uint32_t maxiterSize = maxiter;
