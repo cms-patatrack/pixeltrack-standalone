@@ -2,6 +2,7 @@
 
 #include "KokkosCore/kokkosConfigCommon.h"
 #include "KokkosCore/kokkosConfig.h"
+#include "KokkosCore/ViewHelpers.h"
 
 #ifdef USE_DBSCAN
 #include "plugin-PixelVertexFinding/kokkos/gpuClusterTracksDBSCAN.h"
@@ -22,8 +23,8 @@ using member_type = Kokkos::TeamPolicy<KokkosExecSpace>::member_type;
 
 #ifdef ONE_KERNEL
 void vertexFinderOneKernel(
-    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict>& vdata,
-    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict>& vws,
+    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace, RestrictUnmanaged>& vdata,
+    const Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace, RestrictUnmanaged>& vws,
     const typename Kokkos::View<ZVertices, KokkosExecSpace>::HostMirror& hdata,
     int minT,       // min number of neighbours to be "seed"
     float eps,      // max absolute distance to cluster
@@ -110,8 +111,8 @@ struct ClusterGenerator {
 #define LOC_WS(M) ((char*)(ws_h.data()) + offsetof(KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, M))
 
 void test() {
-  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosExecSpace, Restrict> onGPU_d("onGPU_d");
-  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosExecSpace, Restrict> ws_d("ws_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::ZVertices, KokkosDeviceMemSpace> onGPU_d("onGPU_d");
+  Kokkos::View<KOKKOS_NAMESPACE::gpuVertexFinder::WorkSpace, KokkosDeviceMemSpace> ws_d("ws_d");
 
   Event ev;
 
@@ -135,8 +136,8 @@ void test() {
       std::cout << "v,t size " << ev.zvert.size() << ' ' << ev.ztrack.size() << std::endl;
       auto nt = ev.ztrack.size();
 
-      auto ws_h = Kokkos::create_mirror_view(ws_d);
-      auto onGPU_h = Kokkos::create_mirror_view(onGPU_d);
+      auto ws_h = cms::kokkos::create_mirror_view(ws_d);
+      auto onGPU_h = cms::kokkos::create_mirror_view(onGPU_d);
 
       // copy data to host mirror
       ::memcpy(LOC_WS(ntrks), &nt, sizeof(uint32_t));
@@ -178,7 +179,14 @@ void test() {
 #else
       team_policy policy = team_policy(KokkosExecSpace(), 1, Kokkos::AUTO()).set_scratch_size(0, Kokkos::PerTeam(1024));
 #endif
-      CLUSTERIZE(onGPU_d, ws_d, kk, par[0], par[1], par[2], KokkosExecSpace(), policy);
+      CLUSTERIZE(cms::kokkos::make_restrictUnmanaged(onGPU_d),
+                 cms::kokkos::make_restrictUnmanaged(ws_d),
+                 kk,
+                 par[0],
+                 par[1],
+                 par[2],
+                 KokkosExecSpace(),
+                 policy);
 
 #endif
       Kokkos::parallel_for(
@@ -250,7 +258,11 @@ void test() {
           });
 
       // equivalent to sortByPt2Kernel + deep copy to host
-      sortByPt2Host(onGPU_d, ws_d, onGPU_h, KokkosExecSpace(), policy);
+      sortByPt2Host(cms::kokkos::make_restrictUnmanaged(onGPU_d),
+                    cms::kokkos::make_restrictUnmanaged(ws_d),
+                    cms::kokkos::make_restrictUnmanaged(onGPU_h),
+                    KokkosExecSpace(),
+                    policy);
       nv = onGPU_h.data()->nvFinal;
 
       if (nv == 0) {

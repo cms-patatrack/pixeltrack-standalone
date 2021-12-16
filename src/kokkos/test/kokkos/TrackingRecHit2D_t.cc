@@ -7,7 +7,7 @@
 namespace testTrackingRecHit2DKokkos {
 
   template <typename MemorySpace>
-  void fill(Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> hits) {
+  void fill(const Kokkos::View<TrackingRecHit2DSOAView, MemorySpace, RestrictUnmanaged>& hits) {
     assert(hits.data());
     auto hits_ = &hits();
 
@@ -22,7 +22,7 @@ namespace testTrackingRecHit2DKokkos {
   }
 
   template <typename MemorySpace>
-  void verify(Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> hits) {
+  void verify(const Kokkos::View<TrackingRecHit2DSOAView, MemorySpace, RestrictUnmanaged>& hits) {
     assert(hits.data());
 
     auto const hits_ = &hits();
@@ -38,7 +38,7 @@ namespace testTrackingRecHit2DKokkos {
   }
 
   template <typename MemorySpace>
-  void runKernels(Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> hits) {
+  void runKernels(const Kokkos::View<TrackingRecHit2DSOAView, MemorySpace, RestrictUnmanaged>& hits) {
     assert(hits.data());
 
     fill(hits);
@@ -48,7 +48,7 @@ namespace testTrackingRecHit2DKokkos {
 
 namespace testTrackingRecHit2DKokkos {
   template <typename MemorySpace>
-  void runKernels(Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> hits);
+  void runKernels(const Kokkos::View<TrackingRecHit2DSOAView, MemorySpace, RestrictUnmanaged>& hits);
 
 }
 
@@ -58,8 +58,8 @@ int main() {
   {
     auto nHits = 200;
 
-    Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosExecSpace> _cpeParams("cpeparams");
-    Kokkos::View<uint32_t*, KokkosExecSpace> _hitsModuleStart("hitsmodulestart", 1);
+    Kokkos::View<pixelCPEforGPU::ParamsOnGPU, KokkosDeviceMemSpace> _cpeParams("cpeparams");
+    Kokkos::View<uint32_t*, KokkosDeviceMemSpace> _hitsModuleStart("hitsModuleStart", 1);
 
     TrackingRecHit2DKokkos<KokkosDeviceMemSpace> tkhit(nHits, _cpeParams, _hitsModuleStart, KokkosExecSpace());
 

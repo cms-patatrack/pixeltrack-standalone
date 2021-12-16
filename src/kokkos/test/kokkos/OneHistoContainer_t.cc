@@ -25,8 +25,9 @@ void go() {
   std::uniform_int_distribution<T> rgen(rmin, rmax);
 
   constexpr uint32_t N = 12000;
-  Kokkos::View<T*, KokkosExecSpace, Restrict> v_d("v_d", N);
-  auto v_h = Kokkos::create_mirror_view(v_d);
+  Kokkos::View<T*, KokkosExecSpace> v_d_own("v_d", N);
+  auto v_d = cms::kokkos::make_restrictUnmanaged(v_d_own);
+  auto v_h = Kokkos::create_mirror_view(v_d_own);
 
   using Hist = cms::kokkos::HistoContainer<T, NBINS, N, S>;
   std::cout << "HistoContainer " << Hist::nbits() << ' ' << Hist::nbins() << ' ' << Hist::capacity() << ' '
@@ -46,7 +47,8 @@ void go() {
 
     using TeamHist = cms::kokkos::HistoContainer<T, NBINS, N, S, uint16_t>;
 
-    Kokkos::View<TeamHist*, KokkosExecSpace, Restrict> histo_d("histo_d", 1);
+    Kokkos::View<TeamHist*, KokkosExecSpace> histo_d_own("histo_d", 1);
+    auto histo_d = cms::kokkos::make_restrictUnmanaged(histo_d_own);
     auto histo_h = Kokkos::create_mirror_view(histo_d);
 
     Kokkos::parallel_for(

@@ -16,8 +16,8 @@ namespace KOKKOS_NAMESPACE {
     // enough for <10K tracks we have
     template <typename Hist>
     KOKKOS_INLINE_FUNCTION void clusterTracksIterative(
-        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, Restrict>& vdata,
-        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, Restrict>& vws,
+        const Kokkos::View<ZVertices, KokkosDeviceMemSpace, RestrictUnmanaged>& vdata,
+        const Kokkos::View<WorkSpace, KokkosDeviceMemSpace, RestrictUnmanaged>& vws,
         int minT,       // min number of neighbours to be "seed"
         float eps,      // max absolute distance to cluster
         float errmax,   // max error to be "seed"
@@ -187,8 +187,8 @@ namespace KOKKOS_NAMESPACE {
     }
 
     template <typename MemSpace, typename ExecSpace>
-    void clusterTracksIterativeHost(const Kokkos::View<ZVertices, MemSpace, Restrict>& vdata,
-                                    const Kokkos::View<WorkSpace, MemSpace, Restrict>& vws,
+    void clusterTracksIterativeHost(const Kokkos::View<ZVertices, MemSpace, RestrictUnmanaged>& vdata,
+                                    const Kokkos::View<WorkSpace, MemSpace, RestrictUnmanaged>& vws,
                                     int minT,       // min number of neighbours to be "seed"
                                     float eps,      // max absolute distance to cluster
                                     float errmax,   // max error to be "seed"

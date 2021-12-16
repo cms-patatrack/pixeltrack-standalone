@@ -15,6 +15,9 @@ namespace cms::kokkos {
     using HostSpace = Kokkos::CudaHostPinnedSpace;
   };
 #endif
+
+  template <typename Space>
+  using HostMirrorSpace_t = typename MemSpaceTraits<Space>::HostSpace;
 }  // namespace cms::kokkos
 
 #ifdef KOKKOS_BACKEND_SERIAL

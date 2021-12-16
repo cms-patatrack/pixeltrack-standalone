@@ -145,17 +145,21 @@ namespace KOKKOS_NAMESPACE {
     public:
       class WordFedAppender {
       public:
-        WordFedAppender();
+        WordFedAppender(KokkosExecSpace const& execSpace);
         ~WordFedAppender() = default;
 
         void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
 
-        Kokkos::View<unsigned int const*, KokkosHostMemSpace> word() const { return word_; }
-        Kokkos::View<unsigned char const*, KokkosHostMemSpace> fedId() const { return fedId_; }
+        Kokkos::View<unsigned int const*, KokkosHostMemSpace, RestrictUnmanaged> word() const {
+          return cms::kokkos::to_view(word_);
+        }
+        Kokkos::View<unsigned char const*, KokkosHostMemSpace, RestrictUnmanaged> fedId() const {
+          return cms::kokkos::to_view(fedId_);
+        }
 
       private:
-        Kokkos::View<unsigned int*, KokkosHostMemSpace> word_;
-        Kokkos::View<unsigned char*, KokkosHostMemSpace> fedId_;
+        cms::kokkos::shared_ptr<unsigned int[], KokkosHostMemSpace> word_;
+        cms::kokkos::shared_ptr<unsigned char[], KokkosHostMemSpace> fedId_;
       };
 
       SiPixelRawToClusterGPUKernel() : nModules_Clusters_h("nModules_Clusters_h", 2){};
@@ -166,18 +170,19 @@ namespace KOKKOS_NAMESPACE {
       SiPixelRawToClusterGPUKernel& operator=(const SiPixelRawToClusterGPUKernel&) = delete;
       SiPixelRawToClusterGPUKernel& operator=(SiPixelRawToClusterGPUKernel&&) = delete;
 
-      void makeClustersAsync(bool isRun2,
-                             const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosDeviceMemSpace>& cablingMap,
-                             const Kokkos::View<const unsigned char*, KokkosDeviceMemSpace>& modToUnp,
-                             const SiPixelGainForHLTonGPU<KokkosDeviceMemSpace>& gains,
-                             const WordFedAppender& wordFed,
-                             PixelFormatterErrors&& errors,
-                             const uint32_t wordCounter,
-                             const uint32_t fedCounter,
-                             bool useQualityInfo,
-                             bool includeErrors,
-                             bool debug,
-                             KokkosExecSpace const& execSpace);
+      void makeClustersAsync(
+          bool isRun2,
+          const Kokkos::View<const SiPixelFedCablingMapGPU, KokkosDeviceMemSpace, Restrict>& cablingMap,
+          const Kokkos::View<const unsigned char*, KokkosDeviceMemSpace, Restrict>& modToUnp,
+          const SiPixelGainForHLTonGPU<KokkosDeviceMemSpace>& gains,
+          const WordFedAppender& wordFed,
+          PixelFormatterErrors&& errors,
+          const uint32_t wordCounter,
+          const uint32_t fedCounter,
+          bool useQualityInfo,
+          bool includeErrors,
+          bool debug,
+          KokkosExecSpace const& execSpace);
 
       std::pair<SiPixelDigisKokkos<KokkosDeviceMemSpace>, SiPixelClustersKokkos<KokkosDeviceMemSpace>> getResults() {
         digis_d.setNModulesDigis(nModules_Clusters_h(0), nDigis);

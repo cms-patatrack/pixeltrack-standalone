@@ -25,9 +25,9 @@ namespace KOKKOS_NAMESPACE {
       Tuples const *__restrict__ foundNtuplets,
       CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
       HitsOnGPU const *__restrict__ hhp,
-      const Kokkos::View<double *, KokkosDeviceMemSpace, Restrict> &phits,
-      const Kokkos::View<float *, KokkosDeviceMemSpace, Restrict> &phits_ge,
-      const Kokkos::View<double *, KokkosDeviceMemSpace, Restrict> &pfast_fit,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits,
+      const Kokkos::View<float *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits_ge,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &pfast_fit,
       uint32_t nHits,
       uint32_t offset,
       int local_idx) {
@@ -112,15 +112,16 @@ namespace KOKKOS_NAMESPACE {
   }
 
   template <int N>
-  KOKKOS_FORCEINLINE_FUNCTION void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                               double B,
-                                               OutputSoA *results,
-                                               const Kokkos::View<double *, KokkosDeviceMemSpace, Restrict> &phits,
-                                               const Kokkos::View<float *, KokkosDeviceMemSpace, Restrict> &phits_ge,
-                                               const Kokkos::View<double *, KokkosDeviceMemSpace, Restrict> &pfast_fit,
-                                               uint32_t nHits,
-                                               uint32_t offset,
-                                               int local_idx) {
+  KOKKOS_FORCEINLINE_FUNCTION void kernelBLFit(
+      CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+      double B,
+      OutputSoA *results,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits,
+      const Kokkos::View<float *, KokkosDeviceMemSpace, RestrictUnmanaged> &phits_ge,
+      const Kokkos::View<double *, KokkosDeviceMemSpace, RestrictUnmanaged> &pfast_fit,
+      uint32_t nHits,
+      uint32_t offset,
+      int local_idx) {
     assert(N <= nHits);
 
     assert(results);

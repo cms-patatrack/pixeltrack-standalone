@@ -7,6 +7,7 @@
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 
 #include "KokkosCore/SimpleVector.h"
+#include "KokkosCore/shared_ptr.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "HelixFitOnGPU.h"
@@ -41,10 +42,8 @@ namespace KOKKOS_NAMESPACE {
 
     ~CAHitNtupletGeneratorOnGPU();
 
-    Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace> makeTuples(
-        TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d,
-        float bfield,
-        KokkosExecSpace const& execSpace) const;
+    cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosDeviceMemSpace> makeTuples(
+        TrackingRecHit2DKokkos<KokkosDeviceMemSpace> const& hits_d, float bfield, KokkosExecSpace const& execSpace);
 
   private:
 #ifdef TODO
@@ -57,7 +56,7 @@ namespace KOKKOS_NAMESPACE {
 
     Params m_params;
 
-    Kokkos::View<Counters, KokkosDeviceMemSpace> m_counters;
+    cms::kokkos::shared_ptr<Counters, KokkosDeviceMemSpace> m_counters;
   };
 }  // namespace KOKKOS_NAMESPACE
 

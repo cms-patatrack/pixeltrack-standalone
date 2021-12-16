@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
 
 #include "KokkosDataFormats/PixelTrackKokkos.h"
+#include "KokkosCore/shared_ptr.h"
 #include "../GPUCACell.h"
 
 // #define DUMP_GPU_TK_TUPLES
@@ -157,49 +158,49 @@ namespace KOKKOS_NAMESPACE {
     CAHitNtupletGeneratorKernels(Params const& params) : m_params(params) {}
     ~CAHitNtupletGeneratorKernels() = default;
 
-    Kokkos::View<TupleMultiplicity const, KokkosDeviceMemSpace, Restrict> tupleMultiplicity() const {
+    cms::kokkos::shared_ptr<TupleMultiplicity, KokkosDeviceMemSpace> const& tupleMultiplicity() const {
       return device_tupleMultiplicity_;
     }
 
     void launchKernels(HitsOnCPU const& hh,
-                       const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict>& tuples_d,
+                       cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace>& tuples_d,
                        KokkosExecSpace const& execSpace);
 
     void classifyTuples(HitsOnCPU const& hh,
-                        const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict>& tuples_d,
+                        cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace>& tuples_d,
                         KokkosExecSpace const& execSpace);
 
     void fillHitDetIndices(HitsView const* hv,
-                           const Kokkos::View<TkSoA, KokkosDeviceMemSpace, Restrict>& tuples_d,
+                           cms::kokkos::shared_ptr<TkSoA, KokkosDeviceMemSpace>& tuples_d,
                            KokkosExecSpace const& execSpace);
 
     void buildDoublets(HitsOnCPU const& hh, KokkosExecSpace const& execSpace);
 
     void allocateOnGPU(KokkosExecSpace const& execSpace);
 
-    static void printCounters(const Kokkos::View<Counters const, KokkosDeviceMemSpace, Restrict>& counters);
+    static void printCounters(const cms::kokkos::shared_ptr<Counters, KokkosDeviceMemSpace>& counters);
 
     Counters* counters_ = nullptr;
 
   private:
-    Kokkos::View<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace, Restrict> device_theCellNeighbors_;
-    Kokkos::View<CAConstants::CellNeighbors*, KokkosDeviceMemSpace, Restrict> device_theCellNeighborsContainer_;
-    Kokkos::View<CAConstants::CellTracksVector, KokkosDeviceMemSpace, Restrict> device_theCellTracks_;
-    Kokkos::View<CAConstants::CellTracks*, KokkosDeviceMemSpace, Restrict> device_theCellTracksContainer_;
+    cms::kokkos::shared_ptr<CAConstants::CellNeighborsVector, KokkosDeviceMemSpace> device_theCellNeighbors_;
+    cms::kokkos::shared_ptr<CAConstants::CellNeighbors[], KokkosDeviceMemSpace> device_theCellNeighborsContainer_;
+    cms::kokkos::shared_ptr<CAConstants::CellTracksVector, KokkosDeviceMemSpace> device_theCellTracks_;
+    cms::kokkos::shared_ptr<CAConstants::CellTracks[], KokkosDeviceMemSpace> device_theCellTracksContainer_;
 
-    Kokkos::View<GPUCACell*, KokkosDeviceMemSpace, Restrict> device_theCells_;
-    Kokkos::View<GPUCACell::OuterHitOfCell*, KokkosDeviceMemSpace, Restrict> device_isOuterHitOfCell_;
-    Kokkos::View<uint32_t, KokkosDeviceMemSpace, Restrict> device_nCells_;
+    cms::kokkos::shared_ptr<GPUCACell[], KokkosDeviceMemSpace> device_theCells_;
+    cms::kokkos::shared_ptr<GPUCACell::OuterHitOfCell[], KokkosDeviceMemSpace> device_isOuterHitOfCell_;
+    cms::kokkos::shared_ptr<uint32_t, KokkosDeviceMemSpace> device_nCells_;
 
-    Kokkos::View<HitToTuple, KokkosDeviceMemSpace, Restrict> device_hitToTuple_;
+    cms::kokkos::shared_ptr<HitToTuple, KokkosDeviceMemSpace> device_hitToTuple_;
 
-    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict> device_hitToTuple_apc_;
+    cms::kokkos::shared_ptr<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace> device_hitToTuple_apc_;
 
-    Kokkos::View<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace, Restrict> device_hitTuple_apc_;
+    cms::kokkos::shared_ptr<cms::kokkos::AtomicPairCounter, KokkosDeviceMemSpace> device_hitTuple_apc_;
 
-    Kokkos::View<TupleMultiplicity, KokkosDeviceMemSpace, Restrict> device_tupleMultiplicity_;
+    cms::kokkos::shared_ptr<TupleMultiplicity, KokkosDeviceMemSpace> device_tupleMultiplicity_;
 
-    Kokkos::View<uint8_t*, KokkosDeviceMemSpace, Restrict> device_tmws_;
+    cms::kokkos::shared_ptr<uint8_t[], KokkosDeviceMemSpace> device_tmws_;
 
     //Kokkos::View<cms::kokkos::AtomicPairCounter::c_type*, KokkosDeviceMemSpace> device_storage_;
 

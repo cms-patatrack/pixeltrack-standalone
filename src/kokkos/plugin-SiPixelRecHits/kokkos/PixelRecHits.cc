@@ -42,13 +42,13 @@ namespace KOKKOS_NAMESPACE {
 
       if (digis_d.nModules() > 0) {  // protect from empty events
                                      // one team for each active module (with digis)
+        auto bs = bs_d.data();
         auto policy = hintLightWeight(TeamPolicy(execSpace, digis_d.nModules(), Kokkos::AUTO()));
         Kokkos::parallel_for(
             "getHits",
             policy.set_scratch_size(0, Kokkos::PerTeam(sizeof(pixelCPEforGPU::ClusParams))),
             KOKKOS_LAMBDA(MemberType const& teamMember) {
-              gpuPixelRecHits::getHits(
-                  cpeParams.data(), bs_d.data(), digisView, nDigis, clustersView, hitsView, teamMember);
+              gpuPixelRecHits::getHits(cpeParams.data(), bs, digisView, nDigis, clustersView, hitsView, teamMember);
             });
       }
 

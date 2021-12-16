@@ -1,6 +1,8 @@
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/Product.h"
 #include "KokkosCore/ScopedContext.h"
+#include "KokkosCore/deep_copy.h"
+#include "KokkosCore/shared_ptr.h"
 #include "KokkosDataFormats/PixelTrackKokkos.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
@@ -19,8 +21,8 @@ namespace KOKKOS_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    using TracksDeviceMemSpace = Kokkos::View<pixelTrack::TrackSoA, KokkosDeviceMemSpace>;
-    using TracksHostMemSpace = Kokkos::View<pixelTrack::TrackSoA, KokkosHostMemSpace>;
+    using TracksDeviceMemSpace = cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosDeviceMemSpace>;
+    using TracksHostMemSpace = cms::kokkos::shared_ptr<pixelTrack::TrackSoA, KokkosHostMemSpace>;
 
     edm::EDGetTokenT<cms::kokkos::Product<TracksDeviceMemSpace>> tokenKokkos_;
     edm::EDPutTokenT<TracksHostMemSpace> tokenSOA_;
@@ -39,8 +41,8 @@ namespace KOKKOS_NAMESPACE {
     cms::kokkos::ScopedContextAcquire<KokkosExecSpace> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    m_soa = TracksHostMemSpace("tracks");
-    Kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
+    m_soa = cms::kokkos::make_shared<pixelTrack::TrackSoA, KokkosHostMemSpace>(ctx.execSpace());
+    cms::kokkos::deep_copy(ctx.execSpace(), m_soa, inputData);
   }
 
   void PixelTrackSoAFromKokkos::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {

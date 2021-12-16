@@ -2,6 +2,8 @@
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
 #include "KokkosCore/ViewHelpers.h"
+#include "KokkosCore/deep_copy.h"
+#include "KokkosCore/shared_ptr.h"
 
 #include "KokkosDataFormats/TrackingRecHit2DSOAView.h"
 
@@ -9,13 +11,15 @@ template <typename MemorySpace>
 class TrackingRecHit2DKokkos {
 public:
   using Hist = TrackingRecHit2DSOAView::Hist;
+  template <typename T>
+  using View = Kokkos::View<T, MemorySpace, RestrictUnmanaged>;
 
   TrackingRecHit2DKokkos() = default;
 
   template <typename ExecSpace>
   explicit TrackingRecHit2DKokkos(uint32_t nHits,
                                   Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, MemorySpace> cpeParams,
-                                  Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart,
+                                  View<uint32_t const*> hitsModuleStart,
                                   ExecSpace const& execSpace);
 
   ~TrackingRecHit2DKokkos() = default;
@@ -25,26 +29,26 @@ public:
   TrackingRecHit2DKokkos(TrackingRecHit2DKokkos&&) = default;
   TrackingRecHit2DKokkos& operator=(TrackingRecHit2DKokkos&&) = default;
 
-  TrackingRecHit2DSOAView* view() { return m_view.data(); }
-  TrackingRecHit2DSOAView const* view() const { return m_view.data(); }
-  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> mView() { return m_view; }
+  TrackingRecHit2DSOAView* view() { return m_view.get(); }
+  TrackingRecHit2DSOAView const* view() const { return m_view.get(); }
+  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace, RestrictUnmanaged> mView() { return cms::kokkos::to_view(m_view); }
 
   auto nHits() const { return m_nHits; }
 
-  Kokkos::View<uint32_t const*, MemorySpace, Restrict> hitsModuleStart() const { return m_hitsModuleStart; }
-  Kokkos::View<uint32_t*, MemorySpace, Restrict> hitsLayerStart() { return m_hitsLayerStart; }
-  Kokkos::View<Hist, MemorySpace, Restrict> phiBinner() { return m_hist; }
-  Kokkos::View<int16_t*, MemorySpace, Restrict> iphi() { return m_iphi; }
+  View<uint32_t const*> hitsModuleStart() const { return m_hitsModuleStart; }
+  View<uint32_t*> hitsLayerStart() { return cms::kokkos::to_view(m_hitsLayerStart); }
+  View<Hist> phiBinner() { return cms::kokkos::to_view(m_hist); }
+  View<int16_t*> iphi() { return cms::kokkos::to_view(m_iphi); }
 
-  Kokkos::View<uint32_t const*, MemorySpace, Restrict> c_hitsLayerStart() { return m_hitsLayerStart; }
-  Kokkos::View<int16_t const*, MemorySpace, Restrict> c_iphi() { return m_iphi; }
+  View<uint32_t const*> c_hitsLayerStart() { return cms::kokkos::to_view(m_hitsLayerStart); }
+  View<int16_t const*> c_iphi() { return cms::kokkos::to_view(m_iphi); }
 
-#define TO_HOST_ASYNC(name)                                  \
-  template <typename ExecSpace>                              \
-  auto name##ToHostAsync(ExecSpace const& execSpace) const { \
-    auto host = cms::kokkos::create_mirror_view(m_##name);   \
-    Kokkos::deep_copy(execSpace, host, m_##name);            \
-    return host;                                             \
+#define TO_HOST_ASYNC(name)                                           \
+  template <typename ExecSpace>                                       \
+  auto name##ToHostAsync(ExecSpace const& execSpace) const {          \
+    auto host = cms::kokkos::make_mirror_shared(m_##name, execSpace); \
+    cms::kokkos::deep_copy(execSpace, host, m_##name);                \
+    return host;                                                      \
   }
   TO_HOST_ASYNC(xl);
   TO_HOST_ASYNC(yl);
@@ -69,33 +73,33 @@ private:
   uint32_t m_nHits;
 
   // local coord
-  Kokkos::View<float*, MemorySpace> m_xl;
-  Kokkos::View<float*, MemorySpace> m_yl;
-  Kokkos::View<float*, MemorySpace> m_xerr;
-  Kokkos::View<float*, MemorySpace> m_yerr;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_xl;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_yl;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_xerr;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_yerr;
 
   // global coord
-  Kokkos::View<float*, MemorySpace> m_xg;
-  Kokkos::View<float*, MemorySpace> m_yg;
-  Kokkos::View<float*, MemorySpace> m_zg;
-  Kokkos::View<float*, MemorySpace> m_rg;
-  Kokkos::View<int16_t*, MemorySpace> m_iphi;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_xg;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_yg;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_zg;
+  cms::kokkos::shared_ptr<float[], MemorySpace> m_rg;
+  cms::kokkos::shared_ptr<int16_t[], MemorySpace> m_iphi;
 
   // cluster properties
-  Kokkos::View<int32_t*, MemorySpace> m_charge;
-  Kokkos::View<int16_t*, MemorySpace> m_xsize;
-  Kokkos::View<int16_t*, MemorySpace> m_ysize;
-  Kokkos::View<uint16_t*, MemorySpace> m_detInd;
+  cms::kokkos::shared_ptr<int32_t[], MemorySpace> m_charge;
+  cms::kokkos::shared_ptr<int16_t[], MemorySpace> m_xsize;
+  cms::kokkos::shared_ptr<int16_t[], MemorySpace> m_ysize;
+  cms::kokkos::shared_ptr<uint16_t[], MemorySpace> m_detInd;
 
-  Kokkos::View<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace> m_AverageGeometryStore;  //!
+  cms::kokkos::shared_ptr<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace> m_AverageGeometryStore;  //!
 
-  Kokkos::View<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
+  cms::kokkos::shared_ptr<TrackingRecHit2DSOAView, MemorySpace> m_view;  //!
 
-  Kokkos::View<uint32_t const*, MemorySpace> m_hitsModuleStart;  // needed for legacy, this is on GPU!
+  View<uint32_t const*> m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
   // needed as kernel params...
-  Kokkos::View<Hist, MemorySpace> m_hist;
-  Kokkos::View<uint32_t*, MemorySpace> m_hitsLayerStart;
+  cms::kokkos::shared_ptr<Hist, MemorySpace> m_hist;
+  cms::kokkos::shared_ptr<uint32_t[], MemorySpace> m_hitsLayerStart;
 };
 
 template <typename MemorySpace>
@@ -103,27 +107,28 @@ template <typename ExecSpace>
 TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
     uint32_t nHits,
     Kokkos::View<pixelCPEforGPU::ParamsOnGPU const, MemorySpace> cpeParams,
-    Kokkos::View<uint32_t const*, MemorySpace> hitsModuleStart,
+    View<uint32_t const*> hitsModuleStart,
     ExecSpace const& execSpace)
     : m_nHits(nHits),
-      m_xl(Kokkos::ViewAllocateWithoutInitializing("m_xl"), nHits),
-      m_yl(Kokkos::ViewAllocateWithoutInitializing("m_yl"), nHits),
-      m_xerr(Kokkos::ViewAllocateWithoutInitializing("m_xerr"), nHits),
-      m_yerr(Kokkos::ViewAllocateWithoutInitializing("m_yerr"), nHits),
-      m_xg(Kokkos::ViewAllocateWithoutInitializing("m_xg"), nHits),
-      m_yg(Kokkos::ViewAllocateWithoutInitializing("m_yg"), nHits),
-      m_zg(Kokkos::ViewAllocateWithoutInitializing("m_zg"), nHits),
-      m_rg(Kokkos::ViewAllocateWithoutInitializing("m_rg"), nHits),
-      m_iphi(Kokkos::ViewAllocateWithoutInitializing("m_iphi"), nHits),
-      m_charge(Kokkos::ViewAllocateWithoutInitializing("m_charge"), nHits),
-      m_xsize(Kokkos::ViewAllocateWithoutInitializing("m_xsize"), nHits),
-      m_ysize(Kokkos::ViewAllocateWithoutInitializing("m_ysize"), nHits),
-      m_detInd(Kokkos::ViewAllocateWithoutInitializing("m_detInd"), nHits),
-      m_AverageGeometryStore(Kokkos::ViewAllocateWithoutInitializing("m_AverageGeometryStore")),
-      m_view(Kokkos::ViewAllocateWithoutInitializing("m_view")),
+      m_xl(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yl(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_xerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yerr(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_xg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_yg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_zg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_rg(cms::kokkos::make_shared<float[], MemorySpace>(nHits, execSpace)),
+      m_iphi(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_charge(cms::kokkos::make_shared<int32_t[], MemorySpace>(nHits, execSpace)),
+      m_xsize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_ysize(cms::kokkos::make_shared<int16_t[], MemorySpace>(nHits, execSpace)),
+      m_detInd(cms::kokkos::make_shared<uint16_t[], MemorySpace>(nHits, execSpace)),
+      m_AverageGeometryStore(
+          cms::kokkos::make_shared<TrackingRecHit2DSOAView::AverageGeometry, MemorySpace>(execSpace)),
+      m_view(cms::kokkos::make_shared<TrackingRecHit2DSOAView, MemorySpace>(execSpace)),
       m_hitsModuleStart(std::move(hitsModuleStart)),
-      m_hist(Kokkos::ViewAllocateWithoutInitializing("m_hist")),
-      m_hitsLayerStart(Kokkos::ViewAllocateWithoutInitializing("m_hitsLayerStart"), nHits) {
+      m_hist(cms::kokkos::make_shared<Hist, MemorySpace>(execSpace)),
+      m_hitsLayerStart(cms::kokkos::make_shared<uint32_t[], MemorySpace>(nHits, execSpace)) {
   // should I deal with no hits case?
 
   // the hits are actually accessed in order only in building
@@ -131,8 +136,8 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   // this will break 1to1 correspondence with cluster and module locality
   // so unless proven VERY inefficient we keep it ordered as generated
 
-  auto view_h = cms::kokkos::create_mirror_view(m_view);
-#define SET(name) view_h().name = name.data()
+  auto view_h = cms::kokkos::make_mirror_shared(m_view, execSpace);
+#define SET(name) view_h->name = name.get()
   SET(m_xl);
   SET(m_yl);
   SET(m_xerr);
@@ -148,13 +153,13 @@ TrackingRecHit2DKokkos<MemorySpace>::TrackingRecHit2DKokkos(
   SET(m_detInd);
   SET(m_hist);
 #undef SET
-  view_h().m_nHits = nHits;
-  view_h().m_averageGeometry = m_AverageGeometryStore.data();
-  view_h().m_cpeParams = cpeParams.data();
-  view_h().m_hitsModuleStart = m_hitsModuleStart.data();
-  view_h().m_hitsLayerStart = m_hitsLayerStart.data();
+  view_h->m_nHits = nHits;
+  view_h->m_averageGeometry = m_AverageGeometryStore.get();
+  view_h->m_cpeParams = cpeParams.data();
+  view_h->m_hitsModuleStart = m_hitsModuleStart.data();
+  view_h->m_hitsLayerStart = m_hitsLayerStart.get();
 
-  Kokkos::deep_copy(execSpace, m_view, view_h);
+  cms::kokkos::deep_copy(execSpace, m_view, view_h);
 }
 
 #endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h

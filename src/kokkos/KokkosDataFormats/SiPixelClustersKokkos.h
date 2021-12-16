@@ -4,16 +4,22 @@
 #include "KokkosCore/kokkosConfig.h"
 #include "KokkosCore/memoryTraits.h"
 #include "KokkosCore/ViewHelpers.h"
+#include "KokkosCore/deep_copy.h"
+#include "KokkosCore/shared_ptr.h"
 
 template <typename MemorySpace>
 class SiPixelClustersKokkos {
 public:
+  template <typename T>
+  using View = Kokkos::View<T, MemorySpace, RestrictUnmanaged>;
+
   SiPixelClustersKokkos() = default;
-  explicit SiPixelClustersKokkos(size_t maxClusters)
-      : moduleStart_d{Kokkos::ViewAllocateWithoutInitializing("moduleStart_d"), maxClusters + 1},
-        clusInModule_d{Kokkos::ViewAllocateWithoutInitializing("clusInModule_d"), maxClusters},
-        moduleId_d{Kokkos::ViewAllocateWithoutInitializing("moduleId_d"), maxClusters},
-        clusModuleStart_d{Kokkos::ViewAllocateWithoutInitializing("clusModuleStart_d"), maxClusters + 1} {}
+  template <typename ExecSpace>
+  explicit SiPixelClustersKokkos(size_t maxClusters, ExecSpace const &execSpace)
+      : moduleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1, execSpace)},
+        clusInModule_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters, execSpace)},
+        moduleId_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters, execSpace)},
+        clusModuleStart_d{cms::kokkos::make_shared<uint32_t[], MemorySpace>(maxClusters + 1, execSpace)} {}
   ~SiPixelClustersKokkos() = default;
 
   SiPixelClustersKokkos(const SiPixelClustersKokkos &) = delete;
@@ -25,25 +31,25 @@ public:
 
   uint32_t nClusters() const { return nClusters_h; }
 
-  Kokkos::View<uint32_t *, MemorySpace> moduleStart() { return moduleStart_d; }
-  Kokkos::View<uint32_t *, MemorySpace> clusInModule() { return clusInModule_d; }
-  Kokkos::View<uint32_t *, MemorySpace> moduleId() { return moduleId_d; }
-  Kokkos::View<uint32_t *, MemorySpace> clusModuleStart() { return clusModuleStart_d; }
+  View<uint32_t *> moduleStart() { return cms::kokkos::to_view(moduleStart_d); }
+  View<uint32_t *> clusInModule() { return cms::kokkos::to_view(clusInModule_d); }
+  View<uint32_t *> moduleId() { return cms::kokkos::to_view(moduleId_d); }
+  View<uint32_t *> clusModuleStart() { return cms::kokkos::to_view(clusModuleStart_d); }
 
-  Kokkos::View<uint32_t const *, MemorySpace> moduleStart() const { return moduleStart_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> clusInModule() const { return clusInModule_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> moduleId() const { return moduleId_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> clusModuleStart() const { return clusModuleStart_d; }
+  View<uint32_t const *> moduleStart() const { return cms::kokkos::to_view(moduleStart_d); }
+  View<uint32_t const *> clusInModule() const { return cms::kokkos::to_view(clusInModule_d); }
+  View<uint32_t const *> moduleId() const { return cms::kokkos::to_view(moduleId_d); }
+  View<uint32_t const *> clusModuleStart() const { return cms::kokkos::to_view(clusModuleStart_d); }
 
-  Kokkos::View<uint32_t const *, MemorySpace> c_moduleStart() const { return moduleStart_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> c_clusInModule() const { return clusInModule_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> c_moduleId() const { return moduleId_d; }
-  Kokkos::View<uint32_t const *, MemorySpace> c_clusModuleStart() const { return clusModuleStart_d; }
+  View<uint32_t const *> c_moduleStart() const { return cms::kokkos::to_view(moduleStart_d); }
+  View<uint32_t const *> c_clusInModule() const { return cms::kokkos::to_view(clusInModule_d); }
+  View<uint32_t const *> c_moduleId() const { return cms::kokkos::to_view(moduleId_d); }
+  View<uint32_t const *> c_clusModuleStart() const { return cms::kokkos::to_view(clusModuleStart_d); }
 
   template <typename ExecSpace>
   auto clusInModuleToHostAsync(ExecSpace const &execSpace) const {
-    auto host = cms::kokkos::create_mirror_view(clusInModule_d);
-    Kokkos::deep_copy(execSpace, host, clusInModule_d);
+    auto host = cms::kokkos::make_mirror_shared(clusInModule_d, execSpace);
+    cms::kokkos::deep_copy(execSpace, host, clusInModule_d);
     return host;
   }
 
@@ -59,21 +65,21 @@ public:
     friend SiPixelClustersKokkos;
 
     // private:
-    Kokkos::View<uint32_t const *, MemorySpace, Restrict> moduleStart_;
-    Kokkos::View<uint32_t const *, MemorySpace, Restrict> clusInModule_;
-    Kokkos::View<uint32_t const *, MemorySpace, Restrict> moduleId_;
-    Kokkos::View<uint32_t const *, MemorySpace, Restrict> clusModuleStart_;
+    Kokkos::View<uint32_t const *, MemorySpace, RestrictUnmanaged> moduleStart_;
+    Kokkos::View<uint32_t const *, MemorySpace, RestrictUnmanaged> clusInModule_;
+    Kokkos::View<uint32_t const *, MemorySpace, RestrictUnmanaged> moduleId_;
+    Kokkos::View<uint32_t const *, MemorySpace, RestrictUnmanaged> clusModuleStart_;
   };
 
-  DeviceConstView view() const { return DeviceConstView{moduleStart_d, clusInModule_d, moduleId_d, clusModuleStart_d}; }
+  DeviceConstView view() const { return DeviceConstView{moduleStart(), clusInModule(), moduleId(), clusModuleStart()}; }
 
 private:
-  Kokkos::View<uint32_t *, MemorySpace> moduleStart_d;   // index of the first pixel of each module
-  Kokkos::View<uint32_t *, MemorySpace> clusInModule_d;  // number of clusters found in each module
-  Kokkos::View<uint32_t *, MemorySpace> moduleId_d;      // module id of each module
+  cms::kokkos::shared_ptr<uint32_t[], MemorySpace> moduleStart_d;   // index of the first pixel of each module
+  cms::kokkos::shared_ptr<uint32_t[], MemorySpace> clusInModule_d;  // number of clusters found in each module
+  cms::kokkos::shared_ptr<uint32_t[], MemorySpace> moduleId_d;      // module id of each module
 
   // originally from rechits
-  Kokkos::View<uint32_t *, MemorySpace> clusModuleStart_d;  // index of the first cluster of each module
+  cms::kokkos::shared_ptr<uint32_t[], MemorySpace> clusModuleStart_d;  // index of the first cluster of each module
 
 #ifdef TODO
   cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer

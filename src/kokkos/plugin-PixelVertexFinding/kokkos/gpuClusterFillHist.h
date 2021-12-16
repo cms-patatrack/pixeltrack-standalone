@@ -11,8 +11,8 @@ namespace KOKKOS_NAMESPACE {
     // this algo does not really scale as it works in a single block...
     // enough for <10K tracks we have
     template <typename Hist, typename MemorySpace1, typename MemorySpace2>
-    KOKKOS_INLINE_FUNCTION void clusterFillHist(const Kokkos::View<ZVertices, MemorySpace1, Restrict>& vdata,
-                                                const Kokkos::View<WorkSpace, MemorySpace1, Restrict>& vws,
+    KOKKOS_INLINE_FUNCTION void clusterFillHist(const Kokkos::View<ZVertices, MemorySpace1, RestrictUnmanaged>& vdata,
+                                                const Kokkos::View<WorkSpace, MemorySpace1, RestrictUnmanaged>& vws,
                                                 const Kokkos::View<Hist, MemorySpace2, RestrictUnmanaged>& hist,
                                                 int minT,       // min number of neighbours to be "core"
                                                 float eps,      // max absolute distance to cluster
