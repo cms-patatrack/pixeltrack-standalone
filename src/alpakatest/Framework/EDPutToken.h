@@ -31,6 +31,8 @@ namespace edm {
   template <typename T>
   class EDPutTokenT;
   class ProductRegistry;
+  template <typename T>
+  class ProductEDPutToken;
 
   class EDPutToken {
     friend class ProductRegistry;
@@ -63,6 +65,8 @@ namespace edm {
   class EDPutTokenT {
     friend class ProductRegistry;
     friend class EDPutToken;
+    template <typename U>
+    friend class ProductEDPutToken;
 
   public:
     using value_type = EDPutToken::value_type;

@@ -2,6 +2,7 @@ alpakatest_EXTERNAL_DEPENDS := TBB ALPAKA BOOST
 ifdef CUDA_BASE
 alpakatest_EXTERNAL_DEPENDS += CUDA
 endif
+AlpakaCore_DEPENDS := Framework DataFormats
 Test1_DEPENDS := Framework DataFormats AlpakaCore
 Test2_DEPENDS := Framework DataFormats AlpakaCore
 Test3_DEPENDS := Framework DataFormats AlpakaCore

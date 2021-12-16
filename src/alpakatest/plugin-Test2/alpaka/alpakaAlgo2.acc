@@ -1,6 +1,7 @@
 #include "alpakaAlgo2.h"
 #include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/alpakaMemory.h"
 
 namespace {
   constexpr unsigned int NUM_VALUES = 1000;
@@ -201,7 +202,7 @@ namespace {
 }  // namespace
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo2(Queue& queue) {
+  std::any alpakaAlgo2(Queue& queue) {
     // Host data
     auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
     auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);

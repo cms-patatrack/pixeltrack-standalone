@@ -11,6 +11,10 @@
  * This is a little bit brittle, but let's see how it goes.
  */
 namespace alpaka {
+  // Platforms
+  class PltfCpu;
+  class PltfUniformCudaHipRt;
+
   // Devices
   class DevCpu;
   class DevUniformCudaHipRt;
@@ -23,6 +27,11 @@ namespace alpaka {
   using QueueCpuNonBlocking = QueueGenericThreadsNonBlocking<DevCpu>;
   class QueueUniformCudaHipRtNonBlocking;
   using QueueCudaRtNonBlocking = QueueUniformCudaHipRtNonBlocking;
+
+  // Events
+  template <typename TDev> class EventGenericThreads;
+  using EventCpu = EventGenericThreads<DevCpu>;
+  class EventUniformCudaHipRt;
 }
 
 #endif

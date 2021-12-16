@@ -1,0 +1,49 @@
+#include "AlpakaCore/ProductMetadata.h"
+#include "AlpakaCore/alpakaConfig.h"
+
+#include "alpaka/alpaka.hpp"
+
+namespace ALPAKA_ACCELERATOR_NAMESPACE {
+  ProductMetadata::~ProductMetadata() = default;
+
+  void ProductMetadata::synchronizeWith(Queue& queue) const {
+    if (*queue_ == queue)
+      return;
+
+    if (alpaka::getDev(*queue_) != alpaka::getDev(queue)) {
+      // Eventually replace with prefetch to current device (assuming unified memory works)
+      // If we won't go to unified memory, need to figure out something else...
+      throw std::runtime_error("Handling data from multiple devices is not yet supported");
+    }
+
+    if (not alpaka::isComplete(*event_)) {
+      // Event not yet occurred, so need to add synchronization
+      // here. Sychronization is done by making the CUDA stream to
+      // wait for an event, so all subsequent work in the stream
+      // will run only after the event has "occurred" (i.e. data
+      // product became available).
+      alpaka::wait(queue, *event_);
+    }
+  }
+
+  void ProductMetadata::recordEvent() {
+    alpaka::enqueue(*queue_, *event_);
+  }
+
+  void ProductMetadata::enqueueCallback(edm::WaitingTaskWithArenaHolder holder) {
+    // TODO: address error reporting
+    alpaka::enqueue(*queue_, [holder = std::move(holder)]() {
+      // The functor is required to be const, but the original holder
+      // needs to be notified...
+      const_cast<edm::WaitingTaskWithArenaHolder&>(holder).doneWaiting(nullptr);
+    });
+  }
+
+  void ProductMetadata::setQueue(std::shared_ptr<Queue> queue) {
+    // swap the contents because the queue_ is copied to Context
+    // The shared_ptr's should have same deleters
+    // TODO: fragile...
+    //queue_ = std::move(queue);
+    std::swap(*queue_, *queue);
+  }
+}

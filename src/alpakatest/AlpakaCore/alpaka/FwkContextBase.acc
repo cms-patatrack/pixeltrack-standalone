@@ -1,0 +1,16 @@
+#include "AlpakaCore/FwkContextBase.h"
+#include "AlpakaCore/EventCache.h"
+#include "AlpakaCore/StreamCache.h"
+#include "AlpakaCore/chooseDevice.h"
+
+namespace ALPAKA_ACCELERATOR_NAMESPACE::impl {
+  FwkContextBase::FwkContextBase(edm::StreamID streamID) {
+    auto const& device = cms::alpakatools::chooseDevice<Platform>(streamID);
+    metadata_ = std::make_shared<ProductMetadata>(cms::alpakatools::getStreamCache<Queue>().get(device),
+                                                  cms::alpakatools::getEventCache<AlpakaEvent>().get(device));
+  }
+
+  void FwkContextBase::setQueue(std::shared_ptr<Queue> q) {
+    metadata_->setQueue(q);
+  }
+}

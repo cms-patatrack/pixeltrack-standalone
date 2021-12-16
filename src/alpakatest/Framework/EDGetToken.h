@@ -31,6 +31,8 @@ namespace edm {
   template <typename T>
   class EDGetTokenT;
   class ProductRegistry;
+  template <typename T>
+  class ProductEDGetToken;
 
   class EDGetToken {
     friend class ProductRegistry;
@@ -60,7 +62,9 @@ namespace edm {
   template <typename T>
   class EDGetTokenT {
     friend class ProductRegistry;
-    friend class EDGetToken;
+    friend class EDGetToken;    // 
+    template <typename U>
+    friend class ProductEDGetToken;
 
   public:
     EDGetTokenT() : m_value{s_uninitializedValue} {}

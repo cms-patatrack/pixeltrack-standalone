@@ -17,8 +17,11 @@ namespace alpaka_common {
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
+
+  using Platform = alpaka::PltfCpu;
   using Device = alpaka::DevCpu;
   using Queue = alpaka::QueueCpuBlocking;
+  using AlpakaEvent = alpaka::EventCpu;
 }
 #endif
 
@@ -29,8 +32,11 @@ namespace alpaka_serial_sync {
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
+
+  using Platform = alpaka::PltfCpu;
   using Device = alpaka::DevCpu;
   using Queue = alpaka::QueueCpuNonBlocking;
+  using AlpakaEvent = alpaka::EventCpu;
 }
 #endif
 
@@ -41,8 +47,11 @@ namespace alpaka_tbb_async {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 namespace  alpaka_cuda_async {
   using namespace alpaka_common;
+
+  using Platform = alpaka::PltfUniformCudaHipRt;
   using Device = alpaka::DevCudaRt;
   using Queue = alpaka::QueueCudaRtNonBlocking;
+  using AlpakaEvent = alpaka::EventUniformCudaHipRt;
 }
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 

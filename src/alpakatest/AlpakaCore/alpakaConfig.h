@@ -37,9 +37,6 @@ namespace alpaka_common {
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
 
-  using Platform = alpaka::PltfUniformCudaHipRt;
-  using Event = alpaka::EventUniformCudaHipRt;
-
   template <typename TDim>
   using Acc = alpaka::AccGpuCudaRt<TDim, Idx>;
   using Acc1D = Acc<Dim1D>;
@@ -54,9 +51,6 @@ namespace alpaka_cuda_async {
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
 
-  using Platform = alpaka::PltfCpu;
-  using Event = alpaka::EventCpu;
-
   template <typename TDim>
   using Acc = alpaka::AccCpuSerial<TDim, Idx>;
   using Acc1D = Acc<Dim1D>;
@@ -70,9 +64,6 @@ namespace alpaka_serial_sync {
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
-
-  using Platform = alpaka::PltfCpu;
-  using Event = alpaka::EventCpu;
 
   template <typename TDim>
   using Acc = alpaka::AccCpuTbbBlocks<TDim, Idx>;
@@ -91,7 +82,7 @@ namespace alpaka_omp2_async {
   using Platform = alpaka::PltfCpu;
   using Device = alpaka::DevCpu;
   using Queue = alpaka::QueueCpuBlocking;
-  using Event = alpaka::EventCpu;
+  using AlpakaEvent = alpaka::EventCpu;
 
   template <typename TDim>
   using Acc = alpaka::AccCpuOmp2Blocks<TDim, Idx>;
