@@ -26,21 +26,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, ZVertexAlpaka>> tokenAlpaka_;
-    edm::EDPutTokenT<ZVertexHost> tokenSOA_;
+    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, ZVertexAlpaka>> tokenDevice_;
+    edm::EDPutTokenT<ZVertexHost> tokenHost_;
 
     ZVertexHost soa_;
   };
 
   PixelVertexSoAFromAlpaka::PixelVertexSoAFromAlpaka(edm::ProductRegistry& reg)
-      : tokenAlpaka_(reg.consumes<::cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
-        tokenSOA_(reg.produces<ZVertexHost>()),
+      : tokenDevice_(reg.consumes<::cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
+        tokenHost_(reg.produces<ZVertexHost>()),
         soa_(::cms::alpakatools::allocHostBuf<ZVertexSoA>(1u)) {}
 
   void PixelVertexSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                          edm::EventSetup const& iSetup,
                                          edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-    auto const& inputDataWrapped = iEvent.get(tokenAlpaka_);
+    auto const& inputDataWrapped = iEvent.get(tokenDevice_);
     ::cms::alpakatools::ScopedContextAcquire<Queue> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
@@ -50,7 +50,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   void PixelVertexSoAFromAlpaka::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {
     // No copies....
-    iEvent.emplace(tokenSOA_, std::move(soa_));
+    iEvent.emplace(tokenHost_, std::move(soa_));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
