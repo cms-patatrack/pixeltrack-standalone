@@ -18,19 +18,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
 
     //  Fit internals
-    auto hitsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
+    auto hitsGPU_ = ::cms::alpakatools::make_device_buffer<double[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
-    auto hits_geGPU_ = ::cms::alpakatools::allocDeviceBuf<float>(
+    auto hits_geGPU_ = ::cms::alpakatools::make_device_buffer<float[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
-    auto fast_fit_resultsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
+    auto fast_fit_resultsGPU_ = ::cms::alpakatools::make_device_buffer<double[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
 
-    //auto circle_fit_resultsGPU_holder =
-    //::cms::alpakatools::make_device_unique<char[]>(maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit), stream);
-    //Rfit::circle_fit *circle_fit_resultsGPU_ = (Rfit::circle_fit *)(circle_fit_resultsGPU_holder.get());
-    //auto circle_fit_resultsGPU_holder = ::cms::alpakatools::allocDeviceBuf<char>(queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::circle_fit));
     auto circle_fit_resultsGPU_ =
-        ::cms::alpakatools::allocDeviceBuf<Rfit::circle_fit>(queue, maxNumberOfConcurrentFits_);
+        ::cms::alpakatools::make_device_buffer<Rfit::circle_fit[]>(queue, maxNumberOfConcurrentFits_);
 
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
       // triplets

@@ -20,12 +20,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     const edm::EDPutTokenT<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>> bsPutToken_;
 
-    AlpakaHostBuf<BeamSpotPOD> bsHost_;
+    ::cms::alpakatools::host_buffer<BeamSpotPOD> bsHost_;
   };
 
   BeamSpotToAlpaka::BeamSpotToAlpaka(edm::ProductRegistry& reg)
       : bsPutToken_{reg.produces<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()},
-        bsHost_{::cms::alpakatools::allocHostBuf<BeamSpotPOD>(1u)} {
+        bsHost_{::cms::alpakatools::make_host_buffer<BeamSpotPOD>()} {
     alpaka::prepareForAsyncCopy(bsHost_);
   }
 
@@ -35,7 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
 
     BeamSpotAlpaka bsDevice(ctx.stream());
-    alpaka::memcpy(ctx.stream(), bsDevice.buf(), bsHost_, 1u);
+    alpaka::memcpy(ctx.stream(), bsDevice.buf(), bsHost_);
 
     ctx.emplace(iEvent, bsPutToken_, std::move(bsDevice));
   }

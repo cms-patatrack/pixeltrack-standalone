@@ -184,10 +184,10 @@ int main() {
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
   auto v_dbuf = alpaka::allocBuf<std::array<uint16_t, 4>, Idx>(device, N);
-  alpaka::memcpy(queue, v_dbuf, tr_hbuf, N);
+  alpaka::memcpy(queue, v_dbuf, tr_hbuf);
 
   auto a_dbuf = alpaka::allocBuf<Assoc, Idx>(device, 1u);
-  alpaka::memset(queue, a_dbuf, 0, 1u);
+  alpaka::memset(queue, a_dbuf, 0);
 
   const unsigned int nThreads = 256;
   const Vec1D threadsPerBlockOrElementsPerThread(nThreads);
@@ -214,7 +214,7 @@ int main() {
                       workDiv4N, fill(), alpaka::getPtrNative(v_dbuf), alpaka::getPtrNative(a_dbuf), N));
 
   auto la_hbuf = alpaka::allocBuf<Assoc, Idx>(host, 1u);
-  alpaka::memcpy(queue, la_hbuf, a_dbuf, 1u);
+  alpaka::memcpy(queue, la_hbuf, a_dbuf);
   alpaka::wait(queue);
 
   auto la = alpaka::getPtrNative(la_hbuf);
@@ -237,7 +237,7 @@ int main() {
 
   // now the inverse map (actually this is the direct....)
   auto dc_dbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(device, 1u);
-  alpaka::memset(queue, dc_dbuf, 0, 1u);
+  alpaka::memset(queue, dc_dbuf, 0);
 
   const unsigned int nBlocks = (N + nThreads - 1) / nThreads;
   const Vec1D blocksPerGrid(nBlocks);
@@ -264,16 +264,16 @@ int main() {
                       alpaka::getPtrNative(a_dbuf),
                       alpaka::getPtrNative(dc_dbuf)));
 
-  alpaka::memcpy(queue, la_hbuf, a_dbuf, 1u);
+  alpaka::memcpy(queue, la_hbuf, a_dbuf);
 
   auto dc_hbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(host, 1u);
-  alpaka::memcpy(queue, dc_hbuf, dc_dbuf, 1u);
+  alpaka::memcpy(queue, dc_hbuf, dc_dbuf);
   alpaka::wait(queue);
   auto dc = alpaka::getPtrNative(dc_hbuf);
 
-  alpaka::memset(queue, dc_dbuf, 0, 1u);
+  alpaka::memset(queue, dc_dbuf, 0);
   auto sa_dbuf = alpaka::allocBuf<SmallAssoc, Idx>(device, 1u);
-  alpaka::memset(queue, sa_dbuf, 0, 1u);
+  alpaka::memset(queue, sa_dbuf, 0);
 
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv,
@@ -314,9 +314,9 @@ int main() {
 
   // here verify use of block local counters
   auto m1_dbuf = alpaka::allocBuf<Multiplicity, Idx>(device, 1u);
-  alpaka::memset(queue, m1_dbuf, 0, 1u);
+  alpaka::memset(queue, m1_dbuf, 0);
   auto m2_dbuf = alpaka::allocBuf<Multiplicity, Idx>(device, 1u);
-  alpaka::memset(queue, m2_dbuf, 0, 1u);
+  alpaka::memset(queue, m2_dbuf, 0);
 
   launchZero(alpaka::getPtrNative(m1_dbuf), queue);
   launchZero(alpaka::getPtrNative(m2_dbuf), queue);

@@ -46,19 +46,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t nClusters_;
     uint32_t nHits_;
 
-    std::optional<AlpakaHostBuf<uint16_t>> h_adc;
-    std::optional<AlpakaHostBuf<uint32_t>> h_clusInModule;
-    std::optional<AlpakaHostBuf<float>> h_lx;
-    std::optional<AlpakaHostBuf<float>> h_ly;
-    std::optional<AlpakaHostBuf<float>> h_lex;
-    std::optional<AlpakaHostBuf<float>> h_ley;
-    std::optional<AlpakaHostBuf<float>> h_gx;
-    std::optional<AlpakaHostBuf<float>> h_gy;
-    std::optional<AlpakaHostBuf<float>> h_gz;
-    std::optional<AlpakaHostBuf<float>> h_gr;
-    std::optional<AlpakaHostBuf<int32_t>> h_charge;
-    std::optional<AlpakaHostBuf<int16_t>> h_sizex;
-    std::optional<AlpakaHostBuf<int16_t>> h_sizey;
+    std::optional<::cms::alpakatools::host_buffer<uint16_t[]>> h_adc;
+    std::optional<::cms::alpakatools::host_buffer<uint32_t[]>> h_clusInModule;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_lx;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_ly;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_lex;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_ley;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_gx;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_gy;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_gz;
+    std::optional<::cms::alpakatools::host_buffer<float[]>> h_gr;
+    std::optional<::cms::alpakatools::host_buffer<int32_t[]>> h_charge;
+    std::optional<::cms::alpakatools::host_buffer<int16_t[]>> h_sizex;
+    std::optional<::cms::alpakatools::host_buffer<int16_t[]>> h_sizey;
 
     static std::map<std::string, SimpleAtomicHisto> histos;
   };
@@ -119,11 +119,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     h_adc = std::move(digis.adcToHostAsync(ctx.stream()));
 
     nClusters_ = clusters.nClusters();
-    h_clusInModule = ::cms::alpakatools::allocHostBuf<uint32_t>(nModules_);
+    h_clusInModule = ::cms::alpakatools::make_host_buffer<uint32_t[]>(nModules_);
     alpaka::memcpy(ctx.stream(),
                    *h_clusInModule,
-                   ::cms::alpakatools::createDeviceView(ctx.device(), clusters.clusInModule(), nModules_),
-                   nModules_);
+                   ::cms::alpakatools::make_device_view(ctx.device(), clusters.clusInModule(), nModules_));
 
     nHits_ = hits.nHits();
 

@@ -35,7 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelVertexSoAFromAlpaka::PixelVertexSoAFromAlpaka(edm::ProductRegistry& reg)
       : tokenDevice_(reg.consumes<::cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
         tokenHost_(reg.produces<ZVertexHost>()),
-        soa_(::cms::alpakatools::allocHostBuf<ZVertexSoA>(1u)) {}
+        soa_(::cms::alpakatools::make_host_buffer<ZVertexSoA>()) {}
 
   void PixelVertexSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                          edm::EventSetup const& iSetup,
@@ -44,8 +44,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ::cms::alpakatools::ScopedContextAcquire<Queue> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    soa_ = ::cms::alpakatools::allocHostBuf<ZVertexSoA>(1u);
-    alpaka::memcpy(ctx.stream(), soa_, inputData, 1u);
+    soa_ = ::cms::alpakatools::make_host_buffer<ZVertexSoA>();
+    alpaka::memcpy(ctx.stream(), soa_, inputData);
   }
 
   void PixelVertexSoAFromAlpaka::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {

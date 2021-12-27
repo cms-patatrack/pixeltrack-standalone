@@ -55,17 +55,14 @@ namespace cms {
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(
         Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
-      uint32_t *poff = (uint32_t *)(char *)(&(h->off));
-      auto histoOffView =
-          ::cms::alpakatools::createDeviceView<typename Histo::Counter>(alpaka::getDev(queue), poff, Histo::totbins());
-
-      alpaka::memset(queue, histoOffView, 0, Histo::totbins());
+      auto histoOffView = ::cms::alpakatools::make_device_view(alpaka::getDev(queue), h->off, Histo::totbins());
+      alpaka::memset(queue, histoOffView, 0);
     }
 
     template <typename Histo>
     ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
         Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
-      uint32_t *poff = (uint32_t *)(char *)(&(h->off));
+      uint32_t *poff = h->off;
 
       const int num_items = Histo::totbins();
 

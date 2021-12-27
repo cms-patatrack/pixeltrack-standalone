@@ -34,8 +34,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 
     SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_{::cms::alpakatools::allocHostBuf<unsigned int>(MAX_FED_WORDS)},
-          fedId_{::cms::alpakatools::allocHostBuf<unsigned char>(MAX_FED_WORDS)} {}
+        : word_{::cms::alpakatools::make_host_buffer<unsigned int[]>(MAX_FED_WORDS)},
+          fedId_{::cms::alpakatools::make_host_buffer<unsigned char[]>(MAX_FED_WORDS)} {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,
@@ -586,11 +586,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
-        auto word_d = ::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, wordCounter);
+        auto word_d = ::cms::alpakatools::make_device_buffer<uint32_t[]>(queue, wordCounter);
         // NB: IMPORTANT: fedId_d: In legacy, wordCounter elements are allocated.
         // However, only the first half of elements end up eventually used:
         // hence, here, only wordCounter/2 elements are allocated.
-        auto fedId_d = ::cms::alpakatools::allocDeviceBuf<uint8_t>(queue, wordCounter / 2);
+        auto fedId_d = ::cms::alpakatools::make_device_buffer<uint8_t[]>(queue, wordCounter / 2);
 
         alpaka::memcpy(queue, word_d, wordFed.word(), wordCounter);
         alpaka::memcpy(queue, fedId_d, wordFed.fedId(), wordCounter / 2);
@@ -670,9 +670,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         wordCounter));
 
         auto moduleStartFirstElement =
-            ::cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
-
-        alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement, 1u);
+            ::cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
+        alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
         const WorkDiv1D &workDivMaxNumModules =
             ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(MaxNumModules), Vec1D::all(256));
@@ -729,13 +728,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         clusters_d->clusModuleStart()));
 
         // last element holds the number of all clusters
-        const auto clusModuleStartLastElement = ::cms::alpakatools::createDeviceView<uint32_t>(
+        const auto clusModuleStartLastElement = ::cms::alpakatools::make_device_view(
             alpaka::getDev(queue),
             const_cast<uint32_t const *>(clusters_d->clusModuleStart() + gpuClustering::MaxNumModules),
             1u);
         auto nModules_Clusters_h_1 =
-            ::cms::alpakatools::createHostView<uint32_t>(alpaka::getPtrNative(nModules_Clusters_h) + 1, 1u);
-        alpaka::memcpy(queue, nModules_Clusters_h_1, clusModuleStartLastElement, 1u);
+            ::cms::alpakatools::make_host_view(alpaka::getPtrNative(nModules_Clusters_h) + 1, 1u);
+        alpaka::memcpy(queue, nModules_Clusters_h_1, clusModuleStartLastElement);
 
       }  // end clusterizer scope
     }

@@ -66,7 +66,7 @@ int main() {
   constexpr uint32_t C = 1;
   const Vec1D sizeC(C);
   auto c_dbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(device, sizeC);
-  alpaka::memset(queue, c_dbuf, 0, sizeC);
+  alpaka::memset(queue, c_dbuf, 0);
 
   std::cout << "size " << C * sizeof(::cms::alpakatools::AtomicPairCounter) << std::endl;
 
@@ -115,7 +115,7 @@ int main() {
                                                   NUM_VALUES));
 
   auto c_hbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(host, sizeC);
-  alpaka::memcpy(queue, c_hbuf, c_dbuf, sizeC);
+  alpaka::memcpy(queue, c_hbuf, c_dbuf);
   alpaka::wait(queue);
 
   auto c_h = alpaka::getPtrNative(c_hbuf);

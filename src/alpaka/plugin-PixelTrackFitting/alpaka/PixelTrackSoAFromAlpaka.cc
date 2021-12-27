@@ -27,22 +27,22 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDGetTokenT<::cms::alpakatools::Product<Queue, PixelTrackAlpaka>> tokenDevice_;
     edm::EDPutTokenT<PixelTrackHost> tokenHost_;
 
-    AlpakaHostBuf<pixelTrack::TrackSoA> soa_;
+    ::cms::alpakatools::host_buffer<pixelTrack::TrackSoA> soa_;
   };
 
   PixelTrackSoAFromAlpaka::PixelTrackSoAFromAlpaka(edm::ProductRegistry& reg)
       : tokenDevice_(reg.consumes<::cms::alpakatools::Product<Queue, PixelTrackAlpaka>>()),
         tokenHost_(reg.produces<PixelTrackHost>()),
-        soa_{::cms::alpakatools::allocHostBuf<pixelTrack::TrackSoA>(1u)} {}
+        soa_{::cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA>()} {}
 
   void PixelTrackSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                         edm::EventSetup const& iSetup,
                                         edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-    soa_ = ::cms::alpakatools::allocHostBuf<pixelTrack::TrackSoA>(1u);
+    soa_ = ::cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA>();
     ::cms::alpakatools::Product<Queue, PixelTrackAlpaka> const& inputDataWrapped = iEvent.get(tokenDevice_);
     ::cms::alpakatools::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
-    alpaka::memcpy(ctx.stream(), soa_, inputData, 1u);
+    alpaka::memcpy(ctx.stream(), soa_, inputData);
   }
 
   void PixelTrackSoAFromAlpaka::produce(edm::Event& iEvent, edm::EventSetup const& iSetup) {

@@ -233,9 +233,9 @@ int main(void) {
     auto h_nModules_buf = alpaka::allocBuf<uint32_t, Idx>(host, 1u);
     auto nModules = alpaka::getPtrNative(h_nModules_buf);
     nModules[0] = 0;
-    alpaka::memcpy(queue, d_moduleStart_buf, h_nModules_buf, 1u);
+    alpaka::memcpy(queue, d_moduleStart_buf, h_nModules_buf, 1u);  // copy only the first element
 
-    alpaka::memcpy(queue, d_id_buf, h_id_buf, n);
+    alpaka::memcpy(queue, d_id_buf, h_id_buf, n);  // copy only the first n elements
     alpaka::memcpy(queue, d_x_buf, h_x_buf, n);
     alpaka::memcpy(queue, d_y_buf, h_y_buf, n);
     alpaka::memcpy(queue, d_adc_buf, h_adc_buf, n);
@@ -271,7 +271,7 @@ int main(void) {
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
-    alpaka::memset(queue, d_clusInModule_buf, 0, gpuClustering::MaxNumModules);
+    alpaka::memset(queue, d_clusInModule_buf, 0);
 
     alpaka::enqueue(
         queue,
@@ -285,11 +285,11 @@ int main(void) {
                                                                         alpaka::getPtrNative(d_moduleId_buf),
                                                                         alpaka::getPtrNative(d_clus_buf),
                                                                         n));
-    alpaka::memcpy(queue, h_nModules_buf, d_moduleStart_buf, 1u);
+    alpaka::memcpy(queue, h_nModules_buf, d_moduleStart_buf, 1u);  // copy only the first element
 
     auto h_nclus_buf = alpaka::allocBuf<uint32_t, Idx>(host, gpuClustering::MaxNumModules);
     auto nclus = alpaka::getPtrNative(h_nclus_buf);
-    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, gpuClustering::MaxNumModules);
+    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf);
 
     // Wait for memory transfers to be completed
     alpaka::wait(queue);
@@ -319,9 +319,9 @@ int main(void) {
                                                                         alpaka::getPtrNative(d_moduleId_buf),
                                                                         alpaka::getPtrNative(d_clus_buf),
                                                                         n));
-    alpaka::memcpy(queue, h_id_buf, d_id_buf, n);
+    alpaka::memcpy(queue, h_id_buf, d_id_buf, n);  // copy only the first n elements
     alpaka::memcpy(queue, h_clus_buf, d_clus_buf, n);
-    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf, gpuClustering::MaxNumModules);
+    alpaka::memcpy(queue, h_nclus_buf, d_clusInModule_buf);
     alpaka::memcpy(queue, h_moduleId_buf, d_moduleId_buf, nModules[0]);
 
     // Wait for memory transfers to be completed

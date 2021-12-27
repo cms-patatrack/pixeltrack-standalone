@@ -9,10 +9,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelClustersAlpaka() = default;
     explicit SiPixelClustersAlpaka(Queue &queue, size_t maxClusters)
-        : moduleStart_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxClusters + 1)},
-          clusInModule_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxClusters)},
-          moduleId_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxClusters)},
-          clusModuleStart_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxClusters + 1)} {}
+        : moduleStart_d{::cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters + 1)},
+          clusInModule_d{::cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters)},
+          moduleId_d{::cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters)},
+          clusModuleStart_d{::cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters + 1)} {}
     ~SiPixelClustersAlpaka() = default;
 
     SiPixelClustersAlpaka(const SiPixelClustersAlpaka &) = delete;
@@ -61,12 +61,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
   private:
-    AlpakaDeviceBuf<uint32_t> moduleStart_d;   // index of the first pixel of each module
-    AlpakaDeviceBuf<uint32_t> clusInModule_d;  // number of clusters found in each module
-    AlpakaDeviceBuf<uint32_t> moduleId_d;      // module id of each module
+    ::cms::alpakatools::device_buffer<Device, uint32_t[]> moduleStart_d;   // index of the first pixel of each module
+    ::cms::alpakatools::device_buffer<Device, uint32_t[]> clusInModule_d;  // number of clusters found in each module
+    ::cms::alpakatools::device_buffer<Device, uint32_t[]> moduleId_d;      // module id of each module
 
     // originally from rechits
-    AlpakaDeviceBuf<uint32_t> clusModuleStart_d;  // index of the first cluster of each module
+    ::cms::alpakatools::device_buffer<Device, uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
 
     uint32_t nClusters_h = 0;
   };

@@ -164,11 +164,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto fedId() const { return fedId_; }
 
       private:
-        AlpakaHostBuf<unsigned int> word_;
-        AlpakaHostBuf<unsigned char> fedId_;
+        ::cms::alpakatools::host_buffer<unsigned int[]> word_;
+        ::cms::alpakatools::host_buffer<unsigned char[]> fedId_;
       };
 
-      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{::cms::alpakatools::allocHostBuf<uint32_t>(2u)} {}
+      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{::cms::alpakatools::make_host_buffer<uint32_t[]>(2u)} {}
 
       ~SiPixelRawToClusterGPUKernel() = default;
 
@@ -203,7 +203,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       uint32_t nDigis = 0;
 
       // Data to be put in the event
-      AlpakaHostBuf<uint32_t> nModules_Clusters_h;
+      ::cms::alpakatools::host_buffer<uint32_t[]> nModules_Clusters_h;
       std::optional<SiPixelDigisAlpaka> digis_d;
       std::optional<SiPixelClustersAlpaka> clusters_d;
       std::optional<SiPixelDigiErrorsAlpaka> digiErrors_d;

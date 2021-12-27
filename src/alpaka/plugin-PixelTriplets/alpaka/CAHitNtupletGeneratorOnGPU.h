@@ -49,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     Params m_params;
 
-    //AlpakaDeviceBuf<Counters> m_counters;
+    //::cms::alpakatools::device_buffer<Device, Counters> m_counters;
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

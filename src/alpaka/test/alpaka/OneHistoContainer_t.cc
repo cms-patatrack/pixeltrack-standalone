@@ -147,7 +147,7 @@ void go(const DevHost& host,
       for (long long j = N / 2; j < N / 2 + N / 4; j++)
         v[j] = 4;
 
-    alpaka::memcpy(queue, v_dbuf, v_hbuf, N);
+    alpaka::memcpy(queue, v_dbuf, v_hbuf);
 
     const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D::all(256));
     const Vec1D& blocksPerGrid(Vec1D::all(1));

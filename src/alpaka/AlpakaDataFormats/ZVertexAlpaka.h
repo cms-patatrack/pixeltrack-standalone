@@ -6,11 +6,11 @@
 #include "AlpakaCore/alpakaCommon.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using ZVertexAlpaka = AlpakaDeviceBuf<ZVertexSoA>;
-  using ZVertexHost = AlpakaHostBuf<ZVertexSoA>;
+  using ZVertexAlpaka = ::cms::alpakatools::device_buffer<Device, ZVertexSoA>;
+  using ZVertexHost = ::cms::alpakatools::host_buffer<ZVertexSoA>;
 
   // NB: ANOTHER OPTION IS TO CREATE A HeterogeneousSoA class,
-  // with a AlpakaDeviceBuf<ZVertexSoA> as a data member
+  // with a ::cms::alpakatools::device_buffer<Device, ZVertexSoA> as a data member
   // and a toHostAsync function.
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
