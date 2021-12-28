@@ -20,7 +20,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  using HitsOnGPU = TrackingRecHit2DSOAView;
+  using HitsOnGPU = TrackingRecHit2DSoAView;
   using HitsOnCPU = TrackingRecHit2DAlpaka;
 
   using HitToTuple = CAConstants::HitToTuple;
@@ -512,7 +512,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     template <typename T_Acc>
     ALPAKA_FN_ACC void operator()(const T_Acc &acc,
                                   HitContainer const *__restrict__ tuples,
-                                  TrackingRecHit2DSOAView const *__restrict__ hhp,
+                                  TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer *__restrict__ hitDetIndices) const {
       // copy offsets
       cms::alpakatools::for_each_element_in_grid_strided(
@@ -550,7 +550,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   struct kernel_tripletCleaner {
     template <typename T_Acc>
     ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                  TrackingRecHit2DSOAView const *__restrict__ hhp,
+                                  TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer const *__restrict__ ptuples,
                                   TkSoA const *__restrict__ ptracks,
                                   Quality *__restrict__ quality,
@@ -610,7 +610,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   struct kernel_print_found_ntuplets {
     template <typename T_Acc>
     ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                  TrackingRecHit2DSOAView const *__restrict__ hhp,
+                                  TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer const *__restrict__ ptuples,
                                   TkSoA const *__restrict__ ptracks,
                                   Quality const *__restrict__ quality,

@@ -52,8 +52,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& bs = ctx.get(iEvent, tBeamSpot);
 
     auto nHits = clusters.nClusters();
-    if (nHits >= TrackingRecHit2DSOAView::maxHits()) {
-      std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
+    if (nHits >= TrackingRecHit2DSoAView::maxHits()) {
+      std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSoAView::maxHits() << std::endl;
     }
     ctx.emplace(iEvent,
                 tokenHit_,

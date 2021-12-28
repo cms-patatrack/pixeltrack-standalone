@@ -14,7 +14,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  using HitsOnGPU = TrackingRecHit2DSOAView;
+  using HitsOnGPU = TrackingRecHit2DSoAView;
   using Tuples = pixelTrack::HitContainer;
   using OutputSoA = pixelTrack::TrackSoA;
 

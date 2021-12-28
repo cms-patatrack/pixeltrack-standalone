@@ -25,7 +25,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     SiPixelDigisAlpaka::DeviceConstView const digis,
                                     uint32_t numElements,
                                     SiPixelClustersAlpaka::DeviceConstView const clusters,
-                                    TrackingRecHit2DSOAView* phits) const {
+                                    TrackingRecHit2DSoAView* phits) const {
         // FIXME
         // the compiler seems NOT to optimize loads from views (even in a simple test case)
         // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -43,7 +43,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (0 == blockIdx) {
           auto& agc = hits.averageGeometry();
           auto const& ag = cpeParams->averageGeometry();
-          constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel;
+          constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSoAView::AverageGeometry::numberOfLaddersInBarrel;
           cms::alpakatools::for_each_element_in_block_strided(acc, numberOfLaddersInBarrel, [&](uint32_t il) {
             agc.ladderX[il] = ag.ladderX[il] - bs->x;
             agc.ladderY[il] = ag.ladderY[il] - bs->y;
@@ -189,7 +189,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
             // this cannot happen anymore
             // TODO: was 'break', OTOH comment above says "should not happen", so hopefully 'return' is ok
-            if (h >= TrackingRecHit2DSOAView::maxHits()) {
+            if (h >= TrackingRecHit2DSoAView::maxHits()) {
               return;  // overflow...
             }
             ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());

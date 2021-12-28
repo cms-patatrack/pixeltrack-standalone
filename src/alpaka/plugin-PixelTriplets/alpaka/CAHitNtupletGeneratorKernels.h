@@ -26,8 +26,8 @@ namespace cAHitNtupletGenerator {
     unsigned long long nZeroTrackCells;
   };
 
-  using HitsView = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
-  using HitsOnGPU = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
+  using HitsView = TrackingRecHit2DSoAView;
+  using HitsOnGPU = TrackingRecHit2DSoAView;
 
   using HitToTuple = CAConstants::HitToTuple;
   using TupleMultiplicity = CAConstants::TupleMultiplicity;
@@ -147,8 +147,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using Params = cAHitNtupletGenerator::Params;
     using Counters = cAHitNtupletGenerator::Counters;
 
-    using HitsView = TrackingRecHit2DSOAView;
-    using HitsOnGPU = TrackingRecHit2DSOAView;
+    using HitsView = TrackingRecHit2DSoAView;
+    using HitsOnGPU = TrackingRecHit2DSoAView;
     using HitsOnCPU = TrackingRecHit2DAlpaka;
 
     using HitToTuple = CAConstants::HitToTuple;

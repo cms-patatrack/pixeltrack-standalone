@@ -34,7 +34,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         uint32_t* nCells,
         CellNeighborsVector* cellNeighbors,
         CellTracksVector* cellTracks,
-        TrackingRecHit2DSOAView const& __restrict__ hh,
+        TrackingRecHit2DSoAView const& __restrict__ hh,
         GPUCACell::OuterHitOfCell* isOuterHitOfCell,
         int16_t const* __restrict__ phicuts,
         float const* __restrict__ minz,
@@ -56,7 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       bool isOuterLadder = ideal_cond;
 
-      using Hist = TrackingRecHit2DSOAView::Hist;
+      using Hist = TrackingRecHit2DSoAView::Hist;
 
       auto const& __restrict__ hist = hh.phiBinner();
       uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
