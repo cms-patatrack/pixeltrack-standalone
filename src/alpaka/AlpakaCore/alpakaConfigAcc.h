@@ -89,6 +89,10 @@ namespace alpaka_omp4_async {
 #define STRINGIFY_(ARG) #ARG
 #define STRINGIFY(ARG) STRINGIFY_(ARG)
 
+#ifndef ALPAKA_ACCELERATOR_NAMESPACE
+#error ALPAKA_ACCELERATOR_NAMESPACE is not defined
+#endif  // ALPAKA_ACCELERATOR_NAMESPACE
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   // these are independent from the dimensionality
   using Device = alpaka::Dev<Acc1D>;
