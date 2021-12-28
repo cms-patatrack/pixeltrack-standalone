@@ -44,15 +44,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           auto& agc = hits.averageGeometry();
           auto const& ag = cpeParams->averageGeometry();
           constexpr auto numberOfLaddersInBarrel = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel;
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-              acc, numberOfLaddersInBarrel, [&](uint32_t il) {
-                agc.ladderX[il] = ag.ladderX[il] - bs->x;
-                agc.ladderY[il] = ag.ladderY[il] - bs->y;
-                agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
-                agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
-                agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
-                agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
-              });
+          cms::alpakatools::for_each_element_in_block_strided(acc, numberOfLaddersInBarrel, [&](uint32_t il) {
+            agc.ladderX[il] = ag.ladderX[il] - bs->x;
+            agc.ladderY[il] = ag.ladderY[il] - bs->y;
+            agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
+            agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
+            agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
+            agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
+          });
           if (threadIdxLocal == 0) {
             agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
             agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
@@ -101,29 +100,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           ALPAKA_ASSERT_OFFLOAD(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
           // init
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-              acc, nClusInIter, [&](uint32_t ic) {
-                clusParams.minRow[ic] = std::numeric_limits<uint32_t>::max();
-                clusParams.maxRow[ic] = 0;
-                clusParams.minCol[ic] = std::numeric_limits<uint32_t>::max();
-                clusParams.maxCol[ic] = 0;
-                clusParams.charge[ic] = 0;
-                clusParams.Q_f_X[ic] = 0;
-                clusParams.Q_l_X[ic] = 0;
-                clusParams.Q_f_Y[ic] = 0;
-                clusParams.Q_l_Y[ic] = 0;
-              });
+          cms::alpakatools::for_each_element_in_block_strided(acc, nClusInIter, [&](uint32_t ic) {
+            clusParams.minRow[ic] = std::numeric_limits<uint32_t>::max();
+            clusParams.maxRow[ic] = 0;
+            clusParams.minCol[ic] = std::numeric_limits<uint32_t>::max();
+            clusParams.maxCol[ic] = 0;
+            clusParams.charge[ic] = 0;
+            clusParams.Q_f_X[ic] = 0;
+            clusParams.Q_l_X[ic] = 0;
+            clusParams.Q_f_Y[ic] = 0;
+            clusParams.Q_l_Y[ic] = 0;
+          });
 
           alpaka::syncBlockThreads(acc);
 
           // one thread per "digi"
           const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
           const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-              ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block(acc, first);
+              cms::alpakatools::element_index_range_in_block(acc, first);
           uint32_t rowsColsFirstElementIdx = firstElementIdxNoStride;
           uint32_t rowsColsEndElementIdx = endElementIdxNoStride;
           for (uint32_t i = rowsColsFirstElementIdx; i < numElements; ++i) {
-            if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+            if (not cms::alpakatools::next_valid_element_index_strided(
                     i, rowsColsFirstElementIdx, rowsColsEndElementIdx, blockDimension, numElements))
               break;
             auto id = digis.moduleInd(i);
@@ -153,7 +151,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           uint32_t chargeFirstElementIdx = firstElementIdxNoStride;
           uint32_t chargeEndElementIdx = endElementIdxNoStride;
           for (uint32_t i = chargeFirstElementIdx; i < numElements; ++i) {
-            if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+            if (not cms::alpakatools::next_valid_element_index_strided(
                     i, chargeFirstElementIdx, chargeEndElementIdx, blockDimension, numElements))
               break;
             auto id = digis.moduleInd(i);
@@ -186,48 +184,47 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // next one cluster per thread...
           first = clusters.clusModuleStart(me) + startClus;
 
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-              acc, nClusInIter, [&](uint32_t ic) {
-                auto h = first + ic;  // output index in global memory
+          cms::alpakatools::for_each_element_in_block_strided(acc, nClusInIter, [&](uint32_t ic) {
+            auto h = first + ic;  // output index in global memory
 
-                // this cannot happen anymore
-                // TODO: was 'break', OTOH comment above says "should not happen", so hopefully 'return' is ok
-                if (h >= TrackingRecHit2DSOAView::maxHits()) {
-                  return;  // overflow...
-                }
-                ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());
-                ALPAKA_ASSERT_OFFLOAD(h < clusters.clusModuleStart(me + 1));
+            // this cannot happen anymore
+            // TODO: was 'break', OTOH comment above says "should not happen", so hopefully 'return' is ok
+            if (h >= TrackingRecHit2DSOAView::maxHits()) {
+              return;  // overflow...
+            }
+            ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());
+            ALPAKA_ASSERT_OFFLOAD(h < clusters.clusModuleStart(me + 1));
 
-                pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
-                pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
+            pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
+            pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
 
-                // store it
-                hits.charge(h) = clusParams.charge[ic];
-                hits.detectorIndex(h) = me;
-                float xl, yl;
-                hits.xLocal(h) = xl = clusParams.xpos[ic];
-                hits.yLocal(h) = yl = clusParams.ypos[ic];
-                hits.clusterSizeX(h) = clusParams.xsize[ic];
-                hits.clusterSizeY(h) = clusParams.ysize[ic];
-                hits.xerrLocal(h) = clusParams.xerr[ic] * clusParams.xerr[ic];
-                hits.yerrLocal(h) = clusParams.yerr[ic] * clusParams.yerr[ic];
+            // store it
+            hits.charge(h) = clusParams.charge[ic];
+            hits.detectorIndex(h) = me;
+            float xl, yl;
+            hits.xLocal(h) = xl = clusParams.xpos[ic];
+            hits.yLocal(h) = yl = clusParams.ypos[ic];
+            hits.clusterSizeX(h) = clusParams.xsize[ic];
+            hits.clusterSizeY(h) = clusParams.ysize[ic];
+            hits.xerrLocal(h) = clusParams.xerr[ic] * clusParams.xerr[ic];
+            hits.yerrLocal(h) = clusParams.yerr[ic] * clusParams.yerr[ic];
 
-                // keep it local for computations
-                float xg, yg, zg;
-                // to global and compute phi...
-                cpeParams->detParams(me).frame.toGlobal(xl, yl, xg, yg, zg);
-                // here correct for the beamspot...
-                xg -= bs->x;
-                yg -= bs->y;
-                zg -= bs->z;
+            // keep it local for computations
+            float xg, yg, zg;
+            // to global and compute phi...
+            cpeParams->detParams(me).frame.toGlobal(xl, yl, xg, yg, zg);
+            // here correct for the beamspot...
+            xg -= bs->x;
+            yg -= bs->y;
+            zg -= bs->z;
 
-                hits.xGlobal(h) = xg;
-                hits.yGlobal(h) = yg;
-                hits.zGlobal(h) = zg;
+            hits.xGlobal(h) = xg;
+            hits.yGlobal(h) = yg;
+            hits.zGlobal(h) = zg;
 
-                hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
-                hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
-              });
+            hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
+            hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
+          });
 
           alpaka::syncBlockThreads(acc);
         }  // end loop on batches

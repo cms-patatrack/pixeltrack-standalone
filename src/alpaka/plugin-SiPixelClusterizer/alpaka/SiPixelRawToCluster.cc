@@ -39,12 +39,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-    ::cms::alpakatools::ContextState<Queue> ctxState_;
+    cms::alpakatools::ContextState<Queue> ctxState_;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiPutToken_;
-    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>> digiErrorPutToken_;
-    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterPutToken_;
+    edm::EDPutTokenT<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiPutToken_;
+    edm::EDPutTokenT<cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>> digiErrorPutToken_;
+    edm::EDPutTokenT<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterPutToken_;
 
     pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
     std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -57,13 +57,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   SiPixelRawToCluster::SiPixelRawToCluster(edm::ProductRegistry& reg)
       : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-        digiPutToken_(reg.produces<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
-        clusterPutToken_(reg.produces<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
+        digiPutToken_(reg.produces<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
+        clusterPutToken_(reg.produces<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
         isRun2_(true),
         includeErrors_(true),
         useQuality_(true) {
     if (includeErrors_) {
-      digiErrorPutToken_ = reg.produces<::cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>>();
+      digiErrorPutToken_ = reg.produces<cms::alpakatools::Product<Queue, SiPixelDigiErrorsAlpaka>>();
     }
 
     wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
@@ -72,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void SiPixelRawToCluster::acquire(const edm::Event& iEvent,
                                     const edm::EventSetup& iSetup,
                                     edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-    ::cms::alpakatools::ScopedContextAcquire<Queue> ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
+    cms::alpakatools::ScopedContextAcquire<Queue> ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
 
     auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
     if (hgpuMap.hasQuality() != useQuality_) {
@@ -164,7 +164,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void SiPixelRawToCluster::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    ::cms::alpakatools::ScopedContextProduce ctx{ctxState_};
+    cms::alpakatools::ScopedContextProduce ctx{ctxState_};
 
     auto tmp = gpuAlgo_.getResults();
     ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));

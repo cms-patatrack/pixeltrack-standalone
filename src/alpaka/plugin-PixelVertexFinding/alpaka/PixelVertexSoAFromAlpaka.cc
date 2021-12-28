@@ -26,25 +26,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                  edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
     void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, ZVertexAlpaka>> tokenDevice_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, ZVertexAlpaka>> tokenDevice_;
     edm::EDPutTokenT<ZVertexHost> tokenHost_;
 
     ZVertexHost soa_;
   };
 
   PixelVertexSoAFromAlpaka::PixelVertexSoAFromAlpaka(edm::ProductRegistry& reg)
-      : tokenDevice_(reg.consumes<::cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
+      : tokenDevice_(reg.consumes<cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
         tokenHost_(reg.produces<ZVertexHost>()),
-        soa_(::cms::alpakatools::make_host_buffer<ZVertexSoA>()) {}
+        soa_(cms::alpakatools::make_host_buffer<ZVertexSoA>()) {}
 
   void PixelVertexSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                          edm::EventSetup const& iSetup,
                                          edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
     auto const& inputDataWrapped = iEvent.get(tokenDevice_);
-    ::cms::alpakatools::ScopedContextAcquire<Queue> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
+    cms::alpakatools::ScopedContextAcquire<Queue> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    soa_ = ::cms::alpakatools::make_host_buffer<ZVertexSoA>();
+    soa_ = cms::alpakatools::make_host_buffer<ZVertexSoA>();
     alpaka::memcpy(ctx.stream(), soa_, inputData);
   }
 

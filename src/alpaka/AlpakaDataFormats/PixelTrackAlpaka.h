@@ -18,7 +18,7 @@ public:
 
   using Quality = trackQuality::Quality;
   using hindex_type = uint16_t;
-  using HitContainer = ::cms::alpakatools::OneToManyAssoc<hindex_type, S, 5 * S>;
+  using HitContainer = cms::alpakatools::OneToManyAssoc<hindex_type, S, 5 * S>;
 
   // Always check quality is at least loose!
   // CUDA does not support enums  in __lgc ...
@@ -71,11 +71,11 @@ namespace pixelTrack {
 }  // namespace pixelTrack
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  using PixelTrackAlpaka = ::cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA>;
-  using PixelTrackHost = ::cms::alpakatools::host_buffer<pixelTrack::TrackSoA>;
+  using PixelTrackAlpaka = cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA>;
+  using PixelTrackHost = cms::alpakatools::host_buffer<pixelTrack::TrackSoA>;
 
   // NB: ANOTHER OPTION IS TO CREATE A HeterogeneousSoA class,
-  // with a ::cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA> as a data member
+  // with a cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA> as a data member
   // and a toHostAsync function.
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

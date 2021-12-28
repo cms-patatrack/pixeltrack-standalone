@@ -12,18 +12,20 @@
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/EventCache.h"
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
-  template <typename T>
+  template <typename TQueue, typename T>
   class ESProduct {
   public:
-    using Queue = ::ALPAKA_ACCELERATOR_NAMESPACE::Queue;
-    using Event = ::ALPAKA_ACCELERATOR_NAMESPACE::Event;
+    using Queue = TQueue;
+    using Event = alpaka::Event<Queue>;
+    using Device = alpaka::Dev<Queue>;
+    using Platform = alpaka::Pltf<Device>;
 
-    ESProduct() : gpuDataPerDevice_(::ALPAKA_ACCELERATOR_NAMESPACE::devices.size()) {
+    ESProduct() : gpuDataPerDevice_(cms::alpakatools::devices<Platform>.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
         gpuDataPerDevice_[i].m_event =
-            ::cms::alpakatools::getEventCache<Event>().get(::ALPAKA_ACCELERATOR_NAMESPACE::devices[i]);
+            cms::alpakatools::getEventCache<Event>().get(cms::alpakatools::devices<Platform>[i]);
       }
     }
 
@@ -34,7 +36,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     // to the CUDA stream
     template <typename F>
     const T& dataForDeviceAsync(Queue& queue, F transferAsync) const {
-      auto device = ::cms::alpakatools::getDevIndex(alpaka::getDev(queue));
+      auto device = cms::alpakatools::getDevIndex(alpaka::getDev(queue));
       auto& data = gpuDataPerDevice_[device];
 
       // If GPU data has already been filled, we can return it
@@ -93,8 +95,8 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     struct Item {
       mutable std::mutex m_mutex;
       mutable std::shared_ptr<Event> m_event;  // guarded by m_mutex
-      // non-null if some thread is already filling (cudaStream_t is just a pointer)
-      mutable ::ALPAKA_ACCELERATOR_NAMESPACE::Queue* m_fillingStream = nullptr;  // guarded by m_mutex
+      // non-null if some thread is already filling
+      mutable Queue* m_fillingStream = nullptr;    // guarded by m_mutex
       mutable std::atomic<bool> m_filled = false;  // easy check if data has been filled already or not
       mutable std::optional<T> m_data;             // guarded by m_mutex
     };
@@ -102,6 +104,6 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     std::vector<Item> gpuDataPerDevice_;
   };
 
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace cms::alpakatools
 
 #endif  // HeterogeneousCore_AlpakaCore_ESProduct_h

@@ -26,26 +26,26 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
     // The mess with inputs will be cleaned up when migrating to the new framework
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>> tBeamSpot;
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> token_;
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> tokenDigi_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, BeamSpotAlpaka>> tBeamSpot;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> token_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> tokenDigi_;
 
-    edm::EDPutTokenT<::cms::alpakatools::Product<Queue, TrackingRecHit2DAlpaka>> tokenHit_;
+    edm::EDPutTokenT<cms::alpakatools::Product<Queue, TrackingRecHit2DAlpaka>> tokenHit_;
 
     pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
   };
 
   SiPixelRecHitAlpaka::SiPixelRecHitAlpaka(edm::ProductRegistry& reg)
-      : tBeamSpot(reg.consumes<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()),
-        token_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
-        tokenDigi_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
-        tokenHit_(reg.produces<::cms::alpakatools::Product<Queue, TrackingRecHit2DAlpaka>>()) {}
+      : tBeamSpot(reg.consumes<cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()),
+        token_(reg.consumes<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
+        tokenDigi_(reg.consumes<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
+        tokenHit_(reg.produces<cms::alpakatools::Product<Queue, TrackingRecHit2DAlpaka>>()) {}
 
   void SiPixelRecHitAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& es) {
     auto const& fcpe = es.get<PixelCPEFast>();
 
     auto const& pclusters = iEvent.get(token_);
-    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{pclusters};
+    cms::alpakatools::ScopedContextProduce<Queue> ctx{pclusters};
 
     auto const& clusters = ctx.get(pclusters);
     auto const& digis = ctx.get(iEvent, tokenDigi_);

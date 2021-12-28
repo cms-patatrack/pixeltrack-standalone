@@ -16,7 +16,7 @@
 #include "Framework/Event.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest {
+namespace cms::alpakatest {
   class TestScopedContext;
 }
 
@@ -29,6 +29,7 @@ namespace cms::alpakatools {
     public:
       using Queue = TQueue;
       using Device = alpaka::Dev<Queue>;
+      using Platform = alpaka::Pltf<Device>;
 
       Device device() const { return alpaka::getDev(*stream_); }
 
@@ -53,8 +54,7 @@ namespace cms::alpakatools {
       explicit ScopedContextBase(std::shared_ptr<Queue> stream) : stream_(std::move(stream)) {}
 
       explicit ScopedContextBase(edm::StreamID streamID)
-          : stream_{getStreamCache<Queue>().get(
-                ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::chooseDevice(streamID))} {}
+          : stream_{getStreamCache<Queue>().get(cms::alpakatools::chooseDevice<Platform>(streamID))} {}
 
     private:
       std::shared_ptr<Queue> stream_;
@@ -243,7 +243,7 @@ namespace cms::alpakatools {
     }
 
   private:
-    friend class ::ALPAKA_ACCELERATOR_NAMESPACE::cms::alpakatest::TestScopedContext;
+    friend class ::cms::alpakatest::TestScopedContext;
 
     explicit ScopedContextProduce(std::shared_ptr<Queue> stream)
         : ScopedContextGetterBase(std::move(stream)), event_{getEventCache<Event>().get(device())} {}

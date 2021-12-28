@@ -55,7 +55,7 @@ namespace cms::alpakatools {
 
   private:
     std::shared_ptr<Event> makeOrGet(Device dev) {
-      return cache_[::cms::alpakatools::getDevIndex(dev)].makeOrGet([dev]() { return std::make_unique<Event>(dev); });
+      return cache_[cms::alpakatools::getDevIndex(dev)].makeOrGet([dev]() { return std::make_unique<Event>(dev); });
     }
 
     // not thread safe, intended to be called only from CUDAService destructor

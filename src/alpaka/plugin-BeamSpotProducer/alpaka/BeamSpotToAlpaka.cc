@@ -18,21 +18,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   private:
-    const edm::EDPutTokenT<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>> bsPutToken_;
+    const edm::EDPutTokenT<cms::alpakatools::Product<Queue, BeamSpotAlpaka>> bsPutToken_;
 
-    ::cms::alpakatools::host_buffer<BeamSpotPOD> bsHost_;
+    cms::alpakatools::host_buffer<BeamSpotPOD> bsHost_;
   };
 
   BeamSpotToAlpaka::BeamSpotToAlpaka(edm::ProductRegistry& reg)
-      : bsPutToken_{reg.produces<::cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()},
-        bsHost_{::cms::alpakatools::make_host_buffer<BeamSpotPOD>()} {
+      : bsPutToken_{reg.produces<cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()},
+        bsHost_{cms::alpakatools::make_host_buffer<BeamSpotPOD>()} {
     alpaka::prepareForAsyncCopy(bsHost_);
   }
 
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     *alpaka::getPtrNative(bsHost_) = iSetup.get<BeamSpotPOD>();
 
-    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
+    cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
 
     BeamSpotAlpaka bsDevice(ctx.stream());
     alpaka::memcpy(ctx.stream(), bsDevice.buf(), bsHost_);

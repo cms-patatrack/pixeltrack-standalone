@@ -251,7 +251,7 @@ int main(void) {
     // COUNT MODULES
     const int blocksPerGridCountModules =
         (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-    const WorkDiv1D& workDivCountModules = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+    const WorkDiv1D& workDivCountModules = cms::alpakatools::make_workdiv(
         Vec1D::all(blocksPerGridCountModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
@@ -266,7 +266,7 @@ int main(void) {
                                                                         n));
 
     // FIND CLUSTER
-    const WorkDiv1D& workDivMaxNumModules = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
+    const WorkDiv1D& workDivMaxNumModules = cms::alpakatools::make_workdiv(
         Vec1D::all(gpuClustering::MaxNumModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";

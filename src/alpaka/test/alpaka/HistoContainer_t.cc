@@ -25,7 +25,7 @@ void go(const DevHost& host,
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
 
-  using Hist = ::cms::alpakatools::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
+  using Hist = cms::alpakatools::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;

@@ -15,7 +15,7 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
-#include "AlpakaCore/alpakaConfigCommon.h"
+#include "AlpakaCore/backend.h"
 #include "AlpakaCore/initialise.h"
 #include "EventProcessor.h"
 
@@ -48,7 +48,6 @@ namespace {
         << std::endl;
   }
 
-  enum class Backend { SERIAL, TBB, CUDA };
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -132,17 +131,17 @@ int main(int argc, char** argv) {
   // Initialiase the selected backends
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
   if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
-    alpaka_serial_sync::initialise();
+    cms::alpakatools::initialise<Backend::SERIAL>();
   }
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
   if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
-    alpaka_tbb_async::initialise();
+    cms::alpakatools::initialise<Backend::TBB>();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
   if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
-    alpaka_cuda_async::initialise();
+    cms::alpakatools::initialise<Backend::CUDA>();
   }
 #endif
 

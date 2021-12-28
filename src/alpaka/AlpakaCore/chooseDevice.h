@@ -2,12 +2,23 @@
 #define HeterogeneousCore_AlpakaCore_chooseDevice_h
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaDevAcc.h"
 #include "Framework/Event.h"
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Device const& chooseDevice(edm::StreamID id);
+  template <typename TPlatform>
+  alpaka::Dev<TPlatform> const& chooseDevice(edm::StreamID id) {
+    // For startes we "statically" assign the device based on
+    // edm::Stream number. This is suboptimal if the number of
+    // edm::Streams is not a multiple of the number of CUDA devices
+    // (and even then there is no load balancing).
 
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+    // TODO: improve the "assignment" logic
+    auto const& devices = cms::alpakatools::devices<TPlatform>;
+    return devices[id % devices.size()];
+  }
+
+}  // namespace cms::alpakatools
 
 #endif  // HeterogeneousCore_AlpakaCore_chooseDevice_h

@@ -70,7 +70,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::syncBlockThreads(acc);
 
         // copy to local
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t k) {
+        cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t k) {
           if (iv[k] == int(kv)) {
             auto old = alpaka::atomicInc(acc, &nq, MAXTK, alpaka::hierarchy::Threads{});
             zz[old] = zt[k] - zv[kv];
@@ -100,7 +100,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           }
           alpaka::syncBlockThreads(acc);
 
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
+          cms::alpakatools::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
             auto i = newV[k];
             alpaka::atomicAdd(acc, &znew[i], zz[k] * ww[k], alpaka::hierarchy::Threads{});
             alpaka::atomicAdd(acc, &wnew[i], ww[k], alpaka::hierarchy::Threads{});
@@ -113,7 +113,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           }
           alpaka::syncBlockThreads(acc);
 
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
+          cms::alpakatools::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
             auto d0 = fabs(zz[k] - znew[0]);
             auto d1 = fabs(zz[k] - znew[1]);
             auto newer = d0 < d1 ? 0 : 1;
@@ -144,7 +144,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (0 == threadIdxLocal)
           igv = alpaka::atomicAdd(acc, &ws.nvIntermediate, 1u, alpaka::hierarchy::Blocks{});
         alpaka::syncBlockThreads(acc);
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
+        cms::alpakatools::for_each_element_in_block_strided(acc, nq, [&](uint32_t k) {
           if (1 == newV[k])
             iv[it[k]] = igv;
         });

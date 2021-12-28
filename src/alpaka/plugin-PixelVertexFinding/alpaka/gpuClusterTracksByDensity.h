@@ -53,12 +53,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(pdata);
       ALPAKA_ASSERT_OFFLOAD(zt);
 
-      using Hist = ::cms::alpakatools::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
+      using Hist = cms::alpakatools::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
       auto& hist = alpaka::declareSharedVar<Hist, __COUNTER__>(acc);
       auto& hws = alpaka::declareSharedVar<Hist::Counter[32], __COUNTER__>(acc);
 
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-          acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
+      cms::alpakatools::for_each_element_in_block_strided(acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
       alpaka::syncBlockThreads(acc);
 
       if (verbose && 0 == threadIdxLocal)
@@ -67,7 +66,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(nt <= hist.capacity());
 
       // fill hist  (bin shall be wider than "eps")
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         ALPAKA_ASSERT_OFFLOAD(i < ZVertices::MAXTRACKS);
         int iz = int(zt[i] * 10.);  // valid if eps<=0.1
         // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
@@ -81,7 +80,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       });
       alpaka::syncBlockThreads(acc);
 
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(acc, 32, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block(acc, 32, [&](uint32_t i) {
         hws[i] = 0;  // used by prefix scan...
       });
 
@@ -90,12 +89,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::syncBlockThreads(acc);
 
       ALPAKA_ASSERT_OFFLOAD(hist.size() == nt);
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
+      cms::alpakatools::for_each_element_in_block_strided(
           acc, nt, [&](uint32_t i) { hist.fill(acc, izt[i], uint16_t(i)); });
       alpaka::syncBlockThreads(acc);
 
       // count neighbours
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (ezt2[i] <= er2mx) {
           auto loop = [&](uint32_t j) {
             if (i == j)
@@ -108,14 +107,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             nn[i]++;
           };
 
-          ::cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
+          cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
         }
       });
 
       alpaka::syncBlockThreads(acc);
 
       // find closest above me .... (we ignore the possibility of two j at same distance from i)
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         float mdist = eps;
         auto loop = [&](uint32_t j) {
           if (nn[j] < nn[i])
@@ -130,14 +129,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           mdist = dist;
           iv[i] = j;  // assign to cluster (better be unique??)
         };
-        ::cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
+        cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
       });
 
       alpaka::syncBlockThreads(acc);
 
 #ifdef GPU_DEBUG
       //  mini verification
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] != int(i))
           ALPAKA_ASSERT_OFFLOAD(iv[iv[i]] != int(i));
       });
@@ -145,7 +144,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
       // consolidate graph (percolate index of seed)
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         auto m = iv[i];
         while (m != iv[m])
           m = iv[m];
@@ -155,7 +154,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef GPU_DEBUG
       alpaka::syncBlockThreads(acc);
       //  mini verification
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] != int(i))
           ALPAKA_ASSERT_OFFLOAD(iv[iv[i]] != int(i));
       });
@@ -163,7 +162,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef GPU_DEBUG
       // and verify that we did not spit any cluster...
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         auto minJ = i;
         auto mdist = eps;
         auto loop = [&](uint32_t j) {
@@ -179,7 +178,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           mdist = dist;
           minJ = j;
         };
-        ::cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
+        cms::alpakatools::forEachInBins(hist, izt[i], 1, loop);
         // should belong to the same cluster...
         ALPAKA_ASSERT_OFFLOAD(iv[i] == iv[minJ]);
         ALPAKA_ASSERT_OFFLOAD(nn[i] <= nn[iv[i]]);
@@ -193,7 +192,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
       // mark these tracks with a negative id.
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] == int(i)) {
           if (nn[i] >= minT) {
             auto old = alpaka::atomicInc(acc, &foundClusters, 0xffffffff, alpaka::hierarchy::Threads{});
@@ -208,7 +207,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(foundClusters < ZVertices::MAXVTX);
 
       // propagate the negative id to all the tracks in the cluster.
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
         if (iv[i] >= 0) {
           // mark each track in a cluster with the same id as the first one
           iv[i] = iv[iv[i]];
@@ -217,8 +216,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::syncBlockThreads(acc);
 
       // adjust the cluster id to be a positive value starting from 0
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-          acc, nt, [&](uint32_t i) { iv[i] = -iv[i] - 1; });
+      cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) { iv[i] = -iv[i] - 1; });
 
       nvIntermediate = nvFinal = foundClusters;
 
