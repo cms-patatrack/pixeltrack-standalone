@@ -52,7 +52,7 @@ public:
     // 16 bits section (and cluster properties immediately continued)
     SOA_COLUMN(int16_t, clusterSizeX),
     SOA_COLUMN(int16_t, clusterSizeY)
-  );
+  )
   
   // The hits layout does not use default alignment but a more relaxed one.
   using HitsLayout = HitsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
@@ -76,7 +76,7 @@ public:
       SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
       SOA_VIEW_VALUE(hitsLayout, clusterSizeY)
     )
-  );
+  )
   
   using HitsView = HitsViewTemplate<>;
   

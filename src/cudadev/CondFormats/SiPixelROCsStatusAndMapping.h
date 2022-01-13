@@ -34,7 +34,7 @@ GENERATE_SOA_LAYOUT(SiPixelROCsStatusAndMappingLayoutTemplate,
   SOA_COLUMN(unsigned int, moduleId),
   SOA_COLUMN(unsigned char, badRocs),
   SOA_SCALAR(unsigned int, size)
-);
+)
 
 using SiPixelROCsStatusAndMappingLayout = SiPixelROCsStatusAndMappingLayoutTemplate<>;
 
@@ -50,7 +50,7 @@ GENERATE_SOA_CONST_VIEW(SiPixelROCsStatusAndMappingConstViewTemplate,
     SOA_VIEW_VALUE(mappingLayout, badRocs),
     SOA_VIEW_VALUE(mappingLayout, size)
   )
-);
+)
 
 // Slightly more complex than using, but allows forward declarations.
 struct SiPixelROCsStatusAndMappingConstView: public SiPixelROCsStatusAndMappingConstViewTemplate<> { 

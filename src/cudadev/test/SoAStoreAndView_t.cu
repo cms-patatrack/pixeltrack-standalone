@@ -9,8 +9,8 @@
 // Multiple stores in a buffer
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
-
-GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
+        
+GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate, SoA1ViewTemplate,
   // predefined static scalars
   // size_t size;
   // size_t alignment;
@@ -21,9 +21,10 @@ GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
   SOA_COLUMN(double, z),
   SOA_COLUMN(double, sum),
   SOA_COLUMN(double, prod),
+  /* Leave Eigen definitions out until support is complete.
   SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
   SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
-  SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
+  SOA_EIGEN_COLUMN(Eigen::Vector3d, r),*/
   SOA_COLUMN(uint16_t, color),
   SOA_COLUMN(int32_t, value),
   SOA_COLUMN(double *, py),
@@ -33,31 +34,9 @@ GENERATE_SOA_LAYOUT(SoA1LayoutTemplate,
   // scalars: one value for the whole structure
   SOA_SCALAR(const char *, description),
   SOA_SCALAR(uint32_t, someNumber)
-);
+)
 
 using SoA1Layout = SoA1LayoutTemplate<>;
-
-// A 1 to 1 view of the store (except for unsupported types).
-GENERATE_SOA_VIEW(SoA1ViewTemplate,
-  SOA_VIEW_LAYOUT_LIST(
-    SOA_VIEW_LAYOUT(SoA1Layout, soa1)
-  ),
-  SOA_VIEW_VALUE_LIST(
-    SOA_VIEW_VALUE(soa1, x),
-    SOA_VIEW_VALUE(soa1, y),
-    SOA_VIEW_VALUE(soa1, z),
-    SOA_VIEW_VALUE(soa1, sum),
-    SOA_VIEW_VALUE(soa1, prod),
-    SOA_VIEW_VALUE(soa1, color),
-    SOA_VIEW_VALUE(soa1, value),
-    SOA_VIEW_VALUE(soa1, py),
-    SOA_VIEW_VALUE(soa1, count),
-    SOA_VIEW_VALUE(soa1, anotherCount), 
-    SOA_VIEW_VALUE(soa1, description),
-    SOA_VIEW_VALUE(soa1, someNumber)
-  )
-);
-
 using SoA1View = SoA1ViewTemplate<>;
 
 // A partial view (artificial mix of store and view)

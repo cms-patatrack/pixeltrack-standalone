@@ -16,7 +16,7 @@ public:
     SOA_COLUMN(uint16_t, xx),         /* local coordinates of each pixel                              */
     SOA_COLUMN(uint16_t, yy),         /*                                                              */
     SOA_COLUMN(uint16_t, moduleInd)   /* module id of each pixel                                      */
-  );
+  )
   
   using DeviceOnlyLayout = DeviceOnlyLayoutTemplate<>;
   
@@ -28,7 +28,7 @@ public:
     /* separate product?                                                                              */
     SOA_COLUMN(uint32_t, pdigi),     /* packed digi (row, col, adc) of each pixel                     */
     SOA_COLUMN(uint32_t, rawIdArr)   /* DetId of each pixel                                           */
-  );
+  )
   
   using HostDeviceLayout = HostDeviceLayoutTemplate<>;
   
@@ -42,7 +42,7 @@ public:
       SOA_VIEW_VALUE(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
       SOA_VIEW_VALUE(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
     )    
-  );
+  )
   
   using HostDeviceView = HostDeviceViewTemplate<>;
   
@@ -60,7 +60,7 @@ public:
       SOA_VIEW_VALUE(hostDevice, pdigi),    /* packed digi (row, col, adc) of each pixel              */
       SOA_VIEW_VALUE(hostDevice, rawIdArr)  /* DetId of each pixel                                    */
     )    
-  );
+  )
   
   using DeviceFullView = DeviceFullViewTemplate<>;
 
@@ -78,7 +78,7 @@ public:
       SOA_VIEW_VALUE(deviceFullView, adc),  /* ADC of each pixel                                      */
       SOA_VIEW_VALUE(deviceFullView, clus) /* cluster id of each pixel                                */
     )
-  );
+  )
   
   using DevicePixelConstView = DevicePixelConstViewTemplate<>;
 

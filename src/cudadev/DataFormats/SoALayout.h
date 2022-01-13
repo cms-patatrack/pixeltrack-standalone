@@ -343,6 +343,6 @@
     size_t nElements_;                                                                                                                    \
     size_t byteSize_;                                                                                                                     \
     _ITERATE_ON_ALL(_DECLARE_SOA_DATA_MEMBER, ~, __VA_ARGS__)                                                                             \
-  }
+  };
 
 #endif  // ndef DataStructures_SoALayout_h

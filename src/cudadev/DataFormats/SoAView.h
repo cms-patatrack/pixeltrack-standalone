@@ -399,7 +399,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                           \
   private:                                                                                                                                \
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, BOOST_PP_EMPTY(), VALUE_LIST)                                                               \
-  }
+  };
 
 /* ---- CONST VIEW --------------------------------------------------------------------------------------------------------------------- */
 
@@ -491,6 +491,44 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                         \
   private:                                                                                                                              \
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, const, VALUE_LIST)                                                                        \
-  }
+  };
+
+/**
+ * Helper macro turning layout field declaration into view field declaration.
+ */
+#define _VIEW_FIELD_FROM_LAYOUT_IMPL(VALUE_TYPE, CPP_TYPE, NAME, DATA) \
+  (DATA, NAME, NAME)
+
+#define _VIEW_FIELD_FROM_LAYOUT(R, DATA, VALUE_TYPE_NAME) \
+  BOOST_PP_EXPAND ((_VIEW_FIELD_FROM_LAYOUT_IMPL BOOST_PP_TUPLE_PUSH_BACK(VALUE_TYPE_NAME, DATA)))
+
+/**
+ * A macro defining both layout and view(s) in one go.
+ */
+
+#define GENERATE_SOA_LAYOUT_VIEW_AND_CONST_VIEW(LAYOUT_NAME, VIEW_NAME, CONST_VIEW_NAME, ... )                             \
+GENERATE_SOA_LAYOUT(LAYOUT_NAME, __VA_ARGS__);                                                                             \
+using BOOST_PP_CAT(LAYOUT_NAME, _default) = LAYOUT_NAME <>;                                                                \
+GENERATE_SOA_VIEW(VIEW_NAME,                                                                                               \
+  SOA_VIEW_LAYOUT_LIST( (BOOST_PP_CAT(LAYOUT_NAME, _default), BOOST_PP_CAT(instance_, LAYOUT_NAME)) ),                     \
+  SOA_VIEW_VALUE_LIST(_ITERATE_ON_ALL_COMMA(_VIEW_FIELD_FROM_LAYOUT, BOOST_PP_CAT(instance_, LAYOUT_NAME), __VA_ARGS__))); \
+GENERATE_SOA_CONST_VIEW(CONST_VIEW_NAME,                                                                                   \
+  SOA_VIEW_LAYOUT_LIST( (BOOST_PP_CAT(LAYOUT_NAME,_default), BOOST_PP_CAT(instance_, LAYOUT_NAME)) ),                      \
+  SOA_VIEW_VALUE_LIST(_ITERATE_ON_ALL_COMMA(_VIEW_FIELD_FROM_LAYOUT, BOOST_PP_CAT(instance_, LAYOUT_NAME), __VA_ARGS__)));
+
+#define GENERATE_SOA_LAYOUT_AND_VIEW(LAYOUT_NAME, VIEW_NAME, ... )                                                         \
+GENERATE_SOA_LAYOUT(LAYOUT_NAME, __VA_ARGS__);                                                                             \
+using BOOST_PP_CAT(LAYOUT_NAME, _default) = LAYOUT_NAME <>;                                                                \
+GENERATE_SOA_VIEW(VIEW_NAME,                                                                                               \
+  SOA_VIEW_LAYOUT_LIST( (BOOST_PP_CAT(LAYOUT_NAME, _default), BOOST_PP_CAT(instance_, LAYOUT_NAME)) ),                     \
+  SOA_VIEW_VALUE_LIST(_ITERATE_ON_ALL_COMMA(_VIEW_FIELD_FROM_LAYOUT, BOOST_PP_CAT(instance_, LAYOUT_NAME), __VA_ARGS__)));
+
+ 
+#define GENERATE_SOA_LAYOUT_AND_CONST_VIEW(LAYOUT_NAME, CONST_VIEW_NAME, ... )                                             \
+GENERATE_SOA_LAYOUT(LAYOUT_NAME, __VA_ARGS__);                                                                             \
+using BOOST_PP_CAT(LAYOUT_NAME, _default) = LAYOUT_NAME <>;                                                                \
+GENERATE_SOA_CONST_VIEW(CONST_VIEW_NAME,                                                                                   \
+  SOA_VIEW_LAYOUT_LIST( (BOOST_PP_CAT(LAYOUT_NAME,_default), BOOST_PP_CAT(instance_, LAYOUT_NAME)) ),                      \
+  SOA_VIEW_VALUE_LIST(_ITERATE_ON_ALL_COMMA(_VIEW_FIELD_FROM_LAYOUT, BOOST_PP_CAT(instance_, LAYOUT_NAME), __VA_ARGS__)));
 
 #endif  // ndef DataStructures_SoAView_h

@@ -18,7 +18,7 @@ public:
 
     // originally from rechits
     SOA_COLUMN(uint32_t, clusModuleStart) // index of the first cluster of each module
-  );
+  )
   
   // We use all defaults for the template parameters.
   using DeviceLayout = DeviceLayoutTemplate<>;
@@ -33,7 +33,7 @@ public:
       // originally from rechits
       SOA_VIEW_VALUE(deviceLayout, clusModuleStart) // index of the first cluster of each module
     )
-  );
+  )
   
   using DeviceView = DeviceViewTemplate<>;
   
@@ -47,7 +47,7 @@ public:
       // originally from rechits
       SOA_VIEW_VALUE(deviceView, clusModuleStart) // index of the first cluster of each module
     )
-  );
+  )
   
   using DeviceConstView = DeviceConstViewTemplate<>;
   

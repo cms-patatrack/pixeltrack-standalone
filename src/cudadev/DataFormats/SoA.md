@@ -121,6 +121,27 @@ for (size_t i=0; i < soaLayout.soaMetadata().size(); ++i) {
   soaView.someNumber() += i;
 }
 ```
+Any mixture of mutable and const views can also be defined automatically with the layout (for the trivially identical views) using one those macros `GENERATE_SOA_LAYOUT_VIEW_AND_CONST_VIEW`, `GENERATE_SOA_LAYOUT_AND_VIEW` and `GENERATE_SOA_LAYOUT_AND_CONST_VIEW`:
+
+```C++
+GENERATE_SOA_LAYOUT_VIEW_AND_CONST_VIEW(SoA1LayoutTemplate, SoA1ViewTemplate, SoA1ConstViewTemplate,
+  // columns: one value per element
+  SOA_COLUMN(double, x),
+  SOA_COLUMN(double, y),
+  SOA_COLUMN(double, z),
+  SOA_COLUMN(double, sum),
+  SOA_COLUMN(double, prod),
+  SOA_COLUMN(uint16_t, color),
+  SOA_COLUMN(int32_t, value),
+  SOA_COLUMN(double *, py),
+  SOA_COLUMN(uint32_t, count),
+  SOA_COLUMN(uint32_t, anotherCount),
+
+  // scalars: one value for the whole structure
+  SOA_SCALAR(const char *, description),
+  SOA_SCALAR(uint32_t, someNumber)
+)
+```
 
 ## Template parameters
 
@@ -137,12 +158,16 @@ scenarios where only a subset of columns are used in a given GPU kernel.
 
 ## Current status and further improvements
 
+### Available features
+
 - The layout and views support scalars and columns, alignment and alignment enforcement and hinting.
-- Cache access style will be added at in subsequent updates.
-- `__restrict__` compiler hinting will be added later.
+- Automatic `__restrict__` compiler hinting is supported.
+- A shortcut alloCreate a mechanism to derive trivial views and const views from a single layout.
+- Cache access style, which was explored will be removed as this not-yet-used feature interferes with `__restrict__` support (which is already in used in existing code)
+
+### Planned additions
 - Optional range checking will be added later. This implies adding support for size to views and will restrict views to columns of 
 equal size.
 - Eigen access was validated with an earlier scheme, but will be ported back to the current one later. Some alignment information can be 
 passed to Eigen strcutures. Const variants of access classes should be created to ensure we cannot leak mutable access to const products.
 - Improve `dump()` function and turn it into a more classic `operator<<()`.
-- Create a mechanism to derive trivial views and const views from a single layout.
