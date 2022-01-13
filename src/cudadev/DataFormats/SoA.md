@@ -163,7 +163,7 @@ scenarios where only a subset of columns are used in a given GPU kernel.
 - The layout and views support scalars and columns, alignment and alignment enforcement and hinting.
 - Automatic `__restrict__` compiler hinting is supported.
 - A shortcut alloCreate a mechanism to derive trivial views and const views from a single layout.
-- Cache access style, which was explored will be removed as this not-yet-used feature interferes with `__restrict__` support (which is already in used in existing code)
+- Cache access style, which was explored, was abandoned as this not-yet-used feature interferes with `__restrict__` support (which is already in used in existing code). It could be made available as a separate tool that can be used directly by the module developer, orthogonally from SoA.
 
 ### Planned additions
 - Optional range checking will be added later. This implies adding support for size to views and will restrict views to columns of 

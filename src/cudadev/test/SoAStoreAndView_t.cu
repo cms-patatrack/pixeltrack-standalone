@@ -98,32 +98,15 @@ __device__ void addAndMulTemplate (
 
 __global__ void aAMDef(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
     cms::soa::AlignmentEnforcement::Relaxed,
-    cms::soa::CacheAccessStyle::Default,
     cms::soa::RestrictQualify::Disabled> soa, size_t size) {
   addAndMulTemplate(soa, size);
 }
 
 __global__ void aAMRestrict(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
     cms::soa::AlignmentEnforcement::Relaxed,
-    cms::soa::CacheAccessStyle::Default,
     cms::soa::RestrictQualify::Enabled> soa, size_t size) {
   addAndMulTemplate(soa, size);
 }
-
-__global__ void aAMNC(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
-    cms::soa::AlignmentEnforcement::Relaxed,
-    cms::soa::CacheAccessStyle::NonCoherent,
-    cms::soa::RestrictQualify::Disabled> soa, size_t size) {
-  addAndMulTemplate(soa, size);
-}
-
-__global__ void aAMRestrict(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
-    cms::soa::AlignmentEnforcement::Relaxed,
-    cms::soa::CacheAccessStyle::NonCoherent,
-    cms::soa::RestrictQualify::Enabled> soa, size_t size) {
-  addAndMulTemplate(soa, size);
-}
-
 
 const size_t size=10000;
 

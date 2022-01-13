@@ -23,22 +23,9 @@
 #define SOA_DEVICE_RESTRICT
 #endif
 
-#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
-// Read a pointer content via read-only (non coherent) cache.
-#define LOAD_NONCOHERENT(A) __ldg(A)
-#define LOAD_STREAMING(A) __ldcs(A)
-#define STORE_STREAMING(A, V) __stcs(A, V)
-#else
-#define LOAD_NONCOHERENT(A) *(A)
-#define LOAD_STREAMING(A) *(A)
-#define STORE_STREAMING(A, V) *(A) = (V)
-#endif
-
 // compile-time sized SoA
 
 namespace cms::soa {
-
-enum class CacheAccessStyle : char { Default, NonCoherent, Streaming };
 
 enum class RestrictQualify : bool { Enabled, Disabled, Default = Disabled };
 
@@ -65,21 +52,10 @@ struct add_restrict<T, RestrictQualify::Disabled> {
   typedef const T & ReferenceToConst;
 };
 
-template <typename T, CacheAccessStyle CACHE_ACCESS_STYLE>
-SOA_HOST_DEVICE_INLINE T readWithCacheStyle (const T * addr) {
-  if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::NonCoherent) {
-    return LOAD_INCOHERENT(addr);
-  } else if constexpr (CACHE_ACCESS_STYLE == CacheAccessStyle::Streaming) {
-    return LOAD_STREAMING(addr);
-  }
-  return *addr;
-}
-
 // Helper template managing the value within it column
 // The optional compile time alignment parameter enables informing the
 // compiler of alignment (enforced by caller).
 template <typename T, size_t ALIGNMENT,
-  CacheAccessStyle CACHE_STYLE = CacheAccessStyle::Default, 
   RestrictQualify RESTRICT_QUALIFY = RestrictQualify::Disabled>
 class SoAValue {
 public:
@@ -123,7 +99,6 @@ private:
 
 // Helper template managing the value within it column
 template <typename T, size_t ALIGNMENT,
-  CacheAccessStyle CACHE_STYLE = CacheAccessStyle::Default, 
   RestrictQualify RESTRICT_QUALIFY = RestrictQualify::Disabled>
 class SoAConstValue {
 public:
