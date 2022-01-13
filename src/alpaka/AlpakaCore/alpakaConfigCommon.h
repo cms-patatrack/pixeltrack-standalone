@@ -10,6 +10,7 @@ namespace alpaka_common {
   using Extent = uint32_t;
   using Offsets = Extent;
 
+  using Dim0D = alpaka::DimInt<0u>;
   using Dim1D = alpaka::DimInt<1u>;
   using Dim2D = alpaka::DimInt<2u>;
   using Dim3D = alpaka::DimInt<3u>;
@@ -19,6 +20,7 @@ namespace alpaka_common {
   using Vec1D = Vec<Dim1D>;
   using Vec2D = Vec<Dim2D>;
   using Vec3D = Vec<Dim3D>;
+  using Scalar = Vec<Dim0D>;
 
   template <typename TDim>
   using WorkDiv = alpaka::WorkDivMembers<TDim, Idx>;
@@ -29,12 +31,6 @@ namespace alpaka_common {
   // host types
   using DevHost = alpaka::DevCpu;
   using PltfHost = alpaka::Pltf<DevHost>;
-
-  template <typename TData>
-  using AlpakaHostBuf = alpaka::Buf<DevHost, TData, Dim1D, Idx>;
-
-  template <typename TData>
-  using AlpakaHostView = alpaka::ViewPlainPtr<DevHost, TData, Dim1D, Idx>;
 
 }  // namespace alpaka_common
 

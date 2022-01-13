@@ -8,7 +8,7 @@
 
 using namespace alpaka_common;
 
-namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
+namespace cms::alpakatools {
 
   /*********************************************
      *              WORKDIV CREATION
@@ -150,8 +150,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                const Func func,
                                                const unsigned int dimIndex = 0) {
     const auto& [firstElementIdx, endElementIdx] =
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block_truncated(
-            acc, maxNumberOfElements, elementIdxShift, dimIndex);
+        element_index_range_in_block_truncated(acc, maxNumberOfElements, elementIdxShift, dimIndex);
 
     for (Idx elementIdx = firstElementIdx; elementIdx < endElementIdx; ++elementIdx) {
       func(elementIdx);
@@ -167,8 +166,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                const Func func,
                                                const unsigned int dimIndex = 0) {
     const Idx elementIdxShift = 0;
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block(
-        acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
+    for_each_element_in_block(acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
   }
 
   /*
@@ -199,8 +197,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                               const Func func,
                                               const unsigned int dimIndex = 0) {
     const Idx elementIdxShift = 0;
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid(
-        acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
+    for_each_element_in_grid(acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
   }
 
   /**************************************************************
@@ -221,7 +218,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                        const unsigned int dimIndex = 0) {
     // Get thread / element indices in block.
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block(acc, elementIdxShift, dimIndex);
+        element_index_range_in_block(acc, elementIdxShift, dimIndex);
 
     // Stride = block size.
     const Idx blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndex]);
@@ -249,8 +246,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                        const Func func,
                                                        const unsigned int dimIndex = 0) {
     const Idx elementIdxShift = 0;
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_block_strided(
-        acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
+    for_each_element_in_block_strided(acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
   }
 
   /*
@@ -267,7 +263,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                       const unsigned int dimIndex = 0) {
     // Get thread / element indices in block.
     const auto& [firstElementIdxNoStride, endElementIdxNoStride] =
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_grid(acc, elementIdxShift, dimIndex);
+        element_index_range_in_grid(acc, elementIdxShift, dimIndex);
 
     // Stride = grid size.
     const Idx gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[dimIndex]);
@@ -295,8 +291,7 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
                                                       const Func func,
                                                       const unsigned int dimIndex = 0) {
     const Idx elementIdxShift = 0;
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
-        acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
+    for_each_element_in_grid_strided(acc, maxNumberOfElements, elementIdxShift, func, dimIndex);
   }
 
   /**************************************************************
@@ -327,6 +322,6 @@ namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE {
     return isNextStrideElementValid;
   }
 
-}  // namespace cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace cms::alpakatools
 
 #endif  // AlpakaCore_alpakaWorkDivHelper_h

@@ -20,12 +20,12 @@ void go(const DevHost& host,
   auto v_buf = alpaka::allocBuf<T, Idx>(host, N);
   auto v = alpaka::getPtrNative(v_buf);
   auto v_d = alpaka::allocBuf<T, Idx>(device, N);
-  alpaka::memcpy(queue, v_d, v_buf, N);
+  alpaka::memcpy(queue, v_d, v_buf);
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
 
-  using Hist = ::cms::alpakatools::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
+  using Hist = cms::alpakatools::HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
@@ -58,7 +58,7 @@ void go(const DevHost& host,
       offsets[10] = 3297 + offsets[9];
     }
 
-    alpaka::memcpy(queue, off_d, offsets_buf, nParts + 1);
+    alpaka::memcpy(queue, off_d, offsets_buf);
 
     for (long long j = 0; j < N; j++)
       v[j] = rgen(eng);
@@ -68,9 +68,9 @@ void go(const DevHost& host,
         v[j] = sizeof(T) == 1 ? 22 : 3456;
     }
 
-    alpaka::memcpy(queue, v_d, v_buf, N);
+    alpaka::memcpy(queue, v_d, v_buf);
 
-    alpaka::memset(queue, h_d, 0, 1u);
+    alpaka::memset(queue, h_d, 0);
 
     std::cout << "Calling fillManyFromVector" << std::endl;
     fillManyFromVector(alpaka::getPtrNative(h_d),
@@ -81,7 +81,7 @@ void go(const DevHost& host,
                        256,
                        queue);
 
-    alpaka::memcpy(queue, h_buf, h_d, 1u);
+    alpaka::memcpy(queue, h_buf, h_d);
     alpaka::wait(queue);
     std::cout << "Copied results" << std::endl;
 

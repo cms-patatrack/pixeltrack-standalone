@@ -11,13 +11,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     SiPixelDigisAlpaka() = default;
     explicit SiPixelDigisAlpaka(Queue &queue, size_t maxFedWords)
-        : xx_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
-          yy_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
-          adc_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
-          moduleInd_d{::cms::alpakatools::allocDeviceBuf<uint16_t>(queue, maxFedWords)},
-          clus_d{::cms::alpakatools::allocDeviceBuf<int32_t>(queue, maxFedWords)},
-          pdigi_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxFedWords)},
-          rawIdArr_d{::cms::alpakatools::allocDeviceBuf<uint32_t>(queue, maxFedWords)} {}
+        : xx_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},
+          yy_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},
+          adc_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},
+          moduleInd_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},
+          clus_d{cms::alpakatools::make_device_buffer<int32_t[]>(queue, maxFedWords)},
+          pdigi_d{cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxFedWords)},
+          rawIdArr_d{cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxFedWords)} {}
     ~SiPixelDigisAlpaka() = default;
 
     SiPixelDigisAlpaka(const SiPixelDigisAlpaka &) = delete;
@@ -57,17 +57,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t const *c_pdigi() const { return alpaka::getPtrNative(pdigi_d); }
     uint32_t const *c_rawIdArr() const { return alpaka::getPtrNative(rawIdArr_d); }
 
-    // TO DO: nothing async in here for now... Pass the queue as argument instead, and don't wait anymore!
     auto adcToHostAsync(Queue &queue) const {
-      auto ret = ::cms::alpakatools::allocHostBuf<uint16_t>(nDigis());
+      auto ret = cms::alpakatools::make_host_buffer<uint16_t[]>(nDigis());
       alpaka::memcpy(queue, ret, adc_d, nDigis());
       return ret;
     }
 
 #ifdef TODO
-    ::cms::alpakatools::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
-    ::cms::alpakatools::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
-    ::cms::alpakatools::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+    cms::alpakatools::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
+    cms::alpakatools::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
+    cms::alpakatools::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
 #endif
 
     class DeviceConstView {
@@ -93,16 +92,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   private:
     // These are consumed by downstream device code
-    AlpakaDeviceBuf<uint16_t> xx_d;         // local coordinates of each pixel
-    AlpakaDeviceBuf<uint16_t> yy_d;         //
-    AlpakaDeviceBuf<uint16_t> adc_d;        // ADC of each pixel
-    AlpakaDeviceBuf<uint16_t> moduleInd_d;  // module id of each pixel
-    AlpakaDeviceBuf<int32_t> clus_d;        // cluster id of each pixel
+    cms::alpakatools::device_buffer<Device, uint16_t[]> xx_d;         // local coordinates of each pixel
+    cms::alpakatools::device_buffer<Device, uint16_t[]> yy_d;         //
+    cms::alpakatools::device_buffer<Device, uint16_t[]> adc_d;        // ADC of each pixel
+    cms::alpakatools::device_buffer<Device, uint16_t[]> moduleInd_d;  // module id of each pixel
+    cms::alpakatools::device_buffer<Device, int32_t[]> clus_d;        // cluster id of each pixel
 
     // These are for CPU output; should we (eventually) place them to a
     // separate product?
-    AlpakaDeviceBuf<uint32_t> pdigi_d;
-    AlpakaDeviceBuf<uint32_t> rawIdArr_d;
+    cms::alpakatools::device_buffer<Device, uint32_t[]> pdigi_d;
+    cms::alpakatools::device_buffer<Device, uint32_t[]> rawIdArr_d;
 
     uint32_t nModules_h = 0;
     uint32_t nDigis_h = 0;

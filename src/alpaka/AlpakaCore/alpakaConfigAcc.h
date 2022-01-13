@@ -89,6 +89,10 @@ namespace alpaka_omp4_async {
 #define STRINGIFY_(ARG) #ARG
 #define STRINGIFY(ARG) STRINGIFY_(ARG)
 
+#ifndef ALPAKA_ACCELERATOR_NAMESPACE
+#error ALPAKA_ACCELERATOR_NAMESPACE is not defined
+#endif  // ALPAKA_ACCELERATOR_NAMESPACE
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   // these are independent from the dimensionality
   using Device = alpaka::Dev<Acc1D>;
@@ -106,14 +110,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
                 STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
 
-  template <typename TData>
-  using AlpakaDeviceBuf = alpaka::Buf<Device, TData, Dim1D, Idx>;
-
-  template <typename TData>
-  using AlpakaDeviceView = alpaka::ViewPlainPtr<Device, TData, Dim1D, Idx>;
-
-  template <typename TData>
-  using AlpakaDeviceSubView = alpaka::ViewSubView<Device, TData, Dim1D, Idx>;
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif  // alpakaConfigAcc_h_

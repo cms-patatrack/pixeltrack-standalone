@@ -42,33 +42,32 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           clusModuleStart[0] = moduleStart[0] = 0;
         }
 
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
+        cms::alpakatools::for_each_element_in_grid_strided(
             acc, gpuClustering::MaxNumModules, [&](uint32_t i) { nClustersInModule[i] = 0; });
 
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
-            acc, numElements, [&](uint32_t i) {
-              if (id[i] != InvId) {
-                float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
-                float offset = (isRun2) ? (id[i] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
+        cms::alpakatools::for_each_element_in_grid_strided(acc, numElements, [&](uint32_t i) {
+          if (id[i] != InvId) {
+            float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
+            float offset = (isRun2) ? (id[i] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
 
-                bool isDeadColumn = false, isNoisyColumn = false;
+            bool isDeadColumn = false, isNoisyColumn = false;
 
-                int row = x[i];
-                int col = y[i];
-                auto ret = ped->getPedAndGain(id[i], col, row, isDeadColumn, isNoisyColumn);
-                float pedestal = ret.first;
-                float gain = ret.second;
-                // float pedestal = 0; float gain = 1.;
-                if (isDeadColumn | isNoisyColumn) {
-                  id[i] = InvId;
-                  adc[i] = 0;
-                  printf("bad pixel at %d in %d\n", i, id[i]);
-                } else {
-                  float vcal = adc[i] * gain - pedestal * gain;
-                  adc[i] = std::max(100, int(vcal * conversionFactor + offset));
-                }
-              }
-            });
+            int row = x[i];
+            int col = y[i];
+            auto ret = ped->getPedAndGain(id[i], col, row, isDeadColumn, isNoisyColumn);
+            float pedestal = ret.first;
+            float gain = ret.second;
+            // float pedestal = 0; float gain = 1.;
+            if (isDeadColumn | isNoisyColumn) {
+              id[i] = InvId;
+              adc[i] = 0;
+              printf("bad pixel at %d in %d\n", i, id[i]);
+            } else {
+              float vcal = adc[i] * gain - pedestal * gain;
+              adc[i] = std::max(100, int(vcal * conversionFactor + offset));
+            }
+          }
+        });
       }
     };
   }  // namespace gpuCalibPixel

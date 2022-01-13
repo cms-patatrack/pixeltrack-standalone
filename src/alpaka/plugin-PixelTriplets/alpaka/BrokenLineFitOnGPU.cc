@@ -12,17 +12,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const auto blockSize = 64;
     const auto numberOfBlocks = (maxNumberOfConcurrentFits_ + blockSize - 1) / blockSize;
-    const WorkDiv1D workDivTriplets = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-        Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
-    const WorkDiv1D workDivQuadsPenta = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-        Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
+    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    const WorkDiv1D workDivQuadsPenta =
+        cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
 
     //  Fit internals
-    auto hitsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
+    auto hitsGPU_ = cms::alpakatools::make_device_buffer<double[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix3xNd<4>) / sizeof(double));
-    auto hits_geGPU_ = ::cms::alpakatools::allocDeviceBuf<float>(
+    auto hits_geGPU_ = cms::alpakatools::make_device_buffer<float[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Matrix6x4f) / sizeof(float));
-    auto fast_fit_resultsGPU_ = ::cms::alpakatools::allocDeviceBuf<double>(
+    auto fast_fit_resultsGPU_ = cms::alpakatools::make_device_buffer<double[]>(
         queue, maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double));
 
     for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {

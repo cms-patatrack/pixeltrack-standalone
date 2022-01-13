@@ -34,7 +34,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         uint32_t* nCells,
         CellNeighborsVector* cellNeighbors,
         CellTracksVector* cellTracks,
-        TrackingRecHit2DSOAView const& __restrict__ hh,
+        TrackingRecHit2DSoAView const& __restrict__ hh,
         GPUCACell::OuterHitOfCell* isOuterHitOfCell,
         int16_t const* __restrict__ phicuts,
         float const* __restrict__ minz,
@@ -56,7 +56,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       bool isOuterLadder = ideal_cond;
 
-      using Hist = TrackingRecHit2DSOAView::Hist;
+      using Hist = TrackingRecHit2DSoAView::Hist;
 
       auto const& __restrict__ hist = hh.phiBinner();
       uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
@@ -90,16 +90,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // X runs faster
       const uint32_t blockDimensionX(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndexX]);
       const auto& [firstElementIdxNoStrideX, endElementIdxNoStrideX] =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block(acc, 0u, dimIndexX);
+          cms::alpakatools::element_index_range_in_block(acc, 0u, dimIndexX);
 
       // Outermost loop on Y
       const uint32_t gridDimensionY(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[dimIndexY]);
       const auto& [firstElementIdxNoStrideY, endElementIdxNoStrideY] =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_grid(acc, 0u, dimIndexY);
+          cms::alpakatools::element_index_range_in_grid(acc, 0u, dimIndexY);
       uint32_t firstElementIdxY = firstElementIdxNoStrideY;
       uint32_t endElementIdxY = endElementIdxNoStrideY;
       for (uint32_t j = firstElementIdxY; j < ntot; ++j) {
-        if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+        if (not cms::alpakatools::next_valid_element_index_strided(
                 j, firstElementIdxY, endElementIdxY, gridDimensionY, ntot))
           break;
 
@@ -224,7 +224,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           uint32_t firstElementIdxX = firstElementIdxNoStrideX;
           uint32_t endElementIdxX = endElementIdxNoStrideX;
           for (uint32_t pIndex = firstElementIdxX; pIndex < maxpIndex; ++pIndex) {
-            if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+            if (not cms::alpakatools::next_valid_element_index_strided(
                     pIndex, firstElementIdxX, endElementIdxX, blockDimensionX, maxpIndex))
               break;
 

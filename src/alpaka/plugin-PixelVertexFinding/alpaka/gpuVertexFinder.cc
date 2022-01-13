@@ -24,32 +24,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto const& fit = tracks.stateAtBS;
         auto const* quality = tracks.qualityData();
 
-        ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid_strided(
-            acc, TkSoA::stride(), [&](uint32_t idx) {
-              auto nHits = tracks.nHits(idx);
-              if (nHits == 0)
-                return;  // this is a guard: maybe we need to move to nTracks...
+        cms::alpakatools::for_each_element_in_grid_strided(acc, TkSoA::stride(), [&](uint32_t idx) {
+          auto nHits = tracks.nHits(idx);
+          if (nHits == 0)
+            return;  // this is a guard: maybe we need to move to nTracks...
 
-              // initialize soa...
-              soa->idv[idx] = -1;
+          // initialize soa...
+          soa->idv[idx] = -1;
 
-              if (nHits < 4)
-                return;  // no triplets
-              if (quality[idx] != trackQuality::loose)
-                return;
+          if (nHits < 4)
+            return;  // no triplets
+          if (quality[idx] != trackQuality::loose)
+            return;
 
-              auto pt = tracks.pt(idx);
+          auto pt = tracks.pt(idx);
 
-              if (pt < ptMin)
-                return;
+          if (pt < ptMin)
+            return;
 
-              auto& data = *pws;
-              auto it = alpaka::atomicAdd(acc, &data.ntrks, 1u, alpaka::hierarchy::Blocks{});
-              data.itrk[it] = idx;
-              data.zt[it] = tracks.zip(idx);
-              data.ezt2[it] = fit.covariance(idx)(14);
-              data.ptt2[it] = pt * pt;
-            });
+          auto& data = *pws;
+          auto it = alpaka::atomicAdd(acc, &data.ntrks, 1u, alpaka::hierarchy::Blocks{});
+          data.itrk[it] = idx;
+          data.zt[it] = tracks.zip(idx);
+          data.ezt2[it] = fit.covariance(idx)(14);
+          data.ptt2[it] = pt * pt;
+        });
       }
     };
 
@@ -109,32 +108,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // std::cout << "producing Vertices on GPU" << std::endl;
       ALPAKA_ASSERT_OFFLOAD(tksoa);
 
-      ZVertexAlpaka vertices = ::cms::alpakatools::allocDeviceBuf<ZVertexSoA>(queue, 1u);
+      ZVertexAlpaka vertices = cms::alpakatools::make_device_buffer<ZVertexSoA>(queue);
       auto* soa = alpaka::getPtrNative(vertices);
       ALPAKA_ASSERT_OFFLOAD(soa);
 
-      auto ws_dBuf{::cms::alpakatools::allocDeviceBuf<WorkSpace>(queue, 1u)};
+      auto ws_dBuf{cms::alpakatools::make_device_buffer<WorkSpace>(queue)};
       auto ws_d = alpaka::getPtrNative(ws_dBuf);
 
-      auto nvFinalVerticesView =
-          ::cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &soa->nvFinal, 1u);
-      alpaka::memset(queue, nvFinalVerticesView, 0, 1u);
-      auto ntrksWorkspaceView = ::cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &ws_d->ntrks, 1u);
-      alpaka::memset(queue, ntrksWorkspaceView, 0, 1u);
+      auto nvFinalVerticesView = cms::alpakatools::make_device_view(alpaka::getDev(queue), soa->nvFinal);
+      alpaka::memset(queue, nvFinalVerticesView, 0);
+      auto ntrksWorkspaceView = cms::alpakatools::make_device_view(alpaka::getDev(queue), ws_d->ntrks);
+      alpaka::memset(queue, ntrksWorkspaceView, 0);
       auto nvIntermediateWorkspaceView =
-          ::cms::alpakatools::createDeviceView<uint32_t>(alpaka::getDev(queue), &ws_d->nvIntermediate, 1u);
-      alpaka::memset(queue, nvIntermediateWorkspaceView, 0, 1u);
+          cms::alpakatools::make_device_view(alpaka::getDev(queue), ws_d->nvIntermediate);
+      alpaka::memset(queue, nvIntermediateWorkspaceView, 0);
 
       const uint32_t blockSize = 128;
       const uint32_t numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-      const WorkDiv1D loadTracksWorkDiv = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-          Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      const WorkDiv1D loadTracksWorkDiv =
+          cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
-      const WorkDiv1D finderSorterWorkDiv =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(1), Vec1D::all(1024 - 256));
-      const WorkDiv1D splitterFitterWorkDiv =
-          ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(Vec1D::all(1024), Vec1D::all(128));
+      const WorkDiv1D finderSorterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1), Vec1D::all(1024 - 256));
+      const WorkDiv1D splitterFitterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1024), Vec1D::all(128));
 
       if (oneKernel_) {
         // implemented only for density clustesrs

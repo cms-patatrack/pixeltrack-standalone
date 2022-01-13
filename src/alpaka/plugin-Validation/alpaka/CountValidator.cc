@@ -34,8 +34,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::EDGetTokenT<TrackCount> trackCountToken_;
     edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiToken_;
-    edm::EDGetTokenT<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterToken_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>> digiToken_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>> clusterToken_;
     edm::EDGetTokenT<PixelTrackHost> trackToken_;
     edm::EDGetTokenT<ZVertexHost> vertexToken_;
 
@@ -57,8 +57,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
         trackCountToken_(reg.consumes<TrackCount>()),
         vertexCountToken_(reg.consumes<VertexCount>()),
-        digiToken_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
-        clusterToken_(reg.consumes<::cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
+        digiToken_(reg.consumes<cms::alpakatools::Product<Queue, SiPixelDigisAlpaka>>()),
+        clusterToken_(reg.consumes<cms::alpakatools::Product<Queue, SiPixelClustersAlpaka>>()),
         trackToken_(reg.consumes<PixelTrackHost>()),
         vertexToken_(reg.consumes<ZVertexHost>()) {}
 
@@ -76,7 +76,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ss << "Event " << iEvent.eventID() << " ";
 
     auto const& pdigis = iEvent.get(digiToken_);
-    ::cms::alpakatools::ScopedContextProduce<Queue> ctx{pdigis};
+    cms::alpakatools::ScopedContextProduce<Queue> ctx{pdigis};
     {
       auto const& count = iEvent.get(digiClusterCountToken_);
       auto const& digis = ctx.get(iEvent, digiToken_);

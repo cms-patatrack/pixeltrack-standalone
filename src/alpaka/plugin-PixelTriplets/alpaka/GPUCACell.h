@@ -33,10 +33,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    using Hits = ::ALPAKA_ACCELERATOR_NAMESPACE::TrackingRecHit2DSOAView;
+    using Hits = TrackingRecHit2DSoAView;
     using hindex_type = Hits::hindex_type;
 
-    using TmpTuple = ::cms::alpakatools::VecArray<uint32_t, 6>;
+    using TmpTuple = cms::alpakatools::VecArray<uint32_t, 6>;
 
     using HitContainer = pixelTrack::HitContainer;
     using Quality = trackQuality::Quality;
@@ -76,7 +76,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellNeighbors.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellNeighbors[i].reset();
-          ::cms::alpakatools::threadfence(acc);
+          cms::alpakatools::threadfence(acc);
           // Serial case does not behave properly otherwise (also observed in Kokkos)
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
           theOuterNeighbors = &cellNeighbors[i];
@@ -91,7 +91,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      ::cms::alpakatools::threadfence(acc);
+      cms::alpakatools::threadfence(acc);
 
       return outerNeighbors().push_back(acc, t);
     }
@@ -104,7 +104,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellTracks.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellTracks[i].reset();
-          ::cms::alpakatools::threadfence(acc);
+          cms::alpakatools::threadfence(acc);
           // Serial case does not behave properly otherwise (also observed in Kokkos)
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
           theTracks = &cellTracks[i];
@@ -119,7 +119,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      ::cms::alpakatools::threadfence(acc);
+      cms::alpakatools::threadfence(acc);
 
       return tracks().push_back(acc, t);
     }
@@ -334,7 +334,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       GPUCACell* __restrict__ cells,
                                                       CellTracksVector& cellTracks,
                                                       HitContainer& foundNtuplets,
-                                                      ::cms::alpakatools::AtomicPairCounter& apc,
+                                                      cms::alpakatools::AtomicPairCounter& apc,
                                                       Quality* __restrict__ quality,
                                                       TmpTuple& tmpNtuplet,
                                                       const unsigned int minHitsPerNtuplet,

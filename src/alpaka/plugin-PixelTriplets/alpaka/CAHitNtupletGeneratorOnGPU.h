@@ -19,9 +19,9 @@ namespace edm {
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class CAHitNtupletGeneratorOnGPU {
   public:
-    using HitsOnGPU = TrackingRecHit2DSOAView;
+    using HitsOnGPU = TrackingRecHit2DSoAView;
     using HitsOnCPU = TrackingRecHit2DAlpaka;
-    using hindex_type = TrackingRecHit2DSOAView::hindex_type;
+    using hindex_type = TrackingRecHit2DSoAView::hindex_type;
 
     using Quality = pixelTrack::Quality;
     using OutputSoA = pixelTrack::TrackSoA;
@@ -49,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     Params m_params;
 
-    //AlpakaDeviceBuf<Counters> m_counters;
+    //cms::alpakatools::device_buffer<Device, Counters> m_counters;
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

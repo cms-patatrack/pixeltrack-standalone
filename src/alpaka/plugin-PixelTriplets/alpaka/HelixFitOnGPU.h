@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class HelixFitOnGPU {
   public:
-    using HitsView = TrackingRecHit2DSOAView;
+    using HitsView = TrackingRecHit2DSoAView;
 
     using Tuples = pixelTrack::HitContainer;
     using OutputSoA = pixelTrack::TrackSoA;

@@ -43,16 +43,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const uint32_t dimIndexX = 1u;
         const uint32_t blockDimensionX(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[dimIndexX]);
         const auto& [firstElementIdxNoStrideX, endElementIdxNoStrideX] =
-            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_block(acc, 0u, dimIndexX);
+            cms::alpakatools::element_index_range_in_block(acc, 0u, dimIndexX);
 
         // Outermost loop on Y
         const uint32_t gridDimensionY(alpaka::getWorkDiv<alpaka::Grid, alpaka::Elems>(acc)[dimIndexY]);
         const auto& [firstElementIdxNoStrideY, endElementIdxNoStrideY] =
-            ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::element_index_range_in_grid(acc, 0u, dimIndexY);
+            cms::alpakatools::element_index_range_in_grid(acc, 0u, dimIndexY);
         uint32_t firstElementIdxY = firstElementIdxNoStrideY;
         uint32_t endElementIdxY = endElementIdxNoStrideY;
         for (uint32_t idy = firstElementIdxY, nt = nHits; idy < nt; ++idy) {
-          if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+          if (not cms::alpakatools::next_valid_element_index_strided(
                   idy, firstElementIdxY, endElementIdxY, gridDimensionY, nt))
             break;
 
@@ -88,7 +88,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           uint32_t firstElementIdxX = firstElementIdxNoStrideX;
           uint32_t endElementIdxX = endElementIdxNoStrideX;
           for (uint32_t ic = firstElementIdxX; ic < sg - 1; ++ic) {
-            if (not ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::next_valid_element_index_strided(
+            if (not cms::alpakatools::next_valid_element_index_strided(
                     ic, firstElementIdxX, endElementIdxX, blockDimensionX, sg - 1))
               break;
 

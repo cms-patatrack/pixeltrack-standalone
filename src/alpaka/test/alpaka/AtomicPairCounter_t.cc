@@ -10,8 +10,8 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 struct update {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, ::cms::alpakatools::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid(acc, n, [&](uint32_t i) {
+      const T_Acc &acc, cms::alpakatools::AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+    cms::alpakatools::for_each_element_in_grid(acc, n, [&](uint32_t i) {
       auto m = i % 11;
       m = m % 6 + 1;  // max 6, no 0
       auto c = dc->add(acc, m);
@@ -26,7 +26,7 @@ struct update {
 struct finalize {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                ::cms::alpakatools::AtomicPairCounter const *dc,
+                                cms::alpakatools::AtomicPairCounter const *dc,
                                 uint32_t *ind,
                                 uint32_t *cont,
                                 uint32_t n) const {
@@ -38,11 +38,11 @@ struct finalize {
 struct verify {
   template <typename T_Acc>
   ALPAKA_FN_ACC void operator()(const T_Acc &acc,
-                                ::cms::alpakatools::AtomicPairCounter const *dc,
+                                cms::alpakatools::AtomicPairCounter const *dc,
                                 uint32_t const *ind,
                                 uint32_t const *cont,
                                 uint32_t n) const {
-    ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::for_each_element_in_grid(acc, n, [&](uint32_t i) {
+    cms::alpakatools::for_each_element_in_grid(acc, n, [&](uint32_t i) {
       assert(0 == ind[0]);
       assert(dc->get().m == n);
       assert(ind[n] == dc->get().n);
@@ -65,10 +65,10 @@ int main() {
 
   constexpr uint32_t C = 1;
   const Vec1D sizeC(C);
-  auto c_dbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(device, sizeC);
-  alpaka::memset(queue, c_dbuf, 0, sizeC);
+  auto c_dbuf = alpaka::allocBuf<cms::alpakatools::AtomicPairCounter, Idx>(device, sizeC);
+  alpaka::memset(queue, c_dbuf, 0);
 
-  std::cout << "size " << C * sizeof(::cms::alpakatools::AtomicPairCounter) << std::endl;
+  std::cout << "size " << C * sizeof(cms::alpakatools::AtomicPairCounter) << std::endl;
 
   constexpr uint32_t N = 20000;
   constexpr uint32_t M = N * 6;
@@ -82,8 +82,7 @@ int main() {
   // Update
   const Vec1D &blocksPerGrid(Vec1D(2000u));
   const Vec1D &threadsPerBlockOrElementsPerThread(Vec1D(512u));
-  const WorkDiv1D &workDiv =
-      ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<Acc1D>(workDiv,
                                                   update(),
@@ -95,8 +94,8 @@ int main() {
   // Finalize
   const Vec1D &blocksPerGridFinalize(Vec1D(1u));
   const Vec1D &threadsPerBlockOrElementsPerThreadFinalize(Vec1D(1u));
-  const WorkDiv1D &workDivFinalize = ::cms::alpakatools::ALPAKA_ACCELERATOR_NAMESPACE::make_workdiv(
-      blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
+  const WorkDiv1D &workDivFinalize =
+      cms::alpakatools::make_workdiv(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<Acc1D>(workDivFinalize,
                                                   finalize(),
@@ -114,8 +113,8 @@ int main() {
                                                   alpaka::getPtrNative(m_dbuf),
                                                   NUM_VALUES));
 
-  auto c_hbuf = alpaka::allocBuf<::cms::alpakatools::AtomicPairCounter, Idx>(host, sizeC);
-  alpaka::memcpy(queue, c_hbuf, c_dbuf, sizeC);
+  auto c_hbuf = alpaka::allocBuf<cms::alpakatools::AtomicPairCounter, Idx>(host, sizeC);
+  alpaka::memcpy(queue, c_hbuf, c_dbuf);
   alpaka::wait(queue);
 
   auto c_h = alpaka::getPtrNative(c_hbuf);
