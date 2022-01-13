@@ -37,6 +37,7 @@ private:
       // Populate the view with individual column pointers
       auto & cmd = *cablingMapDevice;
       cablingMapDeviceView = SiPixelROCsStatusAndMappingConstView(
+        pixelgpudetails::MAX_SIZE,
         cmd.fed, // Those are array pointers (in device, but we won't dereference them here).
         cmd.link,
         cmd.roc,

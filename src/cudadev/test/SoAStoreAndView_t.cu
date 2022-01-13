@@ -167,4 +167,14 @@ int main() {
     assert(sv2gc.y() == 2.0 * i);
     assert(sv2gc.color() == i);
   }
+  
+  // Validation of range checking
+  try {
+    // Get a view like the default, except for range checking
+    SoA1ViewTemplate<SoA1View::byteAlignment, SoA1View::alignmentEnforcement, 
+      SoA1View::restrictQualify, cms::soa::RangeChecking::Enabled> soa1viewRangeChecking(soa1);
+    // This should throw an exception
+    [[maybe_unused]] auto si = soa1viewRangeChecking[soa1viewRangeChecking.soaMetadata().size()];
+    assert(false);
+  } catch (const std::out_of_range &) {}
 }

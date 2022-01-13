@@ -23,11 +23,20 @@
 #define SOA_DEVICE_RESTRICT
 #endif
 
+// Exception throwing (or willful crash in kernels)
+#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+#define SOA_THROW_OUT_OF_RANGE(A) { printf (A); *((char *)nullptr) = 0; }
+#else
+#define SOA_THROW_OUT_OF_RANGE(A) { throw std::out_of_range(A); }
+#endif
+
 // compile-time sized SoA
 
 namespace cms::soa {
 
 enum class RestrictQualify : bool { Enabled, Disabled, Default = Disabled };
+
+enum class RangeChecking: bool { Enabled, Disabled, Default = Disabled };
 
 template <typename T, RestrictQualify RESTRICT_QUALIFY>
 struct add_restrict {};

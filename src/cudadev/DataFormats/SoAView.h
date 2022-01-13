@@ -142,6 +142,22 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
   BOOST_PP_EXPAND(_DECLARE_VIEW_MEMBER_INITIALIZERS_IMPL LAYOUT_MEMBER_NAME)
 
 /**
+ * Generator of size computation for constructor.
+ * This is the per-layout part of the lambda checking they all have the same size.
+ */
+#define _UPDATE_SIZE_OF_VIEW_IMPL(LAYOUT_TYPE, LAYOUT_NAME) \
+  if (set) { \
+    if (ret != LAYOUT_NAME.soaMetadata().size()) \
+      throw std::out_of_range("In constructor by layout: different sizes from layouts.");               \
+  } else { \
+    ret =  LAYOUT_NAME.soaMetadata().size(); \
+    set = true; \
+  }
+
+#define _UPDATE_SIZE_OF_VIEW(R, DATA, TYPE_NAME) \
+  BOOST_PP_EXPAND(_UPDATE_SIZE_OF_VIEW_IMPL TYPE_NAME)
+
+/**
  * Generator of member initialization from constructor.
  * We use a lambda with auto return type to handle multiple possible return types.
  */
@@ -291,7 +307,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 #define GENERATE_SOA_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                                 \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
     cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed,                                       \
-    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Disabled>                                                     \
+    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Disabled,                                                     \
+    cms::soa::RangeChecking RANGE_CHECKING = cms::soa::RangeChecking::Disabled>                                                           \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
@@ -307,6 +324,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     constexpr static size_t conditionalAlignment =                                                                                        \
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     constexpr static cms::soa::RestrictQualify restrictQualify = RESTRICT_QUALIFY;                                                        \
+    constexpr static cms::soa::RangeChecking rangeChecking = RANGE_CHECKING;                                                              \
 /* Those typedefs avoid having commas in macros (which is problematic) */                                                                 \
     template <class C>                                                                                                                    \
     using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment, restrictQualify>;                                                \
@@ -321,6 +339,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
    */   \
     struct SoAMetadata {                                                                                                                  \
       friend CLASS;                                                                                                                       \
+       SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                          \
       /* Alias layout or view types to name-derived identifyer to allow simpler definitions */                                            \
       _ITERATE_ON_ALL(_DECLARE_VIEW_LAYOUT_TYPE_ALIAS, ~, LAYOUTS_LIST)                                                                   \
                                                                                                                                           \
@@ -339,17 +358,24 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     SOA_HOST_DEVICE_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                                       \
                                                                                                                                           \
     /* Trivial constuctor */                                                                                                              \
-    CLASS() : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_TRIVIAL_CONSTRUCTION, ~, VALUE_LIST) {}                                          \
+    CLASS() : nElements_(0), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_TRIVIAL_CONSTRUCTION, ~, VALUE_LIST) {}                           \
                                                                                                                                           \
     /* Constructor relying on user provided layouts or views */                                                                           \
     SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, BOOST_PP_EMPTY(), LAYOUTS_LIST))                     \
-        : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                      \
+        : nElements_(                                                                                                                     \
+            [&]() -> size_t {                                                                                                             \
+              bool set = false;                                                                                                           \
+              size_t ret = 0;                                                                                                             \
+              _ITERATE_ON_ALL(_UPDATE_SIZE_OF_VIEW, BOOST_PP_EMPTY(), LAYOUTS_LIST)                                                       \
+              return ret;                                                                                                                 \
+            }()                                                                                                                           \
+          ),                                                                                                                              \
+          _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                      \
                                                                                                                                           \
     /* Constructor relying on individually provided column addresses */                                                                   \
-    SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS,                                             \
-                                              BOOST_PP_EMPTY(),                                                                           \
-                                              VALUE_LIST))                                                                                \
-        : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                                             \
+    SOA_HOST_ONLY CLASS(size_t nElements,                                                                                                 \
+           _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS, BOOST_PP_EMPTY(), VALUE_LIST))                           \
+        : nElements_(nElements), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                      \
                                                                                                                                           \
     struct const_element {                                                                                                                \
       SOA_HOST_DEVICE_INLINE                                                                                                              \
@@ -378,12 +404,18 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     /* AoS-like accessor (non-const) */                                                                                                   \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
     element operator[](size_t index) {                                                                                                    \
+      if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                  \
+        if (index >= nElements_) SOA_THROW_OUT_OF_RANGE("Out of range index in " #CLASS "::operator[]")                                   \
+      }                                                                                                                                   \
       return element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_CONSTR_CALL, ~, VALUE_LIST));                                     \
     }                                                                                                                                     \
                                                                                                                                           \
     /* AoS-like accessor (const) */                                                                                                       \
     SOA_HOST_DEVICE_INLINE                                                                                                                \
-    const_element operator[](size_t index) const {                                                                                  \
+    const_element operator[](size_t index) const {                                                                                        \
+      if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                  \
+        if (index >= nElements_) SOA_THROW_OUT_OF_RANGE("Out of range index in " #CLASS "::operator[]")                                   \
+      }                                                                                                                                   \
       return const_element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_CONSTR_CALL, ~, VALUE_LIST));                               \
     }                                                                                                                                     \
                                                                                                                                           \
@@ -396,6 +428,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     SOA_HOST_ONLY friend void dump();                                                                                                     \
                                                                                                                                           \
   private:                                                                                                                                \
+    size_t nElements_;                                                                                                                    \
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, BOOST_PP_EMPTY(), VALUE_LIST)                                                               \
   };
 
@@ -404,8 +437,9 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
 #define GENERATE_SOA_CONST_VIEW(CLASS, LAYOUTS_LIST, VALUE_LIST)                                                                         \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                     \
     cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed,                                      \
-    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Enabled>                                                     \
-  struct CLASS {                                                                                                                        \
+    cms::soa::RestrictQualify RESTRICT_QUALIFY = cms::soa::RestrictQualify::Enabled,                                                     \
+    cms::soa::RangeChecking RANGE_CHECKING = cms::soa::RangeChecking::Disabled>                                                           \
+    struct CLASS {                                                                                                                        \
     /* these could be moved to an external type trait to free up the symbol names */                                                    \
     using self_type = CLASS;                                                                                                            \
     typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
@@ -420,6 +454,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     constexpr static size_t conditionalAlignment =                                                                                        \
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     constexpr static cms::soa::RestrictQualify restrictQualify = RESTRICT_QUALIFY;                                                        \
+    constexpr static cms::soa::RangeChecking rangeChecking = RANGE_CHECKING;                                                              \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
     template <class C>                                                                                                                    \
     using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment, restrictQualify>;                              \
@@ -435,7 +470,8 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
    */ \
     struct SoAMetadata {                                                                                                                \
       friend CLASS;                                                                                                                     \
-      /* Alias layout/view types to name-derived identifyer to allow simpler definitions */                                             \
+       SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                        \
+       /* Alias layout/view types to name-derived identifyer to allow simpler definitions */                                            \
       _ITERATE_ON_ALL(_DECLARE_VIEW_LAYOUT_TYPE_ALIAS, ~, LAYOUTS_LIST)                                                                 \
                                                                                                                                         \
       /* Alias member types to name-derived identifyer to allow simpler definitions */                                                  \
@@ -451,15 +487,23 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                         \
                                                                                                                                         \
     /* Trivial constuctor */                                                                                                            \
-    CLASS() : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_TRIVIAL_CONSTRUCTION, ~, VALUE_LIST) {}                                        \
+    CLASS() : nElements_(0), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_TRIVIAL_CONSTRUCTION, ~, VALUE_LIST) {}                         \
                                                                                                                                         \
     /* Constructor relying on user provided layouts or views */                                                                         \
     SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, const, LAYOUTS_LIST))                              \
-        : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                    \
+        : nElements_(                                                                                                                   \
+            [&]() -> size_t {                                                                                                           \
+              bool set = false;                                                                                                         \
+              size_t ret = 0;                                                                                                           \
+              _ITERATE_ON_ALL(_UPDATE_SIZE_OF_VIEW, BOOST_PP_EMPTY(), LAYOUTS_LIST)                                                     \
+              return ret;                                                                                                               \
+            }()                                                                                                                         \
+          ),                                                                                                                            \
+          _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                    \
                                                                                                                                         \
     /* Constructor relying on individually provided column addresses */                                                                 \
-    SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS, const, VALUE_LIST))                       \
-        : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                                           \
+    SOA_HOST_ONLY CLASS(size_t nElements, _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS, const, VALUE_LIST))     \
+        : nElements_(nElements), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                    \
                                                                                                                                         \
     struct const_element {                                                                                                              \
       SOA_HOST_DEVICE_INLINE                                                                                                            \
@@ -474,7 +518,10 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
                                                                                                                                         \
     /* AoS-like accessor (const) */                                                                                                     \
     SOA_HOST_DEVICE_INLINE                                                                                                              \
-    const_element operator[](size_t index) const {                                                                                \
+    const_element operator[](size_t index) const {                                                                                      \
+      if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                \
+        if (index >= nElements_) SOA_THROW_OUT_OF_RANGE("Out of range index in " #CLASS "::operator[]")                                 \
+      }                                                                                                                                 \
       return const_element(index, _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_CONSTR_CALL, ~, VALUE_LIST));                             \
     }                                                                                                                                   \
                                                                                                                                         \
@@ -486,6 +533,7 @@ struct ConstValueTraits<C, SoAColumnType::eigen> {
     SOA_HOST_ONLY friend void dump();                                                                                                   \
                                                                                                                                         \
   private:                                                                                                                              \
+    size_t nElements_;                                                                                                                  \
     _ITERATE_ON_ALL(_DECLARE_VIEW_SOA_MEMBER, const, VALUE_LIST)                                                                        \
   };
 
