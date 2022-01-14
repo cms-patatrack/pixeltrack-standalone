@@ -55,7 +55,7 @@ GENERATE_SOA_VIEW(SoA1View2GTemplate,
     SOA_VIEW_VALUE(soa1v, description),
     SOA_VIEW_VALUE(soa1, someNumber)
   )
-);
+)
 
 using SoA1View2G = SoA1View2GTemplate<>;
 
@@ -81,7 +81,7 @@ GENERATE_SOA_CONST_VIEW(SoA1View2Gconst,
     SOA_VIEW_VALUE(soa1v, description),
     SOA_VIEW_VALUE(soa1, someNumber)
   )
-);
+)
 
 // Parameter reusing kernels.  The disassembly will indicate whether the compiler uses the wanted cache hits and uses
 // `restrict` hints avoid multiple reduce loads.
