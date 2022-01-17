@@ -15,7 +15,7 @@ class SiPixelROCsStatusAndMappingWrapper {
 public:
   /* This is using a layout as the size is needed. TODO: use views when views start embedding size. */
   explicit SiPixelROCsStatusAndMappingWrapper(SiPixelROCsStatusAndMapping const &cablingMap,
-                                          std::vector<unsigned char> modToUnp);
+                                              std::vector<unsigned char> modToUnp);
 
   bool hasQuality() const { return hasQuality_; }
 
@@ -35,27 +35,26 @@ private:
     void allocate(cudaStream_t stream) {
       cablingMapDevice = cms::cuda::make_device_unique<SiPixelROCsStatusAndMapping>(stream);
       // Populate the view with individual column pointers
-      auto & cmd = *cablingMapDevice;
+      auto &cmd = *cablingMapDevice;
       cablingMapDeviceView = SiPixelROCsStatusAndMappingConstView(
-        pixelgpudetails::MAX_SIZE,
-        cmd.fed, // Those are array pointers (in device, but we won't dereference them here).
-        cmd.link,
-        cmd.roc,
-        cmd.rawId,
-        cmd.rocInDet,
-        cmd.moduleId,
-        cmd.badRocs,
-        &cmd.size // This is a scalar, we need the address-of operator
+          pixelgpudetails::MAX_SIZE,
+          cmd.fed,  // Those are array pointers (in device, but we won't dereference them here).
+          cmd.link,
+          cmd.roc,
+          cmd.rawId,
+          cmd.rocInDet,
+          cmd.moduleId,
+          cmd.badRocs,
+          &cmd.size  // This is a scalar, we need the address-of operator
       );
     }
     cms::cuda::device::unique_ptr<SiPixelROCsStatusAndMapping> cablingMapDevice;
-    SiPixelROCsStatusAndMappingConstView cablingMapDeviceView; // map struct in GPU
-    
+    SiPixelROCsStatusAndMappingConstView cablingMapDeviceView;  // map struct in GPU
   };
   cms::cuda::ESProduct<GPUData> gpuData_;
 
   struct ModulesToUnpack {
-    cms::cuda::device::unique_ptr<unsigned char []> modToUnpDefault;  // pointer to GPU
+    cms::cuda::device::unique_ptr<unsigned char[]> modToUnpDefault;  // pointer to GPU
   };
   cms::cuda::ESProduct<ModulesToUnpack> modToUnp_;
 };

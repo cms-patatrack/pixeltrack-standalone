@@ -24,115 +24,103 @@ public:
 
   template <typename>
   friend class TrackingRecHit2DHeterogeneous;
-  
+
   __device__ __forceinline__ uint32_t nHits() const { return m_nHits; }
 
   // Our arrays do not require specific alignment as access will not be coalesced in the current implementation
   // Sill, we need the 32 bits integers to be aligned, so we simply declare the SoA with the 32 bits fields first
-  // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte 
+  // and the 16 bits behind (as they have a looser alignment requirement. Then the SoA can be create with a byte
   // alignment of 1)
   GENERATE_SOA_LAYOUT(HitsLayoutTemplate,
-    // 32 bits section
-    // local coord
-    SOA_COLUMN(float, xLocal),
-    SOA_COLUMN(float, yLocal),
-    SOA_COLUMN(float, xerrLocal),
-    SOA_COLUMN(float, yerrLocal),
-    
-    // global coord
-    SOA_COLUMN(float, xGlobal),
-    SOA_COLUMN(float, yGlobal),
-    SOA_COLUMN(float, zGlobal),
-    SOA_COLUMN(float, rGlobal),
-    // global coordinates continue in the 16 bits section
+                      // 32 bits section
+                      // local coord
+                      SOA_COLUMN(float, xLocal),
+                      SOA_COLUMN(float, yLocal),
+                      SOA_COLUMN(float, xerrLocal),
+                      SOA_COLUMN(float, yerrLocal),
 
-    // cluster properties
-    SOA_COLUMN(int32_t, charge),
-          
-    // 16 bits section (and cluster properties immediately continued)
-    SOA_COLUMN(int16_t, clusterSizeX),
-    SOA_COLUMN(int16_t, clusterSizeY)
-  )
-  
+                      // global coord
+                      SOA_COLUMN(float, xGlobal),
+                      SOA_COLUMN(float, yGlobal),
+                      SOA_COLUMN(float, zGlobal),
+                      SOA_COLUMN(float, rGlobal),
+                      // global coordinates continue in the 16 bits section
+
+                      // cluster properties
+                      SOA_COLUMN(int32_t, charge),
+
+                      // 16 bits section (and cluster properties immediately continued)
+                      SOA_COLUMN(int16_t, clusterSizeX),
+                      SOA_COLUMN(int16_t, clusterSizeY))
+
   // The hits layout does not use default alignment but a more relaxed one.
   using HitsLayout = HitsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
-  
+
   GENERATE_SOA_VIEW(HitsViewTemplate,
-    SOA_VIEW_LAYOUT_LIST(
-      SOA_VIEW_LAYOUT(HitsLayout, hitsLayout)
-    ),
-    SOA_VIEW_VALUE_LIST(
-      SOA_VIEW_VALUE(hitsLayout, xLocal),
-      SOA_VIEW_VALUE(hitsLayout, yLocal),
-      SOA_VIEW_VALUE(hitsLayout, xerrLocal),
-      SOA_VIEW_VALUE(hitsLayout, yerrLocal),
-      
-      SOA_VIEW_VALUE(hitsLayout, xGlobal),
-      SOA_VIEW_VALUE(hitsLayout, yGlobal),
-      SOA_VIEW_VALUE(hitsLayout, zGlobal),
-      SOA_VIEW_VALUE(hitsLayout, rGlobal),
-      
-      SOA_VIEW_VALUE(hitsLayout, charge),
-      SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
-      SOA_VIEW_VALUE(hitsLayout, clusterSizeY)
-    )
-  )
-  
+                    SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(HitsLayout, hitsLayout)),
+                    SOA_VIEW_VALUE_LIST(SOA_VIEW_VALUE(hitsLayout, xLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, yLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, xerrLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, yerrLocal),
+
+                                        SOA_VIEW_VALUE(hitsLayout, xGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, yGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, zGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, rGlobal),
+
+                                        SOA_VIEW_VALUE(hitsLayout, charge),
+                                        SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
+                                        SOA_VIEW_VALUE(hitsLayout, clusterSizeY)))
+
   using HitsView = HitsViewTemplate<>;
-  
+
   GENERATE_SOA_LAYOUT(SupportObjectsLayoutTemplate,
-    // This is the end of the data which is transferred to host. The following columns are supporting 
-    // objects, not transmitted 
-    
-    // Supporting data (32 bits aligned)
-    SOA_COLUMN(TrackingRecHit2DSOAStore::PhiBinner::index_type, phiBinnerStorage),
-          
-    // global coordinates (not transmitted)
-    SOA_COLUMN(int16_t, iphi),
-          
-    // cluster properties (not transmitted)
-    SOA_COLUMN(uint16_t, detectorIndex)
-  );
-  
+                      // This is the end of the data which is transferred to host. The following columns are supporting
+                      // objects, not transmitted
+
+                      // Supporting data (32 bits aligned)
+                      SOA_COLUMN(TrackingRecHit2DSOAStore::PhiBinner::index_type, phiBinnerStorage),
+
+                      // global coordinates (not transmitted)
+                      SOA_COLUMN(int16_t, iphi),
+
+                      // cluster properties (not transmitted)
+                      SOA_COLUMN(uint16_t, detectorIndex))
+
   // The support objects layouts also not use default alignment but a more relaxed one.
   using SupportObjectsLayout = SupportObjectsLayoutTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
-  
+
   GENERATE_SOA_VIEW(HitsAndSupportViewTemplate,
-    SOA_VIEW_LAYOUT_LIST(
-      SOA_VIEW_LAYOUT(HitsLayout, hitsLayout),
-      SOA_VIEW_LAYOUT(SupportObjectsLayout, supportObjectsLayout)
-    ),
-    SOA_VIEW_VALUE_LIST(
-      SOA_VIEW_VALUE(hitsLayout, xLocal),
-      SOA_VIEW_VALUE(hitsLayout, yLocal),
-      SOA_VIEW_VALUE(hitsLayout, xerrLocal),
-      SOA_VIEW_VALUE(hitsLayout, yerrLocal),
-      
-      SOA_VIEW_VALUE(hitsLayout, xGlobal),
-      SOA_VIEW_VALUE(hitsLayout, yGlobal),
-      SOA_VIEW_VALUE(hitsLayout, zGlobal),
-      SOA_VIEW_VALUE(hitsLayout, rGlobal),
-      
-      SOA_VIEW_VALUE(hitsLayout, charge),
-      SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
-      SOA_VIEW_VALUE(hitsLayout, clusterSizeY),
-      
-      SOA_VIEW_VALUE(supportObjectsLayout, phiBinnerStorage),
-      SOA_VIEW_VALUE(supportObjectsLayout, iphi),
-      SOA_VIEW_VALUE(supportObjectsLayout, detectorIndex)
-    )
-  );
-  
+                    SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(HitsLayout, hitsLayout),
+                                         SOA_VIEW_LAYOUT(SupportObjectsLayout, supportObjectsLayout)),
+                    SOA_VIEW_VALUE_LIST(SOA_VIEW_VALUE(hitsLayout, xLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, yLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, xerrLocal),
+                                        SOA_VIEW_VALUE(hitsLayout, yerrLocal),
+
+                                        SOA_VIEW_VALUE(hitsLayout, xGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, yGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, zGlobal),
+                                        SOA_VIEW_VALUE(hitsLayout, rGlobal),
+
+                                        SOA_VIEW_VALUE(hitsLayout, charge),
+                                        SOA_VIEW_VALUE(hitsLayout, clusterSizeX),
+                                        SOA_VIEW_VALUE(hitsLayout, clusterSizeY),
+
+                                        SOA_VIEW_VALUE(supportObjectsLayout, phiBinnerStorage),
+                                        SOA_VIEW_VALUE(supportObjectsLayout, iphi),
+                                        SOA_VIEW_VALUE(supportObjectsLayout, detectorIndex)))
+
   using HitsAndSupportView = HitsAndSupportViewTemplate<sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)>;
-  
+
   // Shortcut operator saving the explicit calls to view in usage.
-  __device__ __forceinline__ HitsAndSupportView::element operator[] (size_t index) {
-    return m_hitsAndSupportView[index]; 
-  }
-  __device__ __forceinline__ HitsAndSupportView::const_element operator[] (size_t index) const {
+  __device__ __forceinline__ HitsAndSupportView::element operator[](size_t index) {
     return m_hitsAndSupportView[index];
   }
-  
+  __device__ __forceinline__ HitsAndSupportView::const_element operator[](size_t index) const {
+    return m_hitsAndSupportView[index];
+  }
+
   __device__ __forceinline__ pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }
 
   __device__ __forceinline__ uint32_t hitsModuleStart(int i) const { return __ldg(m_hitsModuleStart + i); }
@@ -153,7 +141,7 @@ private:
   SupportObjectsLayout m_supportObjectsLayout;
   // Global view simplifying usage
   HitsAndSupportView m_hitsAndSupportView;
-  
+
   // individually defined supporting objects
   // m_averageGeometry is corrected for beam spot, not sure where to host it otherwise
   AverageGeometry* m_averageGeometry;              // owned by TrackingRecHit2DHeterogeneous

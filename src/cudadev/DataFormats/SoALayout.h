@@ -92,37 +92,33 @@
 /**
  * SoAMetadata member computing column pitch
  */
-#define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                     \
-  _SWITCH_ON_TYPE(                                                                                                    \
-      VALUE_TYPE,                                                                                                     \
-      /* Scalar */                                                                                                    \
-      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
-        return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;              \
-      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                 \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;   \
-      CPP_TYPE const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }               \
-      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                           \
-      ,                                                                                                               \
-      /* Column */                                                                                                    \
-      CPP_TYPE const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }               \
-      CPP_TYPE * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                           \
-      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
-        return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                     \
-               ParentClass::byteAlignment;                                                                            \
-      }                                                                                                               \
-      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                   \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column;   \
-      ,                                                                                                               \
-      /* Eigen column */                                                                                              \
-      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                      \
-        return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *             \
-               ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;                \
-      }                                                                                                               \
-      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                   \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;    \
-      CPP_TYPE::Scalar const * BOOST_PP_CAT(addressOf_, NAME)() const { return parent_.BOOST_PP_CAT(NAME, _); }       \
-      CPP_TYPE::Scalar * BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                   \
-    )   
+#define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                   \
+  _SWITCH_ON_TYPE(                                                                                                  \
+      VALUE_TYPE, /* Scalar */                                                                                      \
+      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                    \
+        return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;            \
+      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                               \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar; \
+      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                      \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                       \
+      } CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }, /* Column */          \
+      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)()                                                              \
+          const { return parent_.BOOST_PP_CAT(NAME, _); } CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {              \
+            return parent_.BOOST_PP_CAT(NAME, _);                                                                   \
+          } size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                              \
+            return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *               \
+                   ParentClass::byteAlignment;                                                                      \
+          } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                           \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column; \
+      , /* Eigen column */                                                                                          \
+      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                    \
+        return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *           \
+               ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;              \
+      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                               \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;  \
+      CPP_TYPE::Scalar const* BOOST_PP_CAT(addressOf_, NAME)() const {                                              \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                       \
+      } CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); })
 
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
 
@@ -227,18 +223,19 @@
 /*
  * A macro defining a SoA layout (collection of scalars and columns of equal lengths)
  */
-#define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                    \
+// clang-format off
+#define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                   \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
-    cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                                       \
+            cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                               \
   struct CLASS {                                                                                                                          \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
     typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
                                                                                                                                           \
-    /* For CUDA applications, we align to the 128 bytes of the cache lines.                                                             \
-   * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                         \
-   * up to compute capability 8.X.                                                                                                      \
-   */ \
+    /* For CUDA applications, we align to the 128 bytes of the cache lines.                                                               \
+   * See https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#global-memory-3-0 this is still valid                           \
+   * up to compute capability 8.X.                                                                                                        \
+   */                                                                                                                                     \
     constexpr static size_t defaultAlignment = 128;                                                                                       \
     constexpr static size_t byteAlignment = ALIGNMENT;                                                                                    \
     constexpr static AlignmentEnforcement alignmentEnforcement = ALIGNMENT_ENFORCEMENT;                                                   \
@@ -271,22 +268,25 @@
       return ret;                                                                                                                         \
     }                                                                                                                                     \
                                                                                                                                           \
-    /**                                                                                                                               \
-   * Helper/friend class allowing SoA introspection.                                                                                \
-   */   \
+    /**                                                                                                                                   \
+   * Helper/friend class allowing SoA introspection.                                                                                      \
+   */                                                                                                                                     \
     struct SoAMetadata {                                                                                                                  \
       friend CLASS;                                                                                                                       \
       SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                           \
       SOA_HOST_DEVICE_INLINE size_t byteSize() const { return parent_.byteSize_; }                                                        \
       SOA_HOST_DEVICE_INLINE size_t byteAlignment() const { return CLASS::byteAlignment; }                                                \
-      SOA_HOST_DEVICE_INLINE std::byte* data()  { return parent_.mem_; }                                                                  \
+      SOA_HOST_DEVICE_INLINE std::byte* data() { return parent_.mem_; }                                                                   \
       SOA_HOST_DEVICE_INLINE const std::byte* data() const { return parent_.mem_; }                                                       \
       SOA_HOST_DEVICE_INLINE std::byte* nextByte() const { return parent_.mem_ + parent_.byteSize_; }                                     \
-      SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) const { return CLASS(addr, parent_.nElements_); }                   \
+      SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) const {                                                             \
+        return CLASS(addr, parent_.nElements_);                                                                                           \
+      }                                                                                                                                   \
       _ITERATE_ON_ALL(_DEFINE_METADATA_MEMBERS, ~, __VA_ARGS__)                                                                           \
                                                                                                                                           \
-      SoAMetadata & operator=(const SoAMetadata &) = delete;                                                                              \
-      SoAMetadata(const SoAMetadata &) = delete;                                                                                          \
+      SoAMetadata& operator=(const SoAMetadata&) = delete;                                                                                \
+      SoAMetadata(const SoAMetadata&) = delete;                                                                                           \
+                                                                                                                                          \
     private:                                                                                                                              \
       SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                        \
       const CLASS& parent_;                                                                                                               \
@@ -344,5 +344,6 @@
     size_t byteSize_;                                                                                                                     \
     _ITERATE_ON_ALL(_DECLARE_SOA_DATA_MEMBER, ~, __VA_ARGS__)                                                                             \
   };
+// clang-format on
 
 #endif  // ndef DataStructures_SoALayout_h

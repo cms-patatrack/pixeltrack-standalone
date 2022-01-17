@@ -40,21 +40,21 @@ public:
 
   // Transfer the local and global coordinates, charge and size
   TrackingRecHit2DHostSOAStore hitsToHostAsync(cudaStream_t stream) const;
-  
+
   // apparently unused
   //cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
 
 private:
   static_assert(sizeof(uint32_t) == sizeof(float));  // just stating the obvious
-  
+
   unique_ptr<TrackingRecHit2DSOAStore::PhiBinner> m_PhiBinnerStore;              //!
   unique_ptr<TrackingRecHit2DSOAStore::AverageGeometry> m_AverageGeometryStore;  //!
 
   unique_ptr<TrackingRecHit2DSOAStore> m_store;  //!
 
   uint32_t m_nHits;
-  
-  unique_ptr<std::byte[]> m_hitsSupportLayerStartStore;                                          //!
+
+  unique_ptr<std::byte[]> m_hitsSupportLayerStartStore;  //!
 
   uint32_t const* m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
@@ -101,41 +101,41 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   //m_store16 = Traits::template make_device_unique<uint16_t[]>(nHits * n16, stream);
   //m_store32 =
   //    Traits::template make_device_unique<float[]>(nHits * n32 + phase1PixelTopology::numberOfLayers + 1, stream);
-  // We need to store all SoA rows for TrackingRecHit2DSOAView::HitsView(nHits) + 
+  // We need to store all SoA rows for TrackingRecHit2DSOAView::HitsView(nHits) +
   // (phase1PixelTopology::numberOfLayers + 1) TrackingRecHit2DSOAView::PhiBinner::index_type.
-  // As mentioned above, alignment is not important, yet we want to have 32 bits 
+  // As mentioned above, alignment is not important, yet we want to have 32 bits
   // (TrackingRecHit2DSOAView::PhiBinner::index_type exactly) alignement for the second part.
   // In order to simplify code, we align all to the minimum necessary size (sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type)).
   {
     // Simplify a bit following computations
     const size_t phiBinnerByteSize =
-      (phase1PixelTopology::numberOfLayers + 1) * sizeof (TrackingRecHit2DSOAStore::PhiBinner::index_type);
+        (phase1PixelTopology::numberOfLayers + 1) * sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type);
     // Allocate the buffer
-    m_hitsSupportLayerStartStore = Traits::template make_device_unique<std::byte[]> (
-      TrackingRecHit2DSOAStore::HitsLayout::computeDataSize(m_nHits) +
-        TrackingRecHit2DSOAStore::SupportObjectsLayout::computeDataSize(m_nHits) +
-        phiBinnerByteSize, 
-      stream);
+    m_hitsSupportLayerStartStore = Traits::template make_device_unique<std::byte[]>(
+        TrackingRecHit2DSOAStore::HitsLayout::computeDataSize(m_nHits) +
+            TrackingRecHit2DSOAStore::SupportObjectsLayout::computeDataSize(m_nHits) + phiBinnerByteSize,
+        stream);
     // Split the buffer in stores and array
     store->m_hitsLayout = TrackingRecHit2DSOAStore::HitsLayout(m_hitsSupportLayerStartStore.get(), nHits);
-    store->m_supportObjectsLayout = TrackingRecHit2DSOAStore::SupportObjectsLayout(store->m_hitsLayout.soaMetadata().nextByte(), nHits);
-    m_hitsLayerStart = store->m_hitsLayerStart = reinterpret_cast<uint32_t *> (store->m_supportObjectsLayout.soaMetadata().nextByte());
+    store->m_supportObjectsLayout =
+        TrackingRecHit2DSOAStore::SupportObjectsLayout(store->m_hitsLayout.soaMetadata().nextByte(), nHits);
+    m_hitsLayerStart = store->m_hitsLayerStart =
+        reinterpret_cast<uint32_t*>(store->m_supportObjectsLayout.soaMetadata().nextByte());
     // Record additional references
-    store->m_hitsAndSupportView = TrackingRecHit2DSOAStore::HitsAndSupportView(
-      store->m_hitsLayout,
-      store->m_supportObjectsLayout
-    );
+    store->m_hitsAndSupportView =
+        TrackingRecHit2DSOAStore::HitsAndSupportView(store->m_hitsLayout, store->m_supportObjectsLayout);
     m_phiBinnerStorage = store->m_phiBinnerStorage = store->m_hitsAndSupportView.phiBinnerStorage();
     m_iphi = store->m_hitsAndSupportView.iphi();
   }
   m_PhiBinnerStore = Traits::template make_device_unique<TrackingRecHit2DSOAStore::PhiBinner>(stream);
 
   static_assert(sizeof(TrackingRecHit2DSOAStore::hindex_type) == sizeof(float));
-  static_assert(sizeof(TrackingRecHit2DSOAStore::hindex_type) == sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type));
+  static_assert(sizeof(TrackingRecHit2DSOAStore::hindex_type) ==
+                sizeof(TrackingRecHit2DSOAStore::PhiBinner::index_type));
 
   // copy all the pointers
   m_phiBinner = store->m_phiBinner = m_PhiBinnerStore.get();
-  
+
   // transfer view
   if constexpr (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
     cms::cuda::copyAsync(m_store, store, stream);

@@ -135,7 +135,7 @@ namespace pixelgpudetails {
 
     void makeClustersAsync(bool isRun2,
                            const SiPixelClusterThresholds clusterThresholds,
-                           SiPixelROCsStatusAndMappingConstView & cablingMap,
+                           SiPixelROCsStatusAndMappingConstView& cablingMap,
                            const unsigned char* modToUnp,
                            const SiPixelGainForHLTonGPU* gains,
                            const WordFedAppender& wordFed,

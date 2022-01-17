@@ -62,7 +62,6 @@ namespace pixelgpudetails {
     return (PixelSubdetector::PixelBarrel == ((rawId >> DetId::kSubdetOffset) & DetId::kSubdetMask));
   }
 
-
   //reference http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/dd/d31/FrameConversion_8cc_source.html
   //http://cmslxr.fnal.gov/source/CondFormats/SiPixelObjects/src/PixelROC.cc?v=CMSSW_9_2_0#0071
   // Convert local pixel to pixelgpudetails::global pixel
@@ -494,7 +493,7 @@ namespace pixelgpudetails {
   // Interface to outside
   void SiPixelRawToClusterGPUKernel::makeClustersAsync(bool isRun2,
                                                        const SiPixelClusterThresholds clusterThresholds,
-                                                       SiPixelROCsStatusAndMappingConstView & cablingMap,
+                                                       SiPixelROCsStatusAndMappingConstView &cablingMap,
                                                        const unsigned char *modToUnp,
                                                        const SiPixelGainForHLTonGPU *gains,
                                                        const WordFedAppender &wordFed,
