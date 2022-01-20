@@ -550,7 +550,7 @@ $(HWLOC_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:cms-patatrack/alpaka.git -b 0.8.0-patatrack $@
+	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
 
 # Cupla
 .PHONY: external_cupla
