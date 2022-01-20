@@ -19,16 +19,14 @@
 #include <string>
 #include <utility>
 
-// Alpaka includes
+// CMSSW includes
 #include "AlpakaCore/prefixScan.h"
 
-// CMSSW includes
-#include "gpuCalibPixel.h"
-#include "gpuClusterChargeCut.h"
-#include "gpuClustering.h"
-
 // local includes
+#include "../gpuClusterChargeCut.h"
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "gpuCalibPixel.h"
+#include "gpuClustering.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {

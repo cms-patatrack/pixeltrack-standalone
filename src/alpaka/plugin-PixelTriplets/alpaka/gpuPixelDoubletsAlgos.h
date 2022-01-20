@@ -7,13 +7,12 @@
 #include <cstdio>
 #include <limits>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 #include "AlpakaCore/VecArray.h"
+#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 #include "DataFormats/approx_atan2.h"
 
-#include "CAConstants.h"
+#include "../CAConstants.h"
 #include "GPUCACell.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

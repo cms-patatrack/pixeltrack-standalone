@@ -15,7 +15,7 @@
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
-#include "plugin-SiPixelClusterizer/alpaka/gpuClusterChargeCut.h"
+#include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 using namespace cms::alpakatools;
 
