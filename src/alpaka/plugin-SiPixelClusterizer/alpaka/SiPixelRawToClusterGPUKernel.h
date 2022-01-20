@@ -191,9 +191,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                              Queue& queue);
 
       std::pair<SiPixelDigisAlpaka, SiPixelClustersAlpaka> getResults() {
-        auto pnModules_Clusters_h = alpaka::getPtrNative(nModules_Clusters_h);
-        digis_d->setNModulesDigis(pnModules_Clusters_h[0], nDigis);
-        clusters_d->setNClusters(pnModules_Clusters_h[1]);
+        digis_d->setNModulesDigis(nModules_Clusters_h[0], nDigis);
+        clusters_d->setNClusters(nModules_Clusters_h[1]);
         return std::make_pair(std::move(*digis_d), std::move(*clusters_d));
       }
 

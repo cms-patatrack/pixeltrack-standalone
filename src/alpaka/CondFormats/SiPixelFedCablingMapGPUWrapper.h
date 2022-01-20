@@ -20,14 +20,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         : modToUnpDefault_(modToUnp.size()),
           cablingMapHost_{cms::alpakatools::make_host_buffer<SiPixelFedCablingMapGPU>()},
           hasQuality_{true} {
-      std::memcpy(alpaka::getPtrNative(cablingMapHost_), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
+      std::memcpy(cablingMapHost_.data(), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
       std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault_.begin());
     }
     ~SiPixelFedCablingMapGPUWrapper() = default;
 
     bool hasQuality() const { return hasQuality_; }
 
-    const SiPixelFedCablingMapGPU* cablingMap() const { return alpaka::getPtrNative(cablingMapHost_); }
+    const SiPixelFedCablingMapGPU* cablingMap() const { return cablingMapHost_.data(); }
 
     const SiPixelFedCablingMapGPU* getGPUProductAsync(Queue& queue) const {
       const auto& data = gpuData_.dataForDeviceAsync(queue, [this](Queue& queue) {
@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::memcpy(queue, gpuData.cablingMapDevice, cablingMapHost_);
         return gpuData;
       });
-      return alpaka::getPtrNative(data.cablingMapDevice);
+      return data.cablingMapDevice.data();
     }
 
     const unsigned char* getModToUnpAllAsync(Queue& queue) const {
@@ -47,7 +47,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::memcpy(queue, modToUnp.modToUnpDefault, modToUnpDefault_view);
         return modToUnp;
       });
-      return alpaka::getPtrNative(data.modToUnpDefault);
+      return data.modToUnpDefault.data();
     }
 
   private:

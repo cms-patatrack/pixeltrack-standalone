@@ -17,7 +17,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         : gainForHLTonHost_{cms::alpakatools::make_host_buffer<SiPixelGainForHLTonGPU>()},
           gainData_(gainData),
           numDecodingStructures_(gainData.size()) {
-      *alpaka::getPtrNative(gainForHLTonHost_) = gain;
+      *gainForHLTonHost_ = gain;
       alpaka::prepareForAsyncCopy(gainForHLTonHost_);
     };
 
@@ -29,13 +29,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto gainDataView(cms::alpakatools::make_host_view(gainData_.data(), numDecodingStructures_));
         alpaka::memcpy(queue, gpuData.v_pedestalsGPU, gainDataView);
 
-        *alpaka::getPtrNative(gpuData.gainDataOnGPU) = *alpaka::getPtrNative(gainForHLTonHost_);
-        alpaka::getPtrNative(gpuData.gainDataOnGPU)->pedestals_ = alpaka::getPtrNative(gpuData.v_pedestalsGPU);
+        *gpuData.gainDataOnGPU = *gainForHLTonHost_;
+        gpuData.gainDataOnGPU->pedestals_ = gpuData.v_pedestalsGPU.data();
 
         alpaka::memcpy(queue, gpuData.gainForHLTonGPU, gpuData.gainDataOnGPU);
         return gpuData;
       });
-      return alpaka::getPtrNative(data.gainForHLTonGPU);
+      return data.gainForHLTonGPU.data();
     };
 
   private:

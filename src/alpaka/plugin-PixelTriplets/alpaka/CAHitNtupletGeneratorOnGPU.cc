@@ -91,21 +91,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                float bfield,
                                                                Queue& queue) const {
     PixelTrackAlpaka tracks = cms::alpakatools::make_device_buffer<pixelTrack::TrackSoA>(queue);
-    auto* soa = alpaka::getPtrNative(tracks);
 
     CAHitNtupletGeneratorKernels kernels(m_params, hits_d.nHits(), queue);
     kernels.buildDoublets(hits_d, queue);
-    kernels.launchKernels(hits_d, soa, queue);
-    kernels.fillHitDetIndices(hits_d.view(), soa, queue);  // in principle needed only if Hits not "available"
+    kernels.launchKernels(hits_d, tracks.data(), queue);
+    kernels.fillHitDetIndices(hits_d.view(), tracks.data(), queue);  // in principle needed only if Hits not "available"
 
     HelixFitOnGPU fitter(bfield, m_params.fit5as4_);
-    fitter.allocateOnGPU(&(soa->hitIndices), kernels.tupleMultiplicity(), soa);
+    fitter.allocateOnGPU(&tracks->hitIndices, kernels.tupleMultiplicity(), tracks.data());
     if (m_params.useRiemannFit_) {
       fitter.launchRiemannKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), queue);
     } else {
       fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), queue);
     }
-    kernels.classifyTuples(hits_d, soa, queue);
+    kernels.classifyTuples(hits_d, tracks.data(), queue);
 
     if (m_params.doStats_) {
       kernels.printCounters(queue);

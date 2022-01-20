@@ -191,13 +191,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           device_nCells_{cms::alpakatools::make_device_buffer<uint32_t>(queue)} {
       alpaka::memset(queue, counters_, 0);
       alpaka::memset(queue, device_nCells_, 0);
-      launchZero(alpaka::getPtrNative(device_tupleMultiplicity_), queue);
-      launchZero(alpaka::getPtrNative(device_hitToTuple_), queue);
+      launchZero(device_tupleMultiplicity_.data(), queue);
+      launchZero(device_hitToTuple_.data(), queue);
     }
 
     ~CAHitNtupletGeneratorKernels() = default;
 
-    TupleMultiplicity const* tupleMultiplicity() const { return alpaka::getPtrNative(device_tupleMultiplicity_); }
+    TupleMultiplicity const* tupleMultiplicity() const { return device_tupleMultiplicity_.data(); }
 
     void launchKernels(HitsOnCPU const& hh, TkSoA* tuples_d, Queue& queue);
 

@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include <alpaka/alpaka.hpp>
+
 namespace cms::alpakatools {
 
   class AtomicPairCounter {

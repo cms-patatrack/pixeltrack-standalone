@@ -21,14 +21,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     {
       std::ifstream in(path, std::ios::binary);
       in.exceptions(std::ifstream::badbit | std::ifstream::failbit | std::ifstream::eofbit);
-      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_commonParamsGPU)), sizeof(pixelCPEforGPU::CommonParams));
+      in.read(reinterpret_cast<char *>(m_commonParamsGPU.data()), sizeof(pixelCPEforGPU::CommonParams));
       unsigned int ndetParams;
       in.read(reinterpret_cast<char *>(&ndetParams), sizeof(unsigned int));
       m_detParamsGPU.resize(ndetParams);
       in.read(reinterpret_cast<char *>(m_detParamsGPU.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
-      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_averageGeometry)),
-              sizeof(pixelCPEforGPU::AverageGeometry));
-      in.read(reinterpret_cast<char *>(alpaka::getPtrNative(m_layerGeometry)), sizeof(pixelCPEforGPU::LayerGeometry));
+      in.read(reinterpret_cast<char *>(m_averageGeometry.data()), sizeof(pixelCPEforGPU::AverageGeometry));
+      in.read(reinterpret_cast<char *>(m_layerGeometry.data()), sizeof(pixelCPEforGPU::LayerGeometry));
 
       alpaka::prepareForAsyncCopy(m_commonParamsGPU);
       alpaka::prepareForAsyncCopy(m_layerGeometry);
@@ -45,24 +44,23 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         GPUData gpuData(queue, ndetParams);
 
         alpaka::memcpy(queue, gpuData.d_commonParams, m_commonParamsGPU);
-        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_commonParams = alpaka::getPtrNative(gpuData.d_commonParams);
+        gpuData.h_paramsOnGPU->m_commonParams = gpuData.d_commonParams.data();
 
         alpaka::memcpy(queue, gpuData.d_layerGeometry, m_layerGeometry);
-        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_layerGeometry = alpaka::getPtrNative(gpuData.d_layerGeometry);
+        gpuData.h_paramsOnGPU->m_layerGeometry = gpuData.d_layerGeometry.data();
 
         alpaka::memcpy(queue, gpuData.d_averageGeometry, m_averageGeometry);
-        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_averageGeometry =
-            alpaka::getPtrNative(gpuData.d_averageGeometry);
+        gpuData.h_paramsOnGPU->m_averageGeometry = gpuData.d_averageGeometry.data();
 
         auto detParams_h = cms::alpakatools::make_host_view(m_detParamsGPU.data(), ndetParams);
         alpaka::memcpy(queue, gpuData.d_detParams, detParams_h);
-        alpaka::getPtrNative(gpuData.h_paramsOnGPU)->m_detParams = alpaka::getPtrNative(gpuData.d_detParams);
+        gpuData.h_paramsOnGPU->m_detParams = gpuData.d_detParams.data();
 
         alpaka::memcpy(queue, gpuData.d_paramsOnGPU, gpuData.h_paramsOnGPU);
 
         return gpuData;
       });
-      return alpaka::getPtrNative(data.d_paramsOnGPU);
+      return data.d_paramsOnGPU.data();
     }
 
   private:

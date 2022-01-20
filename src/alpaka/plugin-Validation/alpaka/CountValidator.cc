@@ -93,9 +93,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     {
       auto const& count = iEvent.get(trackCountToken_);
-      auto const& tracksBuf = iEvent.get(trackToken_);
-      auto const tracks = alpaka::getPtrNative(tracksBuf);
-
+      auto const& tracks = iEvent.get(trackToken_);
       int nTracks = 0;
       for (int i = 0; i < tracks->stride(); ++i) {
         if (tracks->nHits(i) > 0) {
@@ -117,9 +115,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     {
       auto const& count = iEvent.get(vertexCountToken_);
-      auto const& verticesBuf = iEvent.get(vertexToken_);
-      auto const vertices = alpaka::getPtrNative(verticesBuf);
-
+      auto const& vertices = iEvent.get(vertexToken_);
       auto diff = std::abs(int(vertices->nvFinal) - int(count.nVertices()));
       if (diff != 0) {
         sumVertexDifference += diff;

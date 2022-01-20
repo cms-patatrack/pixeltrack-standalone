@@ -33,29 +33,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t nModules() const { return nModules_h; }
     uint32_t nDigis() const { return nDigis_h; }
 
-    uint16_t *xx() { return alpaka::getPtrNative(xx_d); }
-    uint16_t *yy() { return alpaka::getPtrNative(yy_d); }
-    uint16_t *adc() { return alpaka::getPtrNative(adc_d); }
-    uint16_t *moduleInd() { return alpaka::getPtrNative(moduleInd_d); }
-    int32_t *clus() { return alpaka::getPtrNative(clus_d); }
-    uint32_t *pdigi() { return alpaka::getPtrNative(pdigi_d); }
-    uint32_t *rawIdArr() { return alpaka::getPtrNative(rawIdArr_d); }
+    uint16_t *xx() { return xx_d.data(); }
+    uint16_t *yy() { return yy_d.data(); }
+    uint16_t *adc() { return adc_d.data(); }
+    uint16_t *moduleInd() { return moduleInd_d.data(); }
+    int32_t *clus() { return clus_d.data(); }
+    uint32_t *pdigi() { return pdigi_d.data(); }
+    uint32_t *rawIdArr() { return rawIdArr_d.data(); }
 
-    uint16_t const *xx() const { return alpaka::getPtrNative(xx_d); }
-    uint16_t const *yy() const { return alpaka::getPtrNative(yy_d); }
-    uint16_t const *adc() const { return alpaka::getPtrNative(adc_d); }
-    uint16_t const *moduleInd() const { return alpaka::getPtrNative(moduleInd_d); }
-    int32_t const *clus() const { return alpaka::getPtrNative(clus_d); }
-    uint32_t const *pdigi() const { return alpaka::getPtrNative(pdigi_d); }
-    uint32_t const *rawIdArr() const { return alpaka::getPtrNative(rawIdArr_d); }
+    uint16_t const *xx() const { return xx_d.data(); }
+    uint16_t const *yy() const { return yy_d.data(); }
+    uint16_t const *adc() const { return adc_d.data(); }
+    uint16_t const *moduleInd() const { return moduleInd_d.data(); }
+    int32_t const *clus() const { return clus_d.data(); }
+    uint32_t const *pdigi() const { return pdigi_d.data(); }
+    uint32_t const *rawIdArr() const { return rawIdArr_d.data(); }
 
-    uint16_t const *c_xx() const { return alpaka::getPtrNative(xx_d); }
-    uint16_t const *c_yy() const { return alpaka::getPtrNative(yy_d); }
-    uint16_t const *c_adc() const { return alpaka::getPtrNative(adc_d); }
-    uint16_t const *c_moduleInd() const { return alpaka::getPtrNative(moduleInd_d); }
-    int32_t const *c_clus() const { return alpaka::getPtrNative(clus_d); }
-    uint32_t const *c_pdigi() const { return alpaka::getPtrNative(pdigi_d); }
-    uint32_t const *c_rawIdArr() const { return alpaka::getPtrNative(rawIdArr_d); }
+    uint16_t const *c_xx() const { return xx_d.data(); }
+    uint16_t const *c_yy() const { return yy_d.data(); }
+    uint16_t const *c_adc() const { return adc_d.data(); }
+    uint16_t const *c_moduleInd() const { return moduleInd_d.data(); }
+    int32_t const *c_clus() const { return clus_d.data(); }
+    uint32_t const *c_pdigi() const { return pdigi_d.data(); }
+    uint32_t const *c_rawIdArr() const { return rawIdArr_d.data(); }
 
     auto adcToHostAsync(Queue &queue) const {
       auto ret = cms::alpakatools::make_host_buffer<uint16_t[]>(nDigis());
