@@ -5,6 +5,9 @@
 #include <random>
 
 #include "AlpakaCore/HistoContainer.h"
+#include "AlpakaCore/alpakaMemoryHelper.h"
+
+using namespace cms::alpakatools;
 
 template <int NBINS, int S, int DELTA>
 struct mykernel {
@@ -18,21 +21,21 @@ struct mykernel {
       printf("start kernel for %d data\n", N);
     }
 
-    using Hist = cms::alpakatools::HistoContainer<T, NBINS, 12000, S, uint16_t>;
+    using Hist = HistoContainer<T, NBINS, 12000, S, uint16_t>;
 
     auto& hist = alpaka::declareSharedVar<Hist, __COUNTER__>(acc);
     auto& ws = alpaka::declareSharedVar<typename Hist::Counter[32], __COUNTER__>(acc);
 
     // set off zero
-    cms::alpakatools::for_each_element_in_block_strided(acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
+    for_each_element_in_block_strided(acc, Hist::totbins(), [&](uint32_t j) { hist.off[j] = 0; });
     alpaka::syncBlockThreads(acc);
 
     // set bins zero
-    cms::alpakatools::for_each_element_in_block_strided(acc, Hist::totbins(), [&](uint32_t j) { hist.bins[j] = 0; });
+    for_each_element_in_block_strided(acc, Hist::totbins(), [&](uint32_t j) { hist.bins[j] = 0; });
     alpaka::syncBlockThreads(acc);
 
     // count
-    cms::alpakatools::for_each_element_in_block_strided(acc, N, [&](uint32_t j) { hist.count(acc, v[j]); });
+    for_each_element_in_block_strided(acc, N, [&](uint32_t j) { hist.count(acc, v[j]); });
     alpaka::syncBlockThreads(acc);
 
     assert(0 == hist.size());
@@ -45,17 +48,16 @@ struct mykernel {
     assert(N == hist.size());
 
     // verify
-    cms::alpakatools::for_each_element_in_block_strided(
-        acc, Hist::nbins(), [&](uint32_t j) { assert(hist.off[j] <= hist.off[j + 1]); });
+    for_each_element_in_block_strided(acc, Hist::nbins(), [&](uint32_t j) { assert(hist.off[j] <= hist.off[j + 1]); });
     alpaka::syncBlockThreads(acc);
 
-    cms::alpakatools::for_each_element_in_block(acc, 32, [&](uint32_t i) {
+    for_each_element_in_block(acc, 32, [&](uint32_t i) {
       ws[i] = 0;  // used by prefix scan...
     });
     alpaka::syncBlockThreads(acc);
 
     // fill
-    cms::alpakatools::for_each_element_in_block_strided(acc, N, [&](uint32_t j) { hist.fill(acc, v[j], j); });
+    for_each_element_in_block_strided(acc, N, [&](uint32_t j) { hist.fill(acc, v[j], j); });
     alpaka::syncBlockThreads(acc);
 
     assert(0 == hist.off[0]);
@@ -63,7 +65,7 @@ struct mykernel {
 
     // bin
 #ifndef NDEBUG
-    cms::alpakatools::for_each_element_in_block_strided(acc, hist.size() - 1, [&](uint32_t j) {
+    for_each_element_in_block_strided(acc, hist.size() - 1, [&](uint32_t j) {
       auto p = hist.begin() + j;
       assert((*p) < N);
       auto k1 = Hist::bin(v[*p]);
@@ -73,7 +75,7 @@ struct mykernel {
 #endif
 
     // forEachInWindow
-    cms::alpakatools::for_each_element_in_block_strided(acc, hist.size(), [&](uint32_t i) {
+    for_each_element_in_block_strided(acc, hist.size(), [&](uint32_t i) {
       auto p = hist.begin() + i;
       auto j = *p;
 #ifndef NDEBUG
@@ -84,7 +86,7 @@ struct mykernel {
         assert(k < N);
         ++tot;
       };
-      cms::alpakatools::forEachInWindow(hist, v[j], v[j], ftest);
+      forEachInWindow(hist, v[j], v[j], ftest);
 #ifndef NDEBUG
       int rtot = hist.size(b0);
       assert(tot == rtot);
@@ -98,7 +100,7 @@ struct mykernel {
       vp = std::min(vp, vmax);
       vp = std::max(vp, 0);
       assert(vp >= vm);
-      cms::alpakatools::forEachInWindow(hist, vm, vp, ftest);
+      forEachInWindow(hist, vm, vp, ftest);
 #ifndef NDEBUG
       int bp = Hist::bin(vp);
       int bm = Hist::bin(vm);
@@ -125,14 +127,13 @@ void go(const DevHost& host,
   std::uniform_int_distribution<T> rgen(rmin, rmax);
   constexpr unsigned int N = 12000;
 
-  using Hist = cms::alpakatools::HistoContainer<T, NBINS, N, S>;
+  using Hist = HistoContainer<T, NBINS, N, S>;
   std::cout << "HistoContainer " << Hist::nbits() << ' ' << Hist::nbins() << ' ' << Hist::capacity() << ' '
             << (rmax - rmin) / Hist::nbins() << std::endl;
   std::cout << "bins " << int(Hist::bin(0)) << ' ' << int(Hist::bin(rmin)) << ' ' << int(Hist::bin(rmax)) << std::endl;
 
-  auto v_hbuf = alpaka::allocBuf<T, Idx>(host, N);
-  auto v = alpaka::getPtrNative(v_hbuf);
-  auto v_dbuf = alpaka::allocBuf<T, Idx>(device, N);
+  auto v = make_host_buffer<T[]>(N);
+  auto v_d = make_device_buffer<T[]>(queue, N);
 
   for (int it = 0; it < 5; ++it) {
     for (long long j = 0; j < N; j++)
@@ -141,14 +142,14 @@ void go(const DevHost& host,
       for (long long j = N / 2; j < N / 2 + N / 4; j++)
         v[j] = 4;
 
-    alpaka::memcpy(queue, v_dbuf, v_hbuf);
+    alpaka::memcpy(queue, v_d, v);
 
     const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D::all(256));
     const Vec1D& blocksPerGrid(Vec1D::all(1));
-    const WorkDiv1D& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    const WorkDiv1D& workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                        workDiv, mykernel<NBINS, S, DELTA>(), alpaka::getPtrNative(v_dbuf), N));
+                        workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
   }
   alpaka::wait(queue);
 }

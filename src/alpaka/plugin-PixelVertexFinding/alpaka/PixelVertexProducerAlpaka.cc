@@ -48,11 +48,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   {}
 
   void PixelVertexProducerAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    cms::alpakatools::Product<Queue, PixelTrackAlpaka> const& tracksBufWrapped = iEvent.get(tokenTrack_);
-    cms::alpakatools::ScopedContextProduce<Queue> ctx{tracksBufWrapped};
-    auto const& tracksBuf = ctx.get(tracksBufWrapped);
-    auto const tracks = alpaka::getPtrNative(tracksBuf);
-    ctx.emplace(iEvent, tokenVertex_, m_gpuAlgo.makeAsync(tracks, m_ptMin, ctx.stream()));
+    cms::alpakatools::Product<Queue, PixelTrackAlpaka> const& tracksWrapped = iEvent.get(tokenTrack_);
+    cms::alpakatools::ScopedContextProduce<Queue> ctx{tracksWrapped};
+    auto const& tracks = ctx.get(tracksWrapped);
+    ctx.emplace(iEvent, tokenVertex_, m_gpuAlgo.makeAsync(tracks.data(), m_ptMin, ctx.stream()));
   }
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

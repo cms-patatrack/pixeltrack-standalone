@@ -49,30 +49,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // so unless proven VERY inefficient we keep it ordered as generated
 
       // Copy data to the SoA view:
-      TrackingRecHit2DSoAView& view = *alpaka::getPtrNative(m_view_h);
       // By value:
-      view.m_nHits = nHits;
+      m_view_h->m_nHits = nHits;
       // Raw pointer to data already owned in the event by SiPixelClusterAlpaka object:
-      view.m_hitsModuleStart = hitsModuleStart;
+      m_view_h->m_hitsModuleStart = hitsModuleStart;
       // Raw pointer to data already owned in the eventSetup by PixelCPEFast object:
-      view.m_cpeParams = cpeParams;
+      m_view_h->m_cpeParams = cpeParams;
       // Raw pointers to data owned here in TrackingRecHit2DAlpaka object:
-      view.m_xl = alpaka::getPtrNative(m_xl);
-      view.m_yl = alpaka::getPtrNative(m_yl);
-      view.m_xerr = alpaka::getPtrNative(m_xerr);
-      view.m_yerr = alpaka::getPtrNative(m_yerr);
-      view.m_xg = alpaka::getPtrNative(m_xg);
-      view.m_yg = alpaka::getPtrNative(m_yg);
-      view.m_zg = alpaka::getPtrNative(m_zg);
-      view.m_rg = alpaka::getPtrNative(m_rg);
-      view.m_iphi = alpaka::getPtrNative(m_iphi);
-      view.m_charge = alpaka::getPtrNative(m_charge);
-      view.m_xsize = alpaka::getPtrNative(m_xsize);
-      view.m_ysize = alpaka::getPtrNative(m_ysize);
-      view.m_detInd = alpaka::getPtrNative(m_detInd);
-      view.m_averageGeometry = alpaka::getPtrNative(m_averageGeometry);
-      view.m_hitsLayerStart = alpaka::getPtrNative(m_hitsLayerStart);
-      view.m_hist = alpaka::getPtrNative(m_hist);
+      m_view_h->m_xl = m_xl.data();
+      m_view_h->m_yl = m_yl.data();
+      m_view_h->m_xerr = m_xerr.data();
+      m_view_h->m_yerr = m_yerr.data();
+      m_view_h->m_xg = m_xg.data();
+      m_view_h->m_yg = m_yg.data();
+      m_view_h->m_zg = m_zg.data();
+      m_view_h->m_rg = m_rg.data();
+      m_view_h->m_iphi = m_iphi.data();
+      m_view_h->m_charge = m_charge.data();
+      m_view_h->m_xsize = m_xsize.data();
+      m_view_h->m_ysize = m_ysize.data();
+      m_view_h->m_detInd = m_detInd.data();
+      m_view_h->m_averageGeometry = m_averageGeometry.data();
+      m_view_h->m_hitsLayerStart = m_hitsLayerStart.data();
+      m_view_h->m_hist = m_hist.data();
       // Copy the SoA view to the device
       alpaka::memcpy(queue, m_view, m_view_h);
     }
@@ -84,17 +83,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     TrackingRecHit2DAlpaka(TrackingRecHit2DAlpaka&&) = default;
     TrackingRecHit2DAlpaka& operator=(TrackingRecHit2DAlpaka&&) = default;
 
-    TrackingRecHit2DSoAView* view() { return alpaka::getPtrNative(m_view); }
-    TrackingRecHit2DSoAView const* view() const { return alpaka::getPtrNative(m_view); }
+    TrackingRecHit2DSoAView* view() { return m_view.data(); }
+    TrackingRecHit2DSoAView const* view() const { return m_view.data(); }
 
     auto nHits() const { return m_nHits; }
     auto hitsModuleStart() const { return m_hitsModuleStart; }
 
-    auto hitsLayerStart() { return alpaka::getPtrNative(m_hitsLayerStart); }
-    auto const* c_hitsLayerStart() const { return alpaka::getPtrNative(m_hitsLayerStart); }
-    auto phiBinner() { return alpaka::getPtrNative(m_hist); }
-    auto iphi() { return alpaka::getPtrNative(m_iphi); }
-    auto const* c_iphi() const { return alpaka::getPtrNative(m_iphi); }
+    auto hitsLayerStart() { return m_hitsLayerStart.data(); }
+    auto const* c_hitsLayerStart() const { return m_hitsLayerStart.data(); }
+    auto phiBinner() { return m_hist.data(); }
+    auto iphi() { return m_iphi.data(); }
+    auto const* c_iphi() const { return m_iphi.data(); }
 
     auto xlToHostAsync(Queue& queue) const {
       auto ret = cms::alpakatools::make_host_buffer<float[]>(nHits());
@@ -156,17 +155,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
     cms::alpakatools::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
 #endif
-    auto const* xl() const { return alpaka::getPtrNative(m_xl); }
-    auto const* yl() const { return alpaka::getPtrNative(m_yl); }
-    auto const* xerr() const { return alpaka::getPtrNative(m_xerr); }
-    auto const* yerr() const { return alpaka::getPtrNative(m_yerr); }
-    auto const* xg() const { return alpaka::getPtrNative(m_xg); }
-    auto const* yg() const { return alpaka::getPtrNative(m_yg); }
-    auto const* zg() const { return alpaka::getPtrNative(m_zg); }
-    auto const* rg() const { return alpaka::getPtrNative(m_rg); }
-    auto const* charge() const { return alpaka::getPtrNative(m_charge); }
-    auto const* xsize() const { return alpaka::getPtrNative(m_xsize); }
-    auto const* ysize() const { return alpaka::getPtrNative(m_ysize); }
+    auto const* xl() const { return m_xl.data(); }
+    auto const* yl() const { return m_yl.data(); }
+    auto const* xerr() const { return m_xerr.data(); }
+    auto const* yerr() const { return m_yerr.data(); }
+    auto const* xg() const { return m_xg.data(); }
+    auto const* yg() const { return m_yg.data(); }
+    auto const* zg() const { return m_zg.data(); }
+    auto const* rg() const { return m_rg.data(); }
+    auto const* charge() const { return m_charge.data(); }
+    auto const* xsize() const { return m_xsize.data(); }
+    auto const* ysize() const { return m_ysize.data(); }
 
   private:
     uint32_t m_nHits;

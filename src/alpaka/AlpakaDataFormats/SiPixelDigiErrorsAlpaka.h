@@ -18,10 +18,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           error_d{cms::alpakatools::make_device_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue)},
           error_h{cms::alpakatools::make_host_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>()},
           formatterErrors_h{std::move(errors)} {
-      auto perror_h = alpaka::getPtrNative(error_h);
-      perror_h->construct(maxFedWords, alpaka::getPtrNative(data_d));
-      ALPAKA_ASSERT_OFFLOAD(perror_h->empty());
-      ALPAKA_ASSERT_OFFLOAD(perror_h->capacity() == static_cast<int>(maxFedWords));
+      error_h->construct(maxFedWords, data_d.data());
+      ALPAKA_ASSERT_OFFLOAD(error_h->empty());
+      ALPAKA_ASSERT_OFFLOAD(error_h->capacity() == static_cast<int>(maxFedWords));
 
       alpaka::memcpy(queue, error_d, error_h);
     }
@@ -34,9 +33,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-    cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return alpaka::getPtrNative(error_d); }
-    cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return alpaka::getPtrNative(error_d); }
-    cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return alpaka::getPtrNative(error_d); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact>* error() { return error_d.data(); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact> const* error() const { return error_d.data(); }
+    cms::alpakatools::SimpleVector<PixelErrorCompact> const* c_error() const { return error_d.data(); }
 
 #ifdef TODO
     using HostDataError =

@@ -22,8 +22,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     BeamSpotAlpaka& operator=(BeamSpotAlpaka const&) = delete;
     BeamSpotAlpaka& operator=(BeamSpotAlpaka&&) = default;
 
-    BeamSpotPOD* data() { return alpaka::getPtrNative(data_d_); }
-    BeamSpotPOD const* data() const { return alpaka::getPtrNative(data_d_); }
+    BeamSpotPOD* data() { return data_d_.data(); }
+    BeamSpotPOD const* data() const { return data_d_.data(); }
 
     cms::alpakatools::device_buffer<Device, BeamSpotPOD>& buf() { return data_d_; }
     cms::alpakatools::device_buffer<Device, BeamSpotPOD> const& buf() const { return data_d_; }

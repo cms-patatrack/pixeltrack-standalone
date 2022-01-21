@@ -109,11 +109,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(tksoa);
 
       ZVertexAlpaka vertices = cms::alpakatools::make_device_buffer<ZVertexSoA>(queue);
-      auto* soa = alpaka::getPtrNative(vertices);
+      auto* soa = vertices.data();
       ALPAKA_ASSERT_OFFLOAD(soa);
 
       auto ws_dBuf{cms::alpakatools::make_device_buffer<WorkSpace>(queue)};
-      auto ws_d = alpaka::getPtrNative(ws_dBuf);
+      auto ws_d = ws_dBuf.data();
 
       auto nvFinalVerticesView = cms::alpakatools::make_device_view(alpaka::getDev(queue), soa->nvFinal);
       alpaka::memset(queue, nvFinalVerticesView, 0);

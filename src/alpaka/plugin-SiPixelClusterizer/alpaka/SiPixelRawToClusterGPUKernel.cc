@@ -41,8 +41,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                           unsigned int wordCounterGPU,
                                                                           const uint32_t *src,
                                                                           unsigned int length) {
-      std::memcpy(alpaka::getPtrNative(word_) + wordCounterGPU, src, sizeof(uint32_t) * length);
-      std::memset(alpaka::getPtrNative(fedId_) + wordCounterGPU / 2, fedId - 1200, length / 2);
+      std::memcpy(word_.data() + wordCounterGPU, src, sizeof(uint32_t) * length);
+      std::memset(fedId_.data() + wordCounterGPU / 2, fedId - 1200, length / 2);
     }
 
     ////////////////////
@@ -598,8 +598,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         cablingMap,
                                                         modToUnp,
                                                         wordCounter,
-                                                        alpaka::getPtrNative(word_d),
-                                                        alpaka::getPtrNative(fedId_d),
+                                                        word_d.data(),
+                                                        fedId_d.data(),
                                                         digis_d->xx(),
                                                         digis_d->yy(),
                                                         digis_d->adc(),
@@ -727,8 +727,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             alpaka::getDev(queue),
             const_cast<uint32_t const *>(clusters_d->clusModuleStart() + gpuClustering::MaxNumModules),
             1u);
-        auto nModules_Clusters_h_1 =
-            cms::alpakatools::make_host_view(alpaka::getPtrNative(nModules_Clusters_h) + 1, 1u);
+        auto nModules_Clusters_h_1 = cms::alpakatools::make_host_view(nModules_Clusters_h.data() + 1, 1u);
         alpaka::memcpy(queue, nModules_Clusters_h_1, clusModuleStartLastElement);
 
       }  // end clusterizer scope

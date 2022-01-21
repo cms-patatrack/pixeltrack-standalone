@@ -36,9 +36,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       3,
                                                       hv,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       offset));
 
       alpaka::enqueue(queue,
@@ -47,10 +47,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       3,
                                                       bField_,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                      alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
+                                                      circle_fit_resultsGPU_.data(),
                                                       offset));
 
       alpaka::enqueue(queue,
@@ -60,10 +60,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       3,
                                                       bField_,
                                                       outputSoa_d,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                      alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
+                                                      circle_fit_resultsGPU_.data(),
                                                       offset));
 
       // quads
@@ -74,9 +74,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       4,
                                                       hv,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       offset));
 
       alpaka::enqueue(queue,
@@ -85,10 +85,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       4,
                                                       bField_,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                      alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
+                                                      circle_fit_resultsGPU_.data(),
                                                       offset));
 
       alpaka::enqueue(queue,
@@ -98,10 +98,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       4,
                                                       bField_,
                                                       outputSoa_d,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                      alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
+                                                      circle_fit_resultsGPU_.data(),
                                                       offset));
 
       if (fit5as4_) {
@@ -113,9 +113,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         5,
                                                         hv,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         offset));
 
         alpaka::enqueue(queue,
@@ -124,10 +124,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         5,
                                                         bField_,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                        alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
+                                                        circle_fit_resultsGPU_.data(),
                                                         offset));
 
         alpaka::enqueue(queue,
@@ -137,10 +137,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         5,
                                                         bField_,
                                                         outputSoa_d,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                        alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
+                                                        circle_fit_resultsGPU_.data(),
                                                         offset));
       } else {
         // penta all 5
@@ -151,9 +151,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         5,
                                                         hv,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         offset));
 
         alpaka::enqueue(queue,
@@ -162,10 +162,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         5,
                                                         bField_,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                        alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
+                                                        circle_fit_resultsGPU_.data(),
                                                         offset));
 
         alpaka::enqueue(queue,
@@ -175,10 +175,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         5,
                                                         bField_,
                                                         outputSoa_d,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
-                                                        alpaka::getPtrNative(circle_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
+                                                        circle_fit_resultsGPU_.data(),
                                                         offset));
       }
     }

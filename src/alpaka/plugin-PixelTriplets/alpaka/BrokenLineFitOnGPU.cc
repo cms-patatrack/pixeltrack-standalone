@@ -32,9 +32,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tuples_d,
                                                       tupleMultiplicity_d,
                                                       hv,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       3,
                                                       offset));
 
@@ -44,9 +44,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       bField_,
                                                       outputSoa_d,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       3,
                                                       offset));
 
@@ -57,9 +57,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tuples_d,
                                                       tupleMultiplicity_d,
                                                       hv,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       4,
                                                       offset));
 
@@ -69,9 +69,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       tupleMultiplicity_d,
                                                       bField_,
                                                       outputSoa_d,
-                                                      alpaka::getPtrNative(hitsGPU_),
-                                                      alpaka::getPtrNative(hits_geGPU_),
-                                                      alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                      hitsGPU_.data(),
+                                                      hits_geGPU_.data(),
+                                                      fast_fit_resultsGPU_.data(),
                                                       4,
                                                       offset));
 
@@ -83,9 +83,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tuples_d,
                                                         tupleMultiplicity_d,
                                                         hv,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         5,
                                                         offset));
 
@@ -95,9 +95,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         bField_,
                                                         outputSoa_d,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         5,
                                                         offset));
       } else {
@@ -108,9 +108,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tuples_d,
                                                         tupleMultiplicity_d,
                                                         hv,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         5,
                                                         offset));
 
@@ -120,9 +120,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                         tupleMultiplicity_d,
                                                         bField_,
                                                         outputSoa_d,
-                                                        alpaka::getPtrNative(hitsGPU_),
-                                                        alpaka::getPtrNative(hits_geGPU_),
-                                                        alpaka::getPtrNative(fast_fit_resultsGPU_),
+                                                        hitsGPU_.data(),
+                                                        hits_geGPU_.data(),
+                                                        fast_fit_resultsGPU_.data(),
                                                         5,
                                                         offset));
       }

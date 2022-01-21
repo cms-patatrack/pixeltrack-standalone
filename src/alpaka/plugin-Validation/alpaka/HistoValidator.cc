@@ -143,29 +143,29 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     histos["module_n"].fill(nModules_);
     histos["digi_n"].fill(nDigis_);
     for (uint32_t i = 0; i < nDigis_; ++i) {
-      histos["digi_adc"].fill(alpaka::getPtrNative(*h_adc)[i]);
+      histos["digi_adc"].fill((*h_adc)[i]);
     }
     h_adc.reset();
 
     histos["cluster_n"].fill(nClusters_);
     for (uint32_t i = 0; i < nModules_; ++i) {
-      histos["cluster_per_module_n"].fill(alpaka::getPtrNative(*h_clusInModule)[i]);
+      histos["cluster_per_module_n"].fill((*h_clusInModule)[i]);
     }
     h_clusInModule.reset();
 
     histos["hit_n"].fill(nHits_);
     for (uint32_t i = 0; i < nHits_; ++i) {
-      histos["hit_lx"].fill(alpaka::getPtrNative(*h_lx)[i]);
-      histos["hit_ly"].fill(alpaka::getPtrNative(*h_ly)[i]);
-      histos["hit_lex"].fill(alpaka::getPtrNative(*h_lex)[i]);
-      histos["hit_ley"].fill(alpaka::getPtrNative(*h_ley)[i]);
-      histos["hit_gx"].fill(alpaka::getPtrNative(*h_gx)[i]);
-      histos["hit_gy"].fill(alpaka::getPtrNative(*h_gy)[i]);
-      histos["hit_gz"].fill(alpaka::getPtrNative(*h_gz)[i]);
-      histos["hit_gr"].fill(alpaka::getPtrNative(*h_gr)[i]);
-      histos["hit_charge"].fill(alpaka::getPtrNative(*h_charge)[i]);
-      histos["hit_sizex"].fill(alpaka::getPtrNative(*h_sizex)[i]);
-      histos["hit_sizey"].fill(alpaka::getPtrNative(*h_sizey)[i]);
+      histos["hit_lx"].fill((*h_lx)[i]);
+      histos["hit_ly"].fill((*h_ly)[i]);
+      histos["hit_lex"].fill((*h_lex)[i]);
+      histos["hit_ley"].fill((*h_ley)[i]);
+      histos["hit_gx"].fill((*h_gx)[i]);
+      histos["hit_gy"].fill((*h_gy)[i]);
+      histos["hit_gz"].fill((*h_gz)[i]);
+      histos["hit_gr"].fill((*h_gr)[i]);
+      histos["hit_charge"].fill((*h_charge)[i]);
+      histos["hit_sizex"].fill((*h_sizex)[i]);
+      histos["hit_sizey"].fill((*h_sizey)[i]);
     }
     h_lx.reset();
     h_ly.reset();
@@ -180,9 +180,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     h_sizey.reset();
 
     {
-      auto const& tracksBuf = iEvent.get(trackToken_);
-      auto const tracks = alpaka::getPtrNative(tracksBuf);
-
+      auto const& tracks = iEvent.get(trackToken_);
       int nTracks = 0;
       for (int i = 0; i < tracks->stride(); ++i) {
         if (tracks->nHits(i) > 0 and tracks->quality(i) >= trackQuality::loose) {
@@ -199,14 +197,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           histos["track_quality"].fill(tracks->quality(i));
         }
       }
-
       histos["track_n"].fill(nTracks);
     }
 
     {
-      auto const& verticesBuf = iEvent.get(vertexToken_);
-      auto const vertices = alpaka::getPtrNative(verticesBuf);
-
+      auto const& vertices = iEvent.get(vertexToken_);
       histos["vertex_n"].fill(vertices->nvFinal);
       for (uint32_t i = 0; i < vertices->nvFinal; ++i) {
         histos["vertex_z"].fill(vertices->zv[i]);

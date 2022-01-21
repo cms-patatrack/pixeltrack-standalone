@@ -24,20 +24,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     uint32_t nClusters() const { return nClusters_h; }
 
-    uint32_t *moduleStart() { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t *clusInModule() { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t *moduleId() { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t *clusModuleStart() { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t *moduleStart() { return moduleStart_d.data(); }
+    uint32_t *clusInModule() { return clusInModule_d.data(); }
+    uint32_t *moduleId() { return moduleId_d.data(); }
+    uint32_t *clusModuleStart() { return clusModuleStart_d.data(); }
 
-    uint32_t const *moduleStart() const { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t const *clusInModule() const { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t const *moduleId() const { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t const *clusModuleStart() const { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t const *moduleStart() const { return moduleStart_d.data(); }
+    uint32_t const *clusInModule() const { return clusInModule_d.data(); }
+    uint32_t const *moduleId() const { return moduleId_d.data(); }
+    uint32_t const *clusModuleStart() const { return clusModuleStart_d.data(); }
 
-    uint32_t const *c_moduleStart() const { return alpaka::getPtrNative(moduleStart_d); }
-    uint32_t const *c_clusInModule() const { return alpaka::getPtrNative(clusInModule_d); }
-    uint32_t const *c_moduleId() const { return alpaka::getPtrNative(moduleId_d); }
-    uint32_t const *c_clusModuleStart() const { return alpaka::getPtrNative(clusModuleStart_d); }
+    uint32_t const *c_moduleStart() const { return moduleStart_d.data(); }
+    uint32_t const *c_clusInModule() const { return clusInModule_d.data(); }
+    uint32_t const *c_moduleId() const { return moduleId_d.data(); }
+    uint32_t const *c_clusModuleStart() const { return clusModuleStart_d.data(); }
 
     class DeviceConstView {
     public:

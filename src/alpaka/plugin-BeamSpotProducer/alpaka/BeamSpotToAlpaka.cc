@@ -30,7 +30,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    *alpaka::getPtrNative(bsHost_) = iSetup.get<BeamSpotPOD>();
+    *bsHost_ = iSetup.get<BeamSpotPOD>();
 
     cms::alpakatools::ScopedContextProduce<Queue> ctx{iEvent.streamID()};
 
