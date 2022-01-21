@@ -575,8 +575,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
         const uint32_t blocks =
             (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
@@ -633,8 +632,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const int blocks =
             (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) /
             threadsPerBlockOrElementsPerThread;
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
 
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDiv,
@@ -667,8 +665,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
-        const WorkDiv1D &workDivMaxNumModules =
-            cms::alpakatools::make_workdiv(Vec1D::all(MaxNumModules), Vec1D::all(256));
+        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv(MaxNumModules, 256);
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.
@@ -711,9 +708,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        const WorkDiv1D &workDivOneBlock = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(1024u));
-
         // MUST be ONE block
+        const auto workDivOneBlock = cms::alpakatools::make_workdiv(1u, 1024u);
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivOneBlock,
                                                         ::pixelgpudetails::fillHitsModuleStart(),

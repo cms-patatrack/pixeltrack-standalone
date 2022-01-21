@@ -66,18 +66,15 @@ namespace cms {
 
       const int num_items = Histo::totbins();
 
-      const unsigned int nthreads = 1024;
-      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
-      const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
-      const Vec1D blocksPerGrid(nblocks);
-
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const auto threadsPerBlockOrElementsPerThread = 1024u;
+      const auto blocksPerGrid =
+          (num_items + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+      const auto workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                           workDiv, cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
-      const WorkDiv1D &workDivWith1Block =
-          cms::alpakatools::make_workdiv(Vec1D::all(1), threadsPerBlockOrElementsPerThread);
+      const auto workDivWith1Block = cms::alpakatools::make_workdiv(1, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                           workDivWith1Block,
@@ -85,7 +82,7 @@ namespace cms {
                           poff,
                           poff,
                           num_items,
-                          nblocks));
+                          blocksPerGrid));
     }
 
     template <typename Histo, typename T>
@@ -95,14 +92,13 @@ namespace cms {
         T const *v,
         uint32_t const *offsets,
         uint32_t totSize,
-        unsigned int nthreads,
+        uint32_t nthreads,
         ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
       launchZero(h, queue);
 
-      const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
-      const Vec1D blocksPerGrid(nblocks);
-      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const auto threadsPerBlockOrElementsPerThread = nthreads;
+      const auto blocksPerGrid = (totSize + nthreads - 1) / nthreads;
+      const auto workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(

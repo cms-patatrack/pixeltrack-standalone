@@ -17,6 +17,26 @@ namespace cms::alpakatools {
   /*
    * Creates the accelerator-dependent workdiv.
    */
+  inline WorkDiv<Dim1D> make_workdiv(Idx blocksPerGrid, Idx threadsPerBlockOrElementsPerThread) {
+    // FIXME avoid ODR violation: rewrite this to be teplated on the accelerator type, instead of depending on the ENABLED/BACKEND macros
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+    // On the GPU:
+    // threadsPerBlockOrElementsPerThread is the number of threads per block.
+    // Each thread is looking at a single element: elementsPerThread is always 1.
+    Idx elementsPerThread = 1;
+    return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+#else
+    // On the CPU:
+    // Run serially with a single thread per block: threadsPerBlock is always 1.
+    // threadsPerBlockOrElementsPerThread is the number of elements per thread.
+    Idx threadsPerBlock = 1;
+    return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
+#endif
+  }
+
+  /*
+   * Creates the accelerator-dependent workdiv.
+   */
   template <typename TDim>
   WorkDiv<TDim> make_workdiv(const Vec<TDim>& blocksPerGrid, const Vec<TDim>& threadsPerBlockOrElementsPerThread) {
     // FIXME avoid ODR violation: rewrite this to be teplated on the accelerator type, instead of depending on the ENABLED/BACKEND macros

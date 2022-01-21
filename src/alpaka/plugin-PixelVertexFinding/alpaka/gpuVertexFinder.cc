@@ -125,12 +125,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       const uint32_t blockSize = 128;
       const uint32_t numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-      const WorkDiv1D loadTracksWorkDiv =
-          cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      const auto loadTracksWorkDiv = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
-      const WorkDiv1D finderSorterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1), Vec1D::all(1024 - 256));
-      const WorkDiv1D splitterFitterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1024), Vec1D::all(128));
+      const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv(1, 1024 - 256);
+      const auto splitterFitterWorkDiv = cms::alpakatools::make_workdiv(1024, 128);
 
       if (oneKernel_) {
         // implemented only for density clustesrs

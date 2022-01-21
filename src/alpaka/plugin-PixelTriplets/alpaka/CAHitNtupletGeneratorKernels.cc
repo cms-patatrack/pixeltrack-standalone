@@ -15,8 +15,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // NB: MPORTANT: This could be tuned to benefit from innermost loop.
     const auto blockSize = 128;
     const auto numberOfBlocks = (HitContainer::capacity() + blockSize - 1) / blockSize;
-    const WorkDiv1D fillHitDetWorkDiv =
-        cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    const WorkDiv1D fillHitDetWorkDiv = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(
         queue,
         alpaka::createTaskKernel<Acc1D>(
@@ -96,7 +95,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     blockSize = 64;
     numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-    WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                     kernel_find_ntuplets(),
@@ -121,14 +120,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     blockSize = 128;
     numberOfBlocks = (HitContainer::totbins() + blockSize - 1) / blockSize;
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1D, cms::alpakatools::finalizeBulk(), device_hitTuple_apc_.data(), tuples_d));
 
     // remove duplicates (tracks that share a doublet)
     numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                     kernel_earlyDuplicateRemover(),
@@ -139,14 +138,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     blockSize = 128;
     numberOfBlocks = (3 * CAConstants::maxTuples() / 4 + blockSize - 1) / blockSize;
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1D, kernel_countMultiplicity(), tuples_d, quality_d, device_tupleMultiplicity_.data()));
 
     cms::alpakatools::launchFinalize(device_tupleMultiplicity_.data(), queue);
 
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1D, kernel_fillMultiplicity(), tuples_d, quality_d, device_tupleMultiplicity_.data()));
@@ -173,7 +172,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     if (m_params.doStats_) {
       numberOfBlocks = (std::max(nhits, m_params.maxNumberOfDoublets_) + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                       kernel_checkOverflows(),
@@ -214,7 +213,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       int threadsPerBlock = 128;
       // at least one block!
       int blocks = (std::max(1U, nhits) + threadsPerBlock - 1) / threadsPerBlock;
-      const WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlock));
+      const WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(blocks, threadsPerBlock);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                       gpuPixelDoublets::initDoublets(),
@@ -278,7 +277,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // classify tracks based on kinematics
     auto numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-    WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1D, kernel_classifyTracks(), tuples_d, tracks_d, m_params.cuts_, quality_d));
@@ -286,7 +285,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (m_params.lateFishbone_) {
       // apply fishbone cleaning to good tracks
       numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<Acc1D>(
@@ -295,7 +294,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // remove duplicates (tracks that share a doublet)
     numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+    workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                     kernel_fastDuplicateRemover(),
@@ -307,14 +306,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
       // fill hit->track "map"
       numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(
                           workDiv1D, kernel_countHitInTracks(), tuples_d, quality_d, device_hitToTuple_.data()));
 
       cms::alpakatools::launchFinalize(device_hitToTuple_.data(), queue);
 
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(
                           workDiv1D, kernel_fillHitInTracks(), tuples_d, quality_d, device_hitToTuple_.data()));
@@ -322,7 +321,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (m_params.minHitsPerNtuplet_ < 4) {
       // remove duplicates (tracks that share a hit)
       numberOfBlocks = (HitToTuple::capacity() + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<Acc1D>(
@@ -332,13 +331,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     if (m_params.doStats_) {
       // counters (add flag???)
       numberOfBlocks = (HitToTuple::capacity() + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<Acc1D>(
                           workDiv1D, kernel_doStatsForHitInTracks(), device_hitToTuple_.data(), counters_.data()));
 
       numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-      workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<Acc1D>(workDiv1D, kernel_doStatsForTracks(), tuples_d, quality_d, counters_.data()));
@@ -350,7 +349,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #ifdef DUMP_GPU_TK_TUPLES
     static std::atomic<int> iev(0);
     ++iev;
-    workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(32u));
+    workDiv1D = cms::alpakatools::make_workdiv(1u, 32u);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDiv1D,
                                                     kernel_print_found_ntuplets(),
@@ -365,7 +364,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::printCounters(Queue &queue) {
-    const WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(1u));
+    const WorkDiv1D workDiv1D = cms::alpakatools::make_workdiv(1u, 1u);
     alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv1D, kernel_printCounters(), counters_.data()));
   }
 

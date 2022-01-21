@@ -40,8 +40,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       const int threadsPerBlockOrElementsPerThread = 128;
       const int blocks = digis_d.nModules();  // active modules (with digis)
-      const WorkDiv1D& getHitsWorkDiv =
-          cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+      const auto getHitsWorkDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
 
 #ifdef GPU_DEBUG
       std::cout << "launching getHits kernel for " << blocks << " blocks" << std::endl;
@@ -64,7 +63,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // assuming full warp of threads is better than a smaller number...
       if (nHits) {
-        const WorkDiv1D& oneBlockWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(32u));
+        const auto oneBlockWorkDiv = cms::alpakatools::make_workdiv(1u, 32u);
         alpaka::enqueue(
             queue,
             alpaka::createTaskKernel<Acc1D>(

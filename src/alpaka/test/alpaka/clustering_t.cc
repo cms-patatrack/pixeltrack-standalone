@@ -238,17 +238,16 @@ int main(void) {
 
 // Launch CUDA Kernels
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-    const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
+    const auto threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #else
     // NB: can be tuned.
-    const int threadsPerBlockOrElementsPerThread = 256;
+    const auto threadsPerBlockOrElementsPerThread = 256;
 #endif
 
     // COUNT MODULES
-    const int blocksPerGridCountModules =
+    const auto blocksPerGridCountModules =
         (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-    const WorkDiv1D& workDivCountModules =
-        make_workdiv(Vec1D::all(blocksPerGridCountModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
+    const auto workDivCountModules = make_workdiv(blocksPerGridCountModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
@@ -258,8 +257,7 @@ int main(void) {
             workDivCountModules, gpuClustering::countModules(), d_id.data(), d_moduleStart.data(), d_clus.data(), n));
 
     // FIND CLUSTER
-    const WorkDiv1D& workDivMaxNumModules =
-        make_workdiv(Vec1D::all(gpuClustering::MaxNumModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
+    const auto workDivMaxNumModules = make_workdiv(gpuClustering::MaxNumModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 

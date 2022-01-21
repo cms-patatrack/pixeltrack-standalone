@@ -144,9 +144,9 @@ void go(const DevHost& host,
 
     alpaka::memcpy(queue, v_d, v);
 
-    const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D::all(256));
-    const Vec1D& blocksPerGrid(Vec1D::all(1));
-    const WorkDiv1D& workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    const auto threadsPerBlockOrElementsPerThread = 256u;
+    const auto blocksPerGrid = 1u;
+    const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                         workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));

@@ -185,11 +185,9 @@ int main() {
   auto a_d = make_device_buffer<Assoc>(queue);
   alpaka::memset(queue, a_d, 0);
 
-  const unsigned int nThreads = 256;
-  const Vec1D threadsPerBlockOrElementsPerThread(nThreads);
-  const unsigned int nBlocks4N = (4 * N + nThreads - 1) / nThreads;
-  const Vec1D blocksPerGrid4N(nBlocks4N);
-  const WorkDiv1D& workDiv4N = make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
+  const auto threadsPerBlockOrElementsPerThread = 256u;
+  const auto blocksPerGrid4N = (4 * N + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+  const auto workDiv4N = make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
 
   launchZero(a_d.data(), queue);
 
@@ -199,9 +197,9 @@ int main() {
 
   launchFinalize(a_d.data(), queue);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verify(), a_d.data()));
+  alpaka::enqueue(
+      queue,
+      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(WorkDiv1D{1u, 1u, 1u}, verify(), a_d.data()));
 
   alpaka::enqueue(
       queue,
@@ -231,9 +229,8 @@ int main() {
   auto dc_d = make_device_buffer<AtomicPairCounter>(queue);
   alpaka::memset(queue, dc_d, 0);
 
-  const unsigned int nBlocks = (N + nThreads - 1) / nThreads;
-  const Vec1D blocksPerGrid(nBlocks);
-  const WorkDiv1D& workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto blocksPerGrid = (N + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+  const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
@@ -243,10 +240,9 @@ int main() {
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv, finalizeBulk(), dc_d.data(), a_d.data()));
 
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-          WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verifyBulk(), a_d.data(), dc_d.data()));
+  alpaka::enqueue(queue,
+                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                      WorkDiv1D{1u, 1u, 1u}, verifyBulk(), a_d.data(), dc_d.data()));
 
   alpaka::memcpy(queue, la, a_d);
 
@@ -266,10 +262,9 @@ int main() {
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv, finalizeBulk(), dc_d.data(), sa_d.data()));
 
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-          WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verifyBulk(), sa_d.data(), dc_d.data()));
+  alpaka::enqueue(queue,
+                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                      WorkDiv1D{1u, 1u, 1u}, verifyBulk(), sa_d.data(), dc_d.data()));
 
   std::cout << "final counter value " << dc->get().n << ' ' << dc->get().m << std::endl;
 
@@ -305,9 +300,9 @@ int main() {
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDiv4N, countMultiLocal(), v_d.data(), m2_d.data(), N));
 
-  const Vec1D blocksPerGridTotBins(1u);
-  const Vec1D threadsPerBlockOrElementsPerThreadTotBins(Multiplicity::totbins());
-  const WorkDiv1D& workDivTotBins = make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
+  const auto blocksPerGridTotBins = 1u;
+  const auto threadsPerBlockOrElementsPerThreadTotBins = Multiplicity::totbins();
+  const auto workDivTotBins = make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
 
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
