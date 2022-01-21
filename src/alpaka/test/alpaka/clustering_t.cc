@@ -245,8 +245,7 @@ int main(void) {
 #endif
 
     // COUNT MODULES
-    const auto blocksPerGridCountModules =
-        (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+    const auto blocksPerGridCountModules = divide_up_by(numElements, threadsPerBlockOrElementsPerThread);
     const auto workDivCountModules = make_workdiv(blocksPerGridCountModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";

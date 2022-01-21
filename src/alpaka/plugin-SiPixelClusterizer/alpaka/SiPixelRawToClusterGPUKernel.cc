@@ -573,8 +573,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
         const int threadsPerBlockOrElementsPerThread = 32;
 #endif
-        const uint32_t blocks =
-            (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
+        // fill it all
+        const uint32_t blocks = cms::alpakatools::divide_up_by(wordCounter, threadsPerBlockOrElementsPerThread);
         const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
@@ -624,14 +624,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // clusterizer ...
         using namespace gpuClustering;
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-        const int threadsPerBlockOrElementsPerThread = 256;
+        const auto threadsPerBlockOrElementsPerThread = 256;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
-        const int threadsPerBlockOrElementsPerThread = 32;
+        const auto threadsPerBlockOrElementsPerThread = 32;
 #endif
-        const int blocks =
-            (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) /
-            threadsPerBlockOrElementsPerThread;
+        const auto blocks = cms::alpakatools::divide_up_by(std::max<int>(wordCounter, gpuClustering::MaxNumModules),
+                                                           threadsPerBlockOrElementsPerThread);
         const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
 
         alpaka::enqueue(queue,

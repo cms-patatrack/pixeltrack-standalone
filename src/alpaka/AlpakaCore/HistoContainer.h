@@ -67,8 +67,7 @@ namespace cms {
       const int num_items = Histo::totbins();
 
       const auto threadsPerBlockOrElementsPerThread = 1024u;
-      const auto blocksPerGrid =
-          (num_items + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+      const auto blocksPerGrid = divide_up_by(num_items, threadsPerBlockOrElementsPerThread);
       const auto workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(queue,
                       alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
@@ -97,7 +96,7 @@ namespace cms {
       launchZero(h, queue);
 
       const auto threadsPerBlockOrElementsPerThread = nthreads;
-      const auto blocksPerGrid = (totSize + nthreads - 1) / nthreads;
+      const auto blocksPerGrid = divide_up_by(totSize, nthreads);
       const auto workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::enqueue(queue,

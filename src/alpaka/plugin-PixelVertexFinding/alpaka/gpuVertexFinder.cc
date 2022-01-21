@@ -124,7 +124,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::memset(queue, nvIntermediateWorkspaceView, 0);
 
       const uint32_t blockSize = 128;
-      const uint32_t numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
+      const uint32_t numberOfBlocks = cms::alpakatools::divide_up_by(TkSoA::stride(), blockSize);
       const auto loadTracksWorkDiv = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 

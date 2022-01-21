@@ -154,14 +154,14 @@ int main() {
     auto output1_d = make_device_buffer<uint32_t[]>(queue, num_items);
 
     const auto nThreadsInit = 256;  // NB: 1024 would be better
-    const auto nBlocksInit = (num_items + nThreadsInit - 1) / nThreadsInit;
+    const auto nBlocksInit = divide_up_by(num_items, nThreadsInit);
     const auto workDivMultiBlockInit = make_workdiv(nBlocksInit, nThreadsInit);
 
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDivMultiBlockInit, init(), input_d.data(), 1, num_items));
 
     const auto nThreads = 1024;
-    const auto nBlocks = (num_items + nThreads - 1) / nThreads;
+    const auto nBlocks = divide_up_by(num_items, nThreads);
     const auto workDivMultiBlock = make_workdiv(nBlocks, nThreads);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;

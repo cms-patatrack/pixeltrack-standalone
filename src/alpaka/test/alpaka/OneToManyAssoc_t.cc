@@ -186,7 +186,7 @@ int main() {
   alpaka::memset(queue, a_d, 0);
 
   const auto threadsPerBlockOrElementsPerThread = 256u;
-  const auto blocksPerGrid4N = (4 * N + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+  const auto blocksPerGrid4N = divide_up_by(4 * N, threadsPerBlockOrElementsPerThread);
   const auto workDiv4N = make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
 
   launchZero(a_d.data(), queue);
@@ -229,7 +229,7 @@ int main() {
   auto dc_d = make_device_buffer<AtomicPairCounter>(queue);
   alpaka::memset(queue, dc_d, 0);
 
-  const auto blocksPerGrid = (N + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
+  const auto blocksPerGrid = divide_up_by(N, threadsPerBlockOrElementsPerThread);
   const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue,

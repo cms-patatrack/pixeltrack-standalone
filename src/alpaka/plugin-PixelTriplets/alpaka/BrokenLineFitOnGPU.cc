@@ -1,6 +1,7 @@
 #include "BrokenLineFitOnGPU.h"
 
 #include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaWorkDivHelper.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -11,7 +12,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_ASSERT_OFFLOAD(tuples_d);
 
     const auto blockSize = 64;
-    const auto numberOfBlocks = (maxNumberOfConcurrentFits_ + blockSize - 1) / blockSize;
+    const auto numberOfBlocks = cms::alpakatools::divide_up_by(maxNumberOfConcurrentFits_, blockSize);
     const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     const WorkDiv1D workDivQuadsPenta = cms::alpakatools::make_workdiv(numberOfBlocks / 4, blockSize);
 

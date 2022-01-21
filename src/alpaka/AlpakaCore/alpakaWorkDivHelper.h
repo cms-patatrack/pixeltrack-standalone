@@ -15,6 +15,16 @@ namespace cms::alpakatools {
    ********************************************/
 
   /*
+   * If the first argument is not a multiple of the second argument, round it up to the next multiple.
+   */
+  inline constexpr Idx round_up_by(Idx value, Idx divisor) { return (value + divisor - 1) / divisor * divisor; }
+
+  /*
+   * Return the integer division of the first argument by the second argument, rounded up to the next integer.
+   */
+  inline constexpr Idx divide_up_by(Idx value, Idx divisor) { return (value + divisor - 1) / divisor; }
+
+  /*
    * Creates the accelerator-dependent workdiv.
    */
   inline WorkDiv<Dim1D> make_workdiv(Idx blocksPerGrid, Idx threadsPerBlockOrElementsPerThread) {
