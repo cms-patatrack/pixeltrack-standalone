@@ -18,8 +18,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuPixelRecHits {
 
     struct getHits {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                                     BeamSpotPOD const* __restrict__ bs,
                                     SiPixelDigisAlpaka::DeviceConstView const digis,

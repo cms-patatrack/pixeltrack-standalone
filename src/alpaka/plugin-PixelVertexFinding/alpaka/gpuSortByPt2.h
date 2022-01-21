@@ -13,8 +13,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace gpuVertexFinder {
 
-    template <typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void sortByPt2(const T_Acc& acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void sortByPt2(const TAcc& acc,
                                                                                  ZVertices* pdata,
                                                                                  WorkSpace* pws) {
       auto& __restrict__ data = *pdata;
@@ -65,8 +65,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     struct sortByPt2Kernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, ZVertices* pdata, WorkSpace* pws) const {
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc, ZVertices* pdata, WorkSpace* pws) const {
         sortByPt2(acc, pdata, pws);
       }
     };

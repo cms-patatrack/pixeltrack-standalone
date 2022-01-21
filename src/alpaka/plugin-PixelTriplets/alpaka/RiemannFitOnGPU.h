@@ -20,8 +20,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <int N>
   struct kernelFastFit {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   Tuples const *__restrict__ foundNtuplets,
                                   CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                   uint32_t nHits,
@@ -90,8 +90,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <int N>
   struct kernelCircleFit {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                   uint32_t nHits,
                                   double B,
@@ -135,8 +135,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   template <int N>
   struct kernelLineFit {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                   uint32_t nHits,
                                   double B,

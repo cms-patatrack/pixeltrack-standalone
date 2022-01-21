@@ -24,9 +24,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void doubletsFromHisto(
-        const T_Acc& acc,
+        const TAcc& acc,
         uint8_t const* __restrict__ layerPairs,
         uint32_t nPairs,
         GPUCACell* cells,

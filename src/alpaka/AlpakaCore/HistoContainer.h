@@ -15,8 +15,8 @@ namespace cms {
   namespace alpakatools {
 
     struct countFromVector {
-      template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc, typename Histo, typename T>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     Histo *__restrict__ h,
                                     uint32_t nh,
                                     T const *__restrict__ v,
@@ -34,8 +34,8 @@ namespace cms {
     };
 
     struct fillFromVector {
-      template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc, typename Histo, typename T>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     Histo *__restrict__ h,
                                     uint32_t nh,
                                     T const *__restrict__ v,
@@ -115,8 +115,8 @@ namespace cms {
     }
 
     struct finalizeBulk {
-      template <typename T_Acc, typename Assoc>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) const {
+      template <typename TAcc, typename Assoc>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) const {
         assoc->bulkFinalizeFill(acc, *apc);
       }
     };
@@ -193,40 +193,40 @@ namespace cms {
           i = 0;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void add(const T_Acc &acc, CountersOnly const &co) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void add(const TAcc &acc, CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
           alpaka::atomicAdd(acc, off + i, co.off[i], alpaka::hierarchy::Blocks{});
         }
       }
 
-      template <typename T_Acc>
-      static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const T_Acc &acc, Counter &x) {
+      template <typename TAcc>
+      static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicAdd(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
-      template <typename T_Acc>
-      static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const T_Acc &acc, Counter &x) {
+      template <typename TAcc>
+      static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicSub(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void countDirect(const T_Acc &acc, T b) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void countDirect(const TAcc &acc, T b) {
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fillDirect(const T_Acc &acc, T b, index_type j) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fillDirect(const TAcc &acc, T b, index_type j) {
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         auto w = atomicDecrement(acc, off[b]);
         ALPAKA_ASSERT_OFFLOAD(w > 0);
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
+      template <typename TAcc>
       ALPAKA_FN_ACC ALPAKA_FN_INLINE int32_t
-      bulkFill(const T_Acc &acc, AtomicPairCounter &apc, index_type const *v, uint32_t n) {
+      bulkFill(const TAcc &acc, AtomicPairCounter &apc, index_type const *v, uint32_t n) {
         auto c = apc.add(acc, n);
         if (c.m >= nbins())
           return -int32_t(c.m);
@@ -236,13 +236,13 @@ namespace cms {
         return c.m;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalize(const T_Acc &acc, AtomicPairCounter const &apc) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalize(const TAcc &acc, AtomicPairCounter const &apc) {
         off[apc.get().m] = apc.get().n;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalizeFill(const T_Acc &acc, AtomicPairCounter const &apc) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalizeFill(const TAcc &acc, AtomicPairCounter const &apc) {
         auto m = apc.get().m;
         auto n = apc.get().n;
 
@@ -254,15 +254,15 @@ namespace cms {
         cms::alpakatools::for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const T_Acc &acc, T t) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const TAcc &acc, T t) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const T_Acc &acc, T t, index_type j) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const TAcc &acc, T t, index_type j) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         auto w = atomicDecrement(acc, off[b]);
@@ -270,8 +270,8 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const T_Acc &acc, T t, uint32_t nh) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const TAcc &acc, T t, uint32_t nh) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         b += histOff(nh);
@@ -279,8 +279,8 @@ namespace cms {
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const T_Acc &acc, T t, index_type j, uint32_t nh) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const TAcc &acc, T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         b += histOff(nh);
@@ -290,8 +290,8 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void finalize(const T_Acc &acc, Counter *ws = nullptr) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void finalize(const TAcc &acc, Counter *ws = nullptr) {
         ALPAKA_ASSERT_OFFLOAD(off[totbins() - 1] == 0);
         blockPrefixScan(acc, off, totbins(), ws);
         ALPAKA_ASSERT_OFFLOAD(off[totbins() - 1] == off[totbins() - 2]);

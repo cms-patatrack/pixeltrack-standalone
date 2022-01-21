@@ -11,8 +11,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace gpuVertexFinder {
 
-    template <typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void splitVertices(const T_Acc& acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void splitVertices(const TAcc& acc,
                                                                                      ZVertices* pdata,
                                                                                      WorkSpace* pws,
                                                                                      float maxChi2) {
@@ -153,8 +153,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     struct splitVerticesKernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, ZVertices* pdata, WorkSpace* pws, float maxChi2) const {
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc, ZVertices* pdata, WorkSpace* pws, float maxChi2) const {
         splitVertices(acc, pdata, pws, maxChi2);
       }
     };

@@ -10,9 +10,9 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 using namespace cms::alpakatools;
 
 struct update {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t i) {
       auto m = i % 11;
       m = m % 6 + 1;  // max 6, no 0
@@ -26,18 +26,18 @@ struct update {
 };
 
 struct finalize {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     assert(dc->get().m == n);
     ind[n] = dc->get().n;
   }
 };
 
 struct verify {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t i) {
       assert(0 == ind[0]);
       assert(dc->get().m == n);

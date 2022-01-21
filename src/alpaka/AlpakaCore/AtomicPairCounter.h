@@ -34,8 +34,8 @@ namespace cms::alpakatools {
     ALPAKA_FN_HOST_ACC Counters get() const { return counter.counters; }
 
     // increment n by 1 and m by i.  return previous value
-    template <typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const T_Acc& acc, uint32_t i) {
+    template <typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const TAcc& acc, uint32_t i) {
       c_type c = i;
       c += incr;
 

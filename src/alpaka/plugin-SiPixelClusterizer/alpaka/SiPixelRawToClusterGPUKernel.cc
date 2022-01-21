@@ -348,8 +348,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // Kernel to perform Raw to Digi conversion
     struct RawToDigi_kernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     const SiPixelFedCablingMapGPU *cablingMap,
                                     const unsigned char *modToUnp,
                                     const uint32_t wordCounter,
@@ -479,8 +479,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 namespace pixelgpudetails {
 
   struct fillHitsModuleStart {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   uint32_t const *__restrict__ cluStart,
                                   uint32_t *__restrict__ moduleStart) const {
       ALPAKA_ASSERT_OFFLOAD(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024

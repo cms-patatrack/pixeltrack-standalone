@@ -20,8 +20,8 @@ namespace gpuClustering {
 #endif
 
   struct countModules {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                   uint16_t const* __restrict__ id,
                                   uint32_t* __restrict__ moduleStart,
                                   int32_t* __restrict__ clusterId,
@@ -46,9 +46,9 @@ namespace gpuClustering {
 
   //  __launch_bounds__(256,4)
   struct findClus {
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        const T_Acc& acc,
+        const TAcc& acc,
         uint16_t const* __restrict__ id,           // module id of each pixel
         uint16_t const* __restrict__ x,            // local coordinates of each pixel
         uint16_t const* __restrict__ y,            //

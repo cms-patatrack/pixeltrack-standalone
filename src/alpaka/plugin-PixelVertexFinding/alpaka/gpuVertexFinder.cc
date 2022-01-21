@@ -15,9 +15,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuVertexFinder {
 
     struct loadTracks {
-      template <typename T_Acc>
+      template <typename TAcc>
       ALPAKA_FN_ACC void operator()(
-          const T_Acc& acc, TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) const {
+          const TAcc& acc, TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) const {
         ALPAKA_ASSERT_OFFLOAD(ptracks);
         ALPAKA_ASSERT_OFFLOAD(soa);
         auto const& tracks = *ptracks;
@@ -55,8 +55,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
     struct vertexFinderOneKernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "seed"
@@ -77,8 +77,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     };
 #else
     struct vertexFinderKernel1 {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "seed"
@@ -93,8 +93,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     };
 
     struct vertexFinderKernel2 {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws) const {
         fitVertices(acc, pdata, pws, 5000.);

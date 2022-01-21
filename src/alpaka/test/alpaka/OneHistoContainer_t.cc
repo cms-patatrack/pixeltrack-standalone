@@ -11,8 +11,8 @@ using namespace cms::alpakatools;
 
 template <int NBINS, int S, int DELTA>
 struct mykernel {
-  template <typename T_Acc, typename T>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* __restrict__ v, uint32_t N) const {
+  template <typename TAcc, typename T>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, T const* __restrict__ v, uint32_t N) const {
     assert(v);
     assert(N == 12000);
 

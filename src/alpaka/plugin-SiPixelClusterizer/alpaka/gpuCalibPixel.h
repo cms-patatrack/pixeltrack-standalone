@@ -22,8 +22,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
     struct calibDigis {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     bool isRun2,
                                     uint16_t* id,
                                     uint16_t const* __restrict__ x,

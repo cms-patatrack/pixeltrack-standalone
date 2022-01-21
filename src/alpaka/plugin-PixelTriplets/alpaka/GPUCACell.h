@@ -68,9 +68,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       ALPAKA_ASSERT_OFFLOAD(tracks().empty());
     }
 
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) int addOuterNeighbor(
-        const T_Acc& acc, CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
+        const TAcc& acc, CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
       // use smart cache
       if (outerNeighbors().empty()) {
         auto i = cellNeighbors.extend(acc);  // maybe waisted....
@@ -96,8 +96,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       return outerNeighbors().push_back(acc, t);
     }
 
-    template <typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) int addTrack(const T_Acc& acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) int addTrack(const TAcc& acc,
                                                                                CellTracks::value_t t,
                                                                                CellTracksVector& cellTracks) {
       if (tracks().empty()) {
@@ -328,8 +328,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // trying to free the track building process from hardcoded layers, leaving
     // the visit of the graph based on the neighborhood connections between cells.
-    template <int DEPTH, typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE void find_ntuplets(const T_Acc& acc,
+    template <int DEPTH, typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void find_ntuplets(const TAcc& acc,
                                                       Hits const& hh,
                                                       GPUCACell* __restrict__ cells,
                                                       CellTracksVector& cellTracks,

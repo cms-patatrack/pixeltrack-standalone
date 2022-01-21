@@ -30,8 +30,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using HitContainer = pixelTrack::HitContainer;
 
   struct kernel_checkOverflows {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *foundNtuplets,
                                   CAConstants::TupleMultiplicity *tupleMultiplicity,
                                   cms::alpakatools::AtomicPairCounter *apc,
@@ -115,8 +115,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_fishboneCleaner {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   GPUCACell const *cells,
                                   uint32_t const *__restrict__ nCells,
                                   Quality *quality) const {
@@ -135,8 +135,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_earlyDuplicateRemover {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   GPUCACell const *cells,
                                   uint32_t const *__restrict__ nCells,
                                   HitContainer *foundNtuplets,
@@ -172,8 +172,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_fastDuplicateRemover {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   GPUCACell const *__restrict__ cells,
                                   uint32_t const *__restrict__ nCells,
                                   HitContainer const *__restrict__ foundNtuplets,
@@ -215,8 +215,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_connect {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   cms::alpakatools::AtomicPairCounter *apc1,
                                   cms::alpakatools::AtomicPairCounter *apc2,  // just to zero them,
                                   GPUCACell::Hits const *__restrict__ hhp,
@@ -303,8 +303,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_find_ntuplets {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   GPUCACell::Hits const *__restrict__ hhp,
                                   GPUCACell *__restrict__ cells,
                                   uint32_t const *nCells,
@@ -338,8 +338,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_mark_used {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   GPUCACell::Hits const *__restrict__ hhp,
                                   GPUCACell *__restrict__ cells,
                                   uint32_t const *nCells) const {
@@ -353,8 +353,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_countMultiplicity {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ foundNtuplets,
                                   Quality const *__restrict__ quality,
                                   CAConstants::TupleMultiplicity *tupleMultiplicity) const {
@@ -372,8 +372,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_fillMultiplicity {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ foundNtuplets,
                                   Quality const *__restrict__ quality,
                                   CAConstants::TupleMultiplicity *tupleMultiplicity) const {
@@ -391,8 +391,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_classifyTracks {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ tuples,
                                   TkSoA const *__restrict__ tracks,
                                   CAHitNtupletGeneratorKernels::QualityCuts cuts,
@@ -458,8 +458,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_doStatsForTracks {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::Counters *counters) const {
@@ -474,8 +474,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_countHitInTracks {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::HitToTuple *hitToTuple) const {
@@ -491,8 +491,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_fillHitInTracks {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ tuples,
                                   Quality const *__restrict__ quality,
                                   CAHitNtupletGeneratorKernels::HitToTuple *hitToTuple) const {
@@ -508,8 +508,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_fillHitDetIndices {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   HitContainer const *__restrict__ tuples,
                                   TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer *__restrict__ hitDetIndices) const {
@@ -531,8 +531,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_doStatsForHitInTracks {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   CAHitNtupletGeneratorKernels::HitToTuple const *__restrict__ hitToTuple,
                                   CAHitNtupletGeneratorKernels::Counters *counters) const {
       auto &c = *counters;
@@ -547,8 +547,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_tripletCleaner {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer const *__restrict__ ptuples,
                                   TkSoA const *__restrict__ ptracks,
@@ -607,8 +607,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_print_found_ntuplets {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   TrackingRecHit2DSoAView const *__restrict__ hhp,
                                   HitContainer const *__restrict__ ptuples,
                                   TkSoA const *__restrict__ ptracks,
@@ -645,8 +645,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   struct kernel_printCounters {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc, cAHitNtupletGenerator::Counters const *counters) const {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc, cAHitNtupletGenerator::Counters const *counters) const {
       auto const &c = *counters;
       printf(
           "||Counters | nEvents | nHits | nCells | nTuples | nFitTacks  |  nGoodTracks | nUsedHits | nDupHits | "

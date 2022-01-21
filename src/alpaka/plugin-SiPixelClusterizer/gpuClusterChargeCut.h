@@ -11,9 +11,9 @@
 namespace gpuClustering {
 
   struct clusterChargeCut {
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        const T_Acc& acc,
+        const TAcc& acc,
         uint16_t* __restrict__ id,                 // module id of each pixel (modified if bad cluster)
         uint16_t const* __restrict__ adc,          //  charge of each pixel
         uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module

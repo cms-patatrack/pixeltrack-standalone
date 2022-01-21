@@ -22,8 +22,8 @@ public:
 
 template <typename T>
 struct testPrefixScan {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, unsigned int size) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, unsigned int size) const {
     auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
@@ -51,8 +51,8 @@ struct testPrefixScan {
  */
 template <typename T>
 struct testWarpPrefixScan {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t size) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t size) const {
     assert(size <= 32);
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
@@ -82,8 +82,8 @@ struct testWarpPrefixScan {
 };
 
 struct init {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t index) {
       v[index] = val;
 
@@ -94,8 +94,8 @@ struct init {
 };
 
 struct verify {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t const* v, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t index) {
       assert(v[index] == index + 1);
 

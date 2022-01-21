@@ -65,8 +65,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CellTracksVector = CAConstants::CellTracksVector;
 
     struct initDoublets {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                     int nHits,
                                     CellNeighborsVector* cellNeighbors,
@@ -101,8 +101,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   #endif*/
     // TO DO: NB: Alpaka equivalent for this does not seem to exit.
     struct getDoubletsFromHisto {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     GPUCACell* cells,
                                     uint32_t* nCells,
                                     CellNeighborsVector* cellNeighbors,
