@@ -77,8 +77,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (i > 0) {
           cellNeighbors[i].reset();
           cms::alpakatools::threadfence(acc);
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
           theOuterNeighbors = &cellNeighbors[i];
 #else
           auto zero = (ptrAsInt)(&cellNeighbors[0]);
@@ -105,8 +105,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (i > 0) {
           cellTracks[i].reset();
           cms::alpakatools::threadfence(acc);
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
           theTracks = &cellTracks[i];
 #else
           auto zero = (ptrAsInt)(&cellTracks[0]);

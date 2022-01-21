@@ -4,55 +4,51 @@
 #include <algorithm>
 #include <cstdint>
 
+#include <alpaka/alpaka.hpp>
+
 #include "AlpakaCore/alpakaConfig.h"
 #include "Framework/CMSUnrollLoop.h"
 
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-
-template <typename T>
-ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
-  // ci and co may be the same
-  auto x = ci[i];
-  CMS_UNROLL_LOOP
-  for (int offset = 1; offset < 32; offset <<= 1) {
-    auto y = __shfl_up_sync(mask, x, offset);
-    if (laneId >= offset)
-      x += y;
-  }
-  co[i] = x;
-}
-
-template <typename T>
-ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, uint32_t i, uint32_t mask) {
-  auto x = c[i];
-  CMS_UNROLL_LOOP
-  for (int offset = 1; offset < 32; offset <<= 1) {
-    auto y = __shfl_up_sync(mask, x, offset);
-    if (laneId >= offset)
-      x += y;
-  }
-  c[i] = x;
-}
-
-#endif
-
 namespace cms {
   namespace alpakatools {
-    // limited to 32*32 elements....
+
+#if defined ALPAKA_ACC_GPU_CUDA_ENABLED && __CUDA_ARCH__
+
+    template <typename T>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T const* ci, T* co, uint32_t i, uint32_t mask) {
+      // ci and co may be the same
+      auto x = ci[i];
+      CMS_UNROLL_LOOP
+      for (int offset = 1; offset < 32; offset <<= 1) {
+        auto y = __shfl_up_sync(mask, x, offset);
+        if (laneId >= offset)
+          x += y;
+      }
+      co[i] = x;
+    }
+
+    template <typename T>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void warpPrefixScan(uint32_t laneId, T* c, uint32_t i, uint32_t mask) {
+      auto x = c[i];
+      CMS_UNROLL_LOOP
+      for (int offset = 1; offset < 32; offset <<= 1) {
+        auto y = __shfl_up_sync(mask, x, offset);
+        if (laneId >= offset)
+          x += y;
+      }
+      c[i] = x;
+    }
+
+#endif  // defined ALPAKA_ACC_GPU_CUDA_ENABLED & ! defined ALPAKA_HOST_ONLY
+
+    // limited to 32*32 elements
     template <typename T_Acc, typename T>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
-                                                             T const* ci,
-                                                             T* co,
-                                                             uint32_t size,
-                                                             T* ws
-#ifndef ALPAKA_ACC_GPU_CUDA_ENABLED
-                                                             = nullptr
-#endif
-    ) {
-#if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE void blockPrefixScan(
+        const T_Acc& acc, T const* ci, T* co, uint32_t size, T* ws = nullptr) {
+#if defined ALPAKA_ACC_GPU_CUDA_ENABLED && __CUDA_ARCH__
       uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      assert(ws);
+      ALPAKA_ASSERT_OFFLOAD(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
       ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
@@ -79,7 +75,6 @@ namespace cms {
         co[i] += ws[warpId - 1];
       }
       alpaka::syncBlockThreads(acc);
-
 #else
       co[0] = ci[0];
       for (uint32_t i = 1; i < size; ++i)
@@ -91,15 +86,11 @@ namespace cms {
     ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
                                                              T* __restrict__ c,
                                                              uint32_t size,
-                                                             T* __restrict__ ws
-#ifndef ALPAKA_ACC_GPU_CUDA_ENABLED
-                                                             = nullptr
-#endif
-    ) {
-#if defined ALPAKA_ACC_GPU_CUDA_ENABLED and __CUDA_ARCH__
+                                                             T* __restrict__ ws = nullptr) {
+#if defined ALPAKA_ACC_GPU_CUDA_ENABLED && __CUDA_ARCH__
       uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
-      assert(ws);
+      ALPAKA_ASSERT_OFFLOAD(ws);
       ALPAKA_ASSERT_OFFLOAD(size <= 1024);
       ALPAKA_ASSERT_OFFLOAD(0 == blockDimension % 32);
       auto first = blockThreadIdx;
@@ -132,7 +123,7 @@ namespace cms {
 #endif
     }
 
-    // limited to 1024*1024 elements....
+    // limited to 1024*1024 elements
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
       template <typename T_Acc>
@@ -142,7 +133,7 @@ namespace cms {
         uint32_t const blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
 
         auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
-        // first each block does a scan of size 1024; (better be enough blocks....)
+        // first each block does a scan of size 1024 (better be enough blocks)
 #ifndef NDEBUG
         [[maybe_unused]] uint32_t const gridDimension(alpaka::getWorkDiv<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
         ALPAKA_ASSERT_OFFLOAD(gridDimension / threadDimension <= 1024);
@@ -153,19 +144,18 @@ namespace cms {
       }
     };
 
-    // limited to 1024*1024 elements....
+    // limited to 1024*1024 elements
     template <typename T>
     struct multiBlockPrefixScanSecondStep {
       template <typename T_Acc>
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
         uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
-
         uint32_t const threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
 
         auto* const psum(alpaka::getDynSharedMem<T>(acc));
 
-        // first each block does a scan of size 1024; (better be enough blocks....)
+        // first each block does a scan of size 1024 (better be enough blocks)
         ALPAKA_ASSERT_OFFLOAD(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
