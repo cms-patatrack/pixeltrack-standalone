@@ -31,7 +31,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto *quality_d = (Quality *)(&tracks_d->m_quality);
 
     // zero tuples
-    launchZero(tuples_d, queue);
+    cms::alpakatools::launchZero<Acc1D>(tuples_d, queue);
 
     auto nhits = hh.nHits();
     ALPAKA_ASSERT_OFFLOAD(nhits <= pixelGPUConstants::maxNumberOfHits);
@@ -143,7 +143,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1D, kernel_countMultiplicity(), tuples_d, quality_d, device_tupleMultiplicity_.data()));
 
-    cms::alpakatools::launchFinalize(device_tupleMultiplicity_.data(), queue);
+    cms::alpakatools::launchFinalize<Acc1D>(device_tupleMultiplicity_.data(), queue);
 
     workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
     alpaka::enqueue(queue,
@@ -311,7 +311,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                       alpaka::createTaskKernel<Acc1D>(
                           workDiv1D, kernel_countHitInTracks(), tuples_d, quality_d, device_hitToTuple_.data()));
 
-      cms::alpakatools::launchFinalize(device_hitToTuple_.data(), queue);
+      cms::alpakatools::launchFinalize<Acc1D>(device_hitToTuple_.data(), queue);
 
       workDiv1D = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
       alpaka::enqueue(queue,

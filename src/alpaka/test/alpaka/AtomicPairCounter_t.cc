@@ -6,8 +6,8 @@
 #include "AlpakaCore/alpakaMemoryHelper.h"
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 struct update {
   template <typename TAcc>

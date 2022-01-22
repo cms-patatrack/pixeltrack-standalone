@@ -8,6 +8,7 @@
 #include "AlpakaCore/alpakaMemoryHelper.h"
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <int NBINS, int S, int DELTA>
 struct mykernel {
@@ -112,9 +113,7 @@ struct mykernel {
 };
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
-void go(const DevHost& host,
-        const ::ALPAKA_ACCELERATOR_NAMESPACE::Device& device,
-        ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
+void go(const DevHost& host, const Device& device, Queue& queue) {
   std::mt19937 eng;
 
   int rmin = std::numeric_limits<T>::min();
@@ -147,18 +146,15 @@ void go(const DevHost& host,
     const auto threadsPerBlockOrElementsPerThread = 256u;
     const auto blocksPerGrid = 1u;
     const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
-    alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                        workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
+    alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
   }
   alpaka::wait(queue);
 }
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   go<int16_t>(host, device, queue);
   go<uint8_t, 128, 8, 4>(host, device, queue);

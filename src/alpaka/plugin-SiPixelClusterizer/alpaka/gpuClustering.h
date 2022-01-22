@@ -14,9 +14,8 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
-  namespace ALPAKA_ACCELERATOR_NAMESPACE {
-    ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
-  }
+  template <typename TAcc>
+  ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
 #endif
 
   struct countModules {
@@ -338,8 +337,8 @@ namespace gpuClustering {
         nClustersInModule[thisModuleId] = foundClusters;
         moduleId[blockIdx] = thisModuleId;
 #ifdef GPU_DEBUG
-        if (foundClusters > ::gpuClustering::ALPAKA_ACCELERATOR_NAMESPACE::gMaxHit) {
-          ::gpuClustering::ALPAKA_ACCELERATOR_NAMESPACE::gMaxHit = foundClusters;
+        if (foundClusters > gMaxHit<TAcc>) {
+          gMaxHit<TAcc> = foundClusters;
           if (foundClusters > 8)
             printf("max hit %d in %d\n", foundClusters, thisModuleId);
         }

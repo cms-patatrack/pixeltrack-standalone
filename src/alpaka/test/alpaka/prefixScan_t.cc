@@ -5,8 +5,8 @@
 #include "AlpakaCore/alpakaWorkDivHelper.h"
 #include "AlpakaCore/prefixScan.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
 struct format_traits {

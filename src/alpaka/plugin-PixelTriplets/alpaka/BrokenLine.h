@@ -20,7 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     |cov(phi, d )|cov( d , d )|cov( k , d )| \n
     |cov(phi, k )|cov( d , k )|cov( k , k )|
   */
-    using karimaki_circle_fit = ::ALPAKA_ACCELERATOR_NAMESPACE::Rfit::circle_fit;
+    using karimaki_circle_fit = Rfit::circle_fit;
 
     /*!
     \brief data needed for the Broken Line fit procedure.

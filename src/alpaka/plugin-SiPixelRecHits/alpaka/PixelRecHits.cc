@@ -71,7 +71,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       if (nHits) {
-        cms::alpakatools::fillManyFromVector(
+        cms::alpakatools::fillManyFromVector<Acc1D>(
             hits_d.phiBinner(), 10, hits_d.c_iphi(), hits_d.c_hitsLayerStart(), nHits, 256, queue);
       }
 

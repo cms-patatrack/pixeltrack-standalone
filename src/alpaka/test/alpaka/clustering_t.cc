@@ -18,12 +18,12 @@
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 int main(void) {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   constexpr unsigned int numElements = 256 * 2000;
   // these in reality are already on GPU
@@ -252,7 +252,7 @@ int main(void) {
 
     alpaka::enqueue(
         queue,
-        alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+        alpaka::createTaskKernel<Acc1D>(
             workDivCountModules, gpuClustering::countModules(), d_id.data(), d_moduleStart.data(), d_clus.data(), n));
 
     // FIND CLUSTER
@@ -263,16 +263,16 @@ int main(void) {
     alpaka::memset(queue, d_clusInModule, 0);
 
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
-                                                                                    gpuClustering::findClus(),
-                                                                                    d_id.data(),
-                                                                                    d_x.data(),
-                                                                                    d_y.data(),
-                                                                                    d_moduleStart.data(),
-                                                                                    d_clusInModule.data(),
-                                                                                    d_moduleId.data(),
-                                                                                    d_clus.data(),
-                                                                                    n));
+                    alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
+                                                    gpuClustering::findClus(),
+                                                    d_id.data(),
+                                                    d_x.data(),
+                                                    d_y.data(),
+                                                    d_moduleStart.data(),
+                                                    d_clusInModule.data(),
+                                                    d_moduleId.data(),
+                                                    d_clus.data(),
+                                                    n));
     alpaka::memcpy(queue, nModules, d_moduleStart, 1u);  // copy only the first element
 
     auto nclus = make_host_buffer<uint32_t[]>(gpuClustering::MaxNumModules);
@@ -296,15 +296,15 @@ int main(void) {
 
     // CLUSTER CHARGE CUT
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
-                                                                                    gpuClustering::clusterChargeCut(),
-                                                                                    d_id.data(),
-                                                                                    d_adc.data(),
-                                                                                    d_moduleStart.data(),
-                                                                                    d_clusInModule.data(),
-                                                                                    d_moduleId.data(),
-                                                                                    d_clus.data(),
-                                                                                    n));
+                    alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
+                                                    gpuClustering::clusterChargeCut(),
+                                                    d_id.data(),
+                                                    d_adc.data(),
+                                                    d_moduleStart.data(),
+                                                    d_clusInModule.data(),
+                                                    d_moduleId.data(),
+                                                    d_clus.data(),
+                                                    n));
     alpaka::memcpy(queue, h_id, d_id, n);  // copy only the first n elements
     alpaka::memcpy(queue, h_clus, d_clus, n);
     alpaka::memcpy(queue, nclus, d_clusInModule);
