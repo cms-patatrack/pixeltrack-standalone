@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_SiPixelDigisAlpaka_h
-#define AlpakaDataFormats_SiPixelDigisAlpaka_h
+#ifndef AlpakaDataFormats_alpaka_SiPixelDigisAlpaka_h
+#define AlpakaDataFormats_alpaka_SiPixelDigisAlpaka_h
 
 #include <memory>
 
@@ -110,4 +110,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // AlpakaDataFormats_SiPixelDigisAlpaka_h
+#endif  // AlpakaDataFormats_alpaka_SiPixelDigisAlpaka_h

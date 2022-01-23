@@ -4,8 +4,8 @@
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/alpakaConfig.h"
 //#include "AlpakaCore/alpakaMemory.h"
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"

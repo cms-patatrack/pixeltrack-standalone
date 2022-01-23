@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_ZVertexAlpaka_h
-#define AlpakaDataFormats_ZVertexAlpaka_h
+#ifndef AlpakaDataFormats_alpaka_ZVertexAlpaka_h
+#define AlpakaDataFormats_alpaka_ZVertexAlpaka_h
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaMemory.h"
@@ -11,6 +11,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-using ZVertexHost = cms::alpakatools::host_buffer<ZVertexSoA>;
-
-#endif  // AlpakaDataFormats_ZVertexAlpaka_h
+#endif  // AlpakaDataFormats_alpaka_ZVertexAlpaka_h

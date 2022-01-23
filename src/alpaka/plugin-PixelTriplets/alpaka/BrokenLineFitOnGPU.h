@@ -11,7 +11,7 @@
 #include <cstdint>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "BrokenLine.h"

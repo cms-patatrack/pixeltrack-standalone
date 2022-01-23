@@ -2,7 +2,7 @@
 #include <string>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "CondFormats/PixelCPEFast.h"
+#include "CondFormats/alpaka/PixelCPEFast.h"
 #include "Framework/ESPluginFactory.h"
 #include "Framework/ESProducer.h"
 #include "Framework/EventSetup.h"

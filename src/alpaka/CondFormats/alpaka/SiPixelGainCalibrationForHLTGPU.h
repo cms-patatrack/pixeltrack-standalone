@@ -1,12 +1,12 @@
-#ifndef CondFormats_SiPixelGainCalibrationForHLTGPU_h
-#define CondFormats_SiPixelGainCalibrationForHLTGPU_h
+#ifndef CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h
+#define CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h
 
 #include <vector>
 
 #include "AlpakaCore/ESProduct.h"
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaMemory.h"
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -64,4 +64,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CondFormats_SiPixelGainCalibrationForHLTGPU_h
+#endif  // CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h

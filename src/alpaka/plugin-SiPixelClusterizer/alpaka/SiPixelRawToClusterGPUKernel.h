@@ -7,12 +7,12 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaMemory.h"
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigiErrorsAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;

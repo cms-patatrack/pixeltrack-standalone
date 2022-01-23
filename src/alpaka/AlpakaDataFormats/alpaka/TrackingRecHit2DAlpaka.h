@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_TrackingRecHit2DAlpaka_h
-#define AlpakaDataFormats_TrackingRecHit2DAlpaka_h
+#ifndef AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h
+#define AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h
 
 #include <memory>
 
@@ -211,4 +211,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // AlpakaDataFormats_TrackingRecHit2DAlpaka_h
+#endif  // AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h

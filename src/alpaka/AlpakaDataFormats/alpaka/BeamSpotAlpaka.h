@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_BeamSpotAlpaka_h
-#define AlpakaDataFormats_BeamSpotAlpaka_h
+#ifndef AlpakaDataFormats_alpaka_BeamSpotAlpaka_h
+#define AlpakaDataFormats_alpaka_BeamSpotAlpaka_h
 
 #include <alpaka/alpaka.hpp>
 
@@ -35,4 +35,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // AlpakaDataFormats_BeamSpotAlpaka_h
+#endif  // AlpakaDataFormats_alpaka_BeamSpotAlpaka_h

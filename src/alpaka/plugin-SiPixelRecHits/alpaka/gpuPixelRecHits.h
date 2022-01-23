@@ -8,8 +8,8 @@
 #include <limits>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaDataFormats/BeamSpotAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 #include "DataFormats/approx_atan2.h"
 

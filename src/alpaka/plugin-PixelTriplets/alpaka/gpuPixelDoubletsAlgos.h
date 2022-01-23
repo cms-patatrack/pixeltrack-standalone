@@ -9,7 +9,7 @@
 
 #include "AlpakaCore/VecArray.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "DataFormats/approx_atan2.h"
 
 #include "../CAConstants.h"

@@ -2,8 +2,8 @@
 #define plugin_PixelTriplets_alpaka_HelixFitOnGPU_h
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
 #include "../CAConstants.h"
 #include "FitResult.h"

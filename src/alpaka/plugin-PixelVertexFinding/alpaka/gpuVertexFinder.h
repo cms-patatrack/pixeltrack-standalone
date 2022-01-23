@@ -2,8 +2,8 @@
 #define plugin_PixelVertexFinding_alpaka_gpuVertexFinder_h
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
-#include "AlpakaDataFormats/ZVertexAlpaka.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/alpaka/ZVertexAlpaka.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuVertexFinder {
