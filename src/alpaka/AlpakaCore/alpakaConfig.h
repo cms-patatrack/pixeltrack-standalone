@@ -36,10 +36,6 @@ namespace alpaka_common {
 
 }  // namespace alpaka_common
 
-// convert the macro argument to a null-terminated quoted string
-#define STRINGIFY_(ARG) #ARG
-#define STRINGIFY(ARG) STRINGIFY_(ARG)
-
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_ALPAKA_MODULE2(name) DEFINE_FWK_MODULE(name)
 #define DEFINE_FWK_ALPAKA_MODULE(name) DEFINE_FWK_ALPAKA_MODULE2(ALPAKA_ACCELERATOR_NAMESPACE::name)
@@ -51,124 +47,92 @@ namespace alpaka_common {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
-  using Acc1D = alpaka::AccGpuCudaRt<Dim1D, Extent>;
-  using Acc2D = alpaka::AccGpuCudaRt<Dim2D, Extent>;
+
+  using Platform = alpaka::PltfUniformCudaHipRt;
+  using Device = alpaka::DevCudaRt;
   using Queue = alpaka::QueueCudaRtNonBlocking;
+  using Event = alpaka::EventUniformCudaHipRt;
 
-  using Device = alpaka::Dev<Acc1D>;
-  using Platform = alpaka::Pltf<Device>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
-  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
-
-  using Event = alpaka::Event<Queue>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
-  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
+  template <typename TDim>
+  using Acc = alpaka::AccGpuCudaRt<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
 
 }  // namespace alpaka_cuda_async
 
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cuda
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_cuda_async
 #endif  // ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 namespace alpaka_serial_sync {
   using namespace alpaka_common;
-  using Acc1D = alpaka::AccCpuSerial<Dim1D, Extent>;
-  using Acc2D = alpaka::AccCpuSerial<Dim2D, Extent>;
+
+  using Platform = alpaka::PltfCpu;
+  using Device = alpaka::DevCpu;
   using Queue = alpaka::QueueCpuBlocking;
+  using Event = alpaka::EventCpu;
 
-  using Device = alpaka::Dev<Acc1D>;
-  using Platform = alpaka::Pltf<Device>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
-  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
-
-  using Event = alpaka::Event<Queue>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
-  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
+  template <typename TDim>
+  using Acc = alpaka::AccCpuSerial<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
 
 }  // namespace alpaka_serial_sync
 
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
-#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_serial_sync
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 namespace alpaka_tbb_async {
   using namespace alpaka_common;
-  using Acc1D = alpaka::AccCpuTbbBlocks<Dim1D, Extent>;
-  using Acc2D = alpaka::AccCpuTbbBlocks<Dim2D, Extent>;
-  using Queue = alpaka::QueueCpuNonBlocking;
 
-  using Device = alpaka::Dev<Acc1D>;
-  using Platform = alpaka::Pltf<Device>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
-  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+  using Platform = alpaka::PltfCpu;
+  using Device = alpaka::DevCpu;
+  using Queue = alpaka::QueueCpuBlocking;
+  using Event = alpaka::EventCpu;
 
-  using Event = alpaka::Event<Queue>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
-  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
+  template <typename TDim>
+  using Acc = alpaka::AccCpuTbbBlocks<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
 
 }  // namespace alpaka_tbb_async
 
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND
-#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_tbb_async
 #endif  // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED
 namespace alpaka_omp2_async {
   using namespace alpaka_common;
-  using Acc1D = alpaka::AccCpuOmp2Blocks<Dim1D, Extent>;
-  using Acc2D = alpaka::AccCpuOmp2Blocks<Dim2D, Extent>;
-  using Queue = alpaka::QueueCpuNonBlocking;
 
-  using Device = alpaka::Dev<Acc1D>;
-  using Platform = alpaka::Pltf<Device>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
-  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
+  using Platform = alpaka::PltfCpu;
+  using Device = alpaka::DevCpu;
+  using Queue = alpaka::QueueCpuBlocking;
+  using Event = alpaka::EventCpu;
 
-  using Event = alpaka::Event<Queue>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
-  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
+  template <typename TDim>
+  using Acc = alpaka::AccCpuOmp2Blocks<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
 
 }  // namespace alpaka_omp2_async
 
 #endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED
 
 #ifdef ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
-#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp2_async
 #endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 
