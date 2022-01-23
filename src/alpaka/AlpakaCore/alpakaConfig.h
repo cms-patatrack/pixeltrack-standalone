@@ -172,35 +172,4 @@ namespace alpaka_omp2_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp2_async
 #endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 
-#ifdef ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-namespace alpaka_omp4_async {
-  using namespace alpaka_common;
-  using Acc1D = alpaka::AccCpuOmp4<Dim1D, Extent>;
-  using Acc2D = alpaka::AccCpuOmp4<Dim2D, Extent>;
-  using Queue = alpaka::QueueCpuNonBlocking;
-
-  using Device = alpaka::Dev<Acc1D>;
-  using Platform = alpaka::Pltf<Device>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Acc2D>>,
-                STRINGIFY(alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>) " and " STRINGIFY(
-                    alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>) " are different types.");
-  static_assert(std::is_same_v<Platform, alpaka::Pltf<alpaka::Dev<Acc2D>>>,
-                STRINGIFY(alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>>) " and " STRINGIFY(
-                    alpaka::Pltf<alpaka::Dev<::ALPAKA_ACCELERATOR_NAMESPACE::Acc2D>>) " are different types.");
-
-  using Event = alpaka::Event<Queue>;
-  static_assert(std::is_same_v<Device, alpaka::Dev<Queue>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Queue types.");
-  static_assert(std::is_same_v<Device, alpaka::Dev<Event>>,
-                STRINGIFY(ALPAKA_ACCELERATOR_NAMESPACE) " has incompatible Accelerator and Event types.");
-
-}  // namespace alpaka_omp4_async
-
-#endif  // ALPAKA_ACC_CPU_BT_OMP4_ENABLED
-
-#ifdef ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
-#define ALPAKA_ARCHITECTURE_NAMESPACE alpaka_cpu
-#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp4_async
-#endif  // ALPAKA_ACC_CPU_BT_OMP4_ASYNC_BACKEND
-
 #endif  // AlpakaCore_alpakaConfig_h
