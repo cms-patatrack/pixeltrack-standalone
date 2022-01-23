@@ -145,7 +145,7 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
 
     const auto threadsPerBlockOrElementsPerThread = 256u;
     const auto blocksPerGrid = 1u;
-    const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
     alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
   }
   alpaka::wait(queue);

@@ -578,7 +578,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
         // fill it all
         const uint32_t blocks = cms::alpakatools::divide_up_by(wordCounter, threadsPerBlockOrElementsPerThread);
-        const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
+        const auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlockOrElementsPerThread);
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
@@ -634,7 +634,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
         const auto blocks = cms::alpakatools::divide_up_by(std::max<int>(wordCounter, gpuClustering::MaxNumModules),
                                                            threadsPerBlockOrElementsPerThread);
-        const auto workDiv = cms::alpakatools::make_workdiv(blocks, threadsPerBlockOrElementsPerThread);
+        const auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlockOrElementsPerThread);
 
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDiv,
@@ -667,7 +667,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
-        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv(MaxNumModules, 256);
+        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 256);
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.
@@ -711,7 +711,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // synchronization/ExternalWork
 
         // MUST be ONE block
-        const auto workDivOneBlock = cms::alpakatools::make_workdiv(1u, 1024u);
+        const auto workDivOneBlock = cms::alpakatools::make_workdiv<Acc1D>(1u, 1024u);
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivOneBlock,
                                                         ::pixelgpudetails::fillHitsModuleStart(),

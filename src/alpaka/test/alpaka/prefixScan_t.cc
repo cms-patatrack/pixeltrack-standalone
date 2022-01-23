@@ -118,7 +118,7 @@ int main() {
 
   const auto threadsPerBlockOrElementsPerThread = 32;
   const auto blocksPerGrid = 1;
-  const auto workDivWarp = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto workDivWarp = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivWarp, testWarpPrefixScan<int>(), 32));
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivWarp, testWarpPrefixScan<int>(), 16));
@@ -132,7 +132,7 @@ int main() {
   // NB: obviously for tests only, for perf would need to use bs = 1024 in GPU version.
   for (int bs = 32; bs <= 1024; bs += 32) {
     const auto blocksPerGrid2 = 1;
-    const auto workDivSingleBlock = make_workdiv(blocksPerGrid2, bs);
+    const auto workDivSingleBlock = make_workdiv<Acc1D>(blocksPerGrid2, bs);
 
     std::cout << "blocks per grid: " << blocksPerGrid2 << ", threads per block or elements per thread: " << bs
               << std::endl;
@@ -155,14 +155,14 @@ int main() {
 
     const auto nThreadsInit = 256;  // NB: 1024 would be better
     const auto nBlocksInit = divide_up_by(num_items, nThreadsInit);
-    const auto workDivMultiBlockInit = make_workdiv(nBlocksInit, nThreadsInit);
+    const auto workDivMultiBlockInit = make_workdiv<Acc1D>(nBlocksInit, nThreadsInit);
 
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDivMultiBlockInit, init(), input_d.data(), 1, num_items));
 
     const auto nThreads = 1024;
     const auto nBlocks = divide_up_by(num_items, nThreads);
-    const auto workDivMultiBlock = make_workdiv(nBlocks, nThreads);
+    const auto workDivMultiBlock = make_workdiv<Acc1D>(nBlocks, nThreads);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
     alpaka::enqueue(
@@ -171,7 +171,7 @@ int main() {
             workDivMultiBlock, multiBlockPrefixScanFirstStep<uint32_t>(), input_d.data(), output1_d.data(), num_items));
 
     const auto blocksPerGridSecondStep = 1;
-    const auto workDivMultiBlockSecondStep = make_workdiv(blocksPerGridSecondStep, nThreads);
+    const auto workDivMultiBlockSecondStep = make_workdiv<Acc1D>(blocksPerGridSecondStep, nThreads);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDivMultiBlockSecondStep,
                                                     multiBlockPrefixScanSecondStep<uint32_t>(),

@@ -14,8 +14,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     const auto blockSize = 64;
     const auto numberOfBlocks = cms::alpakatools::divide_up_by(maxNumberOfConcurrentFits_, blockSize);
-    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv(numberOfBlocks, blockSize);
-    const WorkDiv1D workDivQuadsPenta = cms::alpakatools::make_workdiv(numberOfBlocks / 4, blockSize);
+    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks, blockSize);
+    const WorkDiv1D workDivQuadsPenta = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks / 4, blockSize);
 
     //  Fit internals
     auto hitsGPU_ = cms::alpakatools::make_device_buffer<double[]>(

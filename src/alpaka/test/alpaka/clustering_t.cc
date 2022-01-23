@@ -246,7 +246,7 @@ int main(void) {
 
     // COUNT MODULES
     const auto blocksPerGridCountModules = divide_up_by(numElements, threadsPerBlockOrElementsPerThread);
-    const auto workDivCountModules = make_workdiv(blocksPerGridCountModules, threadsPerBlockOrElementsPerThread);
+    const auto workDivCountModules = make_workdiv<Acc1D>(blocksPerGridCountModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
@@ -256,7 +256,8 @@ int main(void) {
             workDivCountModules, gpuClustering::countModules(), d_id.data(), d_moduleStart.data(), d_clus.data(), n));
 
     // FIND CLUSTER
-    const auto workDivMaxNumModules = make_workdiv(gpuClustering::MaxNumModules, threadsPerBlockOrElementsPerThread);
+    const auto workDivMaxNumModules =
+        make_workdiv<Acc1D>(gpuClustering::MaxNumModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 

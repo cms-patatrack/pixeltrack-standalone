@@ -188,7 +188,7 @@ int main() {
 
   const auto threadsPerBlockOrElementsPerThread = 256u;
   const auto blocksPerGrid4N = divide_up_by(4 * N, threadsPerBlockOrElementsPerThread);
-  const auto workDiv4N = make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
+  const auto workDiv4N = make_workdiv<Acc1D>(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
 
   launchZero<Acc1D>(a_d.data(), queue);
 
@@ -225,7 +225,7 @@ int main() {
   alpaka::memset(queue, dc_d, 0);
 
   const auto blocksPerGrid = divide_up_by(N, threadsPerBlockOrElementsPerThread);
-  const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, fillBulk(), dc_d.data(), v_d.data(), a_d.data(), N));
 
@@ -282,7 +282,7 @@ int main() {
 
   const auto blocksPerGridTotBins = 1u;
   const auto threadsPerBlockOrElementsPerThreadTotBins = Multiplicity::totbins();
-  const auto workDivTotBins = make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
+  const auto workDivTotBins = make_workdiv<Acc1D>(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivTotBins, verifyMulti(), m1_d.data(), m2_d.data()));
 

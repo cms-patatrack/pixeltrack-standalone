@@ -25,44 +25,51 @@ namespace cms::alpakatools {
   inline constexpr Idx divide_up_by(Idx value, Idx divisor) { return (value + divisor - 1) / divisor; }
 
   /*
-   * Creates the accelerator-dependent workdiv.
+   * Creates the accelerator-dependent workdiv for 1-dimensional operations.
    */
+  template <typename TAcc>
   inline WorkDiv<Dim1D> make_workdiv(Idx blocksPerGrid, Idx threadsPerBlockOrElementsPerThread) {
-    // FIXME avoid ODR violation: rewrite this to be teplated on the accelerator type, instead of depending on the ENABLED/BACKEND macros
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-    // On the GPU:
-    // threadsPerBlockOrElementsPerThread is the number of threads per block.
-    // Each thread is looking at a single element: elementsPerThread is always 1.
-    Idx elementsPerThread = 1;
-    return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
-#else
-    // On the CPU:
-    // Run serially with a single thread per block: threadsPerBlock is always 1.
-    // threadsPerBlockOrElementsPerThread is the number of elements per thread.
-    Idx threadsPerBlock = 1;
-    return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
-#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    if constexpr (std::is_same_v<TAcc, alpaka::AccGpuCudaRt<Dim1D, Idx>>) {
+      // On GPU backends, each thread is looking at a single element:
+      //   - threadsPerBlockOrElementsPerThread is the number of threads per block;
+      //   - elementsPerThread is always 1.
+      const auto elementsPerThread = Idx{1};
+      return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+    } else
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+    {
+      // On CPU backends, run serially with a single thread per block:
+      //   - threadsPerBlock is always 1;
+      //   - threadsPerBlockOrElementsPerThread is the number of elements per thread.
+      const auto threadsPerBlock = Idx{1};
+      return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
+    }
   }
 
   /*
-   * Creates the accelerator-dependent workdiv.
+   * Creates the accelerator-dependent workdiv for N-dimensional operations.
    */
-  template <typename TDim>
-  WorkDiv<TDim> make_workdiv(const Vec<TDim>& blocksPerGrid, const Vec<TDim>& threadsPerBlockOrElementsPerThread) {
-    // FIXME avoid ODR violation: rewrite this to be teplated on the accelerator type, instead of depending on the ENABLED/BACKEND macros
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-    // On the GPU:
-    // threadsPerBlockOrElementsPerThread is the number of threads per block.
-    // Each thread is looking at a single element: elementsPerThread is always 1.
-    const Vec<TDim>& elementsPerThread = Vec<TDim>::ones();
-    return WorkDiv<TDim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
-#else
-    // On the CPU:
-    // Run serially with a single thread per block: threadsPerBlock is always 1.
-    // threadsPerBlockOrElementsPerThread is the number of elements per thread.
-    const Vec<TDim>& threadsPerBlock = Vec<TDim>::ones();
-    return WorkDiv<TDim>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
-#endif
+  template <typename TAcc>
+  inline WorkDiv<alpaka::Dim<TAcc>> make_workdiv(const Vec<alpaka::Dim<TAcc>>& blocksPerGrid,
+                                                 const Vec<alpaka::Dim<TAcc>>& threadsPerBlockOrElementsPerThread) {
+    using Dim = alpaka::Dim<TAcc>;
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    if constexpr (std::is_same_v<TAcc, alpaka::AccGpuCudaRt<Dim, Idx>>) {
+      // On GPU backends, each thread is looking at a single element:
+      //   - threadsPerBlockOrElementsPerThread is the number of threads per block;
+      //   - elementsPerThread is always 1.
+      const auto elementsPerThread = Vec<Dim>::ones();
+      return WorkDiv<Dim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+    } else
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+    {
+      // On CPU backends, run serially with a single thread per block:
+      //   - threadsPerBlock is always 1;
+      //   - threadsPerBlockOrElementsPerThread is the number of elements per thread.
+      const auto threadsPerBlock = Vec<Dim>::ones();
+      return WorkDiv<Dim>(blocksPerGrid, threadsPerBlock, threadsPerBlockOrElementsPerThread);
+    }
   }
 
   /*********************************************

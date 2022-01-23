@@ -70,12 +70,12 @@ namespace cms {
 
       const auto threadsPerBlockOrElementsPerThread = 1024u;
       const auto blocksPerGrid = divide_up_by(num_items, threadsPerBlockOrElementsPerThread);
-      const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<TAcc>(workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
-      const auto workDivWith1Block = make_workdiv(1, threadsPerBlockOrElementsPerThread);
+      const auto workDivWith1Block = make_workdiv<TAcc>(1, threadsPerBlockOrElementsPerThread);
       alpaka::enqueue(
           queue,
           alpaka::createTaskKernel<TAcc>(
@@ -94,7 +94,7 @@ namespace cms {
 
       const auto threadsPerBlockOrElementsPerThread = nthreads;
       const auto blocksPerGrid = divide_up_by(totSize, nthreads);
-      const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
       alpaka::enqueue(queue, alpaka::createTaskKernel<TAcc>(workDiv, countFromVector(), h, nh, v, offsets));
       launchFinalize<TAcc>(h, queue);

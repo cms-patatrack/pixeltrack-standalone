@@ -74,14 +74,14 @@ int main() {
   // Update
   const auto blocksPerGrid = 2000u;
   const auto threadsPerBlockOrElementsPerThread = 512u;
-  const auto workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<Acc1D>(workDiv, update(), c_d.data(), n_d.data(), m_d.data(), NUM_VALUES));
 
   // Finalize
   const auto blocksPerGridFinalize = 1u;
   const auto threadsPerBlockOrElementsPerThreadFinalize = 1u;
-  const auto workDivFinalize = make_workdiv(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
+  const auto workDivFinalize = make_workdiv<Acc1D>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::enqueue(
       queue,
       alpaka::createTaskKernel<Acc1D>(workDivFinalize, finalize(), c_d.data(), n_d.data(), m_d.data(), NUM_VALUES));
