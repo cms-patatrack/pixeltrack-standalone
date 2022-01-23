@@ -1,5 +1,5 @@
-#ifndef EmptyWaitingTask_h
-#define EmptyWaitingTask_h
+#ifndef Framework_EmptyWaitingTask_h
+#define Framework_EmptyWaitingTask_h
 
 #include <memory>
 
@@ -25,4 +25,4 @@ namespace edm {
   }
 }  // namespace edm
 
-#endif
+#endif  // Framework_EmptyWaitingTask_h

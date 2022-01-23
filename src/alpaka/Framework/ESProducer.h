@@ -1,5 +1,5 @@
-#ifndef ESProducer_h
-#define ESProducer_h
+#ifndef Framework_ESProducer_h
+#define Framework_ESProducer_h
 
 namespace edm {
   class EventSetup;
@@ -13,4 +13,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_ESProducer_h

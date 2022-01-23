@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
+#ifndef plugin_SiPixelClusterizer_alpaka_gpuClustering_h
+#define plugin_SiPixelClusterizer_alpaka_gpuClustering_h
 
 #include <cmath>
 #include <cstdint>
@@ -353,4 +353,4 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
+#endif  // plugin_SiPixelClusterizer_alpaka_gpuClustering_h

@@ -1,5 +1,5 @@
-#ifndef CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
-#define CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
+#ifndef CondFormats_SiPixelGainCalibrationForHLTGPU_h
+#define CondFormats_SiPixelGainCalibrationForHLTGPU_h
 
 #include <vector>
 
@@ -64,4 +64,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
+#endif  // CondFormats_SiPixelGainCalibrationForHLTGPU_h

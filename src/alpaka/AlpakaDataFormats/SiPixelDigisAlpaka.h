@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
-#define CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
+#ifndef AlpakaDataFormats_SiPixelDigisAlpaka_h
+#define AlpakaDataFormats_SiPixelDigisAlpaka_h
 
 #include <memory>
 
@@ -110,4 +110,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CUDADataFormats_SiPixelDigi_interface_SiPixelDigisCUDA_h
+#endif  // AlpakaDataFormats_SiPixelDigisAlpaka_h

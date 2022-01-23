@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
-#define HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
+#ifndef AlpakaCore_AtomicPairCounter_h
+#define AlpakaCore_AtomicPairCounter_h
 
 #include <cstdint>
 
@@ -50,4 +50,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
+#endif  // AlpakaCore_AtomicPairCounter_h

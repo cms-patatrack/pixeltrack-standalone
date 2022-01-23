@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_radixSort_h
-#define HeterogeneousCore_AlpakaUtilities_radixSort_h
+#ifndef AlpakaCore_radixSort_h
+#define AlpakaCore_radixSort_h
 
 #include <cstdint>
 #include <type_traits>
@@ -268,4 +268,4 @@ ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSortMult
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_AlpakaUtilities_radixSort_h
+#endif  // AlpakaCore_radixSort_h

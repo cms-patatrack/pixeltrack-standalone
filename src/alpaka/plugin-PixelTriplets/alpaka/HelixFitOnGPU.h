@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_plugins_HelixFitOnGPU_h
-#define RecoPixelVertexing_PixelTrackFitting_plugins_HelixFitOnGPU_h
+#ifndef plugin_PixelTriplets_alpaka_HelixFitOnGPU_h
+#define plugin_PixelTriplets_alpaka_HelixFitOnGPU_h
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
@@ -70,4 +70,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTrackFitting_plugins_HelixFitOnGPU_h
+#endif  // plugin_PixelTriplets_alpaka_HelixFitOnGPU_h

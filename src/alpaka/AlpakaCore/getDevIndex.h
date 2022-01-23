@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_getDevIndex_h
-#define HeterogeneousCore_AlpakaUtilities_getDevIndex_h
+#ifndef AlpakaCore_getDevIndex_h
+#define AlpakaCore_getDevIndex_h
 
 #include <alpaka/alpaka.hpp>
 
@@ -21,4 +21,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_AlpakaUtilities_getDevIndex_h
+#endif  // AlpakaCore_getDevIndex_h

@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_Common_ProductBase_h
-#define AlpakaDataFormats_Common_ProductBase_h
+#ifndef AlpakaCore_ProductBase_h
+#define AlpakaCore_ProductBase_h
 
 #include <atomic>
 #include <memory>
@@ -115,4 +115,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // AlpakaDataFormats_Common_ProductBase_h
+#endif  // AlpakaCore_ProductBase_h

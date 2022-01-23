@@ -1,5 +1,5 @@
-#ifndef Event_h
-#define Event_h
+#ifndef Framework_Event_h
+#define Framework_Event_h
 
 #include <memory>
 #include <utility>
@@ -53,4 +53,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_Event_h

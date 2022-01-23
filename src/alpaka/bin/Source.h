@@ -1,5 +1,5 @@
-#ifndef Source_h
-#define Source_h
+#ifndef bin_Source_h
+#define bin_Source_h
 
 #include <atomic>
 #include <chrono>
@@ -51,4 +51,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // bin_Source_h

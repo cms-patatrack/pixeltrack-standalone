@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
+#ifndef plugin_SiPixelClusterizer_gpuClusterChargeCut_h
+#define plugin_SiPixelClusterizer_gpuClusterChargeCut_h
 
 #include <cstdint>
 #include <cstdio>
@@ -143,4 +143,4 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
+#endif  // plugin_SiPixelClusterizer_gpuClusterChargeCut_h

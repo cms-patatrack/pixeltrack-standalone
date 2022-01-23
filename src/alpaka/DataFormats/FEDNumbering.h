@@ -1,5 +1,5 @@
-#ifndef FEDRawData_FEDNumbering_h
-#define FEDRawData_FEDNumbering_h
+#ifndef DataFormats_FEDNumbering_h
+#define DataFormats_FEDNumbering_h
 
 /** \class FEDNumbering
  *
@@ -129,4 +129,4 @@ public:
   };
 };
 
-#endif  // FEDNumbering_H
+#endif  // DataFormats_FEDNumbering_h

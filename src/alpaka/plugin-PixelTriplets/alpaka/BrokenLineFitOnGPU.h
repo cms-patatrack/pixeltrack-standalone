@@ -1,3 +1,6 @@
+#ifndef plugin_PixelTriplets_alpaka_BrokenLineFitOnGPU_h
+#define plugin_PixelTriplets_alpaka_BrokenLineFitOnGPU_h
+
 //
 // Author: Felice Pantaleo, CERN
 //
@@ -197,3 +200,5 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };   // struct
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // plugin_PixelTriplets_alpaka_BrokenLineFitOnGPU_h

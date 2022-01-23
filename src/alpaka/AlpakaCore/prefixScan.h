@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
-#define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
+#ifndef AlpakaCore_prefixScan_h
+#define AlpakaCore_prefixScan_h
 
 #include <algorithm>
 #include <cstdint>
@@ -211,4 +211,4 @@ namespace alpaka {
   }  // namespace traits
 }  // namespace alpaka
 
-#endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
+#endif  // AlpakaCore_prefixScan_h

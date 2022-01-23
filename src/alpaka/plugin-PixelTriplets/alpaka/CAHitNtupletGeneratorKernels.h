@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
-#define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
+#ifndef plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h
+#define plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h
 
 #include <algorithm>
 
@@ -253,4 +253,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
+#endif  // plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h

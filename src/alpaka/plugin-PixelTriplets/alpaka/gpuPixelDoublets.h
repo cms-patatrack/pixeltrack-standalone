@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
+#ifndef plugin_PixelTriplets_alpaka_gpuPixelDoublets_h
+#define plugin_PixelTriplets_alpaka_gpuPixelDoublets_h
 
 #include "gpuPixelDoubletsAlgos.h"
 
@@ -140,4 +140,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuPixelDoublets
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDouplets_h
+#endif  // plugin_PixelTriplets_alpaka_gpuPixelDoublets_h

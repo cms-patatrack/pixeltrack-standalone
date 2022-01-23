@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
-#define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
+#ifndef CondFormats_SiPixelFedCablingMapGPUWrapper_h
+#define CondFormats_SiPixelFedCablingMapGPUWrapper_h
 
 #include <utility>
 
@@ -82,4 +82,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
+#endif  // CondFormats_SiPixelFedCablingMapGPUWrapper_h

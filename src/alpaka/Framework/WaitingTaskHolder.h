@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_WaitingTaskHolder_h
-#define FWCore_Concurrency_WaitingTaskHolder_h
+#ifndef Framework_WaitingTaskHolder_h
+#define Framework_WaitingTaskHolder_h
 // -*- C++ -*-
 //
 // Package:     FWCore/Concurrency
@@ -89,4 +89,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_WaitingTaskHolder_h

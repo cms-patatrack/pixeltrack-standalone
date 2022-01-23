@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
-#define RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
+#ifndef CondFormats_pixelCPEforGPU_h
+#define CondFormats_pixelCPEforGPU_h
 
 #include <algorithm>
 #include <cassert>
@@ -343,4 +343,4 @@ namespace pixelCPEforGPU {
 
 }  // namespace pixelCPEforGPU
 
-#endif  // RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
+#endif  // CondFormats_pixelCPEforGPU_h

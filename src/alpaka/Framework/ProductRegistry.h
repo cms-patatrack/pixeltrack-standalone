@@ -1,5 +1,5 @@
-#ifndef ProductRegistry_h
-#define ProductRegistry_h
+#ifndef Framework_ProductRegistry_h
+#define Framework_ProductRegistry_h
 
 #include <memory>
 #include <set>
@@ -75,4 +75,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_ProductRegistry_h

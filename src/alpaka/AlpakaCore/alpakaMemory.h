@@ -1,5 +1,5 @@
-#ifndef AlpakaCore_alpakaMemoryHelper_h
-#define AlpakaCore_alpakaMemoryHelper_h
+#ifndef AlpakaCore_alpakaMemory_h
+#define AlpakaCore_alpakaMemory_h
 
 #include <type_traits>
 
@@ -171,4 +171,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // AlpakaCore_alpakaMemoryHelper_h
+#endif  // AlpakaCore_alpakaMemory_h

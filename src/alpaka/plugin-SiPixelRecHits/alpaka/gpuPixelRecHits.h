@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
+#ifndef plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h
+#define plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h
 
 #include <algorithm>
 #include <cmath>
@@ -234,4 +234,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuPixelRecHits
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
+#endif  // plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h

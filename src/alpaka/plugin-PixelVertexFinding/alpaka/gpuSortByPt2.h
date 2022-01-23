@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
+#ifndef plugin_PixelVertexFinding_alpaka_gpuSortByPt2_h
+#define plugin_PixelVertexFinding_alpaka_gpuSortByPt2_h
 
 #include <algorithm>
 
@@ -75,4 +75,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuSortByPt2_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuSortByPt2_h

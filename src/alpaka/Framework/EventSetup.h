@@ -1,5 +1,5 @@
-#ifndef EventSetup_h
-#define EventSetup_h
+#ifndef Framework_EventSetup_h
+#define Framework_EventSetup_h
 
 #include <iostream>
 #include <memory>
@@ -62,4 +62,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_EventSetup_h

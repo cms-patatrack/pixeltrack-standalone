@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPU_h
-#define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPU_h
+#ifndef CondFormats_SiPixelFedCablingMapGPU_h
+#define CondFormats_SiPixelFedCablingMapGPU_h
 
 namespace pixelgpudetails {
   // Maximum fed for phase1 is 150 but not all of them are filled
@@ -23,4 +23,4 @@ struct SiPixelFedCablingMapGPU {
   alignas(128) unsigned int size = 0;
 };
 
-#endif
+#endif  // CondFormats_SiPixelFedCablingMapGPU_h

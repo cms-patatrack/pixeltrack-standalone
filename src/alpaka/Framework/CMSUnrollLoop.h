@@ -1,5 +1,5 @@
-#ifndef FWCore_Utilities_interface_CMSUnrollLoop_h
-#define FWCore_Utilities_interface_CMSUnrollLoop_h
+#ifndef Framework_CMSUnrollLoop_h
+#define Framework_CMSUnrollLoop_h
 
 // convert the macro argument to a null-terminated quoted string
 #define STRINGIFY_(ARG) #ARG
@@ -48,4 +48,4 @@
 
 #endif  // defined (__CUDA_ARCH__) || defined (__HIP_DEVICE_COMPILE__)
 
-#endif  // FWCore_Utilities_interface_CMSUnrollLoop_h
+#endif  // Framework_CMSUnrollLoop_h

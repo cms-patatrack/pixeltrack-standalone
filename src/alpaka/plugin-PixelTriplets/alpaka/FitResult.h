@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_interface_FitResult_h
-#define RecoPixelVertexing_PixelTrackFitting_interface_FitResult_h
+#ifndef plugin_PixelTriplets_alpaka_FitResult_h
+#define plugin_PixelTriplets_alpaka_FitResult_h
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
@@ -64,4 +64,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace Rfit
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
-#endif
+#endif  // plugin_PixelTriplets_alpaka_FitResult_h

@@ -1,5 +1,5 @@
-#ifndef FWCore_Utilities_RunningAverage_H
-#define FWCore_Utilities_RunningAverage_H
+#ifndef Framework_RunningAverage_h
+#define Framework_RunningAverage_h
 #include <atomic>
 #include <algorithm>
 #include <array>
@@ -51,4 +51,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_RunningAverage_h

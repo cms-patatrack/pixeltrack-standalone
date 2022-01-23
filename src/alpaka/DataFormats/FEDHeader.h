@@ -1,5 +1,5 @@
-#ifndef DataFormats_FEDRawData_FEDHeader_h
-#define DataFormats_FEDRawData_FEDHeader_h
+#ifndef DataFormats_FEDHeader_h
+#define DataFormats_FEDHeader_h
 
 /** \class FEDHeader
  *  Helper class to interpret/create FED header words.
@@ -56,4 +56,4 @@ public:
 private:
   const fedh_struct* theHeader;
 };
-#endif  // DataFormats_FEDRawData_FEDHeader_h
+#endif  // DataFormats_FEDHeader_h

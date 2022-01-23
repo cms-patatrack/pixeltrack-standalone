@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTriplets_plugins_CAConstants_h
-#define RecoPixelVertexing_PixelTriplets_plugins_CAConstants_h
+#ifndef plugin_PixelTriplets_CAConstants_h
+#define plugin_PixelTriplets_CAConstants_h
 
 #include <cstdint>
 
@@ -65,4 +65,4 @@ namespace CAConstants {
 
 }  // namespace CAConstants
 
-#endif  // RecoPixelVertexing_PixelTriplets_plugins_CAConstants_h
+#endif  // plugin_PixelTriplets_CAConstants_h

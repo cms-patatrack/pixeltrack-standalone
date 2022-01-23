@@ -1,5 +1,5 @@
-#ifndef StreamSchedule_h
-#define StreamSchedule_h
+#ifndef bin_StreamSchedule_h
+#define bin_StreamSchedule_h
 
 #include <memory>
 #include <string>
@@ -48,4 +48,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // bin_StreamSchedule_h

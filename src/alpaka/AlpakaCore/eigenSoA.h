@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_eigenSoA_h
-#define HeterogeneousCore_CUDAUtilities_interface_eigenSoA_h
+#ifndef AlpakaCore_eigenSoA_h
+#define AlpakaCore_eigenSoA_h
 
 #include <algorithm>
 #include <cmath>
@@ -52,4 +52,4 @@ namespace eigenSoA {
 
 }  // namespace eigenSoA
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_eigenSoA_h
+#endif  // AlpakaCore_eigenSoA_h

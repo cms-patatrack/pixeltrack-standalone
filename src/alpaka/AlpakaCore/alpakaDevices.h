@@ -1,5 +1,5 @@
-#ifndef ALPAKADEVICEACC_H
-#define ALPAKADEVICEACC_H
+#ifndef AlpakaCore_alpakaDevices_h
+#define AlpakaCore_alpakaDevices_h
 
 #include <vector>
 
@@ -32,4 +32,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // ALPAKADEVICEACC_H
+#endif  // AlpakaCore_alpakaDevices_h

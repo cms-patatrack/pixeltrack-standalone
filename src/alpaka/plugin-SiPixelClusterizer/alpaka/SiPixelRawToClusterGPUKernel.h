@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
+#ifndef plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h
+#define plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
 #include <optional>
@@ -225,4 +225,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace pixelgpudetails
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
+#endif  // plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h

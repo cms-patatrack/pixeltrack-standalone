@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexingPixelTripletsCircleEq_H
-#define RecoPixelVertexingPixelTripletsCircleEq_H
+#ifndef plugin_PixelTriplets_CircleEq_h
+#define plugin_PixelTriplets_CircleEq_h
 /**
 | 1) circle is parameterized as:                                              |
 |    C*[(X-Xp)**2+(Y-Yp)**2] - 2*alpha*(X-Xp) - 2*beta*(Y-Yp) = 0             |
@@ -105,4 +105,4 @@ constexpr void CircleEq<T>::compute(T x1, T y1, T x2, T y2, T x3, T y3) {
   m_beta = noflip ? be2 : -al2;
 }
 
-#endif
+#endif  // plugin_PixelTriplets_CircleEq_h

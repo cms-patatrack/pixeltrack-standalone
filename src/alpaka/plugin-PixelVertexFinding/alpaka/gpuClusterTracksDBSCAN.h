@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
+#ifndef plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h
+#define plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h
 
 #include <algorithm>
 #include <cmath>
@@ -242,4 +242,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h

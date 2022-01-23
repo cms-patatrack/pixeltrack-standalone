@@ -1,5 +1,5 @@
-#ifndef PluginFactory_h
-#define PluginFactory_h
+#ifndef Framework_ESPluginFactory_h
+#define Framework_ESPluginFactory_h
 
 #include <filesystem>
 #include <memory>
@@ -57,4 +57,4 @@ namespace edm {
 #define DEFINE_FWK_EVENTSETUP_MODULE(type) \
   static edm::ESPluginFactory::impl::Registrar<type> EDM_ES_PLUGIN_SYM(maker, __LINE__)(#type);
 
-#endif
+#endif  // Framework_ESPluginFactory_h

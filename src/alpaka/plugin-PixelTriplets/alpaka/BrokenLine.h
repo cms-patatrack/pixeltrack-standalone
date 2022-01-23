@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
-#define RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
+#ifndef plugin_PixelTriplets_alpaka_BrokenLine_h
+#define plugin_PixelTriplets_alpaka_BrokenLine_h
 
 #include <algorithm>
 #include <cmath>
@@ -571,4 +571,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace BrokenLine
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
+#endif  // plugin_PixelTriplets_alpaka_BrokenLine_h

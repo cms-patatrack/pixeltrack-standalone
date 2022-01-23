@@ -1,5 +1,5 @@
-#ifndef CUDADataFormatsVertexZVertexSoA_H
-#define CUDADataFormatsVertexZVertexSoA_H
+#ifndef AlpakaDataFormats_ZVertexSoA_h
+#define AlpakaDataFormats_ZVertexSoA_h
 
 #include <cstdint>
 
@@ -24,4 +24,4 @@ struct ZVertexSoA {
   ALPAKA_FN_HOST_ACC void init() { nvFinal = 0; }
 };
 
-#endif  // CUDADataFormatsVertexZVertexSoA.H
+#endif  // AlpakaDataFormats_ZVertexSoA_h

@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_SimpleVector_h
-#define HeterogeneousCore_CUDAUtilities_interface_SimpleVector_h
+#ifndef AlpakaCore_SimpleVector_h
+#define AlpakaCore_SimpleVector_h
 
 //  author: Felice Pantaleo, CERN, 2018
 
@@ -139,4 +139,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_SimpleVector_h
+#endif  // AlpakaCore_SimpleVector_h

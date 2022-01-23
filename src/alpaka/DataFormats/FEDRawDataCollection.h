@@ -1,5 +1,5 @@
-#ifndef FEDRawData_FEDRawDataCollection_h
-#define FEDRawData_FEDRawDataCollection_h
+#ifndef DataFormats_FEDRawDataCollection_h
+#define DataFormats_FEDRawDataCollection_h
 
 /** \class FEDRawDataCollection
  *  An EDCollection storing the raw data for all  FEDs in a Event.
@@ -35,4 +35,4 @@ private:
 
 inline void swap(FEDRawDataCollection& a, FEDRawDataCollection& b) { a.swap(b); }
 
-#endif
+#endif  // DataFormats_FEDRawDataCollection_h

@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCoreCUDAUtilities_threadfence_h
-#define HeterogeneousCoreCUDAUtilities_threadfence_h
+#ifndef AlpakaCore_threadfence_h
+#define AlpakaCore_threadfence_h
 
 #include <type_traits>
 
@@ -44,4 +44,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCoreCUDAUtilities_threadfence_h
+#endif  // AlpakaCore_threadfence_h

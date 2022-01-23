@@ -1,3 +1,6 @@
+#ifndef plugin_PixelTriplets_alpaka_RiemannFitOnGPU_h
+#define plugin_PixelTriplets_alpaka_RiemannFitOnGPU_h
+
 //
 // Author: Felice Pantaleo, CERN
 //
@@ -200,3 +203,5 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };   // struct
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // plugin_PixelTriplets_alpaka_RiemannFitOnGPU_h

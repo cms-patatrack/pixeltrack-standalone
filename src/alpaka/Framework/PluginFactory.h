@@ -1,5 +1,5 @@
-#ifndef PluginFactory_h
-#define PluginFactory_h
+#ifndef Framework_PluginFactory_h
+#define Framework_PluginFactory_h
 
 #include <memory>
 #include <string>
@@ -55,4 +55,4 @@ namespace edm {
 
 #define DEFINE_FWK_MODULE(type) static edm::PluginFactory::impl::Registrar<type> EDM_PLUGIN_SYM(maker, __LINE__)(#type);
 
-#endif
+#endif  // Framework_PluginFactory_h

@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
+#ifndef plugin_PixelVertexFinding_alpaka_gpuFitVertices_h
+#define plugin_PixelVertexFinding_alpaka_gpuFitVertices_h
 
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaConfig.h"
@@ -119,4 +119,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuFitVertices_h

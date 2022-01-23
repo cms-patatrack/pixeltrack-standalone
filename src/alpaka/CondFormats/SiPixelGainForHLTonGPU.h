@@ -1,5 +1,5 @@
-#ifndef CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
-#define CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
+#ifndef CondFormats_SiPixelGainForHLTonGPU_h
+#define CondFormats_SiPixelGainForHLTonGPU_h
 
 #include <utility>
 
@@ -59,4 +59,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
+#endif  // CondFormats_SiPixelGainForHLTonGPU_h

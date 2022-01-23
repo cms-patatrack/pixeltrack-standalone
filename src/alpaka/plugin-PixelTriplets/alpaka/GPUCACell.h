@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTriplets_plugins_GPUCACell_h
-#define RecoPixelVertexing_PixelTriplets_plugins_GPUCACell_h
+#ifndef plugin_PixelTriplets_alpaka_GPUCACell_h
+#define plugin_PixelTriplets_alpaka_GPUCACell_h
 
 //
 // Author: Felice Pantaleo, CERN
@@ -406,4 +406,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTriplets_plugins_GPUCACell_h
+#endif  // plugin_PixelTriplets_alpaka_GPUCACell_h

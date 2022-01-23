@@ -1,3 +1,6 @@
+#ifndef plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernelsImpl_h
+#define plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernelsImpl_h
+
 //
 // Original Author: Felice Pantaleo, CERN
 //
@@ -680,3 +683,5 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#endif  // plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernelsImpl_h

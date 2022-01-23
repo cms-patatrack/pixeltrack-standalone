@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
-#define RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
+#ifndef CondFormats_PixelCPEFast_h
+#define CondFormats_PixelCPEFast_h
 
 #include <utility>
 
@@ -99,4 +99,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
+#endif  // CondFormats_PixelCPEFast_h

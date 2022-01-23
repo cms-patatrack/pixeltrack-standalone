@@ -1,5 +1,5 @@
-#ifndef DataFormatsMathAPPROX_ATAN2_H
-#define DataFormatsMathAPPROX_ATAN2_H
+#ifndef DataFormats_approx_atan2_h
+#define DataFormats_approx_atan2_h
 
 /*
  * approximate atan2 evaluations
@@ -287,4 +287,4 @@ constexpr float short2phi(short x) {
   return float(x) * i2p;
 }
 
-#endif
+#endif  // DataFormats_approx_atan2_h

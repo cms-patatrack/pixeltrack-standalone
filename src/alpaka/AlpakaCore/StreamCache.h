@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_StreamCache_h
-#define HeterogeneousCore_AlpakaUtilities_StreamCache_h
+#ifndef AlpakaCore_StreamCache_h
+#define AlpakaCore_StreamCache_h
 
 #include <memory>
 #include <vector>
@@ -53,4 +53,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_AlpakaUtilities_StreamCache_h
+#endif  // AlpakaCore_StreamCache_h

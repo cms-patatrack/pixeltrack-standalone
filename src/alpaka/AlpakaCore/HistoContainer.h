@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
-#define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
+#ifndef AlpakaCore_HistoContainer_h
+#define AlpakaCore_HistoContainer_h
 
 #include <algorithm>
 #include <cstddef>
@@ -307,4 +307,4 @@ namespace cms {
   }  // namespace alpakatools
 }  // namespace cms
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
+#endif  // AlpakaCore_HistoContainer_h
