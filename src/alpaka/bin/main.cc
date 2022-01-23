@@ -15,6 +15,7 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/backend.h"
 #include "AlpakaCore/initialise.h"
 #include "EventProcessor.h"
@@ -131,17 +132,17 @@ int main(int argc, char** argv) {
   // Initialiase the selected backends
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
-    cms::alpakatools::initialise<Backend::SERIAL>();
+    cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
-    cms::alpakatools::initialise<Backend::TBB>();
+    cms::alpakatools::initialise<alpaka_tbb_async::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
-    cms::alpakatools::initialise<Backend::CUDA>();
+    cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
   }
 #endif
 
