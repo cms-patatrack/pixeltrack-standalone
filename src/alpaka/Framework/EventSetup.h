@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <utility>
 
+#include "Framework/demangle.h"
+
 namespace edm {
   // This is very different from CMSSW, but (hopefully) good-enough
   // for this test
@@ -42,7 +44,7 @@ namespace edm {
           typeToProduct_.emplace(std::type_index(typeid(T)), std::make_unique<ESWrapper<T>>(std::move(prod)));
 #endif
       if (not succeeded.second) {
-        throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " already exists");
+        throw std::runtime_error(std::string("Product of type ") + demangle<T> + " already exists");
       }
     }
 
@@ -50,7 +52,7 @@ namespace edm {
     T const& get() const {
       const auto found = typeToProduct_.find(std::type_index(typeid(T)));
       if (found == typeToProduct_.end()) {
-        throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " is not produced");
+        throw std::runtime_error(std::string("Product of type ") + demangle<T> + " is not produced");
       }
       return static_cast<ESWrapper<T> const&>(*(found->second)).product();
     }
