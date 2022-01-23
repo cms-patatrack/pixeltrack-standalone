@@ -1,5 +1,5 @@
-#ifndef CUDADataFormatsTrackTrackHeterogeneous_H
-#define CUDADataFormatsTrackTrackHeterogeneous_H
+#ifndef AlpakaDataFormats_PixelTrackAlpaka_h
+#define AlpakaDataFormats_PixelTrackAlpaka_h
 
 #include <cmath>
 
@@ -73,12 +73,8 @@ namespace pixelTrack {
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using PixelTrackAlpaka = cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA>;
-  using PixelTrackHost = cms::alpakatools::host_buffer<pixelTrack::TrackSoA>;
-
-  // NB: ANOTHER OPTION IS TO CREATE A HeterogeneousSoA class,
-  // with a cms::alpakatools::device_buffer<Device, pixelTrack::TrackSoA> as a data member
-  // and a toHostAsync function.
-
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CUDADataFormatsTrackTrackSoA_H
+using PixelTrackHost = cms::alpakatools::host_buffer<pixelTrack::TrackSoA>;
+
+#endif  // AlpakaDataFormats_PixelTrackAlpaka_h
