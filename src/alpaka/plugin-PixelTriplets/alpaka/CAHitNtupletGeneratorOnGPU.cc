@@ -7,6 +7,7 @@
 #include <functional>
 #include <vector>
 
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "Framework/Event.h"
 

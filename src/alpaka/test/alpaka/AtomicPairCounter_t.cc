@@ -3,8 +3,8 @@
 
 #include "AlpakaCore/AtomicPairCounter.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;

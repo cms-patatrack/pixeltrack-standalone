@@ -10,6 +10,7 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/EventCache.h"
 
 namespace cms::alpakatools {

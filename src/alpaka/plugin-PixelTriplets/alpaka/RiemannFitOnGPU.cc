@@ -1,7 +1,8 @@
-#include "RiemannFitOnGPU.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "RiemannFitOnGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

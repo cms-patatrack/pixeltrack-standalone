@@ -2,6 +2,7 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"

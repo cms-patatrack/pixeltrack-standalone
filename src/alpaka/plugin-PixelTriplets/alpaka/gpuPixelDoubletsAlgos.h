@@ -8,7 +8,7 @@
 #include <limits>
 
 #include "AlpakaCore/VecArray.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 #include "DataFormats/approx_atan2.h"
 

@@ -1,9 +1,9 @@
 #ifndef CUDADataFormatsVertexZVertexHeterogeneous_H
 #define CUDADataFormatsVertexZVertexHeterogeneous_H
 
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/ZVertexSoA.h"
-
-#include "AlpakaCore/alpakaCommon.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   using ZVertexAlpaka = cms::alpakatools::device_buffer<Device, ZVertexSoA>;

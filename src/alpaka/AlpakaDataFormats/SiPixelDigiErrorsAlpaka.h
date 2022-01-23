@@ -3,10 +3,10 @@
 
 #include <utility>
 
-#include "DataFormats/PixelErrors.h"
 #include "AlpakaCore/SimpleVector.h"
-
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "DataFormats/PixelErrors.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

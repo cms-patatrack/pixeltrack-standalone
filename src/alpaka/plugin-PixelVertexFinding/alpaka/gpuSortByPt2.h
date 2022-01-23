@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/radixSort.h"
 
 #include "gpuVertexFinder.h"

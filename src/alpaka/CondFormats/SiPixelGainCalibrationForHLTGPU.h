@@ -4,11 +4,12 @@
 #include <vector>
 
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
   class SiPixelGainCalibrationForHLTGPU {
   public:
     using DecodingStructure = SiPixelGainForHLTonGPU::DecodingStructure;

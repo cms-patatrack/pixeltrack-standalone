@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <type_traits>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"

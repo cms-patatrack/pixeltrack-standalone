@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 #include "AlpakaCore/prefixScan.h"
 
 using namespace cms::alpakatools;

@@ -7,12 +7,10 @@
 #include <cstdint>
 #include <iterator>
 
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "DataFormats/SOARotation.h"
 #include "Geometry/phase1PixelTopology.h"
-
-#include "AlpakaCore/alpakaCommon.h"
-//#include "CUDACore/cuda_cxx17.h"  // TO DO: include this??
 
 namespace pixelCPEforGPU {
 

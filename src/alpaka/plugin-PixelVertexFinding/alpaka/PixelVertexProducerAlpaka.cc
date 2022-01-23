@@ -1,15 +1,12 @@
-
-#include "AlpakaCore/alpakaCommon.h"
-
+#include "AlpakaCore/ScopedContext.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/ZVertexAlpaka.h"
-
-#include "Framework/EventSetup.h"
-#include "Framework/Event.h"
-#include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
+#include "Framework/Event.h"
+#include "Framework/EventSetup.h"
+#include "Framework/PluginFactory.h"
 #include "Framework/RunningAverage.h"
-#include "AlpakaCore/ScopedContext.h"
 
 #include "gpuVertexFinder.h"
 

@@ -12,7 +12,7 @@
 
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/VecArray.h"
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/threadfence.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"

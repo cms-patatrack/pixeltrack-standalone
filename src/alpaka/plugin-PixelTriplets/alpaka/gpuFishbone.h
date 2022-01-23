@@ -7,11 +7,10 @@
 #include <cstdio>
 #include <limits>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
+#include "AlpakaCore/VecArray.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
-#include "AlpakaCore/VecArray.h"
 
 #include "GPUCACell.h"
 

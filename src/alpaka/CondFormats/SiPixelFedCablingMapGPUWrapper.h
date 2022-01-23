@@ -3,11 +3,10 @@
 
 #include <utility>
 
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
-
-#include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

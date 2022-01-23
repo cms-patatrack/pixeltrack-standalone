@@ -1,9 +1,8 @@
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
 #include "AlpakaCore/HistoContainer.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 #include "gpuVertexFinder.h"
 

@@ -5,7 +5,7 @@
 #include <random>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
 
 using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;

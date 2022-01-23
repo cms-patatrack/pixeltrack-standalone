@@ -7,8 +7,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 

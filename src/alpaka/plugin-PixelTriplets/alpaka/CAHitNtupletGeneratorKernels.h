@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
 
 #include "GPUCACell.h"

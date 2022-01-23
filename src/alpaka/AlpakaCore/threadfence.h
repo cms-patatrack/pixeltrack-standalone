@@ -3,8 +3,7 @@
 
 #include <type_traits>
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 namespace cms::alpakatools {
 

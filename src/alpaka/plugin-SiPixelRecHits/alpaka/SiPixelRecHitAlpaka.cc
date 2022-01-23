@@ -2,7 +2,7 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
@@ -13,7 +13,7 @@
 #include "Framework/EventSetup.h"
 #include "Framework/PluginFactory.h"
 
-#include "PixelRecHits.h"  // TODO : spit product from kernel
+#include "PixelRecHits.h"  // TODO : split product from kernel
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

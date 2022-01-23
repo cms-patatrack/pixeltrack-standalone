@@ -1,5 +1,5 @@
-#include "AlpakaCore/alpakaConfigAcc.h"
-#include "AlpakaCore/alpakaDevAcc.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/backend.h"
 #include "AlpakaCore/initialise.h"
 

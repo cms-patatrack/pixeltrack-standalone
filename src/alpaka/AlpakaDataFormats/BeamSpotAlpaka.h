@@ -3,7 +3,8 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "DataFormats/BeamSpotPOD.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

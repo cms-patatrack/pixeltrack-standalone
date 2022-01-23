@@ -1,10 +1,9 @@
-
 #ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuVertexFinder_h
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaDataFormats/ZVertexAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/ZVertexAlpaka.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuVertexFinder {

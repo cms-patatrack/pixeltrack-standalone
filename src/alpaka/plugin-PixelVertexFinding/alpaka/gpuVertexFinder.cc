@@ -1,6 +1,8 @@
 //#include <iostream>
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 #include "gpuVertexFinder.h"
 #include "gpuClusterTracksByDensity.h"

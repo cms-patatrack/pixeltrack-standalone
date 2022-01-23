@@ -4,7 +4,8 @@
 #include <cmath>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/TrajectoryStateSoA.h"
 
 namespace trackQuality {

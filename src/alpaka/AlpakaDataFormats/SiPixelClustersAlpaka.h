@@ -1,7 +1,8 @@
 #ifndef CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 #define CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

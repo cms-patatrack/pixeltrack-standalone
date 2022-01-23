@@ -1,10 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
 
-#include <cstdint>
-
-#include "AlpakaCore/alpakaCommon.h"
-
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/SiPixelDigisAlpaka.h"

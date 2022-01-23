@@ -5,10 +5,9 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
+#include "CondFormats/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuCalibPixel {
