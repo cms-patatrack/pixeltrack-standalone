@@ -23,10 +23,10 @@ namespace edm {
     void setItemsToGet(std::vector<Worker*> workers) { itemsToGet_ = std::move(workers); }
 
     // thread safe
-    void prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask);
+    void prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask);
 
     // not thread safe
-    virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask) = 0;
+    virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask) = 0;
 
     // not thread safe
     virtual void doEndJob() = 0;
@@ -50,15 +50,15 @@ namespace edm {
   public:
     explicit WorkerT(ProductRegistry& reg) : producer_(reg) {}
 
-    void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTask* iTask) override {
-      waitingTasksWork_.add(iTask);
+    void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
+      waitingTasksWork_.add(task);
       //std::cout << "doWorkAsync for " << this << " with iTask " << iTask << std::endl;
       bool expected = false;
       if (workStarted_.compare_exchange_strong(expected, true)) {
         //std::cout << "first doWorkAsync call" << std::endl;
 
-        WaitingTask* moduleTask = make_waiting_task(
-            tbb::task::allocate_root(), [this, &event, &eventSetup](std::exception_ptr const* iPtr) mutable {
+        WaitingTask* moduleTask =
+            make_waiting_task([this, &event, &eventSetup](std::exception_ptr const* iPtr) mutable {
               if (iPtr) {
                 waitingTasksWork_.doneWaiting(*iPtr);
               } else {
@@ -73,26 +73,26 @@ namespace edm {
                 waitingTasksWork_.doneWaiting(exceptionPtr);
               }
             });
+        auto* group = task.group();
         if (producer_.hasAcquire()) {
-          WaitingTaskWithArenaHolder runProduceHolder{moduleTask};
-          moduleTask = make_waiting_task(tbb::task::allocate_root(),
-                                         [this, &event, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
+          WaitingTaskWithArenaHolder runProduceHolder{*group, moduleTask};
+          moduleTask = make_waiting_task([this, &event, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
                                              std::exception_ptr const* iPtr) mutable {
-                                           if (iPtr) {
-                                             runProduceHolder.doneWaiting(*iPtr);
-                                           } else {
-                                             std::exception_ptr exceptionPtr;
-                                             try {
-                                               producer_.doAcquire(event, eventSetup, runProduceHolder);
-                                             } catch (...) {
-                                               exceptionPtr = std::current_exception();
-                                             }
-                                             runProduceHolder.doneWaiting(exceptionPtr);
-                                           }
-                                         });
+            if (iPtr) {
+              runProduceHolder.doneWaiting(*iPtr);
+            } else {
+              std::exception_ptr exceptionPtr;
+              try {
+                producer_.doAcquire(event, eventSetup, runProduceHolder);
+              } catch (...) {
+                exceptionPtr = std::current_exception();
+              }
+              runProduceHolder.doneWaiting(exceptionPtr);
+            }
+          });
         }
         //std::cout << "calling prefetchAsync " << this << " with moduleTask " << moduleTask << std::endl;
-        prefetchAsync(event, eventSetup, moduleTask);
+        prefetchAsync(event, eventSetup, WaitingTaskHolder(*group, moduleTask));
       }
     }
 
