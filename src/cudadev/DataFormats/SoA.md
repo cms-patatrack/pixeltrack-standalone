@@ -163,11 +163,12 @@ scenarios where only a subset of columns are used in a given GPU kernel.
 - The layout and views support scalars and columns, alignment and alignment enforcement and hinting.
 - Automatic `__restrict__` compiler hinting is supported.
 - A shortcut alloCreate a mechanism to derive trivial views and const views from a single layout.
-- Cache access style, which was explored, was abandoned as this not-yet-used feature interferes with `__restrict__` support (which is already in used in existing code). It could be made available as a separate tool that can be used directly by the module developer, orthogonally from SoA.
+- Cache access style, which was explored, was abandoned as this not-yet-used feature interferes with `__restrict__` support (which is
+already in used in existing code). It could be made available as a separate tool that can be used directly by the module developer,
+orthogonally from SoA.
+- Optional (compile time) range checking validates the index of every column access, throwing an exception on the CPU side and forcing
+a segmentation fault to halt kernels. When not enabled, it has no impact on performance (code not compiled)
+- Eigen columns are also suported, with both const and non-const flavors.
 
 ### Planned additions
-- Optional range checking will be added later. This implies adding support for size to views and will restrict views to columns of 
-equal size.
-- Eigen access was validated with an earlier scheme, but will be ported back to the current one later. Some alignment information can be 
-passed to Eigen strcutures. Const variants of access classes should be created to ensure we cannot leak mutable access to const products.
 - Improve `dump()` function and turn it into a more classic `operator<<()`.
