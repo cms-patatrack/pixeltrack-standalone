@@ -10,6 +10,7 @@
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
 
+#if 1
 GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              SoA1ViewTemplate,
                              // predefined static scalars
@@ -22,10 +23,9 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              SOA_COLUMN(double, z),
                              SOA_COLUMN(double, sum),
                              SOA_COLUMN(double, prod),
-                             /* Leave Eigen definitions out until support is complete.
-  SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
-  SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
-  SOA_EIGEN_COLUMN(Eigen::Vector3d, r),*/
+                             SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+                             SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+                             SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
                              SOA_COLUMN(uint16_t, color),
                              SOA_COLUMN(int32_t, value),
                              SOA_COLUMN(double *, py),
@@ -35,6 +35,7 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              // scalars: one value for the whole structure
                              SOA_SCALAR(const char *, description),
                              SOA_SCALAR(uint32_t, someNumber))
+#endif
 
 using SoA1Layout = SoA1LayoutTemplate<>;
 using SoA1View = SoA1ViewTemplate<>;
@@ -58,10 +59,9 @@ GENERATE_SOA_CONST_VIEW(SoA1View2Gconst,
                         SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SoA1Layout, soa1), SOA_VIEW_LAYOUT(SoA1View, soa1v)),
                         SOA_VIEW_VALUE_LIST(SOA_VIEW_VALUE(soa1, x),
                                             SOA_VIEW_VALUE(soa1v, y),
-                                            /* Eigen columns are not supported in views.    
-    SoA_view_value(soa1, a, a),
-    SoA_view_value(soa1, b, b),
-    SoA_view_value(soa1, r, r), */
+                                            SOA_VIEW_VALUE(soa1, a),
+                                            SOA_VIEW_VALUE(soa1, b),
+                                            SOA_VIEW_VALUE(soa1, r),
                                             SOA_VIEW_VALUE(soa1, color),
                                             SOA_VIEW_VALUE(soa1v, value),
                                             SOA_VIEW_VALUE(soa1v, count),
@@ -114,14 +114,13 @@ int main() {
     s.y = 2.0 * i;
     s.z = 3.0 * i;
     s.color() = i;
-    // TODO: re-enable when support of eigen is added to views.
-    /*s.a()(0) = 1.0 * i;
+    s.a()(0) = 1.0 * i;
     s.a()(1) = 2.0 * i;
     s.a()(2) = 3.0 * i;
     s.b()(0) = 3.0 * i;
     s.b()(1) = 2.0 * i;
     s.b()(2) = 1.0 * i;
-    s.r() = s.a().cross(s.b());*/
+    s.r() = s.a().cross(s.b());
   }
   // Check direct read back
   for (size_t i = 0; i < size; i++) {
@@ -130,14 +129,13 @@ int main() {
     assert(s.y() == 2.0 * i);
     assert(s.z() == 3.0 * i);
     assert(s.color() == i);
-    // TODO: re-enable when support of eigen is added to views.
-    /*assert(s.a()(0) == 1.0 * i);
+    assert(s.a()(0) == 1.0 * i);
     assert(s.a()(1) == 2.0 * i);
     assert(s.a()(2) == 3.0 * i);
     assert(s.b()(0) == 3.0 * i);
     assert(s.b()(1) == 2.0 * i);
     assert(s.b()(2) == 1.0 * i);
-    assert(s.r() == s.a().cross(s.b()));*/
+    assert(s.r() == s.a().cross(s.b()));
   }
   // Check readback through other views
   for (size_t i = 0; i < size; i++) {

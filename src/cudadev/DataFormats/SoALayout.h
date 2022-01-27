@@ -92,34 +92,61 @@
 /**
  * SoAMetadata member computing column pitch
  */
-#define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                   \
-  _SWITCH_ON_TYPE(                                                                                                  \
-      VALUE_TYPE, /* Scalar */                                                                                      \
-      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                    \
-        return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;            \
-      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                               \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar; \
-      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                      \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                       \
-      } CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }, /* Column */          \
-      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)()                                                              \
-          const { return parent_.BOOST_PP_CAT(NAME, _); } CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {              \
-            return parent_.BOOST_PP_CAT(NAME, _);                                                                   \
-          } size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                              \
-            return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *               \
-                   ParentClass::byteAlignment;                                                                      \
-          } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                           \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column; \
-      , /* Eigen column */                                                                                          \
-      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                    \
-        return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *           \
-               ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;              \
-      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                               \
-      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;  \
-      CPP_TYPE::Scalar const* BOOST_PP_CAT(addressOf_, NAME)() const {                                              \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                       \
-      } CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); })
-
+// clang-format off
+#define _DEFINE_METADATA_MEMBERS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                    \
+  _SWITCH_ON_TYPE(VALUE_TYPE,                                                                                        \
+      /* Scalar */                                                                                                   \
+      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
+        return (((sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) * ParentClass::byteAlignment;             \
+      }                                                                                                              \
+      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                  \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;  \
+      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+      }                                                                                                              \
+      typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::scalar>::DataType<CPP_TYPE>                \
+        BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
+        return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
+      }                                                                                                              \
+      CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); },                          \
+      /* Column */                                                                                                   \
+      typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::column>::DataType<CPP_TYPE>                \
+        BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
+        return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
+      }                                                                                                              \
+      CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+      }                                                                                                              \
+      CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {                                                                   \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+      }                                                                                                              \
+      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
+        return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                    \
+                   ParentClass::byteAlignment;                                                                       \
+      }                                                                                                              \
+      typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                  \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::column;, \
+      /* Eigen column */                                                                                             \
+      typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::eigen>::DataType<CPP_TYPE>                 \
+        BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
+        return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (                                                              \
+         parent_.BOOST_PP_CAT(NAME, _),                                                                              \
+         parent_.BOOST_PP_CAT(NAME, Stride_));                                                                       \
+      }                                                                                                              \
+      size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
+        return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *            \
+               ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;               \
+      } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                \
+      constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;   \
+      CPP_TYPE::Scalar const* BOOST_PP_CAT(addressOf_, NAME)() const {                                               \
+        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+      }                                                                                                              \
+      CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                   \
+)
+// clang-format on
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
 
 /**
@@ -242,14 +269,13 @@
     constexpr static size_t conditionalAlignment =                                                                                        \
         alignmentEnforcement == AlignmentEnforcement::Enforced ? byteAlignment : 0;                                                       \
     /* Those typedefs avoid having commas in macros (which is problematic) */                                                             \
-    template <class C>                                                                                                                    \
-    using SoAValueWithConf = cms::soa::SoAValue<C, conditionalAlignment>;                                                                 \
+    template <cms::soa::SoAColumnType COLUMN_TYPE, class C>                                                                               \
+    using SoAValueWithConf = cms::soa::SoAValue<COLUMN_TYPE, C, conditionalAlignment>;                                                    \
+                                                                                                                                          \
+    template <cms::soa::SoAColumnType COLUMN_TYPE, class C>                                                                               \
+    using SoAConstValueWithConf = cms::soa::SoAConstValue<COLUMN_TYPE, C, conditionalAlignment>;                                          \
                                                                                                                                           \
     template <class C>                                                                                                                    \
-    using SoAConstValueWithConf = cms::soa::SoAConstValue<C, conditionalAlignment>;                                                       \
-                                                                                                                                          \
-    template <class C>                                                                                                                    \
-    using SoAEigenValueWithConf = cms::soa::SoAEigenValue<C, conditionalAlignment>;                                                       \
     /* dump the SoA internal structure */                                                                                                 \
     SOA_HOST_ONLY                                                                                                                         \
     static void dump(size_t nElements) {                                                                                                  \
