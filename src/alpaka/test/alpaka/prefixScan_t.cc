@@ -113,7 +113,7 @@ int main() {
   Queue queue(device);
 
   // WARP PREFIXSCAN (OBVIOUSLY GPU-ONLY)
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
   std::cout << "warp level" << std::endl;
 
   const Vec1D threadsPerBlockOrElementsPerThread1(Vec1D::all(32));

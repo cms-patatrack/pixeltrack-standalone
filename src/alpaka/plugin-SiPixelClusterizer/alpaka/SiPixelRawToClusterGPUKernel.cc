@@ -19,16 +19,14 @@
 #include <string>
 #include <utility>
 
-// Alpaka includes
+// CMSSW includes
 #include "AlpakaCore/prefixScan.h"
 
-// CMSSW includes
-#include "gpuCalibPixel.h"
-#include "gpuClusterChargeCut.h"
-#include "gpuClustering.h"
-
 // local includes
+#include "../gpuClusterChargeCut.h"
 #include "SiPixelRawToClusterGPUKernel.h"
+#include "gpuCalibPixel.h"
+#include "gpuClustering.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
@@ -569,7 +567,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       if (wordCounter)  // protect in case of empty event....
       {
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
         const int threadsPerBlockOrElementsPerThread = 512;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
@@ -626,7 +624,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       {
         // clusterizer ...
         using namespace gpuClustering;
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
         const int threadsPerBlockOrElementsPerThread = 256;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.

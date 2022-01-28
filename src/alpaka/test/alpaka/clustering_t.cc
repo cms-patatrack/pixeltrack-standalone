@@ -15,7 +15,7 @@
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
-#include "plugin-SiPixelClusterizer/alpaka/gpuClusterChargeCut.h"
+#include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 using namespace cms::alpakatools;
 
@@ -237,7 +237,7 @@ int main(void) {
     alpaka::memcpy(queue, d_adc, h_adc, n);
 
 // Launch CUDA Kernels
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
     const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #else
     // NB: can be tuned.

@@ -26,13 +26,13 @@ namespace {
         << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer] [--validation]\n\n"
         << "Options\n"
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
         << " --serial            Use CPU Serial backend\n"
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
         << " --tbb               Use CPU TBB backend\n"
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         << " --cuda              Use CUDA backend\n"
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
@@ -67,15 +67,15 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
 #endif
@@ -129,17 +129,17 @@ int main(int argc, char** argv) {
   }
 
   // Initialiase the selected backends
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
     cms::alpakatools::initialise<Backend::SERIAL>();
   }
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
     cms::alpakatools::initialise<Backend::TBB>();
   }
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
   if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
     cms::alpakatools::initialise<Backend::CUDA>();
   }
@@ -172,13 +172,13 @@ int main(int argc, char** argv) {
         esmodules.emplace_back(accelerator_namespace + "::" + "PixelCPEFastESProducer");
       }
     };
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
     addModules("alpaka_serial_sync", Backend::SERIAL);
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_SUPPORTED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
     addModules("alpaka_tbb_async", Backend::TBB);
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_SUPPORTED
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     addModules("alpaka_cuda_async", Backend::CUDA);
 #endif
   }

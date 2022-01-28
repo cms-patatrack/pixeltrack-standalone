@@ -9,10 +9,9 @@
 #include <cstdint>
 
 #include "AlpakaCore/alpakaKernelCommon.h"
-
 #include "CondFormats/pixelCPEforGPU.h"
 
-#include "CAConstants.h"
+#include "../CAConstants.h"
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"
 #include "gpuFishbone.h"

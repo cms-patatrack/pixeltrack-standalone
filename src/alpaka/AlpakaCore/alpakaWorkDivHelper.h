@@ -11,18 +11,19 @@ using namespace alpaka_common;
 namespace cms::alpakatools {
 
   /*********************************************
-     *              WORKDIV CREATION
-     ********************************************/
+   *              WORKDIV CREATION
+   ********************************************/
 
   /*
-     * Creates the accelerator-dependent workdiv.
-     */
+   * Creates the accelerator-dependent workdiv.
+   */
   template <typename TDim>
   WorkDiv<TDim> make_workdiv(const Vec<TDim>& blocksPerGrid, const Vec<TDim>& threadsPerBlockOrElementsPerThread) {
+    // FIXME avoid ODR violation: rewrite this to be teplated on the accelerator type, instead of depending on the ENABLED/BACKEND macros
+#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
     // On the GPU:
     // threadsPerBlockOrElementsPerThread is the number of threads per block.
     // Each thread is looking at a single element: elementsPerThread is always 1.
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     const Vec<TDim>& elementsPerThread = Vec<TDim>::ones();
     return WorkDiv<TDim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
 #else
@@ -35,13 +36,13 @@ namespace cms::alpakatools {
   }
 
   /*********************************************
-     *           RANGE COMPUTATION
-     ********************************************/
+   *           RANGE COMPUTATION
+   ********************************************/
 
   /*
-     * Computes the range of the elements indexes, local to the block.
-     * Warning: the max index is not truncated by the max number of elements of interest.
-     */
+   * Computes the range of the elements indexes, local to the block.
+   * Warning: the max index is not truncated by the max number of elements of interest.
+   */
   template <typename TAcc>
   ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_block(const TAcc& acc,
                                                                  const Idx elementIdxShift,
@@ -62,9 +63,9 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Computes the range of the elements indexes, local to the block.
-     * Truncated by the max number of elements of interest.
-     */
+   * Computes the range of the elements indexes, local to the block.
+   * Truncated by the max number of elements of interest.
+   */
   template <typename TAcc>
   ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_block_truncated(const TAcc& acc,
                                                                            const Idx maxNumberOfElements,
@@ -83,9 +84,9 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Computes the range of the elements indexes in grid.
-     * Warning: the max index is not truncated by the max number of elements of interest.
-     */
+   * Computes the range of the elements indexes in grid.
+   * Warning: the max index is not truncated by the max number of elements of interest.
+   */
   template <typename TAcc>
   ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_grid(const TAcc& acc,
                                                                 Idx elementIdxShift,
@@ -102,9 +103,9 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Computes the range of the elements indexes in grid.
-     * Truncated by the max number of elements of interest.
-     */
+   * Computes the range of the elements indexes in grid.
+   * Truncated by the max number of elements of interest.
+   */
   template <typename TAcc>
   ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_grid_truncated(const TAcc& acc,
                                                                           const Idx maxNumberOfElements,
@@ -123,9 +124,9 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Computes the range of the element(s) index(es) in grid.
-     * Truncated by the max number of elements of interest.
-     */
+   * Computes the range of the element(s) index(es) in grid.
+   * Truncated by the max number of elements of interest.
+   */
   template <typename TAcc>
   ALPAKA_FN_ACC std::pair<Idx, Idx> element_index_range_in_grid_truncated(const TAcc& acc,
                                                                           const Idx maxNumberOfElements,
@@ -135,14 +136,14 @@ namespace cms::alpakatools {
   }
 
   /*********************************************
-     *           LOOP ON ALL ELEMENTS
-     ********************************************/
+   *           LOOP ON ALL ELEMENTS
+   ********************************************/
 
   /*
-     * Loop on all (CPU) elements.
-     * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
-     * Indexes are local to the BLOCK.
-     */
+   * Loop on all (CPU) elements.
+   * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
+   * Indexes are local to the BLOCK.
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_block(const TAcc& acc,
                                                const Idx maxNumberOfElements,
@@ -158,8 +159,8 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Overload for elementIdxShift = 0
-     */
+   * Overload for elementIdxShift = 0
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_block(const TAcc& acc,
                                                const Idx maxNumberOfElements,
@@ -170,10 +171,10 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Loop on all (CPU) elements.
-     * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
-     * Indexes are expressed in GRID 'frame-of-reference'.
-     */
+   * Loop on all (CPU) elements.
+   * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
+   * Indexes are expressed in GRID 'frame-of-reference'.
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_grid(const TAcc& acc,
                                               const Idx maxNumberOfElements,
@@ -189,8 +190,8 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Overload for elementIdxShift = 0
-     */
+   * Overload for elementIdxShift = 0
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_grid(const TAcc& acc,
                                               const Idx maxNumberOfElements,
@@ -201,15 +202,15 @@ namespace cms::alpakatools {
   }
 
   /**************************************************************
-     *          LOOP ON ALL ELEMENTS, WITH STRIDED ACCESS
-     **************************************************************/
+   *          LOOP ON ALL ELEMENTS, WITH STRIDED ACCESS
+   **************************************************************/
 
   /*
-     * (CPU) Loop on all elements + (CPU/GPU) Strided access.
-     * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
-     * Stride to full problem size, by BLOCK size.
-     * Indexes are local to the BLOCK.
-     */
+   * (CPU) Loop on all elements + (CPU/GPU) Strided access.
+   * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
+   * Stride to full problem size, by BLOCK size.
+   * Indexes are local to the BLOCK.
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_block_strided(const TAcc& acc,
                                                        const Idx maxNumberOfElements,
@@ -238,8 +239,8 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Overload for elementIdxShift = 0
-     */
+   * Overload for elementIdxShift = 0
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_block_strided(const TAcc& acc,
                                                        const Idx maxNumberOfElements,
@@ -250,11 +251,11 @@ namespace cms::alpakatools {
   }
 
   /*
-     * (CPU) Loop on all elements + (CPU/GPU) Strided access.
-     * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
-     * Stride to full problem size, by GRID size.
-     * Indexes are local to the GRID.
-     */
+   * (CPU) Loop on all elements + (CPU/GPU) Strided access.
+   * Elements loop makes sense in CPU case only. In GPU case, elementIdx = firstElementIdx = threadIdx + shift.
+   * Stride to full problem size, by GRID size.
+   * Indexes are local to the GRID.
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_grid_strided(const TAcc& acc,
                                                       const Idx maxNumberOfElements,
@@ -283,8 +284,8 @@ namespace cms::alpakatools {
   }
 
   /*
-     * Overload for elementIdxShift = 0
-     */
+   * Overload for elementIdxShift = 0
+   */
   template <typename TAcc, typename Func>
   ALPAKA_FN_ACC void for_each_element_in_grid_strided(const TAcc& acc,
                                                       const Idx maxNumberOfElements,
@@ -295,19 +296,19 @@ namespace cms::alpakatools {
   }
 
   /**************************************************************
-     *          LOOP ON ALL ELEMENTS WITH ONE LOOP
-     **************************************************************/
+   *          LOOP ON ALL ELEMENTS WITH ONE LOOP
+   **************************************************************/
 
   /*
-     * Case where the input index i has reached the end of threadDimension: strides the input index.
-     * Otherwise: do nothing.
-     * NB 1: This helper function is used as a trick to only have one loop (like in legacy), instead of 2 loops
-     * (like in all the other Alpaka helpers, 'for_each_element_in_block_strided' for example, 
-     * because of the additional loop over elements in Alpaka model). 
-     * This allows to keep the 'continue' and 'break' statements as-is from legacy code, 
-     * and hence avoids a lot of legacy code reshuffling.
-     * NB 2: Modifies i, firstElementIdx and endElementIdx.
-     */
+   * Case where the input index i has reached the end of threadDimension: strides the input index.
+   * Otherwise: do nothing.
+   * NB 1: This helper function is used as a trick to only have one loop (like in legacy), instead of 2 loops
+   * (like in all the other Alpaka helpers, 'for_each_element_in_block_strided' for example, 
+   * because of the additional loop over elements in Alpaka model). 
+   * This allows to keep the 'continue' and 'break' statements as-is from legacy code, 
+   * and hence avoids a lot of legacy code reshuffling.
+   * NB 2: Modifies i, firstElementIdx and endElementIdx.
+   */
   ALPAKA_FN_ACC ALPAKA_FN_INLINE bool next_valid_element_index_strided(
       Idx& i, Idx& firstElementIdx, Idx& endElementIdx, const Idx stride, const Idx maxNumberOfElements) {
     bool isNextStrideElementValid = true;
