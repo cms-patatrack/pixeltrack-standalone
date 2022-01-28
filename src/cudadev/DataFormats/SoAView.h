@@ -301,7 +301,6 @@ namespace cms::soa {
  * SoA class member declaration (column pointers and parameters).
  */
 #define _DECLARE_VIEW_SOA_MEMBER_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME, DATA)                        \
-  typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(LOCAL_NAME, _disabled) = nullptr; \
   typename BOOST_PP_CAT(SoAMetadata::ParametersTypeOf_, LOCAL_NAME) BOOST_PP_CAT(LOCAL_NAME, Parameters_);
 
 #define _DECLARE_VIEW_SOA_MEMBER(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -311,7 +310,6 @@ namespace cms::soa {
  * Const SoA class member declaration (column pointers and parameters).
  */
 #define _DECLARE_CONST_VIEW_SOA_MEMBER_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME, DATA)                        \
-  const typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(LOCAL_NAME, _disabled) = nullptr; \
   typename BOOST_PP_CAT(SoAMetadata::ParametersTypeOf_, LOCAL_NAME)::ConstType BOOST_PP_CAT(LOCAL_NAME, Parameters_);
 
 #define _DECLARE_CONST_VIEW_SOA_MEMBER(R, DATA, LAYOUT_MEMBER_NAME) \
