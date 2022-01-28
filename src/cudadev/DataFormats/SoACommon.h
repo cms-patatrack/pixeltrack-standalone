@@ -14,13 +14,11 @@
 #define SOA_DEVICE_ONLY __device__
 #define SOA_HOST_DEVICE __host__ __device__
 #define SOA_HOST_DEVICE_INLINE __host__ __device__ __forceinline__
-#define SOA_DEVICE_RESTRICT __restrict__
 #else
 #define SOA_HOST_ONLY
 #define SOA_DEVICE_ONLY
 #define SOA_HOST_DEVICE
 #define SOA_HOST_DEVICE_INLINE inline
-#define SOA_DEVICE_RESTRICT
 #endif
 
 // Exception throwing (or willful crash in kernels)
@@ -248,6 +246,12 @@ namespace cms::soa {
     typedef C Type;
     typedef Eigen::Map<C, 0, Eigen::InnerStride<Eigen::Dynamic>> MapType;
     typedef Eigen::Map<const C, 0, Eigen::InnerStride<Eigen::Dynamic>> CMapType;
+    typedef add_restrict<typename C::Scalar, RESTRICT_QUALIFY> Restr;
+    typedef typename Restr::Value Val;
+    typedef typename Restr::Pointer Ptr;
+    typedef typename Restr::Reference Ref;
+    typedef typename Restr::PointerToConst PtrToConst;
+    typedef typename Restr::ReferenceToConst RefToConst;
     SOA_HOST_DEVICE_INLINE SoAValue(size_t i, typename C::Scalar* col, size_t stride)
         : val_(col + i, C::RowsAtCompileTime, C::ColsAtCompileTime, Eigen::InnerStride<Eigen::Dynamic>(stride)),
           crCol_(col),
@@ -280,7 +284,7 @@ namespace cms::soa {
 
   private:
     MapType val_;
-    const typename C::Scalar* __restrict__ crCol_;
+    const Ptr crCol_;
     CMapType cVal_;
     size_t stride_;
   };
