@@ -25,6 +25,8 @@ namespace cms {
   inline constexpr bool is_unbounded_array_v = is_unbounded_array<T>::value;
 }  // namespace cms
 
+#include "AlpakaCore/AllocatorPolicy.h"
+#include "AlpakaCore/CachedBufAlloc.h"
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaDevices.h"
 
@@ -68,26 +70,80 @@ namespace cms::alpakatools {
 
   }  // namespace detail
 
+  // helper function for pinning memory buffers
+
+  template <typename TBuf>
+  void pin_buffer(TBuf& buffer) {
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    if (not devices<alpaka::PltfUniformCudaHipRt>.empty()) {
+      // it is possible to initialise the CUDA runtime and call cudaHostRegister
+      // only if the system has at least one supported GPU
+      alpaka::prepareForAsyncCopy(buffer);
+    }
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+  }
+
   // scalar and 1-dimensional host buffers
 
   template <typename T>
   using host_buffer = typename detail::buffer_type<DevHost, T>::type;
 
+  // non-cached, scalar and 1-dimensional host buffers
+  // the memory is pinned explicitly
+
   template <typename T>
   std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer() {
-    return alpaka::allocBuf<T, Idx>(host, Scalar{});
+    auto buffer = alpaka::allocBuf<T, Idx>(host, Scalar{});
+    pin_buffer(buffer);
+    return buffer;
   }
 
   template <typename T>
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer(Extent extent) {
-    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{extent});
+    auto buffer = alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{extent});
+    pin_buffer(buffer);
+    return buffer;
   }
 
   template <typename T>
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer() {
-    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{std::extent_v<T>});
+    auto buffer = alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{std::extent_v<T>});
+    pin_buffer(buffer);
+    return buffer;
+  }
+
+  // potentially cached, scalar and 1-dimensional host buffers, associated to a work queue
+  // the memory is pinned by the caching allocator, or explicitly if it is not used
+
+  template <typename T, typename TQueue>
+  std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer(TQueue const& queue [[maybe_unused]]) {
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<T, Idx>(host, queue, Scalar{});
+    } else {
+      return make_host_buffer<T>();
+    }
+  }
+
+  template <typename T, typename TQueue>
+  std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
+  make_host_buffer(TQueue const& queue [[maybe_unused]], Extent extent) {
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host, queue, Vec1D{extent});
+    } else {
+      return make_host_buffer<T>(extent);
+    }
+  }
+
+  template <typename T, typename TQueue>
+  std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
+  make_host_buffer(TQueue const& queue [[maybe_unused]]) {
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host, queue, Vec1D{std::extent_v<T>});
+    } else {
+      return make_host_buffer<T>();
+    }
   }
 
   // scalar and 1-dimensional host views
@@ -125,21 +181,45 @@ namespace cms::alpakatools {
   template <typename T, typename TQueue>
   std::enable_if_t<not std::is_array_v<T>, device_buffer<alpaka::Dev<TQueue>, T>> make_device_buffer(
       TQueue const& queue) {
-    return alpaka::allocAsyncBuf<T, Idx>(queue, Scalar{});
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<T, Idx>(alpaka::getDev(queue), queue, Scalar{});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Asynchronous) {
+      return alpaka::allocAsyncBuf<T, Idx>(queue, Scalar{});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Synchronous) {
+      return alpaka::allocBuf<T, Idx>(alpaka::getDev(queue), Scalar{});
+    }
   }
 
   template <typename T, typename TQueue>
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>,
                    device_buffer<alpaka::Dev<TQueue>, T>>
   make_device_buffer(TQueue const& queue, Extent extent) {
-    return alpaka::allocAsyncBuf<std::remove_extent_t<T>, Idx>(queue, Vec1D{extent});
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(alpaka::getDev(queue), queue, Vec1D{extent});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Asynchronous) {
+      return alpaka::allocAsyncBuf<std::remove_extent_t<T>, Idx>(queue, Vec1D{extent});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Synchronous) {
+      return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(alpaka::getDev(queue), Vec1D{extent});
+    }
   }
 
   template <typename T, typename TQueue>
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>,
                    device_buffer<alpaka::Dev<TQueue>, T>>
   make_device_buffer(TQueue const& queue) {
-    return alpaka::allocAsyncBuf<std::remove_extent_t<T>, Idx>(queue, Vec1D{std::extent_v<T>});
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(alpaka::getDev(queue), queue, Vec1D{std::extent_v<T>});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Asynchronous) {
+      return alpaka::allocAsyncBuf<std::remove_extent_t<T>, Idx>(queue, Vec1D{std::extent_v<T>});
+    }
+    if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Synchronous) {
+      return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(alpaka::getDev(queue), Vec1D{std::extent_v<T>});
+    }
   }
 
   // scalar and 1-dimensional device views
