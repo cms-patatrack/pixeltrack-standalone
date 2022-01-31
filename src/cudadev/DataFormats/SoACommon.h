@@ -294,6 +294,7 @@ namespace cms::soa {
   template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
   class SoAValue<SoAColumnType::eigen, C, ALIGNMENT, RESTRICT_QUALIFY> {
     // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+    static_assert(!sizeof(C), "Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.");
   };
 #endif
   // Helper template managing the value within it column
@@ -377,6 +378,7 @@ namespace cms::soa {
   template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
   class SoAConstValue<SoAColumnType::eigen, C, ALIGNMENT, RESTRICT_QUALIFY> {
     // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+    static_assert(!sizeof(C), "Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.");
   };
 #endif
 
@@ -402,6 +404,7 @@ namespace cms::soa {
   template <class C>
   struct EigenConstMapMaker {
     // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+    static_assert(!sizeof(C), "Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.");
   };
 #endif
   // Helper function to compute aligned size
