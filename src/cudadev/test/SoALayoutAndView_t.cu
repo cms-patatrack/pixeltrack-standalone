@@ -10,7 +10,6 @@
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
 
-#if 1
 GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              SoA1ViewTemplate,
                              // predefined static scalars
@@ -35,7 +34,6 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              // scalars: one value for the whole structure
                              SOA_SCALAR(const char *, description),
                              SOA_SCALAR(uint32_t, someNumber))
-#endif
 
 using SoA1Layout = SoA1LayoutTemplate<>;
 using SoA1View = SoA1ViewTemplate<>;
