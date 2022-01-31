@@ -1,12 +1,12 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
+#ifndef plugin_SiPixelClusterizer_alpaka_gpuClustering_h
+#define plugin_SiPixelClusterizer_alpaka_gpuClustering_h
 
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <type_traits>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"
@@ -14,14 +14,13 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
-  namespace ALPAKA_ACCELERATOR_NAMESPACE {
-    ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
-  }
+  template <typename TAcc>
+  ALPAKA_STATIC_ACC_MEM_GLOBAL uint32_t gMaxHit = 0;
 #endif
 
   struct countModules {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                   uint16_t const* __restrict__ id,
                                   uint32_t* __restrict__ moduleStart,
                                   int32_t* __restrict__ clusterId,
@@ -46,9 +45,9 @@ namespace gpuClustering {
 
   //  __launch_bounds__(256,4)
   struct findClus {
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        const T_Acc& acc,
+        const TAcc& acc,
         uint16_t const* __restrict__ id,           // module id of each pixel
         uint16_t const* __restrict__ x,            // local coordinates of each pixel
         uint16_t const* __restrict__ y,            //
@@ -338,8 +337,8 @@ namespace gpuClustering {
         nClustersInModule[thisModuleId] = foundClusters;
         moduleId[blockIdx] = thisModuleId;
 #ifdef GPU_DEBUG
-        if (foundClusters > ::gpuClustering::ALPAKA_ACCELERATOR_NAMESPACE::gMaxHit) {
-          ::gpuClustering::ALPAKA_ACCELERATOR_NAMESPACE::gMaxHit = foundClusters;
+        if (foundClusters > gMaxHit<TAcc>) {
+          gMaxHit<TAcc> = foundClusters;
           if (foundClusters > 8)
             printf("max hit %d in %d\n", foundClusters, thisModuleId);
         }
@@ -354,4 +353,4 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
+#endif  // plugin_SiPixelClusterizer_alpaka_gpuClustering_h

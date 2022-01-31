@@ -1,6 +1,8 @@
-#include "BrokenLineFitOnGPU.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "BrokenLineFitOnGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -11,10 +13,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_ASSERT_OFFLOAD(tuples_d);
 
     const auto blockSize = 64;
-    const auto numberOfBlocks = (maxNumberOfConcurrentFits_ + blockSize - 1) / blockSize;
-    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
-    const WorkDiv1D workDivQuadsPenta =
-        cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks / 4), Vec1D::all(blockSize));
+    const auto numberOfBlocks = cms::alpakatools::divide_up_by(maxNumberOfConcurrentFits_, blockSize);
+    const WorkDiv1D workDivTriplets = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks, blockSize);
+    const WorkDiv1D workDivQuadsPenta = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks / 4, blockSize);
 
     //  Fit internals
     auto hitsGPU_ = cms::alpakatools::make_device_buffer<double[]>(

@@ -7,15 +7,14 @@
 
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
-void go(const DevHost& host,
-        const ::ALPAKA_ACCELERATOR_NAMESPACE::Device& device,
-        ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
+void go(const DevHost& host, const Device& device, Queue& queue) {
   std::mt19937 eng;
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
@@ -74,7 +73,7 @@ void go(const DevHost& host,
     alpaka::memset(queue, h_d, 0);
 
     std::cout << "Calling fillManyFromVector" << std::endl;
-    fillManyFromVector(h_d.data(), nParts, v_d.data(), offsets_d.data(), offsets[10], 256, queue);
+    fillManyFromVector<Acc1D>(h_d.data(), nParts, v_d.data(), offsets_d.data(), offsets[10], 256, queue);
 
     alpaka::memcpy(queue, h, h_d);
     alpaka::wait(queue);
@@ -158,9 +157,8 @@ void go(const DevHost& host,
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   go<int16_t>(host, device, queue);
   go<int8_t>(host, device, queue);

@@ -3,16 +3,16 @@
 
 #include "AlpakaCore/AtomicPairCounter.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 struct update {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t i) {
       auto m = i % 11;
       m = m % 6 + 1;  // max 6, no 0
@@ -26,18 +26,18 @@ struct update {
 };
 
 struct finalize {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter const *dc, uint32_t *ind, uint32_t *cont, uint32_t n) const {
     assert(dc->get().m == n);
     ind[n] = dc->get().n;
   }
 };
 
 struct verify {
-  template <typename T_Acc>
+  template <typename TAcc>
   ALPAKA_FN_ACC void operator()(
-      const T_Acc &acc, AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) const {
+      const TAcc &acc, AtomicPairCounter const *dc, uint32_t const *ind, uint32_t const *cont, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t i) {
       assert(0 == ind[0]);
       assert(dc->get().m == n);
@@ -72,16 +72,16 @@ int main() {
   constexpr uint32_t NUM_VALUES = 10000;
 
   // Update
-  const Vec1D blocksPerGrid = 2000u;
-  const Vec1D threadsPerBlockOrElementsPerThread = 512u;
-  const WorkDiv1D &workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto blocksPerGrid = 2000u;
+  const auto threadsPerBlockOrElementsPerThread = 512u;
+  const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<Acc1D>(workDiv, update(), c_d.data(), n_d.data(), m_d.data(), NUM_VALUES));
 
   // Finalize
-  const Vec1D blocksPerGridFinalize = 1u;
-  const Vec1D threadsPerBlockOrElementsPerThreadFinalize = 1u;
-  const WorkDiv1D &workDivFinalize = make_workdiv(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
+  const auto blocksPerGridFinalize = 1u;
+  const auto threadsPerBlockOrElementsPerThreadFinalize = 1u;
+  const auto workDivFinalize = make_workdiv<Acc1D>(blocksPerGridFinalize, threadsPerBlockOrElementsPerThreadFinalize);
   alpaka::enqueue(
       queue,
       alpaka::createTaskKernel<Acc1D>(workDivFinalize, finalize(), c_d.data(), n_d.data(), m_d.data(), NUM_VALUES));

@@ -10,20 +10,20 @@
 #include <vector>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 int main(void) {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   constexpr unsigned int numElements = 256 * 2000;
   // these in reality are already on GPU
@@ -238,44 +238,42 @@ int main(void) {
 
 // Launch CUDA Kernels
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-    const int threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
+    const auto threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #else
     // NB: can be tuned.
-    const int threadsPerBlockOrElementsPerThread = 256;
+    const auto threadsPerBlockOrElementsPerThread = 256;
 #endif
 
     // COUNT MODULES
-    const int blocksPerGridCountModules =
-        (numElements + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;
-    const WorkDiv1D& workDivCountModules =
-        make_workdiv(Vec1D::all(blocksPerGridCountModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
+    const auto blocksPerGridCountModules = divide_up_by(numElements, threadsPerBlockOrElementsPerThread);
+    const auto workDivCountModules = make_workdiv<Acc1D>(blocksPerGridCountModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA countModules kernel launch with " << blocksPerGridCountModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
     alpaka::enqueue(
         queue,
-        alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+        alpaka::createTaskKernel<Acc1D>(
             workDivCountModules, gpuClustering::countModules(), d_id.data(), d_moduleStart.data(), d_clus.data(), n));
 
     // FIND CLUSTER
-    const WorkDiv1D& workDivMaxNumModules =
-        make_workdiv(Vec1D::all(gpuClustering::MaxNumModules), Vec1D::all(threadsPerBlockOrElementsPerThread));
+    const auto workDivMaxNumModules =
+        make_workdiv<Acc1D>(gpuClustering::MaxNumModules, threadsPerBlockOrElementsPerThread);
     std::cout << "CUDA findModules kernel launch with " << gpuClustering::MaxNumModules << " blocks of "
               << threadsPerBlockOrElementsPerThread << " threads (GPU) or elements (CPU). \n";
 
     alpaka::memset(queue, d_clusInModule, 0);
 
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
-                                                                                    gpuClustering::findClus(),
-                                                                                    d_id.data(),
-                                                                                    d_x.data(),
-                                                                                    d_y.data(),
-                                                                                    d_moduleStart.data(),
-                                                                                    d_clusInModule.data(),
-                                                                                    d_moduleId.data(),
-                                                                                    d_clus.data(),
-                                                                                    n));
+                    alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
+                                                    gpuClustering::findClus(),
+                                                    d_id.data(),
+                                                    d_x.data(),
+                                                    d_y.data(),
+                                                    d_moduleStart.data(),
+                                                    d_clusInModule.data(),
+                                                    d_moduleId.data(),
+                                                    d_clus.data(),
+                                                    n));
     alpaka::memcpy(queue, nModules, d_moduleStart, 1u);  // copy only the first element
 
     auto nclus = make_host_buffer<uint32_t[]>(gpuClustering::MaxNumModules);
@@ -299,15 +297,15 @@ int main(void) {
 
     // CLUSTER CHARGE CUT
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDivMaxNumModules,
-                                                                                    gpuClustering::clusterChargeCut(),
-                                                                                    d_id.data(),
-                                                                                    d_adc.data(),
-                                                                                    d_moduleStart.data(),
-                                                                                    d_clusInModule.data(),
-                                                                                    d_moduleId.data(),
-                                                                                    d_clus.data(),
-                                                                                    n));
+                    alpaka::createTaskKernel<Acc1D>(workDivMaxNumModules,
+                                                    gpuClustering::clusterChargeCut(),
+                                                    d_id.data(),
+                                                    d_adc.data(),
+                                                    d_moduleStart.data(),
+                                                    d_clusInModule.data(),
+                                                    d_moduleId.data(),
+                                                    d_clus.data(),
+                                                    n));
     alpaka::memcpy(queue, h_id, d_id, n);  // copy only the first n elements
     alpaka::memcpy(queue, h_clus, d_clus, n);
     alpaka::memcpy(queue, nclus, d_clusInModule);

@@ -1,9 +1,10 @@
-#ifndef AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
-#define AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
+#ifndef AlpakaDataFormats_alpaka_BeamSpotAlpaka_h
+#define AlpakaDataFormats_alpaka_BeamSpotAlpaka_h
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "DataFormats/BeamSpotPOD.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -34,4 +35,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // AlpakaDataFormats_BeamSpot_interface_BeamSpotAlpaka_h
+#endif  // AlpakaDataFormats_alpaka_BeamSpotAlpaka_h

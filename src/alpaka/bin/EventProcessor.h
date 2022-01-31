@@ -1,5 +1,5 @@
-#ifndef EventProcessor_h
-#define EventProcessor_h
+#ifndef bin_EventProcessor_h
+#define bin_EventProcessor_h
 
 #include <filesystem>
 #include <string>
@@ -38,4 +38,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // bin_EventProcessor_h

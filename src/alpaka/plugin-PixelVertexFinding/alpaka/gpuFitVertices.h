@@ -1,9 +1,8 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
-
-#include "AlpakaCore/alpakaKernelCommon.h"
+#ifndef plugin_PixelVertexFinding_alpaka_gpuFitVertices_h
+#define plugin_PixelVertexFinding_alpaka_gpuFitVertices_h
 
 #include "AlpakaCore/HistoContainer.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 #include "gpuVertexFinder.h"
 
@@ -11,9 +10,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace gpuVertexFinder {
 
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void fitVertices(
-        const T_Acc& acc,
+        const TAcc& acc,
         ZVertices* pdata,
         WorkSpace* pws,
         float chi2Max  // for outlier rejection
@@ -106,8 +105,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     struct fitVerticesKernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     ZVertices* pdata,
                                     WorkSpace* pws,
                                     float chi2Max  // for outlier rejection
@@ -120,4 +119,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuFitVertices_h

@@ -7,7 +7,8 @@
 #include <functional>
 #include <vector>
 
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "Framework/Event.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"

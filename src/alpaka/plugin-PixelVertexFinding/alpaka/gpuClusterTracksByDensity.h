@@ -1,11 +1,11 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
+#ifndef plugin_PixelVertexFinding_alpaka_gpuClusterTracksByDensity_h
+#define plugin_PixelVertexFinding_alpaka_gpuClusterTracksByDensity_h
 
 #include <algorithm>
 #include <cmath>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 #include "gpuVertexFinder.h"
 
@@ -18,9 +18,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     //
     // based on Rodrighez&Laio algo
     //
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void clusterTracksByDensity(
-        const T_Acc& acc,
+        const TAcc& acc,
         gpuVertexFinder::ZVertices* pdata,
         gpuVertexFinder::WorkSpace* pws,
         int minT,      // min number of neighbours to be "seed"
@@ -225,8 +225,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     struct clusterTracksByDensityKernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "seed"
@@ -242,4 +242,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksByDensity_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuClusterTracksByDensity_h

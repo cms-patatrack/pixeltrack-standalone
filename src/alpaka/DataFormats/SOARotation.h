@@ -1,5 +1,5 @@
-#ifndef DataFormats_GeometrySurface_SOARotation_h
-#define DataFormats_GeometrySurface_SOARotation_h
+#ifndef DataFormats_SOARotation_h
+#define DataFormats_SOARotation_h
 
 template <class T>
 class TkRotation;
@@ -137,4 +137,4 @@ private:
   SOARotation<T> rot;
 };
 
-#endif  // DataFormats_GeometrySurface_SOARotation_h
+#endif  // DataFormats_SOARotation_h

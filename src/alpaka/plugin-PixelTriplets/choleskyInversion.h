@@ -1,5 +1,5 @@
-#ifndef DataFormat_Math_choleskyInversion_h
-#define DataFormat_Math_choleskyInversion_h
+#ifndef plugin_PixelTriplets_choleskyInversion_h
+#define plugin_PixelTriplets_choleskyInversion_h
 
 #include <cmath>
 
@@ -346,4 +346,4 @@ namespace math {
   }  // namespace cholesky
 }  // namespace math
 
-#endif  // DataFormat_Math_choleskyInversion_h
+#endif  // plugin_PixelTriplets_choleskyInversion_h

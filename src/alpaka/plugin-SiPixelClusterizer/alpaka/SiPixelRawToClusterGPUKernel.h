@@ -1,17 +1,18 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
+#ifndef plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h
+#define plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
 #include <optional>
 #include <utility>
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigiErrorsAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigiErrorsAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -224,4 +225,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace pixelgpudetails
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
+#endif  // plugin_SiPixelClusterizer_alpaka_SiPixelRawToClusterGPUKernel_h

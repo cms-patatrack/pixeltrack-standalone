@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_FunctorTask_h
-#define FWCore_Concurrency_FunctorTask_h
+#ifndef Framework_FunctorTask_h
+#define Framework_FunctorTask_h
 // -*- C++ -*-
 //
 // Package:     Concurrency
@@ -51,4 +51,4 @@ namespace edm {
   }
 }  // namespace edm
 
-#endif
+#endif  // Framework_FunctorTask_h

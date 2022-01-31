@@ -1,11 +1,12 @@
-#ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
-#define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
+#ifndef AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h
+#define AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h
 
 #include <memory>
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/TrackingRecHit2DSoAView.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -210,4 +211,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
+#endif  // AlpakaDataFormats_alpaka_TrackingRecHit2DAlpaka_h

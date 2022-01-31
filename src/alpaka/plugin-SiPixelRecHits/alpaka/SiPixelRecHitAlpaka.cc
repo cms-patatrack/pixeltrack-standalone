@@ -2,18 +2,18 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaDataFormats/BeamSpotAlpaka.h"
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
-#include "CondFormats/PixelCPEFast.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
+#include "CondFormats/alpaka/PixelCPEFast.h"
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/EventSetup.h"
 #include "Framework/PluginFactory.h"
 
-#include "PixelRecHits.h"  // TODO : spit product from kernel
+#include "PixelRecHits.h"  // TODO : split product from kernel
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

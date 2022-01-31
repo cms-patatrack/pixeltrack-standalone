@@ -1,5 +1,5 @@
-#ifndef DataFormats_BeamSpot_interface_BeamSpotPOD_h
-#define DataFormats_BeamSpot_interface_BeamSpotPOD_h
+#ifndef DataFormats_BeamSpotPOD_h
+#define DataFormats_BeamSpotPOD_h
 
 // This struct is a transient-only, simplified representation of the beamspot
 // data used as the underlying type for data transfers and operations in
@@ -18,4 +18,4 @@ struct BeamSpotPOD {
   float betaStar;
 };
 
-#endif  // DataFormats_BeamSpot_interface_BeamSpotPOD_h
+#endif  // DataFormats_BeamSpotPOD_h

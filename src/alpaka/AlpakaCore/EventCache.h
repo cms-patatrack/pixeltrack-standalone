@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_EventCache_h
-#define HeterogeneousCore_AlpakaUtilities_EventCache_h
+#ifndef AlpakaCore_EventCache_h
+#define AlpakaCore_EventCache_h
 
 #include <memory>
 #include <utility>
@@ -83,4 +83,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_AlpakaUtilities_EventCache_h
+#endif  // AlpakaCore_EventCache_h

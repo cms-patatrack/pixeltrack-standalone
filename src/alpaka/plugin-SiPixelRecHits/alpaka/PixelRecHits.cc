@@ -11,8 +11,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   namespace {
     struct setHitsLayerStart {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     uint32_t const* __restrict__ hitsModuleStart,
                                     pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                     uint32_t* hitsLayerStart) const {
@@ -40,8 +40,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       const int threadsPerBlockOrElementsPerThread = 128;
       const int blocks = digis_d.nModules();  // active modules (with digis)
-      const WorkDiv1D& getHitsWorkDiv =
-          cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+      const auto getHitsWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlockOrElementsPerThread);
 
 #ifdef GPU_DEBUG
       std::cout << "launching getHits kernel for " << blocks << " blocks" << std::endl;
@@ -64,7 +63,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // assuming full warp of threads is better than a smaller number...
       if (nHits) {
-        const WorkDiv1D& oneBlockWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(32u));
+        const auto oneBlockWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1u, 32u);
         alpaka::enqueue(
             queue,
             alpaka::createTaskKernel<Acc1D>(
@@ -72,7 +71,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
 
       if (nHits) {
-        cms::alpakatools::fillManyFromVector(
+        cms::alpakatools::fillManyFromVector<Acc1D>(
             hits_d.phiBinner(), 10, hits_d.c_iphi(), hits_d.c_hitsLayerStart(), nHits, 256, queue);
       }
 

@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
-#define RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
+#ifndef plugin_PixelTriplets_alpaka_BrokenLine_h
+#define plugin_PixelTriplets_alpaka_BrokenLine_h
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     |cov(phi, d )|cov( d , d )|cov( k , d )| \n
     |cov(phi, k )|cov( d , k )|cov( k , k )|
   */
-    using karimaki_circle_fit = ::ALPAKA_ACCELERATOR_NAMESPACE::Rfit::circle_fit;
+    using karimaki_circle_fit = Rfit::circle_fit;
 
     /*!
     \brief data needed for the Broken Line fit procedure.
@@ -571,4 +571,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace BrokenLine
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
+#endif  // plugin_PixelTriplets_alpaka_BrokenLine_h

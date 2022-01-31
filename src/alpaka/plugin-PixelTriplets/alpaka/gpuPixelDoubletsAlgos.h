@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
+#ifndef plugin_PixelTriplets_alpaka_gpuPixelDoubletsAlgos_h
+#define plugin_PixelTriplets_alpaka_gpuPixelDoubletsAlgos_h
 
 #include <algorithm>
 #include <cmath>
@@ -8,8 +8,8 @@
 #include <limits>
 
 #include "AlpakaCore/VecArray.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "DataFormats/approx_atan2.h"
 
 #include "../CAConstants.h"
@@ -24,9 +24,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using CellNeighborsVector = CAConstants::CellNeighborsVector;
     using CellTracksVector = CAConstants::CellTracksVector;
 
-    template <typename T_Acc>
+    template <typename TAcc>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void doubletsFromHisto(
-        const T_Acc& acc,
+        const TAcc& acc,
         uint8_t const* __restrict__ layerPairs,
         uint32_t nPairs,
         GPUCACell* cells,
@@ -272,4 +272,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuPixelDoublets
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoupletsAlgos_h
+#endif  // plugin_PixelTriplets_alpaka_gpuPixelDoubletsAlgos_h

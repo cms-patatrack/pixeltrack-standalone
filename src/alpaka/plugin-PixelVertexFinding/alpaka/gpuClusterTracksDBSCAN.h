@@ -1,11 +1,11 @@
-#ifndef RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
-#define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
+#ifndef plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h
+#define plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h
 
 #include <algorithm>
 #include <cmath>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 #include "gpuVertexFinder.h"
 
@@ -16,8 +16,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // this algo does not really scale as it works in a single block...
     // enough for <10K tracks we have
     struct clusterTracksDBSCAN {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     ZVertices* pdata,
                                     WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "core"
@@ -242,4 +242,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksDBSCAN_h
+#endif  // plugin_PixelVertexFinding_alpaka_gpuClusterTracksDBSCAN_h

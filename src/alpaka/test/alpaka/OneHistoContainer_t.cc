@@ -5,14 +5,15 @@
 #include <random>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <int NBINS, int S, int DELTA>
 struct mykernel {
-  template <typename T_Acc, typename T>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* __restrict__ v, uint32_t N) const {
+  template <typename TAcc, typename T>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, T const* __restrict__ v, uint32_t N) const {
     assert(v);
     assert(N == 12000);
 
@@ -112,9 +113,7 @@ struct mykernel {
 };
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
-void go(const DevHost& host,
-        const ::ALPAKA_ACCELERATOR_NAMESPACE::Device& device,
-        ::ALPAKA_ACCELERATOR_NAMESPACE::Queue& queue) {
+void go(const DevHost& host, const Device& device, Queue& queue) {
   std::mt19937 eng;
 
   int rmin = std::numeric_limits<T>::min();
@@ -144,21 +143,18 @@ void go(const DevHost& host,
 
     alpaka::memcpy(queue, v_d, v);
 
-    const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D::all(256));
-    const Vec1D& blocksPerGrid(Vec1D::all(1));
-    const WorkDiv1D& workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
-    alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                        workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
+    const auto threadsPerBlockOrElementsPerThread = 256u;
+    const auto blocksPerGrid = 1u;
+    const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+    alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, mykernel<NBINS, S, DELTA>(), v_d.data(), N));
   }
   alpaka::wait(queue);
 }
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   go<int16_t>(host, device, queue);
   go<uint8_t, 128, 8, 4>(host, device, queue);

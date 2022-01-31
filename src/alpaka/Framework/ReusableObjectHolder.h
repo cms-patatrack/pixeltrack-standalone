@@ -1,5 +1,5 @@
-#ifndef FWCore_Utilities_ReusableObjectHolder_h
-#define FWCore_Utilities_ReusableObjectHolder_h
+#ifndef Framework_ReusableObjectHolder_h
+#define Framework_ReusableObjectHolder_h
 
 // -*- C++ -*-
 //
@@ -167,4 +167,4 @@ namespace edm {
 
 }  // namespace edm
 
-#endif /* end of include guard: FWCore_Utilities_ReusableObjectHolder_h */
+#endif  // Framework_ReusableObjectHolder_h

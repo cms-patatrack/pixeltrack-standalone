@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
-#define RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
+#ifndef plugin_PixelTriplets_alpaka_FitUtils_h
+#define plugin_PixelTriplets_alpaka_FitUtils_h
 
 #include <cmath>
 
@@ -250,4 +250,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTrackFitting_interface_FitUtils_h
+#endif  // plugin_PixelTriplets_alpaka_FitUtils_h

@@ -1,13 +1,15 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
-#define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
+#ifndef AlpakaCore_HistoContainer_h
+#define AlpakaCore_HistoContainer_h
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
-#include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaCore/AtomicPairCounter.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 #include "AlpakaCore/alpakastdAlgorithm.h"
 #include "AlpakaCore/prefixScan.h"
 
@@ -15,14 +17,14 @@ namespace cms {
   namespace alpakatools {
 
     struct countFromVector {
-      template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc, typename Histo, typename T>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     Histo *__restrict__ h,
                                     uint32_t nh,
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           ALPAKA_ASSERT_OFFLOAD((*off) > 0);
           int32_t ih = off - offsets - 1;
@@ -34,14 +36,14 @@ namespace cms {
     };
 
     struct fillFromVector {
-      template <typename T_Acc, typename Histo, typename T>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc, typename Histo, typename T>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     Histo *__restrict__ h,
                                     uint32_t nh,
                                     T const *__restrict__ v,
                                     uint32_t const *__restrict__ offsets) const {
         const uint32_t nt = offsets[nh];
-        cms::alpakatools::for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
+        for_each_element_in_grid_strided(acc, nt, [&](uint32_t i) {
           auto off = alpaka_std::upper_bound(offsets, offsets + nh + 1, i);
           ALPAKA_ASSERT_OFFLOAD((*off) > 0);
           int32_t ih = off - offsets - 1;
@@ -52,71 +54,57 @@ namespace cms {
       }
     };
 
-    template <typename Histo>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(
-        Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
-      auto histoOffView = cms::alpakatools::make_device_view(alpaka::getDev(queue), h->off, Histo::totbins());
+    template <typename TAcc, typename Histo, typename TQueue>
+    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
+                                                                                   TQueue &queue) {
+      auto histoOffView = make_device_view(alpaka::getDev(queue), h->off, Histo::totbins());
       alpaka::memset(queue, histoOffView, 0);
     }
 
-    template <typename Histo>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(
-        Histo *__restrict__ h, ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+    template <typename TAcc, typename Histo, typename TQueue>
+    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
+                                                                                       TQueue &queue) {
       uint32_t *poff = h->off;
 
       const int num_items = Histo::totbins();
 
-      const unsigned int nthreads = 1024;
-      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
-      const unsigned int nblocks = (num_items + nthreads - 1) / nthreads;
-      const Vec1D blocksPerGrid(nblocks);
+      const auto threadsPerBlockOrElementsPerThread = 1024u;
+      const auto blocksPerGrid = divide_up_by(num_items, threadsPerBlockOrElementsPerThread);
+      const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      alpaka::enqueue(
+          queue,
+          alpaka::createTaskKernel<TAcc>(workDiv, multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
 
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, cms::alpakatools::multiBlockPrefixScanFirstStep<uint32_t>(), poff, poff, num_items));
-
-      const WorkDiv1D &workDivWith1Block =
-          cms::alpakatools::make_workdiv(Vec1D::all(1), threadsPerBlockOrElementsPerThread);
-      alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDivWith1Block,
-                          cms::alpakatools::multiBlockPrefixScanSecondStep<uint32_t>(),
-                          poff,
-                          poff,
-                          num_items,
-                          nblocks));
+      const auto workDivWith1Block = make_workdiv<TAcc>(1, threadsPerBlockOrElementsPerThread);
+      alpaka::enqueue(
+          queue,
+          alpaka::createTaskKernel<TAcc>(
+              workDivWith1Block, multiBlockPrefixScanSecondStep<uint32_t>(), poff, poff, num_items, blocksPerGrid));
     }
 
-    template <typename Histo, typename T>
-    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void fillManyFromVector(
-        Histo *__restrict__ h,
-        uint32_t nh,
-        T const *v,
-        uint32_t const *offsets,
-        uint32_t totSize,
-        unsigned int nthreads,
-        ::ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
-      launchZero(h, queue);
+    template <typename TAcc, typename Histo, typename T, typename TQueue>
+    ALPAKA_FN_HOST ALPAKA_FN_INLINE __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
+                                                                                           uint32_t nh,
+                                                                                           T const *v,
+                                                                                           uint32_t const *offsets,
+                                                                                           uint32_t totSize,
+                                                                                           uint32_t nthreads,
+                                                                                           TQueue &queue) {
+      launchZero<TAcc>(h, queue);
 
-      const unsigned int nblocks = (totSize + nthreads - 1) / nthreads;
-      const Vec1D blocksPerGrid(nblocks);
-      const Vec1D threadsPerBlockOrElementsPerThread(nthreads);
-      const WorkDiv1D &workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+      const auto threadsPerBlockOrElementsPerThread = nthreads;
+      const auto blocksPerGrid = divide_up_by(totSize, nthreads);
+      const auto workDiv = make_workdiv<TAcc>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-      alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, countFromVector(), h, nh, v, offsets));
-      launchFinalize(h, queue);
+      alpaka::enqueue(queue, alpaka::createTaskKernel<TAcc>(workDiv, countFromVector(), h, nh, v, offsets));
+      launchFinalize<TAcc>(h, queue);
 
-      alpaka::enqueue(queue,
-                      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                          workDiv, fillFromVector(), h, nh, v, offsets));
+      alpaka::enqueue(queue, alpaka::createTaskKernel<TAcc>(workDiv, fillFromVector(), h, nh, v, offsets));
     }
 
     struct finalizeBulk {
-      template <typename T_Acc, typename Assoc>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) const {
+      template <typename TAcc, typename Assoc>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc, AtomicPairCounter const *apc, Assoc *__restrict__ assoc) const {
         assoc->bulkFinalizeFill(acc, *apc);
       }
     };
@@ -193,40 +181,40 @@ namespace cms {
           i = 0;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void add(const T_Acc &acc, CountersOnly const &co) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void add(const TAcc &acc, CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
           alpaka::atomicAdd(acc, off + i, co.off[i], alpaka::hierarchy::Blocks{});
         }
       }
 
-      template <typename T_Acc>
-      static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const T_Acc &acc, Counter &x) {
+      template <typename TAcc>
+      static ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t atomicIncrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicAdd(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
-      template <typename T_Acc>
-      static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const T_Acc &acc, Counter &x) {
+      template <typename TAcc>
+      static ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE uint32_t atomicDecrement(const TAcc &acc, Counter &x) {
         return alpaka::atomicSub(acc, &x, 1u, alpaka::hierarchy::Blocks{});
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void countDirect(const T_Acc &acc, T b) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void countDirect(const TAcc &acc, T b) {
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fillDirect(const T_Acc &acc, T b, index_type j) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fillDirect(const TAcc &acc, T b, index_type j) {
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         auto w = atomicDecrement(acc, off[b]);
         ALPAKA_ASSERT_OFFLOAD(w > 0);
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
+      template <typename TAcc>
       ALPAKA_FN_ACC ALPAKA_FN_INLINE int32_t
-      bulkFill(const T_Acc &acc, AtomicPairCounter &apc, index_type const *v, uint32_t n) {
+      bulkFill(const TAcc &acc, AtomicPairCounter &apc, index_type const *v, uint32_t n) {
         auto c = apc.add(acc, n);
         if (c.m >= nbins())
           return -int32_t(c.m);
@@ -236,13 +224,13 @@ namespace cms {
         return c.m;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalize(const T_Acc &acc, AtomicPairCounter const &apc) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalize(const TAcc &acc, AtomicPairCounter const &apc) {
         off[apc.get().m] = apc.get().n;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalizeFill(const T_Acc &acc, AtomicPairCounter const &apc) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void bulkFinalizeFill(const TAcc &acc, AtomicPairCounter const &apc) {
         auto m = apc.get().m;
         auto n = apc.get().n;
 
@@ -251,18 +239,18 @@ namespace cms {
           return;
         }
 
-        cms::alpakatools::for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
+        for_each_element_in_grid_strided(acc, totbins(), m, [&](uint32_t i) { off[i] = n; });
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const T_Acc &acc, T t) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const TAcc &acc, T t) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const T_Acc &acc, T t, index_type j) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const TAcc &acc, T t, index_type j) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         auto w = atomicDecrement(acc, off[b]);
@@ -270,8 +258,8 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const T_Acc &acc, T t, uint32_t nh) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void count(const TAcc &acc, T t, uint32_t nh) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         b += histOff(nh);
@@ -279,8 +267,8 @@ namespace cms {
         atomicIncrement(acc, off[b]);
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const T_Acc &acc, T t, index_type j, uint32_t nh) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void fill(const TAcc &acc, T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
         ALPAKA_ASSERT_OFFLOAD(b < nbins());
         b += histOff(nh);
@@ -290,8 +278,8 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      template <typename T_Acc>
-      ALPAKA_FN_ACC ALPAKA_FN_INLINE void finalize(const T_Acc &acc, Counter *ws = nullptr) {
+      template <typename TAcc>
+      ALPAKA_FN_ACC ALPAKA_FN_INLINE void finalize(const TAcc &acc, Counter *ws = nullptr) {
         ALPAKA_ASSERT_OFFLOAD(off[totbins() - 1] == 0);
         blockPrefixScan(acc, off, totbins(), ws);
         ALPAKA_ASSERT_OFFLOAD(off[totbins() - 1] == off[totbins() - 2]);
@@ -319,4 +307,4 @@ namespace cms {
   }  // namespace alpakatools
 }  // namespace cms
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
+#endif  // AlpakaCore_HistoContainer_h

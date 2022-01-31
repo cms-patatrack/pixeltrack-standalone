@@ -1,5 +1,5 @@
-#ifndef DataFormats_SiPixelDigi_interface_PixelErrors_h
-#define DataFormats_SiPixelDigi_interface_PixelErrors_h
+#ifndef DataFormats_PixelErrors_h
+#define DataFormats_PixelErrors_h
 
 #include <map>
 #include <vector>
@@ -18,4 +18,4 @@ struct PixelErrorCompact {
 
 using PixelFormatterErrors = std::map<uint32_t, std::vector<SiPixelRawDataError>>;
 
-#endif  // DataFormats_SiPixelDigi_interface_PixelErrors_h
+#endif  // DataFormats_PixelErrors_h

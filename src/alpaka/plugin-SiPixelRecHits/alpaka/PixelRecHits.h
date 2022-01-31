@@ -1,14 +1,11 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
+#ifndef plugin_SiPixelRecHits_alpaka_PixelRecHits_h
+#define plugin_SiPixelRecHits_alpaka_PixelRecHits_h
 
-#include <cstdint>
-
-#include "AlpakaCore/alpakaCommon.h"
-
-#include "AlpakaDataFormats/BeamSpotAlpaka.h"
-#include "AlpakaDataFormats/SiPixelClustersAlpaka.h"
-#include "AlpakaDataFormats/SiPixelDigisAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
+#include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -33,4 +30,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
+#endif  // plugin_SiPixelRecHits_alpaka_PixelRecHits_h

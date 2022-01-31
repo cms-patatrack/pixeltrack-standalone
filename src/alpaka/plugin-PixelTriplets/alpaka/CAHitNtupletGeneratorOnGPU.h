@@ -1,10 +1,11 @@
-#ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
-#define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
+#ifndef plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorOnGPU_h
+#define plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorOnGPU_h
 
 #include "AlpakaCore/SimpleVector.h"
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+//#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"
@@ -53,4 +54,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
+#endif  // plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorOnGPU_h

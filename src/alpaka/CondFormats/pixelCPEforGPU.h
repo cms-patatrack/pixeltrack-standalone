@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
-#define RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
+#ifndef CondFormats_pixelCPEforGPU_h
+#define CondFormats_pixelCPEforGPU_h
 
 #include <algorithm>
 #include <cassert>
@@ -7,12 +7,10 @@
 #include <cstdint>
 #include <iterator>
 
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "DataFormats/SOARotation.h"
 #include "Geometry/phase1PixelTopology.h"
-
-#include "AlpakaCore/alpakaCommon.h"
-//#include "CUDACore/cuda_cxx17.h"  // TO DO: include this??
 
 namespace pixelCPEforGPU {
 
@@ -345,4 +343,4 @@ namespace pixelCPEforGPU {
 
 }  // namespace pixelCPEforGPU
 
-#endif  // RecoLocalTracker_SiPixelRecHits_pixelCPEforGPU_h
+#endif  // CondFormats_pixelCPEforGPU_h

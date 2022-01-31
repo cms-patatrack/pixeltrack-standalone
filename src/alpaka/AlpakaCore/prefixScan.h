@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
-#define HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
+#ifndef AlpakaCore_prefixScan_h
+#define AlpakaCore_prefixScan_h
 
 #include <algorithm>
 #include <cstdint>
@@ -42,9 +42,9 @@ namespace cms {
 #endif  // defined ALPAKA_ACC_GPU_CUDA_ENABLED & ! defined ALPAKA_HOST_ONLY
 
     // limited to 32*32 elements
-    template <typename T_Acc, typename T>
+    template <typename TAcc, typename T>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void blockPrefixScan(
-        const T_Acc& acc, T const* ci, T* co, uint32_t size, T* ws = nullptr) {
+        const TAcc& acc, T const* ci, T* co, uint32_t size, T* ws = nullptr) {
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED && __CUDA_ARCH__
       uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
       uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
@@ -82,8 +82,8 @@ namespace cms {
 #endif
     }
 
-    template <typename T_Acc, typename T>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const T_Acc& acc,
+    template <typename TAcc, typename T>
+    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void blockPrefixScan(const TAcc& acc,
                                                              T* __restrict__ c,
                                                              uint32_t size,
                                                              T* __restrict__ ws = nullptr) {
@@ -126,8 +126,8 @@ namespace cms {
     // limited to 1024*1024 elements
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size) const {
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc, T const* ci, T* co, int32_t size) const {
         uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
         uint32_t const blockIdx(alpaka::getIdx<alpaka::Grid, alpaka::Blocks>(acc)[0u]);
@@ -147,8 +147,8 @@ namespace cms {
     // limited to 1024*1024 elements
     template <typename T>
     struct multiBlockPrefixScanSecondStep {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc, T const* ci, T* co, int32_t size, int32_t numBlocks) const {
         uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
         uint32_t const threadDimension(alpaka::getWorkDiv<alpaka::Thread, alpaka::Elems>(acc)[0u]);
         uint32_t const threadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
@@ -211,4 +211,4 @@ namespace alpaka {
   }  // namespace traits
 }  // namespace alpaka
 
-#endif  // HeterogeneousCore_AlpakaUtilities_interface_prefixScan_h
+#endif  // AlpakaCore_prefixScan_h

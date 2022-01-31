@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSoAView_h
-#define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSoAView_h
+#ifndef AlpakaDataFormats_TrackingRecHit2DSoAView_h
+#define AlpakaDataFormats_TrackingRecHit2DSoAView_h
 
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "AlpakaCore/HistoContainer.h"
@@ -116,4 +116,4 @@ private:
   uint32_t m_nHits;
 };
 
-#endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DSoAView_h
+#endif  // AlpakaDataFormats_TrackingRecHit2DSoAView_h

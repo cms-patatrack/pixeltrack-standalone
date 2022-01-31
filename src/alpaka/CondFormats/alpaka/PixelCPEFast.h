@@ -1,13 +1,12 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
-#define RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
+#ifndef CondFormats_alpaka_PixelCPEFast_h
+#define CondFormats_alpaka_PixelCPEFast_h
 
 #include <utility>
 
-#include "CondFormats/pixelCPEforGPU.h"
-
-#include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "CondFormats/pixelCPEforGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -100,4 +99,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
+#endif  // CondFormats_alpaka_PixelCPEFast_h

@@ -1,12 +1,12 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 #include "AlpakaCore/prefixScan.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 template <typename T>
 struct format_traits {
@@ -22,8 +22,8 @@ public:
 
 template <typename T>
 struct testPrefixScan {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, unsigned int size) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, unsigned int size) const {
     auto& ws = alpaka::declareSharedVar<T[32], __COUNTER__>(acc);
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
@@ -51,8 +51,8 @@ struct testPrefixScan {
  */
 template <typename T>
 struct testWarpPrefixScan {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t size) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t size) const {
     assert(size <= 32);
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
@@ -82,8 +82,8 @@ struct testWarpPrefixScan {
 };
 
 struct init {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t* v, uint32_t val, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t index) {
       v[index] = val;
 
@@ -94,8 +94,8 @@ struct init {
 };
 
 struct verify {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, uint32_t const* v, uint32_t n) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t const* v, uint32_t n) const {
     for_each_element_in_grid(acc, n, [&](uint32_t index) {
       assert(v[index] == index + 1);
 
@@ -116,14 +116,12 @@ int main() {
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
   std::cout << "warp level" << std::endl;
 
-  const Vec1D threadsPerBlockOrElementsPerThread1(Vec1D::all(32));
-  const Vec1D blocksPerGrid1(Vec1D::all(1));
-  const WorkDiv1D& workDivWarp = make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
+  const auto threadsPerBlockOrElementsPerThread = 32;
+  const auto blocksPerGrid = 1;
+  const auto workDivWarp = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivWarp, testWarpPrefixScan<int>(), 32));
-
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivWarp, testWarpPrefixScan<int>(), 16));
-
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivWarp, testWarpPrefixScan<int>(), 5));
 #endif
 
@@ -133,12 +131,11 @@ int main() {
   // Running kernel with 1 block, and bs threads per block or elements per thread.
   // NB: obviously for tests only, for perf would need to use bs = 1024 in GPU version.
   for (int bs = 32; bs <= 1024; bs += 32) {
-    const Vec1D threadsPerBlockOrElementsPerThread2(Vec1D::all(bs));
-    const Vec1D blocksPerGrid2(Vec1D::all(1));
-    const WorkDiv1D& workDivSingleBlock = make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
+    const auto blocksPerGrid2 = 1;
+    const auto workDivSingleBlock = make_workdiv<Acc1D>(blocksPerGrid2, bs);
 
-    std::cout << "blocks per grid: " << blocksPerGrid2
-              << ", threads per block or elements per thread: " << threadsPerBlockOrElementsPerThread2 << std::endl;
+    std::cout << "blocks per grid: " << blocksPerGrid2 << ", threads per block or elements per thread: " << bs
+              << std::endl;
 
     // Problem size
     for (int j = 1; j <= 1024; ++j) {
@@ -157,20 +154,15 @@ int main() {
     auto output1_d = make_device_buffer<uint32_t[]>(queue, num_items);
 
     const auto nThreadsInit = 256;  // NB: 1024 would be better
-    // Just kept here to be identical to CUDA test
-    const Vec1D threadsPerBlockOrElementsPerThread3(Vec1D::all(nThreadsInit));
-    const auto nBlocksInit = (num_items + nThreadsInit - 1) / nThreadsInit;
-    const Vec1D blocksPerGrid3(Vec1D::all(nBlocksInit));
-    const WorkDiv1D& workDivMultiBlockInit = make_workdiv(blocksPerGrid3, threadsPerBlockOrElementsPerThread3);
+    const auto nBlocksInit = divide_up_by(num_items, nThreadsInit);
+    const auto workDivMultiBlockInit = make_workdiv<Acc1D>(nBlocksInit, nThreadsInit);
 
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDivMultiBlockInit, init(), input_d.data(), 1, num_items));
 
     const auto nThreads = 1024;
-    const Vec1D threadsPerBlockOrElementsPerThread4(Vec1D::all(nThreads));
-    const auto nBlocks = (num_items + nThreads - 1) / nThreads;
-    const Vec1D blocksPerGrid4(Vec1D::all(nBlocks));
-    const WorkDiv1D& workDivMultiBlock = make_workdiv(blocksPerGrid4, threadsPerBlockOrElementsPerThread4);
+    const auto nBlocks = divide_up_by(num_items, nThreads);
+    const auto workDivMultiBlock = make_workdiv<Acc1D>(nBlocks, nThreads);
 
     std::cout << "launch multiBlockPrefixScan " << num_items << ' ' << nBlocks << std::endl;
     alpaka::enqueue(
@@ -178,9 +170,8 @@ int main() {
         alpaka::createTaskKernel<Acc1D>(
             workDivMultiBlock, multiBlockPrefixScanFirstStep<uint32_t>(), input_d.data(), output1_d.data(), num_items));
 
-    const Vec1D blocksPerGridSecondStep(Vec1D::all(1));
-    const WorkDiv1D& workDivMultiBlockSecondStep =
-        make_workdiv(blocksPerGridSecondStep, threadsPerBlockOrElementsPerThread4);
+    const auto blocksPerGridSecondStep = 1;
+    const auto workDivMultiBlockSecondStep = make_workdiv<Acc1D>(blocksPerGridSecondStep, nThreads);
     alpaka::enqueue(queue,
                     alpaka::createTaskKernel<Acc1D>(workDivMultiBlockSecondStep,
                                                     multiBlockPrefixScanSecondStep<uint32_t>(),

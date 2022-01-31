@@ -1,5 +1,5 @@
-#ifndef CUDADataFormatsTrackTrajectoryStateSOA_H
-#define CUDADataFormatsTrackTrajectoryStateSOA_H
+#ifndef AlpakaDataFormats_TrajectoryStateSoA_h
+#define AlpakaDataFormats_TrajectoryStateSoA_h
 
 #include <Eigen/Dense>
 #include "AlpakaCore/alpakaConfig.h"
@@ -57,4 +57,4 @@ struct TrajectoryStateSoA {
   }
 };
 
-#endif  // CUDADataFormatsTrackTrajectoryStateSOA_H
+#endif  // AlpakaDataFormats_TrajectoryStateSoA_h

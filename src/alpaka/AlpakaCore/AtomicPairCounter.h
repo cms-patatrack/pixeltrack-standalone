@@ -1,5 +1,5 @@
-#ifndef HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
-#define HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
+#ifndef AlpakaCore_AtomicPairCounter_h
+#define AlpakaCore_AtomicPairCounter_h
 
 #include <cstdint>
 
@@ -34,8 +34,8 @@ namespace cms::alpakatools {
     ALPAKA_FN_HOST_ACC Counters get() const { return counter.counters; }
 
     // increment n by 1 and m by i.  return previous value
-    template <typename T_Acc>
-    ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const T_Acc& acc, uint32_t i) {
+    template <typename TAcc>
+    ALPAKA_FN_ACC ALPAKA_FN_INLINE Counters add(const TAcc& acc, uint32_t i) {
       c_type c = i;
       c += incr;
 
@@ -50,4 +50,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCore_CUDAUtilities_interface_AtomicPairCounter_h
+#endif  // AlpakaCore_AtomicPairCounter_h

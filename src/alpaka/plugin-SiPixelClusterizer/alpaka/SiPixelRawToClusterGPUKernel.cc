@@ -21,6 +21,9 @@
 
 // CMSSW includes
 #include "AlpakaCore/prefixScan.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 // local includes
 #include "../gpuClusterChargeCut.h"
@@ -348,8 +351,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // Kernel to perform Raw to Digi conversion
     struct RawToDigi_kernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                     const SiPixelFedCablingMapGPU *cablingMap,
                                     const unsigned char *modToUnp,
                                     const uint32_t wordCounter,
@@ -479,8 +482,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 namespace pixelgpudetails {
 
   struct fillHitsModuleStart {
-    template <typename T_Acc>
-    ALPAKA_FN_ACC void operator()(const T_Acc &acc,
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   uint32_t const *__restrict__ cluStart,
                                   uint32_t *__restrict__ moduleStart) const {
       ALPAKA_ASSERT_OFFLOAD(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
@@ -573,10 +576,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
         const int threadsPerBlockOrElementsPerThread = 32;
 #endif
-        const uint32_t blocks =
-            (wordCounter + threadsPerBlockOrElementsPerThread - 1) / threadsPerBlockOrElementsPerThread;  // fill it all
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        // fill it all
+        const uint32_t blocks = cms::alpakatools::divide_up_by(wordCounter, threadsPerBlockOrElementsPerThread);
+        const auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlockOrElementsPerThread);
 
         ALPAKA_ASSERT_OFFLOAD(0 == wordCounter % 2);
         // wordCounter is the total no of words in each event to be trasfered on device
@@ -625,16 +627,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // clusterizer ...
         using namespace gpuClustering;
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
-        const int threadsPerBlockOrElementsPerThread = 256;
+        const auto threadsPerBlockOrElementsPerThread = 256;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
-        const int threadsPerBlockOrElementsPerThread = 32;
+        const auto threadsPerBlockOrElementsPerThread = 32;
 #endif
-        const int blocks =
-            (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlockOrElementsPerThread - 1) /
-            threadsPerBlockOrElementsPerThread;
-        const WorkDiv1D &workDiv =
-            cms::alpakatools::make_workdiv(Vec1D::all(blocks), Vec1D::all(threadsPerBlockOrElementsPerThread));
+        const auto blocks = cms::alpakatools::divide_up_by(std::max<int>(wordCounter, gpuClustering::MaxNumModules),
+                                                           threadsPerBlockOrElementsPerThread);
+        const auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocks, threadsPerBlockOrElementsPerThread);
 
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDiv,
@@ -667,8 +667,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
-        const WorkDiv1D &workDivMaxNumModules =
-            cms::alpakatools::make_workdiv(Vec1D::all(MaxNumModules), Vec1D::all(256));
+        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 256);
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.
@@ -711,9 +710,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // available in the rechit producer without additional points of
         // synchronization/ExternalWork
 
-        const WorkDiv1D &workDivOneBlock = cms::alpakatools::make_workdiv(Vec1D::all(1u), Vec1D::all(1024u));
-
         // MUST be ONE block
+        const auto workDivOneBlock = cms::alpakatools::make_workdiv<Acc1D>(1u, 1024u);
         alpaka::enqueue(queue,
                         alpaka::createTaskKernel<Acc1D>(workDivOneBlock,
                                                         ::pixelgpudetails::fillHitsModuleStart(),

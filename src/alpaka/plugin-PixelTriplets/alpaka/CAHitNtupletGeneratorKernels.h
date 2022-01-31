@@ -1,9 +1,10 @@
-#ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
-#define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
+#ifndef plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h
+#define plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h
 
 #include <algorithm>
 
-#include "AlpakaDataFormats/PixelTrackAlpaka.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 
 #include "GPUCACell.h"
 
@@ -191,8 +192,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           device_nCells_{cms::alpakatools::make_device_buffer<uint32_t>(queue)} {
       alpaka::memset(queue, counters_, 0);
       alpaka::memset(queue, device_nCells_, 0);
-      launchZero(device_tupleMultiplicity_.data(), queue);
-      launchZero(device_hitToTuple_.data(), queue);
+      cms::alpakatools::launchZero<Acc1D>(device_tupleMultiplicity_.data(), queue);
+      cms::alpakatools::launchZero<Acc1D>(device_hitToTuple_.data(), queue);
     }
 
     ~CAHitNtupletGeneratorKernels() = default;
@@ -252,4 +253,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
+#endif  // plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorKernels_h

@@ -1,14 +1,13 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
-#define RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
+#ifndef plugin_SiPixelClusterizer_alpaka_gpuCalibPixel_h
+#define plugin_SiPixelClusterizer_alpaka_gpuCalibPixel_h
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
+#include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuCalibPixel {
@@ -22,8 +21,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
     struct calibDigis {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     bool isRun2,
                                     uint16_t* id,
                                     uint16_t const* __restrict__ x,
@@ -73,4 +72,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuCalibPixel
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
+#endif  // plugin_SiPixelClusterizer_alpaka_gpuCalibPixel_h

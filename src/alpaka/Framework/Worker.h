@@ -1,5 +1,5 @@
-#ifndef Worker_h
-#define Worker_h
+#ifndef Framework_Worker_h
+#define Framework_Worker_h
 
 #include <atomic>
 #include <exception>
@@ -112,4 +112,4 @@ namespace edm {
     std::atomic<bool> workStarted_;
   };
 }  // namespace edm
-#endif
+#endif  // Framework_Worker_h

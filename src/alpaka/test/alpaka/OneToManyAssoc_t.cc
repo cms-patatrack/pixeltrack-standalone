@@ -7,13 +7,15 @@
 #include <random>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
 constexpr uint32_t MaxAssocs = 4 * MaxTk;
 
 using namespace cms::alpakatools;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 using Assoc = OneToManyAssoc<uint16_t, MaxElem, MaxAssocs>;
 using SmallAssoc = OneToManyAssoc<uint16_t, 128, MaxAssocs>;
@@ -21,8 +23,8 @@ using Multiplicity = OneToManyAssoc<uint16_t, 8, MaxTk>;
 using TK = std::array<uint16_t, 4>;
 
 struct countMultiLocal {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                 TK const* __restrict__ tk,
                                 Multiplicity* __restrict__ assoc,
                                 uint32_t n) const {
@@ -44,8 +46,8 @@ struct countMultiLocal {
 };
 
 struct countMulti {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                 TK const* __restrict__ tk,
                                 Multiplicity* __restrict__ assoc,
                                 uint32_t n) const {
@@ -54,16 +56,16 @@ struct countMulti {
 };
 
 struct verifyMulti {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) const {
     for_each_element_in_grid_strided(
         acc, Multiplicity::totbins(), [&](uint32_t i) { assert(m1->off[i] == m2->off[i]); });
   }
 };
 
 struct count {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                 TK const* __restrict__ tk,
                                 Assoc* __restrict__ assoc,
                                 uint32_t n) const {
@@ -82,8 +84,8 @@ struct count {
 };
 
 struct fill {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                 TK const* __restrict__ tk,
                                 Assoc* __restrict__ assoc,
                                 uint32_t n) const {
@@ -102,19 +104,16 @@ struct fill {
 };
 
 struct verify {
-  template <typename T_Acc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, Assoc* __restrict__ assoc) const {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, Assoc* __restrict__ assoc) const {
     assert(assoc->size() < Assoc::capacity());
   }
 };
 
 struct fillBulk {
-  template <typename T_Acc, typename Assoc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc,
-                                AtomicPairCounter* apc,
-                                TK const* __restrict__ tk,
-                                Assoc* __restrict__ assoc,
-                                uint32_t n) const {
+  template <typename TAcc, typename Assoc>
+  ALPAKA_FN_ACC void operator()(
+      const TAcc& acc, AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, uint32_t n) const {
     for_each_element_in_grid_strided(acc, n, [&](uint32_t k) {
       auto m = tk[k][3] < MaxElem ? 4 : 3;
       assoc->bulkFill(acc, *apc, &tk[k][0], m);
@@ -123,8 +122,8 @@ struct fillBulk {
 };
 
 struct verifyBulk {
-  template <typename T_Acc, typename Assoc>
-  ALPAKA_FN_ACC void operator()(const T_Acc& acc, Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) const {
+  template <typename TAcc, typename Assoc>
+  ALPAKA_FN_ACC void operator()(const TAcc& acc, Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) const {
     if (apc->get().m >= Assoc::nbins()) {
       printf("Overflow %d %d\n", apc->get().m, Assoc::nbins());
     }
@@ -134,9 +133,8 @@ struct verifyBulk {
 
 int main() {
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const ::ALPAKA_ACCELERATOR_NAMESPACE::Device device(
-      alpaka::getDevByIdx<::ALPAKA_ACCELERATOR_NAMESPACE::Platform>(0u));
-  ::ALPAKA_ACCELERATOR_NAMESPACE::Queue queue(device);
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  Queue queue(device);
 
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;
   std::cout << "OneToManyAssoc (small) " << sizeof(SmallAssoc) << ' ' << SmallAssoc::nbins() << ' '
@@ -188,27 +186,19 @@ int main() {
   auto a_d = make_device_buffer<Assoc>(queue);
   alpaka::memset(queue, a_d, 0);
 
-  const unsigned int nThreads = 256;
-  const Vec1D threadsPerBlockOrElementsPerThread(nThreads);
-  const unsigned int nBlocks4N = (4 * N + nThreads - 1) / nThreads;
-  const Vec1D blocksPerGrid4N(nBlocks4N);
-  const WorkDiv1D& workDiv4N = make_workdiv(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
+  const auto threadsPerBlockOrElementsPerThread = 256u;
+  const auto blocksPerGrid4N = divide_up_by(4 * N, threadsPerBlockOrElementsPerThread);
+  const auto workDiv4N = make_workdiv<Acc1D>(blocksPerGrid4N, threadsPerBlockOrElementsPerThread);
 
-  launchZero(a_d.data(), queue);
+  launchZero<Acc1D>(a_d.data(), queue);
 
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv4N, count(), v_d.data(), a_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv4N, count(), v_d.data(), a_d.data(), N));
 
-  launchFinalize(a_d.data(), queue);
+  launchFinalize<Acc1D>(a_d.data(), queue);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verify(), a_d.data()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(WorkDiv1D{1u, 1u, 1u}, verify(), a_d.data()));
 
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(workDiv4N, fill(), v_d.data(), a_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv4N, fill(), v_d.data(), a_d.data(), N));
 
   auto la = make_host_buffer<Assoc>();
   alpaka::memcpy(queue, la, a_d);
@@ -234,22 +224,14 @@ int main() {
   auto dc_d = make_device_buffer<AtomicPairCounter>(queue);
   alpaka::memset(queue, dc_d, 0);
 
-  const unsigned int nBlocks = (N + nThreads - 1) / nThreads;
-  const Vec1D blocksPerGrid(nBlocks);
-  const WorkDiv1D& workDiv = make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const auto blocksPerGrid = divide_up_by(N, threadsPerBlockOrElementsPerThread);
+  const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv, fillBulk(), dc_d.data(), v_d.data(), a_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, fillBulk(), dc_d.data(), v_d.data(), a_d.data(), N));
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv, finalizeBulk(), dc_d.data(), a_d.data()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, finalizeBulk(), dc_d.data(), a_d.data()));
 
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-          WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verifyBulk(), a_d.data(), dc_d.data()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(WorkDiv1D{1u, 1u, 1u}, verifyBulk(), a_d.data(), dc_d.data()));
 
   alpaka::memcpy(queue, la, a_d);
 
@@ -261,18 +243,12 @@ int main() {
   auto sa_d = make_device_buffer<SmallAssoc>(queue);
   alpaka::memset(queue, sa_d, 0);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv, fillBulk(), dc_d.data(), v_d.data(), sa_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, fillBulk(), dc_d.data(), v_d.data(), sa_d.data(), N));
+
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, finalizeBulk(), dc_d.data(), sa_d.data()));
 
   alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv, finalizeBulk(), dc_d.data(), sa_d.data()));
-
-  alpaka::enqueue(
-      queue,
-      alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-          WorkDiv1D{Vec1D::all(1u), Vec1D::all(1u), Vec1D::all(1u)}, verifyBulk(), sa_d.data(), dc_d.data()));
+                  alpaka::createTaskKernel<Acc1D>(WorkDiv1D{1u, 1u, 1u}, verifyBulk(), sa_d.data(), dc_d.data()));
 
   std::cout << "final counter value " << dc->get().n << ' ' << dc->get().m << std::endl;
 
@@ -297,31 +273,23 @@ int main() {
   auto m2_d = make_device_buffer<Multiplicity>(queue);
   alpaka::memset(queue, m2_d, 0);
 
-  launchZero(m1_d.data(), queue);
-  launchZero(m2_d.data(), queue);
+  launchZero<Acc1D>(m1_d.data(), queue);
+  launchZero<Acc1D>(m2_d.data(), queue);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv4N, countMulti(), v_d.data(), m1_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv4N, countMulti(), v_d.data(), m1_d.data(), N));
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDiv4N, countMultiLocal(), v_d.data(), m2_d.data(), N));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv4N, countMultiLocal(), v_d.data(), m2_d.data(), N));
 
-  const Vec1D blocksPerGridTotBins(1u);
-  const Vec1D threadsPerBlockOrElementsPerThreadTotBins(Multiplicity::totbins());
-  const WorkDiv1D& workDivTotBins = make_workdiv(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
+  const auto blocksPerGridTotBins = 1u;
+  const auto threadsPerBlockOrElementsPerThreadTotBins = Multiplicity::totbins();
+  const auto workDivTotBins = make_workdiv<Acc1D>(blocksPerGridTotBins, threadsPerBlockOrElementsPerThreadTotBins);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDivTotBins, verifyMulti(), m1_d.data(), m2_d.data()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivTotBins, verifyMulti(), m1_d.data(), m2_d.data()));
 
-  launchFinalize(m1_d.data(), queue);
-  launchFinalize(m2_d.data(), queue);
+  launchFinalize<Acc1D>(m1_d.data(), queue);
+  launchFinalize<Acc1D>(m2_d.data(), queue);
 
-  alpaka::enqueue(queue,
-                  alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
-                      workDivTotBins, verifyMulti(), m1_d.data(), m2_d.data()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDivTotBins, verifyMulti(), m1_d.data(), m2_d.data()));
 
   alpaka::wait(queue);
 

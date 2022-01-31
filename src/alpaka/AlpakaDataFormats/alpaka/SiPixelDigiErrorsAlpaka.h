@@ -1,12 +1,12 @@
-#ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
-#define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
+#ifndef AlpakaDataFormats_alpaka_SiPixelDigiErrorsAlpaka_h
+#define AlpakaDataFormats_alpaka_SiPixelDigiErrorsAlpaka_h
 
 #include <utility>
 
-#include "DataFormats/PixelErrors.h"
 #include "AlpakaCore/SimpleVector.h"
-
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "DataFormats/PixelErrors.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -54,4 +54,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif
+#endif  // AlpakaDataFormats_alpaka_SiPixelDigiErrorsAlpaka_h

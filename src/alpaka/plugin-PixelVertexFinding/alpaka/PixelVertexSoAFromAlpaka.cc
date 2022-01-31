@@ -4,9 +4,10 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "AlpakaDataFormats/ZVertexAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaDataFormats/ZVertexHost.h"
+#include "AlpakaDataFormats/alpaka/ZVertexAlpaka.h"
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/EventSetup.h"

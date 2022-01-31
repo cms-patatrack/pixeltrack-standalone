@@ -1,13 +1,8 @@
-#include <fstream>
-#include <ios>
-#include <iostream>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "CondFormats/PixelCPEFast.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "CondFormats/alpaka/PixelCPEFast.h"
 #include "Framework/ESPluginFactory.h"
 #include "Framework/ESProducer.h"
 #include "Framework/EventSetup.h"

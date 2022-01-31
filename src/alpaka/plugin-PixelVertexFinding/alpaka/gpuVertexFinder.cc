@@ -1,6 +1,8 @@
 //#include <iostream>
 
-#include "AlpakaCore/alpakaCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 #include "gpuVertexFinder.h"
 #include "gpuClusterTracksByDensity.h"
@@ -15,9 +17,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuVertexFinder {
 
     struct loadTracks {
-      template <typename T_Acc>
+      template <typename TAcc>
       ALPAKA_FN_ACC void operator()(
-          const T_Acc& acc, TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) const {
+          const TAcc& acc, TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) const {
         ALPAKA_ASSERT_OFFLOAD(ptracks);
         ALPAKA_ASSERT_OFFLOAD(soa);
         auto const& tracks = *ptracks;
@@ -55,8 +57,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
     struct vertexFinderOneKernel {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "seed"
@@ -77,8 +79,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     };
 #else
     struct vertexFinderKernel1 {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws,
                                     int minT,      // min number of neighbours to be "seed"
@@ -93,8 +95,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     };
 
     struct vertexFinderKernel2 {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     gpuVertexFinder::ZVertices* pdata,
                                     gpuVertexFinder::WorkSpace* pws) const {
         fitVertices(acc, pdata, pws, 5000.);
@@ -124,13 +126,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::memset(queue, nvIntermediateWorkspaceView, 0);
 
       const uint32_t blockSize = 128;
-      const uint32_t numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-      const WorkDiv1D loadTracksWorkDiv =
-          cms::alpakatools::make_workdiv(Vec1D::all(numberOfBlocks), Vec1D::all(blockSize));
+      const uint32_t numberOfBlocks = cms::alpakatools::divide_up_by(TkSoA::stride(), blockSize);
+      const auto loadTracksWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks, blockSize);
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
-      const WorkDiv1D finderSorterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1), Vec1D::all(1024 - 256));
-      const WorkDiv1D splitterFitterWorkDiv = cms::alpakatools::make_workdiv(Vec1D::all(1024), Vec1D::all(128));
+      const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1024 - 256);
+      const auto splitterFitterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1024, 128);
 
       if (oneKernel_) {
         // implemented only for density clustesrs

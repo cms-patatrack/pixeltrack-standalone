@@ -1,14 +1,15 @@
-#ifndef CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
-#define CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
+#ifndef CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h
+#define CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h
 
 #include <vector>
 
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
-#include "CondFormats/SiPixelGainForHLTonGPU.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
   class SiPixelGainCalibrationForHLTGPU {
   public:
     using DecodingStructure = SiPixelGainForHLTonGPU::DecodingStructure;
@@ -63,4 +64,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
+#endif  // CondFormats_alpaka_SiPixelGainCalibrationForHLTGPU_h

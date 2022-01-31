@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_SiPixelCluster_interface_gpuClusteringConstants_h
-#define CUDADataFormats_SiPixelCluster_interface_gpuClusteringConstants_h
+#ifndef AlpakaDataFormats_gpuClusteringConstants_h
+#define AlpakaDataFormats_gpuClusteringConstants_h
 
 #include <cstdint>
 
@@ -29,4 +29,4 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
-#endif  // CUDADataFormats_SiPixelCluster_interface_gpuClusteringConstants_h
+#endif  // AlpakaDataFormats_gpuClusteringConstants_h

@@ -1,5 +1,5 @@
-#ifndef AlpakaDataFormats_Common_Product_h
-#define AlpakaDataFormats_Common_Product_h
+#ifndef AlpakaCore_Product_h
+#define AlpakaCore_Product_h
 
 #include <memory>
 #include <utility>
@@ -63,4 +63,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // AlpakaDataFormats_Common_Product_h
+#endif  // AlpakaCore_Product_h

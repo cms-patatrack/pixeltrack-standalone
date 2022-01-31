@@ -1,5 +1,5 @@
-#ifndef DataFormats_SiPixelDigi_interface_SiPixelDigisSoA_h
-#define DataFormats_SiPixelDigi_interface_SiPixelDigisSoA_h
+#ifndef DataFormats_SiPixelDigisSoA_h
+#define DataFormats_SiPixelDigisSoA_h
 
 #include <cstdint>
 #include <cstdlib>
@@ -31,4 +31,4 @@ private:
   std::vector<int32_t> clus_;
 };
 
-#endif
+#endif  // DataFormats_SiPixelDigisSoA_h

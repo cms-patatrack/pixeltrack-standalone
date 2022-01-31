@@ -1,5 +1,5 @@
-#ifndef ErrorChecker_H
-#define ErrorChecker_H
+#ifndef plugin_SiPixelClusterizer_ErrorChecker_h
+#define plugin_SiPixelClusterizer_ErrorChecker_h
 /** \class ErrorChecker
  *
  *  
@@ -30,4 +30,4 @@ private:
   bool includeErrors;
 };
 
-#endif
+#endif  // plugin_SiPixelClusterizer_ErrorChecker_h

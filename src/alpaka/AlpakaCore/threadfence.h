@@ -1,18 +1,17 @@
-#ifndef HeterogeneousCoreCUDAUtilities_threadfence_h
-#define HeterogeneousCoreCUDAUtilities_threadfence_h
+#ifndef AlpakaCore_threadfence_h
+#define AlpakaCore_threadfence_h
 
 #include <type_traits>
 
-#include "AlpakaCore/alpakaCommon.h"
-#include "AlpakaCore/alpakaKernelCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 namespace cms::alpakatools {
 
   // device-wide memory fence
-  template <typename T_Acc>
-  ALPAKA_FN_ACC ALPAKA_FN_INLINE void threadfence(T_Acc const& acc) {
-    static_assert(std::is_same_v<T_Acc, void>,
-                  "cms::alpakatools::threadfence<T_Acc>(acc) has not been implemented for this Accelerator type.");
+  template <typename TAcc>
+  ALPAKA_FN_ACC ALPAKA_FN_INLINE void threadfence(TAcc const& acc) {
+    static_assert(std::is_same_v<TAcc, void>,
+                  "cms::alpakatools::threadfence<TAcc>(acc) has not been implemented for this Accelerator type.");
   }
 
 #if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
@@ -45,4 +44,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // HeterogeneousCoreCUDAUtilities_threadfence_h
+#endif  // AlpakaCore_threadfence_h

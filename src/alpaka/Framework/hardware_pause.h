@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_hardware_pause_h
-#define FWCore_Concurrency_hardware_pause_h
+#ifndef Framework_hardware_pause_h
+#define Framework_hardware_pause_h
 // -*- C++ -*-
 //
 // Package:     Concurrency
@@ -30,4 +30,4 @@
 #define hardware_pause() asm("pause")
 #endif
 
-#endif
+#endif  // Framework_hardware_pause_h

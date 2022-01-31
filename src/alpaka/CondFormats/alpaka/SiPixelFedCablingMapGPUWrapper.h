@@ -1,13 +1,12 @@
-#ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
-#define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
+#ifndef CondFormats_alpaka_SiPixelFedCablingMapGPUWrapper_h
+#define CondFormats_alpaka_SiPixelFedCablingMapGPUWrapper_h
 
 #include <utility>
 
-#include "CondFormats/SiPixelFedCablingMapGPU.h"
-
-#include "AlpakaCore/alpakaCommon.h"
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaMemoryHelper.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -83,4 +82,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
+#endif  // CondFormats_alpaka_SiPixelFedCablingMapGPUWrapper_h

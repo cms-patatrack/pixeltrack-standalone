@@ -1,5 +1,5 @@
-#ifndef RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
-#define RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
+#ifndef plugin_PixelTriplets_alpaka_RiemannFit_h
+#define plugin_PixelTriplets_alpaka_RiemannFit_h
 
 #include <algorithm>
 #include <cmath>
@@ -1008,4 +1008,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace Rfit
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
+#endif  // plugin_PixelTriplets_alpaka_RiemannFit_h

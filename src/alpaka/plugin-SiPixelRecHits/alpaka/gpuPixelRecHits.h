@@ -1,5 +1,5 @@
-#ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
-#define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
+#ifndef plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h
+#define plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h
 
 #include <algorithm>
 #include <cmath>
@@ -7,9 +7,9 @@
 #include <cstdio>
 #include <limits>
 
-#include "AlpakaCore/alpakaKernelCommon.h"
-#include "AlpakaDataFormats/BeamSpotAlpaka.h"
-#include "AlpakaDataFormats/TrackingRecHit2DAlpaka.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
+#include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 #include "DataFormats/approx_atan2.h"
 
@@ -18,8 +18,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuPixelRecHits {
 
     struct getHits {
-      template <typename T_Acc>
-      ALPAKA_FN_ACC void operator()(const T_Acc& acc,
+      template <typename TAcc>
+      ALPAKA_FN_ACC void operator()(const TAcc& acc,
                                     pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                                     BeamSpotPOD const* __restrict__ bs,
                                     SiPixelDigisAlpaka::DeviceConstView const digis,
@@ -234,4 +234,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuPixelRecHits
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelRecHits_h
+#endif  // plugin_SiPixelRecHits_alpaka_gpuPixelRecHits_h
