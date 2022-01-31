@@ -1,3 +1,4 @@
+#include <Eigen/Core>
 #include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
 #include <memory>

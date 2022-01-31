@@ -6,7 +6,8 @@
 #define DataStructures_SoACommon_h
 
 #include "boost/preprocessor.hpp"
-#include <Eigen/Core>
+#include <cstdint>
+#include <cassert>
 
 // CUDA attributes
 #ifdef __CUDACC__
@@ -240,6 +241,7 @@ namespace cms::soa {
 
   // Helper template managing the value within it column
   // TODO Create a const variant to avoid leaking mutable access.
+#ifdef EIGEN_WORLD_VERSION
   template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
   class SoAValue<SoAColumnType::eigen, C, ALIGNMENT, RESTRICT_QUALIFY> {
   public:
@@ -288,7 +290,12 @@ namespace cms::soa {
     CMapType cVal_;
     size_t stride_;
   };
-
+#else
+  template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
+  class SoAValue<SoAColumnType::eigen, C, ALIGNMENT, RESTRICT_QUALIFY> {
+    // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+  };
+#endif
   // Helper template managing the value within it column
   template <SoAColumnType COLUMN_TYPE,
             typename T,
@@ -333,6 +340,7 @@ namespace cms::soa {
     const T* col_;
   };
 
+#ifdef EIGEN_WORLD_VERSION
   // Helper template managing the value within it column
   // TODO Create a const variant to avoid leaking mutable access.
   template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
@@ -365,8 +373,15 @@ namespace cms::soa {
     CMapType cVal_;
     size_t stride_;
   };
+#else
+  template <class C, size_t ALIGNMENT, RestrictQualify RESTRICT_QUALIFY>
+  class SoAConstValue<SoAColumnType::eigen, C, ALIGNMENT, RESTRICT_QUALIFY> {
+    // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+  };
+#endif
 
   // Helper template to avoid commas in macro
+#ifdef EIGEN_WORLD_VERSION
   template <class C>
   struct EigenConstMapMaker {
     typedef Eigen::Map<const C, Eigen::AlignmentType::Unaligned, Eigen::InnerStride<Eigen::Dynamic>> Type;
@@ -383,7 +398,12 @@ namespace cms::soa {
     };
     static DataHolder withData(const typename C::Scalar* data) { return DataHolder(data); }
   };
-
+#else
+  template <class C>
+  struct EigenConstMapMaker {
+    // Eigen/Core should be pre-included before the SoA headers to enable support for Eigen columns.
+  };
+#endif
   // Helper function to compute aligned size
   inline size_t alignSize(size_t size, size_t alignment = 128) {
     if (size)
