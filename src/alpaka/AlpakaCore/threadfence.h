@@ -1,16 +1,20 @@
 #ifndef AlpakaCore_threadfence_h
 #define AlpakaCore_threadfence_h
 
-#include <type_traits>
+#include <atomic>
+
+#include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/alpakaConfig.h"
+
+// FIXME replace this with alpaka::mem_fence
 
 namespace cms::alpakatools {
 
   // device-wide memory fence
   template <typename TAcc>
   ALPAKA_FN_ACC ALPAKA_FN_INLINE void threadfence(TAcc const& acc) {
-    static_assert(std::is_same_v<TAcc, void>,
+    static_assert(alpaka::meta::DependentFalseType<TAcc>::value,
                   "cms::alpakatools::threadfence<TAcc>(acc) has not been implemented for this Accelerator type.");
   }
 
