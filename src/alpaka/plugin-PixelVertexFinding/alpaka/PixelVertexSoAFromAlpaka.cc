@@ -45,7 +45,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::ScopedContextAcquire<Queue> ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
 
-    soa_ = cms::alpakatools::make_host_buffer<ZVertexSoA>();
+    soa_ = cms::alpakatools::make_host_buffer<ZVertexSoA>(ctx.stream());
     alpaka::memcpy(ctx.stream(), soa_, inputData);
   }
 

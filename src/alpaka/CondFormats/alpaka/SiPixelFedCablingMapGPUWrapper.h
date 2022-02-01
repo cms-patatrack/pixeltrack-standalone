@@ -58,9 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       GPUData() = delete;
       GPUData(Queue const& queue)
-          : cablingMapDevice{cms::alpakatools::make_device_buffer<SiPixelFedCablingMapGPU>(queue)} {
-        alpaka::prepareForAsyncCopy(cablingMapDevice);
-      };
+          : cablingMapDevice{cms::alpakatools::make_device_buffer<SiPixelFedCablingMapGPU>(queue)} {};
       ~GPUData() = default;
 
       cms::alpakatools::device_buffer<Device, SiPixelFedCablingMapGPU> cablingMapDevice;  // pointer to struct in GPU

@@ -145,7 +145,7 @@ int main() {
 
   constexpr uint32_t N = 4000;
 
-  auto tr = make_host_buffer<std::array<uint16_t, 4>[]>(N);
+  auto tr = make_host_buffer<std::array<uint16_t, 4>[]>(queue, N);
   // fill with "index" to element
   long long ave = 0;
   int imax = 0;
@@ -200,7 +200,7 @@ int main() {
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv4N, fill(), v_d.data(), a_d.data(), N));
 
-  auto la = make_host_buffer<Assoc>();
+  auto la = make_host_buffer<Assoc>(queue);
   alpaka::memcpy(queue, la, a_d);
   alpaka::wait(queue);
 
@@ -235,7 +235,7 @@ int main() {
 
   alpaka::memcpy(queue, la, a_d);
 
-  auto dc = make_host_buffer<AtomicPairCounter>();
+  auto dc = make_host_buffer<AtomicPairCounter>(queue);
   alpaka::memcpy(queue, dc, dc_d);
   alpaka::wait(queue);
 

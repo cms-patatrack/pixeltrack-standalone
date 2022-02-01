@@ -90,7 +90,7 @@ int main() {
   alpaka::enqueue(queue,
                   alpaka::createTaskKernel<Acc1D>(workDiv, verify(), c_d.data(), n_d.data(), m_d.data(), NUM_VALUES));
 
-  auto c_h = make_host_buffer<AtomicPairCounter>();
+  auto c_h = make_host_buffer<AtomicPairCounter>(queue);
   alpaka::memcpy(queue, c_h, c_d);
   alpaka::wait(queue);
 

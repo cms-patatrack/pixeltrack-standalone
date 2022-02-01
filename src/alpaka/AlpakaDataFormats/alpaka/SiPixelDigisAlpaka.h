@@ -59,7 +59,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     uint32_t const *c_rawIdArr() const { return rawIdArr_d.data(); }
 
     auto adcToHostAsync(Queue &queue) const {
-      auto ret = cms::alpakatools::make_host_buffer<uint16_t[]>(nDigis());
+      auto ret = cms::alpakatools::make_host_buffer<uint16_t[]>(queue, nDigis());
       alpaka::memcpy(queue, ret, adc_d, nDigis());
       return ret;
     }

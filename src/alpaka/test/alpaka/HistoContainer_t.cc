@@ -19,7 +19,7 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
   constexpr unsigned int N = 12000;
-  auto v = make_host_buffer<T[]>(N);
+  auto v = make_host_buffer<T[]>(queue, N);
   auto v_d = make_device_buffer<T[]>(queue, N);
   alpaka::memcpy(queue, v_d, v);
 
@@ -31,10 +31,10 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  auto offsets = make_host_buffer<uint32_t[]>(nParts + 1);
+  auto offsets = make_host_buffer<uint32_t[]>(queue, nParts + 1);
   auto offsets_d = make_device_buffer<uint32_t[]>(queue, nParts + 1);
 
-  auto h = make_host_buffer<Hist>();
+  auto h = make_host_buffer<Hist>(queue);
   auto h_d = make_device_buffer<Hist>(queue);
 
   for (int it = 0; it < 5; ++it) {
