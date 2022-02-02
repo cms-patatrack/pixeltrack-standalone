@@ -56,38 +56,36 @@
  *
  */
 
-#define _DECLARE_SOA_DUMP_INFO_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                       \
-  _SWITCH_ON_TYPE(                                                                                                    \
-      VALUE_TYPE, /* Dump scalar */                                                                                   \
-      std::cout << " Scalar " BOOST_PP_STRINGIZE(NAME) "_ at offset " << offset << " has size " << sizeof(CPP_TYPE) << " and padding "                       \
-                               << ((sizeof(CPP_TYPE) - 1) / byteAlignment + 1) * byteAlignment - sizeof(CPP_TYPE)     \
-                               << std::endl;                                                                          \
-          offset += ((sizeof(CPP_TYPE) - 1) / byteAlignment + 1) * byteAlignment;                                     \
-          , /* Dump column */                                                                                         \
-          std::cout                                                                                                   \
-                << " Column " BOOST_PP_STRINGIZE(NAME) "_ at offset " << offset << " has size " << sizeof(CPP_TYPE) * nElements                 \
-                                            << " and padding "                                                        \
-                                            << (((nElements * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) *           \
-                                                       byteAlignment -                                                \
-                                                   (sizeof(CPP_TYPE) * nElements)                                     \
-                                            << std::endl;                                                             \
-              offset += (((nElements * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment;                   \
-              , /* Dump Eigen column */                                                                               \
-              std::cout                                                                                               \
-                << " Eigen value " BOOST_PP_STRINGIZE(NAME) "_ at offset " << offset << " has dimension (" << CPP_TYPE::RowsAtCompileTime << " x "   \
-                                            << CPP_TYPE::ColsAtCompileTime                                            \
-                                            << ")"                                                                    \
-                                            << " and per column size "                                                \
-                                            << sizeof(CPP_TYPE::Scalar) * nElements                                   \
-                                            << " and padding "                                                        \
-                                            << (((nElements * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) *   \
-                                                       byteAlignment -                                                \
-                                                   (sizeof(CPP_TYPE::Scalar) * nElements)                             \
-                                            << std::endl;                                                             \
-                       offset += (((nElements * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) * byteAlignment * \
+// clang-format off
+#define _DECLARE_SOA_STREAM_INFO_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                         \
+  _SWITCH_ON_TYPE(                                                                                                        \
+      VALUE_TYPE,                                                                                                         \
+      /* Dump scalar */                                                                                                   \
+      os << " Scalar " BOOST_PP_STRINGIZE(NAME) " at offset " << offset << " has size " << sizeof(CPP_TYPE)               \
+         << " and padding " << ((sizeof(CPP_TYPE) - 1) / byteAlignment + 1) * byteAlignment - sizeof(CPP_TYPE)            \
+         << std::endl;                                                                                                    \
+      offset += ((sizeof(CPP_TYPE) - 1) / byteAlignment + 1) * byteAlignment;                                             \
+      , /* Dump column */                                                                                                 \
+      os << " Column " BOOST_PP_STRINGIZE(NAME) " at offset " << offset << " has size " << sizeof(CPP_TYPE) * nElements_  \
+         << " and padding "                                                                                               \
+         << (((nElements_ * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment - (sizeof(CPP_TYPE) * nElements_) \
+         << std::endl;                                                                                                    \
+      offset += (((nElements_ * sizeof(CPP_TYPE) - 1) / byteAlignment) + 1) * byteAlignment;                              \
+      , /* Dump Eigen column */                                                                                           \
+      os << " Eigen value " BOOST_PP_STRINGIZE(NAME) " at offset " << offset << " has dimension ("                        \
+         << CPP_TYPE::RowsAtCompileTime << " x " << CPP_TYPE::ColsAtCompileTime                                           \
+         << ")"                                                                                                           \
+         << " and per column size "                                                                                       \
+         << sizeof(CPP_TYPE::Scalar) * nElements_                                                                         \
+         << " and padding "                                                                                               \
+         << (((nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) * byteAlignment -                         \
+                (sizeof(CPP_TYPE::Scalar) * nElements_)                                                                   \
+         << std::endl;                                                                                                    \
+      offset += (((nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / byteAlignment) + 1) * byteAlignment *                     \
                                  CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;)
+// clang-format on
 
-#define _DECLARE_SOA_DUMP_INFO(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_DUMP_INFO_IMPL TYPE_NAME)
+#define _DECLARE_SOA_STREAM_INFO(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_STREAM_INFO_IMPL TYPE_NAME)
 
 /**
  * SoAMetadata member computing column pitch
@@ -254,7 +252,7 @@
 #define GENERATE_SOA_LAYOUT(CLASS, ...)                                                                                                   \
   template <size_t ALIGNMENT = cms::soa::CacheLineSize::defaultSize,                                                                      \
             cms::soa::AlignmentEnforcement ALIGNMENT_ENFORCEMENT = cms::soa::AlignmentEnforcement::Relaxed>                               \
-  struct CLASS {                                                                                                                          \
+  struct CLASS: public cms::soa::BaseLayout {                                                                                             \
     /* these could be moved to an external type trait to free up the symbol names */                                                      \
     using self_type = CLASS;                                                                                                              \
     typedef cms::soa::AlignmentEnforcement AlignmentEnforcement;                                                                          \
@@ -275,18 +273,18 @@
     template <cms::soa::SoAColumnType COLUMN_TYPE, class C>                                                                               \
     using SoAConstValueWithConf = cms::soa::SoAConstValue<COLUMN_TYPE, C, conditionalAlignment>;                                          \
                                                                                                                                           \
-    template <class C>                                                                                                                    \
     /* dump the SoA internal structure */                                                                                                 \
     SOA_HOST_ONLY                                                                                                                         \
-    static void dump(size_t nElements) {                                                                                                  \
-      std::cout << #CLASS "(" << nElements << ", " << ALIGNMENT << "): " << std::endl;                                                    \
-      std::cout << "  sizeof(" #CLASS "): " << sizeof(CLASS) << std::endl;                                                                \
+    void toStream(std::ostream & os) const {                                                                                              \
+      os << #CLASS "(" << nElements_ << " elements, byte alignement= " << byteAlignment << ", @"<< mem_ <<"): " << std::endl;             \
+      os << "  sizeof(" #CLASS "): " << sizeof(CLASS) << std::endl;                                                                       \
       size_t offset = 0;                                                                                                                  \
-      _ITERATE_ON_ALL(_DECLARE_SOA_DUMP_INFO, ~, __VA_ARGS__)                                                                             \
-      std::cout << "Final offset = " << offset << " computeDataSize(...): " << computeDataSize(nElements)                                 \
-                << std::endl;                                                                                                             \
-      std::cout << std::endl;                                                                                                             \
+      _ITERATE_ON_ALL(_DECLARE_SOA_STREAM_INFO, ~, __VA_ARGS__)                                                                           \
+      os << "Final offset = " << offset << " computeDataSize(...): " << computeDataSize(nElements_)                                       \
+              << std::endl;                                                                                                               \
+      os << std::endl;                                                                                                                    \
     }                                                                                                                                     \
+                                                                                                                                          \
     /* Helper function used by caller to externally allocate the storage */                                                               \
     static size_t computeDataSize(size_t nElements) {                                                                                     \
       size_t ret = 0;                                                                                                                     \

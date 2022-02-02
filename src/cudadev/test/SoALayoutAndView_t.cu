@@ -166,4 +166,7 @@ int main() {
     assert(false);
   } catch (const std::out_of_range &) {
   }
+
+  // Print out the layout
+  std::cout << soa1 << std::endl;
 }
