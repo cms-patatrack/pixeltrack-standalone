@@ -11,7 +11,9 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
-#include "AlpakaCore/alpakaConfigCommon.h"
+#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/backend.h"
+#include "AlpakaCore/initialise.h"
 #include "EventProcessor.h"
 
 namespace {
@@ -21,9 +23,15 @@ namespace {
         << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer]\n\n"
         << "Options\n"
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
         << " --serial            Use CPU Serial backend\n"
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
         << " --tbb               Use CPU TBB backend\n"
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         << " --cuda              Use CUDA backend\n"
+#endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -34,8 +42,6 @@ namespace {
         << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
   }
-
-  enum class Backend { SERIAL, TBB, CUDA };
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -52,12 +58,18 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -99,6 +111,23 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  // Initialiase the selected backends
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+  if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
+  }
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+  if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_tbb_async::Platform>();
+  }
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+  if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
+  }
+#endif
+
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
@@ -111,9 +140,15 @@ int main(int argc, char** argv) {
       }
     };
 
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
     addModules("alpaka_serial_sync::", Backend::SERIAL);
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
     addModules("alpaka_tbb_async::", Backend::TBB);
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     addModules("alpaka_cuda_async::", Backend::CUDA);
+#endif
     esmodules = {"IntESProducer"};
     if (transfer) {
       // add modules for transfer

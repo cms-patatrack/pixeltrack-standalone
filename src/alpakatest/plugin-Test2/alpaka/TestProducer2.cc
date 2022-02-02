@@ -26,10 +26,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
-    edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
+    edm::EDGetTokenT<cms::alpakatools::device_buffer<Device, float[]>> getToken_;
   };
 
-  TestProducer2::TestProducer2(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {
+  TestProducer2::TestProducer2(edm::ProductRegistry& reg)
+      : getToken_(reg.consumes<cms::alpakatools::device_buffer<Device, float[]>>()) {
     nevents = 0;
   }
 

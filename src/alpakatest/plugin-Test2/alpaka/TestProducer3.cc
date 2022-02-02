@@ -7,6 +7,7 @@
 #include "Framework/PluginFactory.h"
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class TestProducer3 : public edm::EDProducer {
@@ -16,10 +17,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
-    edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
+    edm::EDGetTokenT<cms::alpakatools::device_buffer<Device, float[]>> getToken_;
   };
 
-  TestProducer3::TestProducer3(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {}
+  TestProducer3::TestProducer3(edm::ProductRegistry& reg)
+      : getToken_(reg.consumes<cms::alpakatools::device_buffer<Device, float[]>>()) {}
 
   void TestProducer3::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     const auto& result = event.get(getToken_);

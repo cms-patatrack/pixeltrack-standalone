@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 namespace {
   struct Print {
@@ -18,15 +18,15 @@ int main() {
   std::cout << "World" << std::endl;
 
   using namespace ALPAKA_ACCELERATOR_NAMESPACE;
-  const DevAcc1 device(alpaka::getDevByIdx<PltfAcc1>(0u));
+  const Device device(alpaka::getDevByIdx<Platform>(0u));
   Queue queue(device);
 
   // Prepare 1D workDiv
-  const Vec1& blocksPerGrid(Vec1::all(1u));
-  const Vec1& threadsPerBlockOrElementsPerThread(Vec1(4u));
-  const WorkDiv1& workDiv = cms::alpakatools::make_workdiv(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  const Vec1D& blocksPerGrid(Vec1D::all(1u));
+  const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D(4u));
+  const WorkDiv1D& workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
-  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1>(workDiv, Print()));
+  alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, Print()));
   alpaka::wait(queue);
   return 0;
 }

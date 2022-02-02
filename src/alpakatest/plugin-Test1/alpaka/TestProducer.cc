@@ -19,11 +19,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
     edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-    edm::EDPutTokenT<AlpakaAccBuf2<float>> putToken_;
+    edm::EDPutTokenT<cms::alpakatools::device_buffer<Device, float[]>> putToken_;
   };
 
   TestProducer::TestProducer(edm::ProductRegistry& reg)
-      : rawGetToken_(reg.consumes<FEDRawDataCollection>()), putToken_(reg.produces<AlpakaAccBuf2<float>>()) {}
+      : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
+        putToken_(reg.produces<cms::alpakatools::device_buffer<Device, float[]>>()) {}
 
   void TestProducer::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     auto const value = event.get(rawGetToken_).FEDData(1200).size();

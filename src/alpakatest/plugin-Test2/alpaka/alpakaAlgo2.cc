@@ -1,5 +1,6 @@
 #include "alpakaAlgo2.h"
-#include "AlpakaCore/alpakaWorkDivHelper.h"
+#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/alpakaWorkDiv.h"
 
 namespace {
   constexpr unsigned int NUM_VALUES = 1000;
@@ -13,8 +14,7 @@ namespace {
                                   unsigned int numElements) const {
       // Global element index in 1D grid.
       // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-      cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(
-          acc, numElements, [&](uint32_t i) { c[i] = a[i] + b[i]; });
+      cms::alpakatools::for_each_element_in_grid(acc, numElements, [&](uint32_t i) { c[i] = a[i] + b[i]; });
     }
   };
 
@@ -27,11 +27,13 @@ namespace {
                                   unsigned int numElements) const {
       // Global element index in 2D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_index_range_in_grid_truncated(acc, Vec2::all(numElements));
+      const auto [firstElementIdxGlobalCol, endElementIdxGlobalCol] =
+          cms::alpakatools::element_index_range_in_grid_truncated(acc, numElements, 0, 0);
+      const auto [firstElementIdxGlobalRow, endElementIdxGlobalRow] =
+          cms::alpakatools::element_index_range_in_grid_truncated(acc, numElements, 0, 1);
 
-      for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
-        for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
+      for (uint32_t col = firstElementIdxGlobalCol; col < endElementIdxGlobalCol; ++col) {
+        for (uint32_t row = firstElementIdxGlobalRow; row < endElementIdxGlobalRow; ++row) {
           c[row + numElements * col] = a[row] * b[col];
         }
       }
@@ -47,11 +49,13 @@ namespace {
                                   unsigned int numElements) const {
       // Global element index in 2D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-      const auto& [firstElementIdxGlobal, endElementIdxGlobal] =
-          cms::alpakatools::element_index_range_in_grid_truncated(acc, Vec2::all(numElements));
+      const auto [firstElementIdxGlobalCol, endElementIdxGlobalCol] =
+          cms::alpakatools::element_index_range_in_grid_truncated(acc, numElements, 0, 0);
+      const auto [firstElementIdxGlobalRow, endElementIdxGlobalRow] =
+          cms::alpakatools::element_index_range_in_grid_truncated(acc, numElements, 0, 1);
 
-      for (uint32_t col = firstElementIdxGlobal[0u]; col < endElementIdxGlobal[0u]; ++col) {
-        for (uint32_t row = firstElementIdxGlobal[1u]; row < endElementIdxGlobal[1u]; ++row) {
+      for (uint32_t col = firstElementIdxGlobalCol; col < endElementIdxGlobalCol; ++col) {
+        for (uint32_t row = firstElementIdxGlobalRow; row < endElementIdxGlobalRow; ++row) {
           T_Data tmp = 0;
           for (unsigned int i = 0; i < numElements; ++i) {
             tmp += a[row + numElements * i] * b[i + numElements * col];
@@ -71,7 +75,7 @@ namespace {
                                   unsigned int numElements) const {
       // Global element index in 1D grid.
       // NB: On GPU, threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-      cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t row) {
+      cms::alpakatools::for_each_element_in_grid(acc, numElements, [&](uint32_t row) {
         T_Data tmp = 0;
         for (unsigned int i = 0; i < numElements; ++i) {
           tmp += a[row * numElements + i] * b[i];
@@ -93,7 +97,7 @@ namespace {
       ALPAKA_FN_ACC void operator()(const T_Acc& acc, const T_Data* result, unsigned int numElements) const {
         // Global element index in 1D grid.
         // NB: On GPU, i = threadIndexGlobal = firstElementIdxGlobal = endElementIdxGlobal.
-        cms::alpakatools::for_each_element_in_thread_1D_index_in_grid(acc, numElements, [&](uint32_t i) {
+        cms::alpakatools::for_each_element_in_grid(acc, numElements, [&](uint32_t i) {
           // theoreticalResult = i+i^2 = i*(i+1)
           if (result[i] != i * (i + 1)) {
             printf("Wrong vectorAdd results, i = %u, c[i] = %f.\n", i, result[i]);
@@ -197,90 +201,69 @@ namespace {
 }  // namespace
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  AlpakaAccBuf2<float> alpakaAlgo2() {
-    const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-    const DevAcc2 device(alpaka::getDevByIdx<PltfAcc2>(0u));
-    const Vec1 size(NUM_VALUES);
+  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo2() {
+    const auto& device = cms::alpakatools::devices<Platform>[0];
     Queue queue(device);
 
     // Host data
-    auto h_a_buf = alpaka::allocBuf<float, Idx>(host, size);
-    auto h_b_buf = alpaka::allocBuf<float, Idx>(host, size);
-    auto h_a = alpaka::getPtrNative(h_a_buf);
-    auto h_b = alpaka::getPtrNative(h_b_buf);
+    auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
+    auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
+    auto h_a = h_a_buf.data();
+    auto h_b = h_b_buf.data();
     for (auto i = 0U; i < NUM_VALUES; i++) {
       h_a[i] = i;
       h_b[i] = i * i;
     }
 
     // Device data
-    auto d_a_buf = alpaka::allocBuf<float, Idx>(device, size);
-    auto d_b_buf = alpaka::allocBuf<float, Idx>(device, size);
-    alpaka::memcpy(queue, d_a_buf, h_a_buf, size);
-    alpaka::memcpy(queue, d_b_buf, h_b_buf, size);
-    auto d_c_buf = alpaka::allocBuf<float, Idx>(device, size);
+    auto d_a_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES);
+    auto d_b_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES);
+    alpaka::memcpy(queue, d_a_buf, h_a_buf);
+    alpaka::memcpy(queue, d_b_buf, h_b_buf);
+    auto d_c_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES);
 
     // Prepare 1D workDiv
-    const Vec1& blocksPerGrid1(Vec1::all((NUM_VALUES + 32 - 1) / 32));
-    const Vec1& threadsPerBlockOrElementsPerThread1(Vec1(32u));
-    const WorkDiv1& workDiv1 = cms::alpakatools::make_workdiv(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
+    const Vec1D& blocksPerGrid1(Vec1D::all((NUM_VALUES + 32 - 1) / 32));
+    const Vec1D& threadsPerBlockOrElementsPerThread1(Vec1D(32u));
+    const WorkDiv1D& workDiv1 =
+        cms::alpakatools::make_workdiv<Acc1D>(blocksPerGrid1, threadsPerBlockOrElementsPerThread1);
 
     // VECTOR ADDITION
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc1>(workDiv1,
-                                                   vectorAdd(),
-                                                   alpaka::getPtrNative(d_a_buf),
-                                                   alpaka::getPtrNative(d_b_buf),
-                                                   alpaka::getPtrNative(d_c_buf),
-                                                   NUM_VALUES));
+                    alpaka::createTaskKernel<Acc1D>(
+                        workDiv1, vectorAdd(), d_a_buf.data(), d_b_buf.data(), d_c_buf.data(), NUM_VALUES));
 
     // Prepare 2D workDiv
     const unsigned int blocksPerGridSide = (NUM_VALUES <= 32 ? 1 : std::ceil(NUM_VALUES / 32.));
-    const Vec2& blocksPerGrid2(Vec2::all(blocksPerGridSide));
+    const Vec2D& blocksPerGrid2(Vec2D::all(blocksPerGridSide));
     const unsigned int threadsPerBlockOrElementsPerThreadSide = (NUM_VALUES < 32 ? NUM_VALUES : 32u);
-    const Vec2& threadsPerBlockOrElementsPerThread2(Vec2::all(threadsPerBlockOrElementsPerThreadSide));
-    const WorkDiv2& workDiv2 = cms::alpakatools::make_workdiv(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
+    const Vec2D& threadsPerBlockOrElementsPerThread2(Vec2D::all(threadsPerBlockOrElementsPerThreadSide));
+    const WorkDiv2D& workDiv2 =
+        cms::alpakatools::make_workdiv<Acc2D>(blocksPerGrid2, threadsPerBlockOrElementsPerThread2);
 
     // Device data
-    const Vec2 sizeSquare(NUM_VALUES, NUM_VALUES);
-    auto d_ma_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
-    auto d_mb_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
-    auto d_mc_buf = alpaka::allocBuf<float, Idx>(device, sizeSquare);
+    auto d_ma_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES * NUM_VALUES);
+    auto d_mb_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES * NUM_VALUES);
+    auto d_mc_buf = cms::alpakatools::make_device_buffer<float[]>(queue, NUM_VALUES * NUM_VALUES);
 
     // VECTOR MULTIPLICATION
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                   vectorProd(),
-                                                   alpaka::getPtrNative(d_a_buf),
-                                                   alpaka::getPtrNative(d_b_buf),
-                                                   alpaka::getPtrNative(d_ma_buf),
-                                                   NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2D>(
+                        workDiv2, vectorProd(), d_a_buf.data(), d_b_buf.data(), d_ma_buf.data(), NUM_VALUES));
 
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                   vectorProd(),
-                                                   alpaka::getPtrNative(d_a_buf),
-                                                   alpaka::getPtrNative(d_c_buf),
-                                                   alpaka::getPtrNative(d_mb_buf),
-                                                   NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2D>(
+                        workDiv2, vectorProd(), d_a_buf.data(), d_c_buf.data(), d_mb_buf.data(), NUM_VALUES));
 
     // MATRIX MULTIPLICATION
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc2>(workDiv2,
-                                                   matrixMul(),
-                                                   alpaka::getPtrNative(d_ma_buf),
-                                                   alpaka::getPtrNative(d_mb_buf),
-                                                   alpaka::getPtrNative(d_mc_buf),
-                                                   NUM_VALUES));
+                    alpaka::createTaskKernel<Acc2D>(
+                        workDiv2, matrixMul(), d_ma_buf.data(), d_mb_buf.data(), d_mc_buf.data(), NUM_VALUES));
 
     // MATRIX - VECTOR MULTIPLICATION
     alpaka::enqueue(queue,
-                    alpaka::createTaskKernel<Acc1>(workDiv1,
-                                                   matrixMulVector(),
-                                                   alpaka::getPtrNative(d_mc_buf),
-                                                   alpaka::getPtrNative(d_b_buf),
-                                                   alpaka::getPtrNative(d_c_buf),
-                                                   NUM_VALUES));
+                    alpaka::createTaskKernel<Acc1D>(
+                        workDiv1, matrixMulVector(), d_mc_buf.data(), d_b_buf.data(), d_c_buf.data(), NUM_VALUES));
 
     alpaka::wait(queue);
     return d_mc_buf;
