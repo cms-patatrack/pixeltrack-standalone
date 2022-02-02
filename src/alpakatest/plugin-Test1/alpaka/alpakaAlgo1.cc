@@ -201,10 +201,7 @@ namespace {
 }  // namespace
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo1() {
-    const auto& device = cms::alpakatools::devices<Platform>[0];
-    Queue queue(device);
-
+  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo1(Queue& queue) {
     // Host data
     auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
     auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);

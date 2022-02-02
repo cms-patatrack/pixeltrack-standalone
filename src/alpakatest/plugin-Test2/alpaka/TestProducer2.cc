@@ -7,6 +7,8 @@
 #include "Framework/PluginFactory.h"
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/ScopedContext.h"
+#include "AlpakaCore/Product.h"
 
 #include "alpakaAlgo2.h"
 
@@ -26,29 +28,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
     void endJob() override;
 
-    edm::EDGetTokenT<cms::alpakatools::device_buffer<Device, float[]>> getToken_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, cms::alpakatools::device_buffer<Device, float[]>>> getToken_;
   };
 
   TestProducer2::TestProducer2(edm::ProductRegistry& reg)
-      : getToken_(reg.consumes<cms::alpakatools::device_buffer<Device, float[]>>()) {
+      : getToken_(reg.consumes<cms::alpakatools::Product<Queue, cms::alpakatools::device_buffer<Device, float[]>>>()) {
     nevents = 0;
   }
 
   void TestProducer2::acquire(edm::Event const& event,
                               edm::EventSetup const& eventSetup,
                               edm::WaitingTaskWithArenaHolder holder) {
-#ifdef SCOPEDCONTEXT
     auto const& tmp = event.get(getToken_);
-    cms::cuda::ScopedContextAcquire ctx(tmp, std::move(holder));
+    cms::alpakatools::ScopedContextAcquire<Queue> ctx(tmp, std::move(holder));
     auto const& array = ctx.get(tmp);
-#endif
-    alpakaAlgo2();
+    alpakaAlgo2(ctx.stream());
 
-    std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID()
-#ifdef SCOPEDCONTEXT
-              << " array " << array.get()
-#endif
-              << std::endl;
+    std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID() << " array "
+              << array.data() << std::endl;
   }
 
   void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {

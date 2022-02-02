@@ -10,7 +10,7 @@
 // of build rules for files to be compiled by accelerator, and
 // different set for files to be compiled by architecture?
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo1();
+  cms::alpakatools::device_buffer<Device, float[]> alpakaAlgo1(Queue& queue);
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 #endif
