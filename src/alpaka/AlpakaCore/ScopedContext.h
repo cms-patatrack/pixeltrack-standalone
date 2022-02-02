@@ -9,6 +9,7 @@
 #include "AlpakaCore/EventCache.h"
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/StreamCache.h"
+#include "AlpakaCore/HostOnlyTask.h"
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/chooseDevice.h"
 #include "Framework/EDGetToken.h"
@@ -123,11 +124,11 @@ namespace cms::alpakatools {
 
       template <typename TQueue>
       void enqueueCallback(TQueue& stream) {
-        alpaka::enqueue(stream, [holder = std::move(waitingTaskHolder_)]() {
+        alpaka::enqueue(stream, alpaka::HostOnlyTask([holder = std::move(waitingTaskHolder_)]() {
           // The functor is required to be const, but the original waitingTaskHolder_
           // needs to be notified...
           const_cast<edm::WaitingTaskWithArenaHolder&>(holder).doneWaiting(nullptr);
-        });
+        }));
       }
 
     private:
