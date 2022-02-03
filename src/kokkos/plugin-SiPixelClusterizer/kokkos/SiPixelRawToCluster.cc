@@ -63,9 +63,9 @@ namespace KOKKOS_NAMESPACE {
       digiErrorPutToken_ = reg.produces<cms::kokkos::Product<SiPixelDigiErrorsKokkos<KokkosDeviceMemSpace>>>();
     }
 
-    auto const& execSpace = cms::kokkos::getExecSpaceCache<KokkosExecSpace>().get();
+    auto const& execSpace = *cms::kokkos::getExecSpaceCache<KokkosExecSpace>().get();
     wordFedAppender_ =
-        std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>(execSpace->space());
+        std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>(execSpace);
   }
 
   void SiPixelRawToCluster::acquire(edm::Event const& iEvent,

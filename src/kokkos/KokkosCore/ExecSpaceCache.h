@@ -10,31 +10,19 @@
 namespace cms {
   namespace kokkos {
     template <typename ExecSpace>
-    class ExecSpaceWrapper {
-    public:
-      ExecSpaceWrapper() = default;
-      ExecSpaceWrapper(ExecSpace space) : space_(std::move(space)) {}
-
-      ExecSpace const& space() const { return space_; }
-
-    private:
-      ExecSpace space_;
-    };
-
-    template <typename ExecSpace>
     class ExecSpaceCache {
     public:
-      using CacheType = edm::ReusableObjectHolder<ExecSpaceWrapper<ExecSpace>>;
+      using CacheType = edm::ReusableObjectHolder<ExecSpace>;
 
       ExecSpaceCache() : cache_{std::make_unique<CacheType>()} {}
 
       // Gets a (cached) execution space object. The object will be
       // returned to the cache by the shared_ptr destructor.  This
       // function is thread safe
-      std::shared_ptr<ExecSpaceWrapper<ExecSpace>> get() {
+      std::shared_ptr<ExecSpace> get() {
         return cache_->makeOrGet([]() {
                 auto instances = Kokkos::Experimental::partition_space(ExecSpace(), 1);
-                return std::make_unique<ExecSpaceWrapper<ExecSpace>>(instances[0]); });
+                return std::make_unique<ExecSpace>(instances[0]); });
       }
 
       // Need to be able to clear before the destruction of globals
