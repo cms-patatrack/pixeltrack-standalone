@@ -40,6 +40,7 @@ namespace kokkos_common {
 #ifdef KOKKOS_ENABLE_HIP
       cms::kokkos::getExecSpaceCache<Kokkos::Experimental::HIP>().clear();
 #endif
+      Kokkos::finalize();
     }
   };
 
