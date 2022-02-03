@@ -13,6 +13,7 @@ namespace cms {
     class ExecSpaceWrapper {
     public:
       ExecSpaceWrapper() = default;
+      ExecSpaceWrapper(ExecSpace space) : space_(std::move(space)) {}
 
       ExecSpace const& space() const { return space_; }
 
@@ -31,7 +32,9 @@ namespace cms {
       // returned to the cache by the shared_ptr destructor.  This
       // function is thread safe
       std::shared_ptr<ExecSpaceWrapper<ExecSpace>> get() {
-        return cache_->makeOrGet([]() { return std::make_unique<ExecSpaceWrapper<ExecSpace>>(); });
+        return cache_->makeOrGet([]() {
+                auto instances = Kokkos::Experimental::partition_space(ExecSpace(), 1);
+                return std::make_unique<ExecSpaceWrapper<ExecSpace>>(instances[0]); });
       }
 
       // Need to be able to clear before the destruction of globals
@@ -56,34 +59,6 @@ namespace cms {
   }  // namespace kokkos
 }  // namespace cms
 
-#ifdef KOKKOS_ENABLE_CUDA
-#include "CUDACore/StreamCache.h"
-namespace cms {
-  namespace kokkos {
-    template <>
-    class ExecSpaceWrapper<Kokkos::Cuda> {
-    public:
-      ExecSpaceWrapper(Kokkos::Cuda space, cms::cuda::SharedStreamPtr stream)
-          : space_(std::move(space)), stream_(std::move(stream)) {}
 
-      Kokkos::Cuda const& space() const { return space_; }
-      cudaStream_t stream() const { return stream_.get(); }
-
-    private:
-      Kokkos::Cuda space_;
-      cms::cuda::SharedStreamPtr stream_;
-    };
-
-    template <>
-    inline std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> ExecSpaceCache<Kokkos::Cuda>::get() {
-      return cache_->makeOrGet([]() {
-        auto streamPtr = cms::cuda::getStreamCache().get();
-        return std::make_unique<ExecSpaceWrapper<Kokkos::Cuda>>(Kokkos::Cuda(streamPtr.get()), std::move(streamPtr));
-      });
-    }
-  }  // namespace kokkos
-}  // namespace cms
-
-#endif
 
 #endif
