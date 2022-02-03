@@ -10,7 +10,6 @@
 #ifdef KOKKOS_ENABLE_CUDA
 #include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
-#include "CUDACore/SharedStreamPtr.h"
 #endif
 #include "KokkosCore/ExecSpaceCache.h"
 #include "Framework/WaitingTaskHolder.h"
@@ -76,7 +75,7 @@ namespace cms {
           // Intentionally not checking the return value to avoid throwing
           // exceptions. If this call would fail, we should get failures
           // elsewhere as well.
-          cudaEventRecord(event_.get(), space_->stream());
+          cudaEventRecord(event_.get(), space_->space().cuda_stream());
         }
 
         void enqueueCallback(edm::WaitingTaskWithArenaHolder holder);
