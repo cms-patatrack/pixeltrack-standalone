@@ -166,30 +166,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           //////////////////////////////////////////////////////////
           counters_{cms::alpakatools::make_device_buffer<Counters>(queue)},
 
+          // workspace
           device_hitToTuple_{cms::alpakatools::make_device_buffer<HitToTuple>(queue)},
           device_tupleMultiplicity_{cms::alpakatools::make_device_buffer<TupleMultiplicity>(queue)},
 
+          // NB: In legacy, device_theCells_ and device_isOuterHitOfCell_ were allocated inside buildDoublets
           device_theCells_{cms::alpakatools::make_device_buffer<GPUCACell[]>(queue, params.maxNumberOfDoublets_)},
           // in principle we can use "nhits" to heuristically dimension the workspace...
           device_isOuterHitOfCell_{
-              cms::alpakatools::make_device_buffer<GPUCACell::OuterHitOfCell[]>(queue, std::max(1U, nhits))},
+              cms::alpakatools::make_device_buffer<GPUCACell::OuterHitOfCell[]>(queue, std::max(1u, nhits))},
 
           device_theCellNeighbors_{cms::alpakatools::make_device_buffer<CAConstants::CellNeighborsVector>(queue)},
           device_theCellTracks_{cms::alpakatools::make_device_buffer<CAConstants::CellTracksVector>(queue)},
+          // NB: In legacy, cellStorage_ was allocated inside buildDoublets
+          cellStorage_{cms::alpakatools::make_device_buffer<unsigned char[]>(
+              queue,
+              CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
+                  CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
+          device_theCellNeighborsContainer_{reinterpret_cast<GPUCACell::CellNeighbors*>(cellStorage_.data())},
+          device_theCellTracksContainer_{reinterpret_cast<GPUCACell::CellTracks*>(
+              cellStorage_.data() + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors))},
 
-          //cellStorage_{cms::alpakatools::make_device_buffer<unsigned char[]>(queue, CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) + CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks))},
-          device_theCellNeighborsContainer_{cms::alpakatools::make_device_buffer<CAConstants::CellNeighbors[]>(
-              queue, CAConstants::maxNumOfActiveDoublets())},
-          device_theCellTracksContainer_{cms::alpakatools::make_device_buffer<CAConstants::CellTracks[]>(
-              queue, CAConstants::maxNumOfActiveDoublets())},
-
-          //device_storage_{cms::alpakatools::make_device_buffer<cmscuda::AtomicPairCounter::c_type[]>(queue, 3u)},
-          //device_hitTuple_apc_ = (cms::alpakatools::AtomicPairCounter*)device_storage_.get()},
-          //device_hitToTuple_apc_ = (cms::alpakatools::AtomicPairCounter*)device_storage_.get() + 1;
-          //device_nCells_ = (uint32_t*)(device_storage_.get() + 2)},
-          device_hitTuple_apc_{cms::alpakatools::make_device_buffer<cms::alpakatools::AtomicPairCounter>(queue)},
-          device_hitToTuple_apc_{cms::alpakatools::make_device_buffer<cms::alpakatools::AtomicPairCounter>(queue)},
-          device_nCells_{cms::alpakatools::make_device_buffer<uint32_t>(queue)} {
+          // NB: In legacy, device_storage_ was allocated inside allocateOnGPU
+          device_storage_{
+              cms::alpakatools::make_device_buffer<cms::alpakatools::AtomicPairCounter::c_type[]>(queue, 3u)},
+          device_hitTuple_apc_{reinterpret_cast<cms::alpakatools::AtomicPairCounter*>(device_storage_.data())},
+          device_hitToTuple_apc_{reinterpret_cast<cms::alpakatools::AtomicPairCounter*>(device_storage_.data() + 1)},
+          device_nCells_{cms::alpakatools::make_device_view(alpaka::getDev(queue),
+                                                            *reinterpret_cast<uint32_t*>(device_storage_.data() + 2))} {
       alpaka::memset(queue, counters_, 0);
       alpaka::memset(queue, device_nCells_, 0);
       cms::alpakatools::launchZero<Acc1D>(device_tupleMultiplicity_.data(), queue);
@@ -216,39 +220,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // params
     Params const& m_params;
 
-    cms::alpakatools::device_buffer<Device, Counters>
-        counters_;  // NB: Counters: In legacy, sum of the stats of all events.
+    // NB: Counters: In legacy, sum of the stats of all events.
     // Here instead, these stats are per event.
     // Does not matter much, as the stats are desactivated by default anyway, and are for debug only
     // (stats are not stored eventually, no interference with any result).
     // For debug, better to be able to see info per event that just a sum.
+    cms::alpakatools::device_buffer<Device, Counters> counters_;
 
     // workspace
     cms::alpakatools::device_buffer<Device, HitToTuple> device_hitToTuple_;
     cms::alpakatools::device_buffer<Device, TupleMultiplicity> device_tupleMultiplicity_;
 
-    cms::alpakatools::device_buffer<Device, GPUCACell[]>
-        device_theCells_;  // NB: In legacy, was allocated inside buildDoublets.
-    cms::alpakatools::device_buffer<Device, GPUCACell::OuterHitOfCell[]>
-        device_isOuterHitOfCell_;  // NB: In legacy, was allocated inside buildDoublets.
+    // NB: In legacy, device_theCells_ and device_isOuterHitOfCell_ were allocated inside buildDoublets
+    cms::alpakatools::device_buffer<Device, GPUCACell[]> device_theCells_;
+    cms::alpakatools::device_buffer<Device, GPUCACell::OuterHitOfCell[]> device_isOuterHitOfCell_;
 
     cms::alpakatools::device_buffer<Device, CAConstants::CellNeighborsVector> device_theCellNeighbors_;
     cms::alpakatools::device_buffer<Device, CAConstants::CellTracksVector> device_theCellTracks_;
 
-    // cms::alpakatools::device_buffer<Device, unsigned char[]> cellStorage_; // NB: In legacy, was allocated inside buildDoublets.
-    // NB: Here, data from cellstorage_ (legacy) directly owned by the following:
-    cms::alpakatools::device_buffer<Device, CAConstants::CellNeighbors[]>
-        device_theCellNeighborsContainer_;  // Was non-owning in legacy!
-    cms::alpakatools::device_buffer<Device, CAConstants::CellTracks[]>
-        device_theCellTracksContainer_;  // Was non-owning in legacy!
+    // NB: In legacy, cellStorage_ was allocated inside buildDoublets
+    cms::alpakatools::device_buffer<Device, unsigned char[]> cellStorage_;
+    CAConstants::CellNeighbors* device_theCellNeighborsContainer_;
+    CAConstants::CellTracks* device_theCellTracksContainer_;
 
-    // cms::alpakatools::device_buffer<Device, cms::alpakatools::AtomicPairCounter::c_type> device_storage_; // NB: In legacy
-    // NB: Here, data from device_storage_ (legacy) directly owned by the following:
-    cms::alpakatools::device_buffer<Device, cms::alpakatools::AtomicPairCounter>
-        device_hitTuple_apc_;  // Was non-owning in legacy!
-    cms::alpakatools::device_buffer<Device, cms::alpakatools::AtomicPairCounter>
-        device_hitToTuple_apc_;                                        // Was non-owning in legacy!
-    cms::alpakatools::device_buffer<Device, uint32_t> device_nCells_;  // Was non-owning in legacy!
+    // NB: In legacy, device_storage_ was allocated inside allocateOnGPU
+    cms::alpakatools::device_buffer<Device, cms::alpakatools::AtomicPairCounter::c_type[]> device_storage_;
+    cms::alpakatools::AtomicPairCounter* device_hitTuple_apc_;
+    cms::alpakatools::AtomicPairCounter* device_hitToTuple_apc_;
+    cms::alpakatools::device_view<Device, uint32_t> device_nCells_;
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
