@@ -14,7 +14,7 @@
 #if defined(__CUDACC__) && defined(__CUDA_ARCH__)
 #define SOA_THROW_OUT_OF_RANGE(A) \
   {                               \
-    printf(A);                    \
+    printf(A "\n");               \
     *((char*)nullptr) = 0;        \
   }
 #else

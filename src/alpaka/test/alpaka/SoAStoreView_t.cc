@@ -24,10 +24,11 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoAHostDeviceLayoutTemplate,
                              SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
                              // scalars: one value for the whole structure
                              SOA_SCALAR(const char*, description),
-                             SOA_SCALAR(uint32_t, someNumber));
+                             SOA_SCALAR(uint32_t, someNumber))
 
 using SoAHostDeviceLayout = SoAHostDeviceLayoutTemplate<>;
-using SoAHostDeviceView = SoAHostDeviceViewTemplate<>;
+using SoAHostDeviceView =
+    SoAHostDeviceViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
 
 GENERATE_SOA_LAYOUT_AND_VIEW(SoADeviceOnlyLayoutTemplate,
                              SoADeviceOnlyViewTemplate,
@@ -35,10 +36,11 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoADeviceOnlyLayoutTemplate,
                              SOA_COLUMN(double, value),
                              SOA_COLUMN(double*, py),
                              SOA_COLUMN(uint32_t, count),
-                             SOA_COLUMN(uint32_t, anotherCount));
+                             SOA_COLUMN(uint32_t, anotherCount))
 
 using SoADeviceOnlyLayout = SoADeviceOnlyLayoutTemplate<>;
-using SoADeviceOnlyView = SoADeviceOnlyViewTemplate<>;
+using SoADeviceOnlyView =
+    SoADeviceOnlyViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
 
 // A 1 to 1 view of the store (except for unsupported types).
 GENERATE_SOA_VIEW(SoAFullDeviceViewTemplate,
@@ -53,9 +55,10 @@ GENERATE_SOA_VIEW(SoAFullDeviceViewTemplate,
                                        SOA_VIEW_VALUE(soaDO, count),
                                        SOA_VIEW_VALUE(soaDO, anotherCount),
                                        SOA_VIEW_VALUE(soaHD, description),
-                                       SOA_VIEW_VALUE(soaHD, someNumber)));
+                                       SOA_VIEW_VALUE(soaHD, someNumber)))
 
-using SoAFullDeviceView = SoAFullDeviceViewTemplate<>;
+using SoAFullDeviceView =
+    SoAFullDeviceViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
 
 // Eigen cross product kernel (on store)
 struct crossProduct {
@@ -91,6 +94,23 @@ struct consumerKernel {
   }
 };
 
+// Get a view like the default, except for range checking
+using RangeCheckingHostDeviceView = SoAHostDeviceViewTemplate<SoAHostDeviceView::byteAlignment,
+                                                              SoAHostDeviceView::alignmentEnforcement,
+                                                              SoAHostDeviceView::restrictQualify,
+                                                              cms::soa::RangeChecking::Enabled>;
+
+struct rangeCheckKernel {
+  template <typename T_Acc>
+  ALPAKA_FN_ACC void operator()(const T_Acc& acc, RangeCheckingHostDeviceView soa) const {
+#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+    printf("About to fail range check in CUDA thread: %d\n", threadIdx.x);
+#endif
+    [[maybe_unused]] auto si = soa[soa.soaMetadata().size()];
+    printf("We should not have reached here\n");
+  }
+};
+
 template <typename T>
 Idx to_Idx(T v) {
   return static_cast<Idx>(v);
@@ -103,14 +123,6 @@ int main(void) {
 
   // Non-aligned number of elements to check alignment features.
   constexpr unsigned int numElements = 65537;
-
-  // Alignment is dependent on the alignment of the buffers we get
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-  [[maybe_unused]] const size_t byteAlignment =
-      128;  // The default alignment for SoA (nVidia GPI cache line size, reflected in CUDA memory allocations).
-#else
-  const size_t byteAlignment = 4;
-#endif
 
   // Allocate buffer and store on host
   Idx hostDeviceSize = SoAHostDeviceLayout::computeDataSize(numElements);
@@ -249,5 +261,39 @@ int main(void) {
       assert(false);
     }
   }
+
+  // Validation of range checking
+  try {
+    // Get a view like the default, except for range checking
+    SoAHostDeviceViewTemplate<SoAHostDeviceView::byteAlignment,
+                              SoAHostDeviceView::alignmentEnforcement,
+                              SoAHostDeviceView::restrictQualify,
+                              cms::soa::RangeChecking::Enabled>
+        soa1viewRangeChecking(h_soahdLayout);
+    // This should throw an exception
+    [[maybe_unused]] auto si = soa1viewRangeChecking[soa1viewRangeChecking.soaMetadata().size()];
+    assert(false);
+  } catch (const std::out_of_range&) {
+  }
+
+  // Validation of range checking in a kernel
+  // Get a view like the default, except for range checking
+  RangeCheckingHostDeviceView soa1viewRangeChecking(d_soahdLayout);
+  // This should throw an exception in the kernel
+  try {
+    alpaka::enqueue(queue,
+                    alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
+                        make_workdiv<Acc1D>(1, 1), rangeCheckKernel(), soa1viewRangeChecking));
+  } catch (const std::out_of_range&) {
+    std::cout << "Exception received in enqueue." << std::endl;
+  }
+
+  // Wait and validate (that we failed).
+  try {
+    alpaka::wait(queue);
+  } catch (const std::runtime_error&) {
+    std::cout << "Exception received in wait." << std::endl;
+  }
+
   std::cout << "OK" << std::endl;
 }
