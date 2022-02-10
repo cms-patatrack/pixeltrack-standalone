@@ -102,9 +102,19 @@ DATA_TAR_GZ := $(DATA_BASE)/data.tar.gz
 # External definitions
 EXTERNAL_BASE := $(BASE_DIR)/external
 
+HWLOC_BASE := $(EXTERNAL_BASE)/hwloc
+export HWLOC_DEPS := $(HWLOC_BASE)
+HWLOC_CXXFLAGS := -isystem $(HWLOC_BASE)/include
+HWLOC_LDFLAGS := -L$(HWLOC_BASE)/lib -lhwloc
+
 TBB_BASE := $(EXTERNAL_BASE)/tbb
 TBB_LIBDIR := $(TBB_BASE)/lib
 TBB_LIB := $(TBB_LIBDIR)/libtbb.so
+TBB_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(TBB_BASE) \
+	          -DCMAKE_INSTALL_LIBDIR=lib \
+                  -DCMAKE_HWLOC_2_INCLUDE_PATH=$(HWLOC_BASE)/include \
+                  -DCMAKE_HWLOC_2_LIBRARY_PATH=$(HWLOC_BASE)/lib/libhwloc.so \
+                  -DTBB_CPF=ON
 export TBB_DEPS := $(TBB_LIB)
 export TBB_CXXFLAGS := -isystem $(TBB_BASE)/include -DTBB_SUPPRESS_DEPRECATED_MESSAGES -DTBB_PREVIEW_NUMA_SUPPORT
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
@@ -137,11 +147,6 @@ BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
 export BACKTRACE_DEPS := $(BACKTRACE_BASE)
 export BACKTRACE_CXXFLAGS := -isystem $(BACKTRACE_BASE)/include
 export BACKTRACE_LDFLAGS := -L$(BACKTRACE_BASE)/lib -lbacktrace
-
-HWLOC_BASE := $(EXTERNAL_BASE)/hwloc
-export HWLOC_DEPS := $(HWLOC_BASE)
-HWLOC_CXXFLAGS := -isystem $(HWLOC_BASE)/include
-HWLOC_LDFLAGS := -L$(HWLOC_BASE)/lib -lhwloc
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
@@ -480,17 +485,24 @@ $(EXTERNAL_BASE):
 # TBB
 external_tbb: $(TBB_LIB)
 
-$(TBB_BASE):
-	git clone --branch v2020.3 https://github.com/oneapi-src/oneTBB.git $@
-
-$(TBB_LIBDIR): $(TBB_BASE)
-	mkdir -p $@
-
 # Let TBB Makefile to define its own CXXFLAGS
+$(TBB_LIB): $(HWLOC_BASE)
 $(TBB_LIB): CXXFLAGS:=
-$(TBB_LIB): $(TBB_BASE) $(TBB_LIBDIR)
-	+$(MAKE) -C $(TBB_BASE) stdver=c++17
-	cp $$(find $(TBB_BASE)/build -name *.so*) $(TBB_LIBDIR)
+$(TBB_LIB):
+	$(eval TBB_TMP := $(shell mktemp -d))
+	$(eval TBB_TMP_SRC := $(TBB_TMP)/src)
+	$(eval TBB_TMP_BUILD := $(TBB_TMP)/build)
+	mkdir -p $(TBB_TMP)
+	mkdir -p $(TBB_TMP_SRC)
+	mkdir -p $(TBB_TMP_BUILD)
+	git clone --branch v2021.4.0 https://github.com/oneapi-src/oneTBB.git $(TBB_TMP_SRC)
+	cd $(TBB_TMP_BUILD)/ && $(CMAKE) $(TBB_TMP_SRC) $(TBB_CMAKEFLAGS)
+	+$(MAKE) -C $(TBB_TMP_BUILD)
+	+$(MAKE) -C $(TBB_TMP_BUILD) install
+	@rm -rf $(TBB_TMP)
+	$(eval undefine TBB_TMP)
+	$(eval undefine TBB_TMP_SRC)
+	$(eval undefine TBB_TMP_BUILD)
 
 # Eigen
 external_eigen: $(EIGEN_BASE)
