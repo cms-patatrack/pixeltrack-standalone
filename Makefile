@@ -7,7 +7,7 @@ CXX_MAJOR:=$(shell $(CXX) -dM -E -x c++ - < /dev/null | awk '/__GNUC__/ { print 
 CXX_MINOR:=$(shell $(CXX) -dM -E -x c++ - < /dev/null | awk '/__GNUC_MINOR__/ { print $$3; }')
 CXX_VERSION:=$(shell echo $$(( $(CXX_MAJOR) * 100 + $(CXX_MINOR) )) )
 
-CXX_REQUIRED_MAJOR:=8
+CXX_REQUIRED_MAJOR:=9
 CXX_REQUIRED_MINOR:=0
 CXX_REQUIRED_VERSION:=$(shell echo $$(( $(CXX_REQUIRED_MAJOR) * 100 + $(CXX_REQUIRED_MINOR) )) )
 
