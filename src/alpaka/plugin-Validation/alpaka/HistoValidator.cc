@@ -122,7 +122,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     h_adc = std::move(digis.adcToHostAsync(ctx.stream()));
 
     nClusters_ = clusters.nClusters();
-    h_clusInModule = cms::alpakatools::make_host_buffer<uint32_t[]>(nModules_);
+    h_clusInModule = cms::alpakatools::make_host_buffer<uint32_t[]>(ctx.stream(), nModules_);
     alpaka::memcpy(ctx.stream(),
                    *h_clusInModule,
                    cms::alpakatools::make_device_view(ctx.device(), clusters.clusInModule(), nModules_));

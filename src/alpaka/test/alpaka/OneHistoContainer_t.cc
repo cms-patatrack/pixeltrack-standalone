@@ -131,7 +131,7 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
             << (rmax - rmin) / Hist::nbins() << std::endl;
   std::cout << "bins " << int(Hist::bin(0)) << ' ' << int(Hist::bin(rmin)) << ' ' << int(Hist::bin(rmax)) << std::endl;
 
-  auto v = make_host_buffer<T[]>(N);
+  auto v = make_host_buffer<T[]>(queue, N);
   auto v_d = make_device_buffer<T[]>(queue, N);
 
   for (int it = 0; it < 5; ++it) {

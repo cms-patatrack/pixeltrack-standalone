@@ -27,10 +27,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       in.read(reinterpret_cast<char *>(m_detParamsGPU.data()), ndetParams * sizeof(pixelCPEforGPU::DetParams));
       in.read(reinterpret_cast<char *>(m_averageGeometry.data()), sizeof(pixelCPEforGPU::AverageGeometry));
       in.read(reinterpret_cast<char *>(m_layerGeometry.data()), sizeof(pixelCPEforGPU::LayerGeometry));
-
-      alpaka::prepareForAsyncCopy(m_commonParamsGPU);
-      alpaka::prepareForAsyncCopy(m_layerGeometry);
-      alpaka::prepareForAsyncCopy(m_averageGeometry);
     }
 
     ~PixelCPEFast() = default;
@@ -74,14 +70,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     public:
       GPUData() = delete;
       GPUData(Queue &queue, unsigned int ndetParams)
-          : h_paramsOnGPU{cms::alpakatools::make_host_buffer<pixelCPEforGPU::ParamsOnGPU>()},
+          : h_paramsOnGPU{cms::alpakatools::make_host_buffer<pixelCPEforGPU::ParamsOnGPU>(queue)},
             d_paramsOnGPU{cms::alpakatools::make_device_buffer<pixelCPEforGPU::ParamsOnGPU>(queue)},
             d_commonParams{cms::alpakatools::make_device_buffer<pixelCPEforGPU::CommonParams>(queue)},
             d_layerGeometry{cms::alpakatools::make_device_buffer<pixelCPEforGPU::LayerGeometry>(queue)},
             d_averageGeometry{cms::alpakatools::make_device_buffer<pixelCPEforGPU::AverageGeometry>(queue)},
-            d_detParams{cms::alpakatools::make_device_buffer<pixelCPEforGPU::DetParams[]>(queue, ndetParams)} {
-        alpaka::prepareForAsyncCopy(h_paramsOnGPU);
-      };
+            d_detParams{cms::alpakatools::make_device_buffer<pixelCPEforGPU::DetParams[]>(queue, ndetParams)} {};
       ~GPUData() = default;
 
     public:

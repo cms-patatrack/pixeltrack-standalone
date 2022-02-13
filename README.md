@@ -364,6 +364,25 @@ $ make kokkos ...
 | `-DKOKKOS_SERIALONLY_DISABLE_ATOMICS`  | Disable Kokkos (real) atomics, can be used with Serial-only build |
 
 
+#### `alpaka`
+
+The `alpaka` code base is loosely based on the `cuda` code base, with some minor changes introduced during the porting.
+
+The use of caching allocator can be disabled at compile time setting the
+`ALPAKA_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
+```
+make alpaka ... USER_CXXFLAGS="-DALPAKA_DISABLE_CACHING_ALLOCATOR"
+```
+
+If the caching allocator is disabled and CUDA version is 11.2 or greater is detected,
+device allocations and deallocations will use the stream-ordered CUDA functions
+`cudaMallocAsync` and `cudaFreeAsync`. Their use can be disabled explicitly at
+compile time setting also the `ALPAKA_DISABLE_ASYNC_ALLOCATOR` preprocessor symbol:
+
+```
+make alpaka ... USER_CXXFLAGS="-DALPAKA_DISABLE_CACHING_ALLOCATOR -DALPAKA_DISABLE_ASYNC_ALLOCATOR"
+```
+
 ## Code structure
 
 The project is split into several programs, one (or more) for each

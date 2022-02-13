@@ -39,10 +39,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void PixelTrackSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                         edm::EventSetup const& iSetup,
                                         edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-    soa_ = cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA>();
     cms::alpakatools::Product<Queue, PixelTrackAlpaka> const& inputDataWrapped = iEvent.get(tokenDevice_);
     cms::alpakatools::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
     auto const& inputData = ctx.get(inputDataWrapped);
+    soa_ = cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA>(ctx.stream());
     alpaka::memcpy(ctx.stream(), soa_, inputData);
   }
 

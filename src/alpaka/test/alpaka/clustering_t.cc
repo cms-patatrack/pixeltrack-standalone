@@ -27,11 +27,11 @@ int main(void) {
 
   constexpr unsigned int numElements = 256 * 2000;
   // these in reality are already on GPU
-  auto h_id = make_host_buffer<uint16_t[]>(numElements);
-  auto h_x = make_host_buffer<uint16_t[]>(numElements);
-  auto h_y = make_host_buffer<uint16_t[]>(numElements);
-  auto h_adc = make_host_buffer<uint16_t[]>(numElements);
-  auto h_clus = make_host_buffer<int[]>(numElements);
+  auto h_id = make_host_buffer<uint16_t[]>(queue, numElements);
+  auto h_x = make_host_buffer<uint16_t[]>(queue, numElements);
+  auto h_y = make_host_buffer<uint16_t[]>(queue, numElements);
+  auto h_adc = make_host_buffer<uint16_t[]>(queue, numElements);
+  auto h_clus = make_host_buffer<int[]>(queue, numElements);
 
   auto d_id = make_device_buffer<uint16_t[]>(queue, numElements);
   auto d_x = make_device_buffer<uint16_t[]>(queue, numElements);
@@ -227,7 +227,7 @@ int main(void) {
     std::cout << "created " << n << " digis in " << ncl << " clusters" << std::endl;
     assert(n <= numElements);
 
-    auto nModules = make_host_buffer<uint32_t[]>(1u);
+    auto nModules = make_host_buffer<uint32_t[]>(queue, 1u);
     nModules[0] = 0;
     alpaka::memcpy(queue, d_moduleStart, nModules, 1u);  // copy only the first element
 
@@ -276,13 +276,13 @@ int main(void) {
                                                     n));
     alpaka::memcpy(queue, nModules, d_moduleStart, 1u);  // copy only the first element
 
-    auto nclus = make_host_buffer<uint32_t[]>(gpuClustering::MaxNumModules);
+    auto nclus = make_host_buffer<uint32_t[]>(queue, gpuClustering::MaxNumModules);
     alpaka::memcpy(queue, nclus, d_clusInModule);
 
     // Wait for memory transfers to be completed
     alpaka::wait(queue);
 
-    auto moduleId = make_host_buffer<uint32_t[]>(nModules[0]);
+    auto moduleId = make_host_buffer<uint32_t[]>(queue, nModules[0]);
 
     std::cout << "before charge cut found "
               << std::accumulate(nclus.data(), nclus.data() + gpuClustering::MaxNumModules, 0) << " clusters"

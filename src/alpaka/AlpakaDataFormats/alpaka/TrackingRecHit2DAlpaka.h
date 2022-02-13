@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           m_hist{cms::alpakatools::make_device_buffer<Hist>(queue)},
           // SoA view
           m_view{cms::alpakatools::make_device_buffer<TrackingRecHit2DSoAView>(queue)},
-          m_view_h{cms::alpakatools::make_host_buffer<TrackingRecHit2DSoAView>()} {
+          m_view_h{cms::alpakatools::make_host_buffer<TrackingRecHit2DSoAView>(queue)} {
       // the hits are actually accessed in order only in building
       // if ordering is relevant they may have to be stored phi-ordered by layer or so
       // this will break 1to1 correspondence with cluster and module locality
@@ -93,67 +93,67 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto xlToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), xl(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto ylToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), yl(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto xerrToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), xerr(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto yerrToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), yerr(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto xgToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), xg(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto ygToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), yg(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto zgToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), zg(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto rgToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), rg(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<float[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto chargeToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), charge(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<int32_t[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<int32_t[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto xsizeToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), xsize(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<int16_t[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<int16_t[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }
     auto ysizeToHostAsync(Queue& queue) const {
       auto device_view = cms::alpakatools::make_device_view(alpaka::getDev(queue), ysize(), nHits());
-      auto host_buffer = cms::alpakatools::make_host_buffer<int16_t[]>(nHits());
+      auto host_buffer = cms::alpakatools::make_host_buffer<int16_t[]>(queue, nHits());
       alpaka::memcpy(queue, host_buffer, device_view);
       return host_buffer;
     }

@@ -16,7 +16,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     explicit SiPixelDigiErrorsAlpaka(Queue& queue, size_t maxFedWords, PixelFormatterErrors errors)
         : data_d{cms::alpakatools::make_device_buffer<PixelErrorCompact[]>(queue, maxFedWords)},
           error_d{cms::alpakatools::make_device_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue)},
-          error_h{cms::alpakatools::make_host_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>()},
+          error_h{cms::alpakatools::make_host_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue)},
           formatterErrors_h{std::move(errors)} {
       error_h->construct(maxFedWords, data_d.data());
       ALPAKA_ASSERT_OFFLOAD(error_h->empty());

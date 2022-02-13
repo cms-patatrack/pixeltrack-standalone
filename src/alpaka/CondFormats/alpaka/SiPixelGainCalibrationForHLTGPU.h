@@ -19,7 +19,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           gainData_(gainData),
           numDecodingStructures_(gainData.size()) {
       *gainForHLTonHost_ = gain;
-      alpaka::prepareForAsyncCopy(gainForHLTonHost_);
     };
 
     ~SiPixelGainCalibrationForHLTGPU() = default;
@@ -45,10 +44,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       GPUData() = delete;
       GPUData(Queue const& queue, unsigned int numDecodingStructures)
           : gainForHLTonGPU{cms::alpakatools::make_device_buffer<SiPixelGainForHLTonGPU>(queue)},
-            gainDataOnGPU{cms::alpakatools::make_host_buffer<SiPixelGainForHLTonGPU>()},
-            v_pedestalsGPU{cms::alpakatools::make_device_buffer<DecodingStructure[]>(queue, numDecodingStructures)} {
-        alpaka::prepareForAsyncCopy(gainDataOnGPU);
-      };
+            gainDataOnGPU{cms::alpakatools::make_host_buffer<SiPixelGainForHLTonGPU>(queue)},
+            v_pedestalsGPU{cms::alpakatools::make_device_buffer<DecodingStructure[]>(queue, numDecodingStructures)} {};
       ~GPUData() = default;
 
       cms::alpakatools::device_buffer<Device, SiPixelGainForHLTonGPU> gainForHLTonGPU;
