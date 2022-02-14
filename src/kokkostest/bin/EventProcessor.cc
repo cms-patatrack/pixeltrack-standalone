@@ -42,9 +42,8 @@ namespace edm {
     for (auto& s : schedules_) {
       s.runToCompletionAsync(WaitingTaskHolder(group, &globalWaitTask));
     }
-    do {
-      group.wait();
-    } while (not globalWaitTask.done());
+    group.wait();
+    assert(globalWaitTask.done());
     if (globalWaitTask.exceptionPtr()) {
       std::rethrow_exception(*(globalWaitTask.exceptionPtr()));
     }
