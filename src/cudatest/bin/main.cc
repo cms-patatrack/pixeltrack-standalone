@@ -1,12 +1,16 @@
+#include <algorithm>
 #include <cstdlib>
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
-#include <filesystem>
 #include <string>
 #include <vector>
 
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
+#include <tbb/info.h>
+#include <tbb/task_arena.h>
 
 #include <cuda_runtime.h>
 
@@ -20,8 +24,8 @@ namespace {
         << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
            "[--empty]\n\n"
         << "Options\n"
-        << " --numberOfThreads   Number of threads to use (default 1)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0=numberOfThreads)\n"
+        << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
+        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -70,6 +74,9 @@ int main(int argc, char** argv) {
       return EXIT_FAILURE;
     }
   }
+  if (numberOfThreads == 0) {
+    numberOfThreads = tbb::info::default_concurrency();
+  }
   if (numberOfStreams == 0) {
     numberOfStreams = numberOfThreads;
   }
@@ -115,13 +122,15 @@ int main(int argc, char** argv) {
   std::cout << "Processing " << maxEvents << " events, of which " << numberOfStreams << " concurrently, with "
             << numberOfThreads << " threads." << std::endl;
 
-  // Initialize tasks scheduler (thread pool)
-  tbb::task_scheduler_init tsi(numberOfThreads);
+  // Initialize he TBB thread pool
+  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
+                                      static_cast<std::size_t>(numberOfThreads)};
 
   // Run work
   auto start = std::chrono::high_resolution_clock::now();
   try {
-    processor.runToCompletion();
+    tbb::task_arena arena(numberOfThreads);
+    arena.execute([&] { processor.runToCompletion(); });
   } catch (std::runtime_error& e) {
     std::cout << "\n----------\nCaught std::runtime_error" << std::endl;
     std::cout << e.what() << std::endl;

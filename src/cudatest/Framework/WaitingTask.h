@@ -22,7 +22,8 @@
 #include <atomic>
 #include <exception>
 #include <memory>
-#include "tbb/task.h"
+
+#include <tbb/task.h>
 
 // user include files
 
