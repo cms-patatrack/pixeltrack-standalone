@@ -86,6 +86,7 @@ namespace edm {
     // ---------- member data --------------------------------
     WaitingTask* m_task;
     tbb::task_group* m_group;
+    std::shared_ptr<tbb::task_handle> m_handle;
     std::shared_ptr<tbb::task_arena> m_arena;
   };
 
