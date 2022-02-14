@@ -96,7 +96,7 @@ namespace alpaka_tbb_async {
 
   using Platform = alpaka::PltfCpu;
   using Device = alpaka::DevCpu;
-  using Queue = alpaka::QueueCpuBlocking;
+  using Queue = alpaka::QueueCpuNonBlocking;
   using Event = alpaka::EventCpu;
 
   template <typename TDim>
