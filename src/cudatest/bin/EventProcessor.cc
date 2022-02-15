@@ -1,4 +1,3 @@
-#include "Framework/EmptyWaitingTask.h"
 #include "Framework/ESPluginFactory.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
@@ -27,14 +26,15 @@ namespace edm {
 
   void EventProcessor::runToCompletion() {
     // The task that waits for all other work
-    auto globalWaitTask = make_empty_waiting_task();
-    globalWaitTask->increment_ref_count();
+    FinalWaitingTask globalWaitTask;
+    tbb::task_group group;
     for (auto& s : schedules_) {
-      s.runToCompletionAsync(WaitingTaskHolder(globalWaitTask.get()));
+      s.runToCompletionAsync(WaitingTaskHolder(group, &globalWaitTask));
     }
-    globalWaitTask->wait_for_all();
-    if (globalWaitTask->exceptionPtr()) {
-      std::rethrow_exception(*(globalWaitTask->exceptionPtr()));
+    group.wait();
+    assert(globalWaitTask.done());
+    if (globalWaitTask.exceptionPtr()) {
+      std::rethrow_exception(*(globalWaitTask.exceptionPtr()));
     }
   }
 

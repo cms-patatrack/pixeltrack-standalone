@@ -111,8 +111,7 @@ namespace cms::alpakatools {
       template <typename F, typename TQueue>
       void pushNextTask(F&& f, ContextState<TQueue> const* state) {
         replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{
-            edm::make_waiting_task_with_holder(tbb::task::allocate_root(),
-                                               std::move(waitingTaskHolder_),
+            edm::make_waiting_task_with_holder(std::move(waitingTaskHolder_),
                                                [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
                                                  func(ScopedContextTask{state, std::move(h)});
                                                })});

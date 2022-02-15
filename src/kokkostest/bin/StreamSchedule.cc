@@ -51,12 +51,18 @@ namespace edm {
   }
 
   void StreamSchedule::runToCompletionAsync(WaitingTaskHolder h) {
-    auto task =
-        make_functor_task(tbb::task::allocate_root(), [this, h]() mutable { processOneEventAsync(std::move(h)); });
+    auto task = make_functor_task([this, h]() mutable { processOneEventAsync(std::move(h)); });
     if (streamId_ == 0) {
-      tbb::task::spawn(*task);
+      h.group()->run([task]() {
+        TaskSentry s{task};
+        task->execute();
+      });
     } else {
-      tbb::task::enqueue(*task);
+      tbb::task_arena arena{tbb::task_arena::attach()};
+      arena.enqueue([task]() {
+        TaskSentry s{task};
+        task->execute();
+      });
     }
   }
 
@@ -67,27 +73,27 @@ namespace edm {
       // Pass a non-owning pointer to the event to preceding tasks
       //std::cout << "Begin processing event " << event->eventID() << std::endl;
       auto eventPtr = event.get();
+      auto* group = h.group();
       auto nextEventTask =
-          make_waiting_task(tbb::task::allocate_root(),
-                            [this, h = std::move(h), ev = std::move(event)](std::exception_ptr const* iPtr) mutable {
-                              ev.reset();
-                              if (iPtr) {
-                                h.doneWaiting(*iPtr);
-                              } else {
-                                for (auto const& worker : path_) {
-                                  worker->reset();
-                                }
-                                processOneEventAsync(std::move(h));
-                              }
-                            });
+          make_waiting_task([this, h = std::move(h), ev = std::move(event)](std::exception_ptr const* iPtr) mutable {
+            ev.reset();
+            if (iPtr) {
+              h.doneWaiting(*iPtr);
+            } else {
+              for (auto const& worker : path_) {
+                worker->reset();
+              }
+              processOneEventAsync(std::move(h));
+            }
+          });
       // To guarantee that the nextEventTask is spawned also in
       // absence of Workers, and also to prevent spawning it before
       // all workers have been processed (should not happen though)
-      auto nextEventTaskHolder = WaitingTaskHolder(nextEventTask);
+      auto nextEventTaskHolder = WaitingTaskHolder(*group, nextEventTask);
 
       for (auto iWorker = path_.rbegin(); iWorker != path_.rend(); ++iWorker) {
         //std::cout << "calling doWorkAsync for " << iWorker->get() << " with nextEventTask " << nextEventTask << std::endl;
-        (*iWorker)->doWorkAsync(*eventPtr, *eventSetup_, nextEventTask);
+        (*iWorker)->doWorkAsync(*eventPtr, *eventSetup_, nextEventTaskHolder);
       }
     } else {
       h.doneWaiting(std::exception_ptr{});

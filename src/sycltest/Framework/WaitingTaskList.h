@@ -75,28 +75,11 @@
 
 // user include files
 #include "Framework/WaitingTask.h"
+#include "Framework/WaitingTaskHolder.h"
 
 // forward declarations
 
 namespace edm {
-  class EmptyWaitingTask : public WaitingTask {
-  public:
-    EmptyWaitingTask() = default;
-
-    tbb::task* execute() override { return nullptr; }
-  };
-
-  namespace waitingtask {
-    struct TaskDestroyer {
-      void operator()(tbb::task* iTask) const { tbb::task::destroy(*iTask); }
-    };
-  }  // namespace waitingtask
-  ///Create an EmptyWaitingTask which will properly be destroyed
-  inline std::unique_ptr<edm::EmptyWaitingTask, waitingtask::TaskDestroyer> make_empty_waiting_task() {
-    return std::unique_ptr<edm::EmptyWaitingTask, waitingtask::TaskDestroyer>(new (tbb::task::allocate_root())
-                                                                                  edm::EmptyWaitingTask{});
-  }
-
   class WaitingTaskList {
   public:
     ///Constructor
@@ -105,6 +88,8 @@ namespace edm {
        * The value is only useful for optimization as the object can resize itself.
        */
     explicit WaitingTaskList(unsigned int iInitialSize = 2);
+    WaitingTaskList(const WaitingTaskList&) = delete;                   // stop default
+    const WaitingTaskList& operator=(const WaitingTaskList&) = delete;  // stop default
     ~WaitingTaskList() = default;
 
     // ---------- member functions ---------------------------
@@ -122,7 +107,12 @@ namespace edm {
        * then be spawned.
        * Calls to add() and doneWaiting() can safely be done concurrently.
        */
-    void add(WaitingTask*);
+    void add(tbb::task_group*, WaitingTask*);
+
+    ///Adds task to the waiting list
+    /**Calls to add() and doneWaiting() can safely be done concurrently.
+     */
+    void add(WaitingTaskHolder);
 
     ///Signals that the resource is now available and tasks should be spawned
     /**The owner of the resource calls this function to allow the waiting tasks to
@@ -142,9 +132,6 @@ namespace edm {
     void reset();
 
   private:
-    WaitingTaskList(const WaitingTaskList&) = delete;                   // stop default
-    const WaitingTaskList& operator=(const WaitingTaskList&) = delete;  // stop default
-
     /**Handles spawning the tasks,
        * safe to call from multiple threads
        */
@@ -152,6 +139,7 @@ namespace edm {
 
     struct WaitNode {
       WaitingTask* m_task;
+      tbb::task_group* m_group;
       std::atomic<WaitNode*> m_next;
       bool m_fromCache;
 
@@ -160,7 +148,7 @@ namespace edm {
       WaitNode* nextNode() const { return m_next; }
     };
 
-    WaitNode* createNode(WaitingTask* iTask);
+    WaitNode* createNode(tbb::task_group* iGroup, WaitingTask* iTask);
 
     // ---------- member data --------------------------------
     std::atomic<WaitNode*> m_head;
