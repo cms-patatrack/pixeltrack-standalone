@@ -7,6 +7,9 @@
 #include "Framework/PluginFactory.h"
 
 #include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/ScopedContext.h"
+#include "AlpakaCore/Product.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class TestProducer3 : public edm::EDProducer {
@@ -16,17 +19,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
 
-    edm::EDGetTokenT<AlpakaAccBuf2<float>> getToken_;
+    edm::EDGetTokenT<cms::alpakatools::Product<Queue, cms::alpakatools::device_buffer<Device, float[]>>> getToken_;
   };
 
-  TestProducer3::TestProducer3(edm::ProductRegistry& reg) : getToken_(reg.consumes<AlpakaAccBuf2<float>>()) {}
+  TestProducer3::TestProducer3(edm::ProductRegistry& reg)
+      : getToken_(reg.consumes<cms::alpakatools::Product<Queue, cms::alpakatools::device_buffer<Device, float[]>>>()) {}
 
   void TestProducer3::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
     const auto& result = event.get(getToken_);
 
-#ifdef SCOPEDCONTEXT
-    cms::cuda::ScopedContextProduce ctx(result);
-#endif
+    cms::alpakatools::ScopedContextProduce<Queue> ctx(result);
 
     std::cout << "TestProducer3 Event " << event.eventID() << " stream " << event.streamID() << std::endl;
   }
