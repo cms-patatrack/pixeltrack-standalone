@@ -204,8 +204,8 @@ namespace {
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   std::any alpakaAlgo2(Queue& queue) {
     // Host data
-    auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
-    auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
+    auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(queue, NUM_VALUES);
+    auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(queue, NUM_VALUES);
     auto h_a = h_a_buf.data();
     auto h_b = h_b_buf.data();
     for (auto i = 0U; i < NUM_VALUES; i++) {
@@ -263,7 +263,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                     alpaka::createTaskKernel<Acc1D>(
                         workDiv1, matrixMulVector(), d_mc_buf.data(), d_b_buf.data(), d_c_buf.data(), NUM_VALUES));
 
-    alpaka::wait(queue);
     return d_mc_buf;
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

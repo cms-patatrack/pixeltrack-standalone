@@ -207,8 +207,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const Extent size(NUM_VALUES);
 
     // Host data
-    auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
-    auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(NUM_VALUES);
+    auto h_a_buf = cms::alpakatools::make_host_buffer<float[]>(queue, NUM_VALUES);
+    auto h_b_buf = cms::alpakatools::make_host_buffer<float[]>(queue, NUM_VALUES);
     auto h_a = h_a_buf.data();
     auto h_b = h_b_buf.data();
     for (auto i = 0U; i < NUM_VALUES; i++) {
