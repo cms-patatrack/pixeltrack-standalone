@@ -273,14 +273,13 @@ namespace cms::alpakatools {
         if ((reuseSameQueueAllocations_ and (*block.queue == *(iBlock->second.queue))) or
             alpaka::isComplete(*(iBlock->second.event))) {
           // associate the cached buffer to the new queue
-          auto const& previousDevice = block.device();
           auto queue = std::move(*(block.queue));
           // TODO cache (or remove) the debug information and use std::move()
           block = iBlock->second;
           block.queue = std::move(queue);
 
-          // if the old and new queues are associated to different devices, generate a new event
-          if (block.device() != previousDevice) {
+          // if the new queue is on different device than the old event, create a new event
+          if (block.device() != alpaka::getDev(*(block.event))) {
             block.event = Event{block.device()};
           }
 
