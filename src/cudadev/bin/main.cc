@@ -104,10 +104,28 @@ int main(int argc, char** argv) {
   int numberOfDevices;
   auto status = cudaGetDeviceCount(&numberOfDevices);
   if (cudaSuccess != status) {
-    std::cout << "Failed to initialize the CUDA runtime";
+    std::cout << "Failed to initialize the CUDA runtime" << std::endl;
     return EXIT_FAILURE;
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
+
+  for (int dev = 0; dev < numberOfDevices; ++dev) {
+    status = cudaSetDevice(dev);
+    if (cudaSuccess != status) {
+      std::cout << "Failed to set device" << std::endl;
+      return EXIT_FAILURE;
+    }
+    status = cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
+    if (cudaSuccess != status) {
+      std::cout << "Failed to set device status flags" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+  status = cudaSetDevice(0);
+  if (cudaSuccess != status) {
+    std::cout << "Failed to set device" << std::endl;
+    return EXIT_FAILURE;
+  }
 
 #if CUDA_VERSION >= 11020
   // Initialize the CUDA memory pool
