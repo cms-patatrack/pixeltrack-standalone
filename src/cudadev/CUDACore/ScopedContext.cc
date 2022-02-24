@@ -56,20 +56,20 @@ namespace cms::cuda {
     void ScopedContextHolderHelper::enqueueCallback(int device, cudaStream_t stream) {
       SharedEventPtr event = getEventCache().get();
       cudaEventRecord(event.get(), stream);
-      edm::async(waitingTaskHolder_, [device, stream, event=std::move(event)]() mutable {
-          auto status = cudaEventSynchronize(event.get());
-          event.reset();
-          if (status != cudaSuccess) {
-            auto error = cudaGetErrorName(status);
-            auto message = cudaGetErrorString(status);
-            throw std::runtime_error("Callback of CUDA stream " +
-                                     std::to_string(reinterpret_cast<unsigned long>(stream)) + " in device " +
-                                     std::to_string(device) + " error " + std::string(error) + ": " + std::string(message));
-          } else {
-            //std::cout << " GPU kernel finished (in callback) device " << device << " CUDA stream "
-            //          << stream << std::endl;
-          }
-        });
+      edm::async(waitingTaskHolder_, [device, stream, event = std::move(event)]() mutable {
+        auto status = cudaEventSynchronize(event.get());
+        event.reset();
+        if (status != cudaSuccess) {
+          auto error = cudaGetErrorName(status);
+          auto message = cudaGetErrorString(status);
+          throw std::runtime_error(
+              "Callback of CUDA stream " + std::to_string(reinterpret_cast<unsigned long>(stream)) + " in device " +
+              std::to_string(device) + " error " + std::string(error) + ": " + std::string(message));
+        } else {
+          //std::cout << " GPU kernel finished (in callback) device " << device << " CUDA stream "
+          //          << stream << std::endl;
+        }
+      });
     }
   }  // namespace impl
 
