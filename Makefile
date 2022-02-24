@@ -517,7 +517,7 @@ $(EIGEN_BASE):
 	# from Eigen master branch as of 2021.08.18
 	git clone -b cms/master/82dd3710dac619448f50331c1d6a35da673f764a https://github.com/cms-externals/eigen-git-mirror.git $@
 	# include all Patatrack updates
-	cd $@ && git reset --hard 733e6166b2f8b4edd23da33985187fd60903e9ca
+	cd $@ && git reset --hard 6294f3471cc18068079ec6af8ceccebe34b40021
 
 # Boost
 .PHONY: external_boost
