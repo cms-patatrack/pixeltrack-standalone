@@ -198,7 +198,7 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.serial.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 # Portable code, for TBB backend
 $(OBJ_DIR)/$(2)/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS)  -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 	@cp $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp; \
 	  sed 's#\($(2)/alpaka/$$*\)\.o[ :]*#\1.o \1.d : #g' < $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d.tmp > $(OBJ_DIR)/$(2)/alpaka/$$*.cc.tbb.d; \
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$$$//' \
@@ -209,7 +209,7 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 ifdef CUDA_BASE
 $(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CUDA_NVCC) -x cu $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS)  -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND -UALPAKA_HOST_ONLY $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
+	$(CUDA_NVCC) -x cu $(ALPAKA_CUFLAGS) $(CUDA_CXXFLAGS) $(MY_CXXFLAGS) -DALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND -UALPAKA_HOST_ONLY $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_NVCC_CXXFLAGS)) -c $$< -o $$@ -MMD
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@

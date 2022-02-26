@@ -22,8 +22,8 @@
 #include "Framework/Event.h"
 #include "Framework/EventSetup.h"
 #include "Framework/PluginFactory.h"
+#include "SiPixelRawToDigi/ErrorChecker.h"
 
-#include "../ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
