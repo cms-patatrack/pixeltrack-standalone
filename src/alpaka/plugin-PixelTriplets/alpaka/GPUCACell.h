@@ -13,7 +13,6 @@
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/VecArray.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/threadfence.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
@@ -76,7 +75,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellNeighbors.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellNeighbors[i].reset();
-          cms::alpakatools::threadfence(acc);
+          alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
           theOuterNeighbors = &cellNeighbors[i];
@@ -91,7 +90,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      cms::alpakatools::threadfence(acc);
+      alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
 
       return outerNeighbors().push_back(acc, t);
     }
@@ -104,7 +103,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellTracks.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellTracks[i].reset();
-          cms::alpakatools::threadfence(acc);
+          alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
           theTracks = &cellTracks[i];
@@ -119,7 +118,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      cms::alpakatools::threadfence(acc);
+      alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
 
       return tracks().push_back(acc, t);
     }
