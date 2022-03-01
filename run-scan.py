@@ -29,9 +29,9 @@ n_blocks_per_stream = {
 # 30 ev/s * 8 hours should the sufficent and fit into signed int for ~2k threads
 background_events_per_thread = 30*3600*8
 
-result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s")
+result_re = re.compile("Processed (?P<events>\d+) events in (?P<time>\S+) seconds, throughput (?P<throughput>\S+) events/s, CPU usage per thread: (?P<cpueff>\d+(.\d+)?)%")
 
-Measurement = collections.namedtuple("Measurement", ["events", "time", "throughput"])
+Measurement = collections.namedtuple("Measurement", ["events", "time", "throughput", "cpueff"])
 GPU = collections.namedtuple("GPU", ["id", "name", "driver_version"])
 GPUStatus = collections.namedtuple("GPUStatus", ["utilization", "temperature", "power", "clock"])
 BackgroundJob = collections.namedtuple("BackgroundJob", ["handle", "logfile", "cores"])
@@ -42,10 +42,11 @@ class Monitor:
         self._intervalSeconds = opts.monitorSeconds
         self._monitorMemory = opts.monitorMemory
         self._monitorClock = opts.monitorClock
+        self._monitorUtilization = opts.monitorUtilization
         self._monitorCuda = opts.monitorCuda
 
         self._timeStamp = []
-        self._dataMemory = []
+        self._dataProcess = []
         self._dataClock = {x: [] for x in range(0, multiprocessing.cpu_count())}
         self._dataCuda = {x: [] for x in cudaDevices}
 
@@ -60,9 +61,13 @@ class Monitor:
             return
         self._timeStamp.append(time.strftime("%y-%m-%d %H:%M:%S"))
 
-        if self._monitorMemory:
-            rss = processRss(pid) if pid is not None else 0
-            self._dataMemory.append(dict(rss=rss))
+        if self._monitorMemory or self._monitorUtilization:
+            proc = dict()
+            if self._monitorMemory:
+                proc["rss"] = processRss(pid) if pid is not None else 0
+            if self._monitorUtilization:
+                proc["utilization"] = processUtilization(pid) if pid is not None else 0.0
+            self._dataProcess.append(proc)
         if self._monitorClock:
             clocks = processClock()
             for key, lst in self._dataClock.items():
@@ -80,10 +85,10 @@ class Monitor:
         data = {}
         if self._intervalSeconds is not None:
             data["time"] = self._timeStamp
-            if self._monitorMemory or self._monitorClock:
+            if self._monitorMemory or self._monitorUtilization or self._monitorClock:
                 data["host"] = {}
-                if self._monitorMemory:
-                    data["host"]["process"] = self._dataMemory
+                if self._monitorMemory or self._monitorUtilization:
+                    data["host"]["process"] = self._dataProcess
                 if self._monitorClock:
                     data["host"]["cpu"] = self._dataClock
             if self._monitorCuda:
@@ -99,7 +104,7 @@ def throughput(output):
         m = result_re.search(line)
         if m:
             printMessage(line.rstrip())
-            return Measurement(int(m.group("events")), float(m.group("time")), float(m.group("throughput")))
+            return Measurement(int(m.group("events")), float(m.group("time")), float(m.group("throughput")), float(m.group("cpueff")))
 
     raise Exception("Did not find throughput from the log")
 
@@ -167,6 +172,11 @@ def processClock():
                 ret[cpuid] = float(line.split(":")[1])
                 cpuid = -1
     return ret
+
+def processUtilization(pid):
+    p = subprocess.Popen(["ps", "-p", str(pid), "-o", "%cpu", "--no-header"], stdout=subprocess.PIPE, universal_newlines=True)
+    output = p.communicate()[0]
+    return float(output)
 
 def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices=[]):
     nth = len(cores_main)
@@ -390,6 +400,7 @@ def main(opts):
                     streams=nstr,
                     events=measurement.events,
                     throughput=measurement.throughput,
+                    cpueff=measurement.cpueff,
                 )
                 if monitor.intervalSeconds() is not None:
                     d["monitor"]=monitor.toArrays()
@@ -446,6 +457,8 @@ def addCommonArguments(parser):
                                help="Enable monitoring of host memory")
     monitor_group.add_argument("--monitorClock", action="store_true",
                                help="Enable monitoring of CPU core clocks")
+    monitor_group.add_argument("--monitorUtilization", action="store_true",
+                               help="Enable monitoring of CPU utilization with 'ps'")
     monitor_group.add_argument("--monitorCuda", action="store_true",
                                help="Enable monitoring of CUDA devices (utilization, power, memory etc)")
 
