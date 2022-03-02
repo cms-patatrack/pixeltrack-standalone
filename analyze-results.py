@@ -28,7 +28,7 @@ def measurementKey(meas):
         return meas["streams"]
     return tuple(m["streams"] for m in meas["programs"])
 
-def hostMemory(data, results):
+def hostProcess(data, results, key):
     for res in data["results"]:
         if not "monitor" in res:
             continue
@@ -36,16 +36,22 @@ def hostMemory(data, results):
         if "host" in mon:
             if "process" in mon["host"]:
                 print("Host:")
-                results[measurementKey(res)]["rss"].append(analyzeList(["rss"], mon["host"]["process"], "rss"))
+                results[measurementKey(res)][key].append(analyzeList([key], mon["host"]["process"], key))
             elif "processes" in mon["host"]:
                 procs = mon["host"]["processes"]
                 mem = []
                 for i in range(1, len(procs[0])-1):
                     s = 0
                     for p in procs:
-                        s += p[i]["rss"]
+                        s += p[i][key]
                     mem.append(dict(rss=s))
-                results[measurementKey(res)]["rss"].append(analyzeList(["rss"], mem, "rss"))
+                results[measurementKey(res)][key].append(analyzeList([key], mem, key))
+
+def hostMemory(data, results):
+    hostProcess(data, results, "rss")
+
+def hostUtilization(data, results):
+    hostProcess(data, results, "utilization")
 
 def hostClock(data, results):
     for res in data["results"]:
@@ -73,13 +79,19 @@ def throughput(data, results):
     for res in data["results"]:
         results[measurementKey(res)]["throughput"].append(res["throughput"])
 
+def cpueff(data, results):
+    for res in data["results"]:
+        results[measurementKey(res)]["cpueff"].append(res["cpueff"])
+
 def main(opts):
     with open(opts.file) as inp:
         data = json.load(inp)
 
     results = collections.defaultdict(lambda: collections.defaultdict(list))
     throughput(data, results)
+    cpueff(data, results)
     hostMemory(data, results)
+#    hostUtilization(data, results)
 #    hostClock(data, results)
     cudaStats(data, results)
     print()
