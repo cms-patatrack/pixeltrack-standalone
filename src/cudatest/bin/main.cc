@@ -16,6 +16,7 @@
 
 #include "CUDACore/getCachingDeviceAllocator.h"
 #include "EventProcessor.h"
+#include "PosixClockGettime.h"
 
 namespace {
   void print_help(std::string const& name) {
@@ -127,6 +128,7 @@ int main(int argc, char** argv) {
                                       static_cast<std::size_t>(numberOfThreads)};
 
   // Run work
+  auto cpu_start = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();
   auto start = std::chrono::high_resolution_clock::now();
   try {
     tbb::task_arena arena(numberOfThreads);
@@ -143,6 +145,7 @@ int main(int argc, char** argv) {
     std::cout << "\n----------\nCaught exception of unknown type" << std::endl;
     return EXIT_FAILURE;
   }
+  auto cpu_stop = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();
   auto stop = std::chrono::high_resolution_clock::now();
 
   // Run endJob
@@ -164,7 +167,10 @@ int main(int argc, char** argv) {
   // Work done, report timing
   auto diff = stop - start;
   auto time = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(diff).count()) / 1e6;
+  auto cpu_diff = cpu_stop - cpu_start;
+  auto cpu = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(cpu_diff).count()) / 1e6;
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
-            << std::defaultfloat << (maxEvents / time) << " events/s." << std::endl;
+            << std::defaultfloat << (maxEvents / time) << " events/s, CPU usage per thread: " << std::fixed
+            << std::setprecision(1) << (cpu / time / numberOfThreads * 100) << "%" << std::endl;
   return EXIT_SUCCESS;
 }
