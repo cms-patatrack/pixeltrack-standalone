@@ -133,8 +133,8 @@ export EIGEN_LDFLAGS :=
 export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
 
 BOOST_BASE := /usr
-# Minimum required version of Boost, e.g. 1.73.0
-BOOST_MIN_VERSION := 107300
+# Minimum required version of Boost, e.g. 1.78.0
+BOOST_MIN_VERSION := 107800
 # Check if an external version of Boost is present and recent enough
 ifeq ($(wildcard $(BOOST_BASE)/include/boost/version.hpp),)
 NEED_BOOST := true
@@ -527,8 +527,8 @@ external_boost: $(BOOST_BASE)
 $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
-	curl -L -s -S https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.bz2 | tar xj -C $(BOOST_TMP)
-	cd $(BOOST_TMP)/boost_1_76_0 && ./bootstrap.sh && ./b2 install --prefix=$@ --without-graph_parallel --without-mpi --without-python
+	curl -L -s -S https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 | tar xj -C $(BOOST_TMP)
+	cd $(BOOST_TMP)/boost_1_78_0 && ./bootstrap.sh && ./b2 install --prefix=$@ --without-graph_parallel --without-mpi --without-python
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
 
