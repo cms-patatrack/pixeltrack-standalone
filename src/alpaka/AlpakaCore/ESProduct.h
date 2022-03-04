@@ -5,6 +5,7 @@
 #include <cassert>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 #include <alpaka/alpaka.hpp>
