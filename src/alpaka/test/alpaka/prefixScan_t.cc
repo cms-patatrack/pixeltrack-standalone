@@ -3,6 +3,7 @@
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/initialise.h"
 #include "AlpakaCore/prefixScan.h"
 
 using namespace cms::alpakatools;
@@ -106,6 +107,8 @@ struct verify {
 };
 
 int main() {
+  cms::alpakatools::initialise<Platform>();
+
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const Device device(alpaka::getDevByIdx<Platform>(0u));
   const Vec1D size(1u);

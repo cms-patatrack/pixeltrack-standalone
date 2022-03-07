@@ -9,6 +9,7 @@
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/initialise.h"
 
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
@@ -132,6 +133,7 @@ struct verifyBulk {
 };
 
 int main() {
+  cms::alpakatools::initialise<Platform>();
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const Device device(alpaka::getDevByIdx<Platform>(0u));
   Queue queue(device);
