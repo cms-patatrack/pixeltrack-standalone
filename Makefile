@@ -461,17 +461,17 @@ $(foreach target,$(TARGETS_ALL),$(eval $(call FORMAT_template,$(target))))
 format: $(patsubst %,format_%,$(TARGETS_ALL))
 
 clean:
-	rm -fR lib obj test $(TARGETS_ALL)
+	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL)
 
 distclean: | clean
-	rm -fR external .original_env
+	rm -fR $(EXTERNAL_BASE) .original_env
 
 dataclean:
-	rm -fR data/*.tar.gz data/*.bin data/data_ok
+	rm -fR $(DATA_BASE)/*.tar.gz $(DATA_BASE)/*.bin $(DATA_BASE)/data_ok
 
 define CLEAN_template
 clean_$(1):
-	rm -fR lib/$(1) obj/$(1) test/$(1) $(1)
+	rm -fR $(LIB_DIR)/$(1) $(OBJ_DIR)/$(1) $(TEST_DIR)/$(1) $(1)
 endef
 $(foreach target,$(TARGETS_ALL),$(eval $(call CLEAN_template,$(target))))
 
