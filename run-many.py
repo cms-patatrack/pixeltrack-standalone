@@ -87,10 +87,10 @@ class Program:
 
     def addMetadata(self, d):
         d["program"] = self.programShort()
-        d["threads"] = self._threads
-        d["streams"] = self._streams
+        d["threads"] = int(self._threads)
+        d["streams"] = int(self._streams)
         if self._numa is not None:
-            d["numa"] = self._numa
+            d["numa"] = int(self._numa)
         if self._cores is not None:
             d["cores"] = self._cores
         if self._cudaDevices is not None:
