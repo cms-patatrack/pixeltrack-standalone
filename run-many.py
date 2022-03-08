@@ -6,6 +6,7 @@ import time
 import socket
 import argparse
 import importlib
+import statistics
 import subprocess
 import collections
 import multiprocessing
@@ -229,8 +230,9 @@ def runMany(programs, opts, logfilenamebase, monitor):
 
     ret = []
     for i in range(len(programs)):
-        with open(logfilenamebase.format(i)) as logfile:
-            ret.append(scan.throughput(logfile))
+        fname = logfilenamebase.format(i)
+        with open(fname) as logfile:
+            ret.append(scan.throughput(logfile, fname))
     return ret
 
             
@@ -288,7 +290,8 @@ def main(opts):
 
     d = dict(
         hostname=hostname,
-        throughput=sum([m.throughput for m in measurements]),
+        throughput=sum(m.throughput for m in measurements),
+        cpueff=statistics.mean(m.cpueff for m in measurements) if len(measurements) > 0 else 0,
         programs=[]
     )
     scan.printMessage("Total throughput {} events/s".format(d["throughput"]))
@@ -296,7 +299,8 @@ def main(opts):
         dp = dict(
             events=m.events,
             time=m.time,
-            throughput=m.throughput
+            throughput=m.throughput,
+            cpueff=m.cpueff,
         )
         p.addMetadata(dp)
         d["programs"].append(dp)

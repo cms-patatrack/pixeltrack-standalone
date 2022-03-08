@@ -99,7 +99,7 @@ class Monitor:
 def printMessage(*args):
     print(time.strftime("%y-%m-%d %H:%M:%S"), *args)
 
-def throughput(output):
+def throughput(output, filename):
     for line in output:
         m = result_re.search(line)
         if m:
@@ -219,7 +219,7 @@ def _run(processUntil, nstr, cores_main, opts, logfilename, monitor, cudaDevices
         if p.returncode != 0:
             raise Exception("Got return code %d, see output in the log file %s" % (p.returncode, logfilename))
     with open(logfilename) as logfile:
-        return throughput(logfile)
+        return throughput(logfile, logfilename)
 
 def runEvents(nev, *args, **kwargs):
     return _run(["--maxEvents", str(nev)], *args, **kwargs)
