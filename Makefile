@@ -200,7 +200,7 @@ endif
 export KOKKOS_CXXFLAGS := -isystem $(KOKKOS_INSTALL)/include
 $(eval $(call CUFLAGS_template,$(KOKKOS_CUDA_ARCH),KOKKOS_))
 export KOKKOS_LDFLAGS := -L$(KOKKOS_INSTALL)/lib -lkokkoscore -ldl
-export KOKKOS_NVCC_CXXFLAGS :=
+export KOKKOS_NVCC_CXXFLAGS := -Wno-deprecated-gpu-targets
 export NVCC_WRAPPER_DEFAULT_COMPILER := $(CXX)
 
 KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
