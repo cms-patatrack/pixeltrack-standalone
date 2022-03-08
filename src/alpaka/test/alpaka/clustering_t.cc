@@ -12,6 +12,7 @@
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/initialise.h"
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
@@ -21,6 +22,8 @@ using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 int main(void) {
+  cms::alpakatools::initialise<Platform>();
+
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const Device device(alpaka::getDevByIdx<Platform>(0u));
   Queue queue(device);
