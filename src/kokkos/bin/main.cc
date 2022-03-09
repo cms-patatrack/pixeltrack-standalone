@@ -189,10 +189,10 @@ int main(int argc, char** argv) {
 
   // Initialize he TBB thread pool
 #ifdef KOKKOS_ENABLE_THREADS
+  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism, static_cast<std::size_t>(1)};
+#else
   tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
                                       static_cast<std::size_t>(numberOfThreads)};
-#else
-  tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism, static_cast<std::size_t>(1)};
 #endif
 
   // Run work
