@@ -190,6 +190,8 @@ else ifeq ($(KOKKOS_CUDA_ARCH),75)
   KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_TURING75=On
 else ifeq ($(KOKKOS_CUDA_ARCH),80)
   KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_AMPERE80=On
+else ifeq ($(KOKKOS_CUDA_ARCH),86)
+  KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_AMPERE86=On
 else
   $(error Unsupported KOKKOS_CUDA_ARCH $(KOKKOS_CUDA_ARCH). Likely it is sufficient just add another case in the Makefile)
 endif
