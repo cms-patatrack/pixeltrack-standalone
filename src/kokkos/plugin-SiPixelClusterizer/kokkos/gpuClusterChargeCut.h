@@ -94,11 +94,8 @@ namespace gpuClustering {
                                         ::gpuClustering::MaxNumClustersPerModules);
 
           assert(nclus <= ::gpuClustering::MaxNumClustersPerModules);
-          for (uint32_t i = teamMember.team_rank(); i < ::gpuClustering::MaxNumClustersPerModules;
-               i += teamMember.team_size()) {
+          for (uint32_t i = teamMember.team_rank(); i < nclus; i += teamMember.team_size()) {
             charge(i) = 0;
-            ok(i) = 0;
-            newclusId(i) = 0;
           }
           teamMember.team_barrier();
 
