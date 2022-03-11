@@ -20,6 +20,7 @@
 /cudatest
 /cudauvm
 /fwtest
+/hip
 /kokkos
 /kokkostest
 /serial
