@@ -47,6 +47,10 @@ namespace kokkos_common {
   InitializeScopeGuard::InitializeScopeGuard(std::vector<Backend> const& backends, int numberOfInnerThreads) {
     // for now pass in the default arguments
     Kokkos::InitArguments arguments(numberOfInnerThreads);
+    auto env_tool_lib = std::getenv("KOKKOS_PROFILE_LIBRARY");
+    if (env_tool_lib != nullptr) {
+      arguments.tool_lib = env_tool_lib;
+    }
     pimpl_ = std::make_unique<Impl>(backends, arguments);
   }
 
