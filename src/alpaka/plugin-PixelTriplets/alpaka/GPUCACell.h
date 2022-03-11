@@ -75,7 +75,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellNeighbors.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellNeighbors[i].reset();
-          alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
+          alpaka::mem_fence(acc, alpaka::memory_scope::Grid{});
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
           theOuterNeighbors = &cellNeighbors[i];
@@ -90,7 +90,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
+      alpaka::mem_fence(acc, alpaka::memory_scope::Grid{});
 
       return outerNeighbors().push_back(acc, t);
     }
@@ -103,7 +103,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto i = cellTracks.extend(acc);  // maybe waisted....
         if (i > 0) {
           cellTracks[i].reset();
-          alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
+          alpaka::mem_fence(acc, alpaka::memory_scope::Grid{});
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
           // Serial case does not behave properly otherwise (also observed in Kokkos)
           theTracks = &cellTracks[i];
@@ -118,7 +118,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         } else
           return -1;
       }
-      alpaka::mem_fence(acc, alpaka::memory_scope::Device{});
+      alpaka::mem_fence(acc, alpaka::memory_scope::Grid{});
 
       return tracks().push_back(acc, t);
     }
