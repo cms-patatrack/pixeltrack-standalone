@@ -1,3 +1,7 @@
+#ifdef NTUPLE_DEBUG
+#include <iostream>
+#endif
+
 #include "CAHitNtupletGeneratorKernelsImpl.h"
 
 template <>
