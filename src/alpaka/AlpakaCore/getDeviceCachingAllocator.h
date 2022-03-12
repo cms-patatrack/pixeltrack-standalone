@@ -8,7 +8,7 @@
 #include "AlpakaCore/AllocatorConfig.h"
 #include "AlpakaCore/CachingAllocator.h"
 #include "AlpakaCore/alpakaDevices.h"
-#include "AlpakaCore/getDevIndex.h"
+#include "AlpakaCore/getDeviceIndex.h"
 
 namespace cms::alpakatools {
 
@@ -53,7 +53,7 @@ namespace cms::alpakatools {
     // initialise all allocators, one per device
     static auto allocators = detail::allocate_device_allocators<TDevice, TQueue>();
 
-    auto const index = getDevIndex(device);
+    auto const index = getDeviceIndex(device);
     assert(index < cms::alpakatools::devices<alpaka::Pltf<TDevice>>.size());
 
     // the public interface is thread safe

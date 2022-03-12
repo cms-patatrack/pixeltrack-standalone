@@ -42,7 +42,7 @@ namespace cms::alpakatools {
         auto& allocator = getHostCachingAllocator<alpaka::QueueUniformCudaHipRtNonBlocking>();
 
         // FIXME the BufCpu does not support a pitch ?
-        size_t size = alpaka::extent::getExtentProduct(extent);
+        size_t size = alpaka::getExtentProduct(extent);
         size_t sizeBytes = size * sizeof(TElem);
         void* memPtr = allocator.allocate(sizeBytes, queue);
 
@@ -65,11 +65,11 @@ namespace cms::alpakatools {
 
         auto& allocator = getDeviceCachingAllocator<alpaka::DevUniformCudaHipRt, TQueue>(dev);
 
-        size_t width = alpaka::extent::getWidth(extent);
+        size_t width = alpaka::getWidth(extent);
         size_t widthBytes = width * static_cast<TIdx>(sizeof(TElem));
         // TODO implement pitch for TDim > 1
         size_t pitchBytes = widthBytes;
-        size_t size = alpaka::extent::getExtentProduct(extent);
+        size_t size = alpaka::getExtentProduct(extent);
         size_t sizeBytes = size * sizeof(TElem);
         void* memPtr = allocator.allocate(sizeBytes, queue);
 
