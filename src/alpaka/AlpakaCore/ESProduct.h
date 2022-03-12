@@ -38,7 +38,7 @@ namespace cms::alpakatools {
     // to the CUDA stream
     template <typename F>
     const T& dataForDeviceAsync(Queue& queue, F transferAsync) const {
-      auto device = cms::alpakatools::getDevIndex(alpaka::getDev(queue));
+      auto device = cms::alpakatools::getDeviceIndex(alpaka::getDev(queue));
       auto& data = gpuDataPerDevice_[device];
 
       // If GPU data has already been filled, we can return it
