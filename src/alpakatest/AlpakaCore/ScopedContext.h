@@ -110,11 +110,10 @@ namespace cms::alpakatools {
 
       template <typename F, typename TQueue>
       void pushNextTask(F&& f, ContextState<TQueue> const* state) {
-        replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{
-            edm::make_waiting_task_with_holder(std::move(waitingTaskHolder_),
-                                               [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
-                                                 func(ScopedContextTask{state, std::move(h)});
-                                               })});
+        replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder{edm::make_waiting_task_with_holder(
+            std::move(waitingTaskHolder_), [state, func = std::forward<F>(f)](edm::WaitingTaskWithArenaHolder h) {
+              func(ScopedContextTask{state, std::move(h)});
+            })});
       }
 
       void replaceWaitingTaskHolder(edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
@@ -124,10 +123,10 @@ namespace cms::alpakatools {
       template <typename TQueue>
       void enqueueCallback(TQueue& stream) {
         alpaka::enqueue(stream, alpaka::HostOnlyTask([holder = std::move(waitingTaskHolder_)]() {
-          // The functor is required to be const, but the original waitingTaskHolder_
-          // needs to be notified...
-          const_cast<edm::WaitingTaskWithArenaHolder&>(holder).doneWaiting(nullptr);
-        }));
+                          // The functor is required to be const, but the original waitingTaskHolder_
+                          // needs to be notified...
+                          const_cast<edm::WaitingTaskWithArenaHolder&>(holder).doneWaiting(nullptr);
+                        }));
       }
 
     private:

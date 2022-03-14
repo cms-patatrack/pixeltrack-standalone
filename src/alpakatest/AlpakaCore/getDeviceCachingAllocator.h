@@ -53,7 +53,7 @@ namespace cms::alpakatools {
     // initialise all allocators, one per device
     static auto allocators = detail::allocate_device_allocators<TDevice, TQueue>();
 
-    auto const index = getDeviceIndex(device);
+    size_t const index = getDeviceIndex(device);
     assert(index < cms::alpakatools::devices<alpaka::Pltf<TDevice>>.size());
 
     // the public interface is thread safe

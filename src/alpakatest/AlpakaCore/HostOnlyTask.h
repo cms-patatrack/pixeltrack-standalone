@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/alpakaExtra.hpp>
 
 namespace alpaka {
 
@@ -18,37 +19,45 @@ namespace alpaka {
     std::function<void()> task_;
   };
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
-
   namespace traits {
-    //! The CUDA/HIP RT async queue enqueue trait specialization for "safe tasks"
+
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+    //! The CUDA async queue enqueue trait specialization for "safe tasks"
     template <>
-    struct Enqueue<QueueUniformCudaHipRtNonBlocking, HostOnlyTask> {
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED)
-      static void CUDART_CB
-#else
-      static void HIPRT_CB
-#endif
-      uniformCudaHipRtCallback(ALPAKA_API_PREFIX(Stream_t) /*queue*/,
-                               ALPAKA_API_PREFIX(Error_t) /*status*/,
-                               void* arg) {
+    struct Enqueue<QueueCudaRtNonBlocking, HostOnlyTask> {
+      static void CUDART_CB callback(cudaStream_t /*queue*/, cudaError_t /*status*/, void* arg) {
         //ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(status);
         std::unique_ptr<HostOnlyTask> pTask(static_cast<HostOnlyTask*>(arg));
         (*pTask)();
       }
 
-      ALPAKA_FN_HOST static auto enqueue(QueueUniformCudaHipRtNonBlocking& queue, HostOnlyTask task) -> void {
+      ALPAKA_FN_HOST static auto enqueue(QueueCudaRtNonBlocking& queue, HostOnlyTask task) -> void {
         auto pTask = std::make_unique<HostOnlyTask>(std::move(task));
         ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-            ALPAKA_API_PREFIX(StreamAddCallback)(alpaka::getNativeHandle(queue),
-                                                 uniformCudaHipRtCallback,
-                                                 static_cast<void*>(pTask.release()),
-                                                 0u));
+            cudaStreamAddCallback(alpaka::getNativeHandle(queue), callback, static_cast<void*>(pTask.release()), 0u));
       }
     };
-  }  // namespace traits
+#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
-#endif  // defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_GPU_HIP_ENABLED)
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    //! The HIP async queue enqueue trait specialization for "safe tasks"
+    template <>
+    struct Enqueue<QueueHipRtNonBlocking, HostOnlyTask> {
+      static void HIPRT_CB callback(hipStream_t /*queue*/, hipError_t /*status*/, void* arg) {
+        //ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(status);
+        std::unique_ptr<HostOnlyTask> pTask(static_cast<HostOnlyTask*>(arg));
+        (*pTask)();
+      }
+
+      ALPAKA_FN_HOST static auto enqueue(QueueHipRtNonBlocking& queue, HostOnlyTask task) -> void {
+        auto pTask = std::make_unique<HostOnlyTask>(std::move(task));
+        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+            hipStreamAddCallback(alpaka::getNativeHandle(queue), callback, static_cast<void*>(pTask.release()), 0u));
+      }
+    };
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
+
+  }  // namespace traits
 
 }  // namespace alpaka
 

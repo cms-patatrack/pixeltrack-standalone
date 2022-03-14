@@ -2,5 +2,8 @@ alpakatest_EXTERNAL_DEPENDS := TBB ALPAKA BOOST BACKTRACE
 ifdef CUDA_BASE
 alpakatest_EXTERNAL_DEPENDS += CUDA
 endif
+ifdef ROCM_BASE
+alpakatest_EXTERNAL_DEPENDS += ROCM
+endif
 Test1_DEPENDS := Framework DataFormats AlpakaCore
 Test2_DEPENDS := Framework DataFormats AlpakaCore
