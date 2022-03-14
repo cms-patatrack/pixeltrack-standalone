@@ -13,6 +13,10 @@ namespace alpaka_cuda_async {
   class TrackingRecHit2DAlpaka;
 }
 
+namespace alpaka_rocm_async {
+  class TrackingRecHit2DAlpaka;
+}
+
 namespace alpaka_tbb_async {
   class TrackingRecHit2DAlpaka;
 }
@@ -32,6 +36,7 @@ public:
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
 
   friend class alpaka_cuda_async::TrackingRecHit2DAlpaka;
+  friend class alpaka_rocm_async::TrackingRecHit2DAlpaka;
   friend class alpaka_tbb_async::TrackingRecHit2DAlpaka;
   friend class alpaka_serial_sync::TrackingRecHit2DAlpaka;
 

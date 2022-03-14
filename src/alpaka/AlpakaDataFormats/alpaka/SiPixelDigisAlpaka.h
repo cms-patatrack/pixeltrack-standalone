@@ -10,7 +10,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelDigisAlpaka {
   public:
-    SiPixelDigisAlpaka() = default;
+    SiPixelDigisAlpaka() = delete;  // alpaka buffers are not default-constructible
     explicit SiPixelDigisAlpaka(Queue &queue, size_t maxFedWords)
         : xx_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},
           yy_d{cms::alpakatools::make_device_buffer<uint16_t[]>(queue, maxFedWords)},

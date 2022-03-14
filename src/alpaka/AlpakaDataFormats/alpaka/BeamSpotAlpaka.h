@@ -12,7 +12,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class BeamSpotAlpaka {
   public:
     // default constructor, required by cms::alpakatools::Product<Queue, BeamSpotAlpaka>
-    BeamSpotAlpaka() = default;
+    BeamSpotAlpaka() = delete;  // alpaka buffers are not default-constructible
 
     // constructor that allocates cached device memory on the given queue
     BeamSpotAlpaka(Queue const& queue) : data_d_{cms::alpakatools::make_device_buffer<BeamSpotPOD>(queue)} {}

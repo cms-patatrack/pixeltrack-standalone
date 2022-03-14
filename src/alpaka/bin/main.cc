@@ -24,8 +24,20 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name
-        << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+        << name << ": "
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+        << "[--serial] "
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+        << "[--tbb] "
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+        << "[--cuda] "
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+        << "[--hip] "
+#endif
+        << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer] [--validation]\n\n"
         << "Options\n"
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
@@ -36,6 +48,9 @@ namespace {
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         << " --cuda              Use CUDA backend\n"
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+        << " --hip               Use ROCm/HIP backend\n"
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
@@ -80,6 +95,10 @@ int main(int argc, char** argv) {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    } else if (*i == "--hip") {
+      backends.emplace_back(Backend::HIP);
 #endif
     } else if (*i == "--numberOfThreads") {
       ++i;
@@ -146,6 +165,11 @@ int main(int argc, char** argv) {
     cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
   }
 #endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+  if (std::find(backends.begin(), backends.end(), Backend::HIP) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_rocm_async::Platform>();
+  }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
@@ -182,6 +206,9 @@ int main(int argc, char** argv) {
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     addModules("alpaka_cuda_async", Backend::CUDA);
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    addModules("alpaka_rocm_async", Backend::HIP);
 #endif
   }
   edm::EventProcessor processor(

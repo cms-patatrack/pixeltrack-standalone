@@ -12,7 +12,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelDigiErrorsAlpaka {
   public:
-    SiPixelDigiErrorsAlpaka() = default;
+    SiPixelDigiErrorsAlpaka() = delete;  // alpaka buffers are not default-constructible
     explicit SiPixelDigiErrorsAlpaka(Queue& queue, size_t maxFedWords, PixelFormatterErrors errors)
         : data_d{cms::alpakatools::make_device_buffer<PixelErrorCompact[]>(queue, maxFedWords)},
           error_d{cms::alpakatools::make_device_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue)},

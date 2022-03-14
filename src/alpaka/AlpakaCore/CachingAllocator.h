@@ -15,6 +15,7 @@
 #include <boost/core/demangle.hpp>
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/alpakaExtra.hpp>
 
 #include "AlpakaCore/alpakaDevices.h"
 
@@ -335,12 +336,19 @@ namespace cms::alpakatools {
 
       // for host memory, pin the newly allocated block
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      if (not cms::alpakatools::devices<alpaka::PltfUniformCudaHipRt>.empty()) {
+      if (not cms::alpakatools::devices<alpaka::PltfCudaRt>.empty()) {
         // it is possible to initialise the CUDA runtime and call cudaHostRegister
         // only if the system has at least one supported GPU
         alpaka::prepareForAsyncCopy(*block.buffer);
       }
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+      if (not cms::alpakatools::devices<alpaka::PltfHipRt>.empty()) {
+        // it is possible to initialise the ROCm runtime and call hipHostRegister
+        // only if the system has at least one supported GPU
+        alpaka::prepareForAsyncCopy(*block.buffer);
+      }
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
 
       // create a new event associated to the "synchronisation device"
       block.event = Event{block.device()};

@@ -19,6 +19,11 @@ namespace cms::alpakatools {
   inline int getDeviceIndex(alpaka::DevCudaRt const& device) { return alpaka::getNativeHandle(device); }
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
 
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+  // overload for DevHipRt
+  inline int getDeviceIndex(alpaka::DevHipRt const& device) { return alpaka::getNativeHandle(device); }
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
+
 }  // namespace cms::alpakatools
 
 #endif  // AlpakaCore_getDeviceIndex_h

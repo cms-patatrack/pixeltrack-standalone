@@ -38,6 +38,15 @@ namespace cms::alpakatools {
       return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
     } else
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#if ALPAKA_ACC_GPU_HIP_ENABLED
+        if constexpr (std::is_same_v<TAcc, alpaka::AccGpuHipRt<Dim1D, Idx>>) {
+      // On GPU backends, each thread is looking at a single element:
+      //   - threadsPerBlockOrElementsPerThread is the number of threads per block;
+      //   - elementsPerThread is always 1.
+      const auto elementsPerThread = Idx{1};
+      return WorkDiv<Dim1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+    } else
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
     {
       // On CPU backends, run serially with a single thread per block:
       //   - threadsPerBlock is always 1;
@@ -63,6 +72,15 @@ namespace cms::alpakatools {
       return WorkDiv<Dim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
     } else
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+        if constexpr (std::is_same_v<TAcc, alpaka::AccGpuHipRt<Dim, Idx>>) {
+      // On GPU backends, each thread is looking at a single element:
+      //   - threadsPerBlockOrElementsPerThread is the number of threads per block;
+      //   - elementsPerThread is always 1.
+      const auto elementsPerThread = Vec<Dim>::ones();
+      return WorkDiv<Dim>(blocksPerGrid, threadsPerBlockOrElementsPerThread, elementsPerThread);
+    } else
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
     {
       // On CPU backends, run serially with a single thread per block:
       //   - threadsPerBlock is always 1;

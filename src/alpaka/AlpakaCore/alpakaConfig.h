@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/alpakaExtra.hpp>
 
 namespace alpaka_common {
 
@@ -48,10 +49,10 @@ namespace alpaka_common {
 namespace alpaka_cuda_async {
   using namespace alpaka_common;
 
-  using Platform = alpaka::PltfUniformCudaHipRt;
+  using Platform = alpaka::PltfCudaRt;
   using Device = alpaka::DevCudaRt;
   using Queue = alpaka::QueueCudaRtNonBlocking;
-  using Event = alpaka::EventUniformCudaHipRt;
+  using Event = alpaka::EventCudaRt;
 
   template <typename TDim>
   using Acc = alpaka::AccGpuCudaRt<TDim, Idx>;
@@ -66,6 +67,29 @@ namespace alpaka_cuda_async {
 #ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_cuda_async
 #endif  // ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+namespace alpaka_rocm_async {
+  using namespace alpaka_common;
+
+  using Platform = alpaka::PltfHipRt;
+  using Device = alpaka::DevHipRt;
+  using Queue = alpaka::QueueHipRtNonBlocking;
+  using Event = alpaka::EventHipRt;
+
+  template <typename TDim>
+  using Acc = alpaka::AccGpuHipRt<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
+
+}  // namespace alpaka_rocm_async
+
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
+
+#ifdef ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_rocm_async
+#endif  // ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 namespace alpaka_serial_sync {

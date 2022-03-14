@@ -8,7 +8,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class SiPixelClustersAlpaka {
   public:
-    SiPixelClustersAlpaka() = default;
+    SiPixelClustersAlpaka() = delete;  // alpaka buffers are not default-constructible
     explicit SiPixelClustersAlpaka(Queue &queue, size_t maxClusters)
         : moduleStart_d{cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters + 1)},
           clusInModule_d{cms::alpakatools::make_device_buffer<uint32_t[]>(queue, maxClusters)},
