@@ -578,7 +578,7 @@ external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
 	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
-	cd $@ && git checkout 4189bd1e2d831bd5bf0c9e00ca79637e3afc208d
+	cd $@ && git checkout eff3dcee30e893af3d7c7597983c9dd1e655faf3
 
 # Cupla
 .PHONY: external_cupla
