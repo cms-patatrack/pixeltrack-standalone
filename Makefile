@@ -158,13 +158,6 @@ ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
 export ALPAKA_CXXFLAGS := -isystem $(ALPAKA_BASE)/include
 
-CUPLA_BASE := $(EXTERNAL_BASE)/cupla
-export CUPLA_DEPS := $(CUPLA_BASE)/lib
-export CUPLA_LIBDIR := $(CUPLA_BASE)/lib
-export CUPLA_CXXFLAGS := -isystem $(CUPLA_BASE)/include
-export CUPLA_LDFLAGS := -L$(CUPLA_LIBDIR)
-export CUPLA_NVCC_CXXFLAGS :=
-
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
 KOKKOS_BUILD := $(KOKKOS_BASE)/build
@@ -384,7 +377,6 @@ endif
 ifdef CUDA_BASE
 	@echo -n '$(CUDA_LIBDIR):'                                              >> $@
 endif
-	@echo -n '$(CUPLA_LIBDIR):'                                             >> $@
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 ifneq ($(SYCL_BASE),)
 ifeq ($(wildcard $(ONEAPI_ENV)),)
@@ -577,17 +569,6 @@ external_alpaka: $(ALPAKA_BASE)
 $(ALPAKA_BASE):
 	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
 	cd $@ && git checkout eff3dcee30e893af3d7c7597983c9dd1e655faf3
-
-# Cupla
-.PHONY: external_cupla
-external_cupla: $(CUPLA_BASE)/lib
-
-$(CUPLA_BASE):
-	git clone git@github.com:alpaka-group/cupla.git -b 0.3.0 $@
-	cd $@ && git config core.sparsecheckout true && /usr/bin/echo -e '/*\n!/alpaka\n!/build\n!/lib' > .git/info/sparse-checkout && git read-tree -v -mu HEAD
-
-$(CUPLA_BASE)/lib: $(CUPLA_BASE) $(ALPAKA_DEPS) $(BOOST_DEPS) $(TBB_DEPS) $(CUDA_DEPS)
-	$(MAKE) -C $(CUPLA_BASE) -f $(BASE_DIR)/Makefile.cupla CXX=$(CXX) CUDA_BASE=$(CUDA_BASE) BOOST_BASE=$(BOOST_BASE) TBB_BASE=$(TBB_BASE) ALPAKA_BASE=$(ALPAKA_BASE)
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
