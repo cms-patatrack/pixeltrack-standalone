@@ -1,6 +1,10 @@
-#include "ESPluginFactory.h"
-
+#include <filesystem>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "ESPluginFactory.h"
 
 namespace edm {
   namespace ESPluginFactory {

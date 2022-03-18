@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_WaitingTaskWithArenaHolder_h
-#define FWCore_Concurrency_WaitingTaskWithArenaHolder_h
+#ifndef Framework_WaitingTaskWithArenaHolder_h
+#define Framework_WaitingTaskWithArenaHolder_h
 // -*- C++ -*-
 //
 // Package:     FWCore/Concurrency
@@ -21,6 +21,7 @@
 
 #include <exception>
 #include <memory>
+#include <utility>
 
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
@@ -112,4 +113,4 @@ namespace edm {
         });
   }
 }  // namespace edm
-#endif
+#endif  // Framework_WaitingTaskWithArenaHolder_h

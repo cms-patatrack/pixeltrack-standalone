@@ -1,5 +1,5 @@
-#ifndef PluginManager_h
-#define PluginManager_h
+#ifndef bin_PluginManager_h
+#define bin_PluginManager_h
 
 #include <memory>
 #include <mutex>
@@ -23,4 +23,4 @@ namespace edmplugin {
   };
 }  // namespace edmplugin
 
-#endif
+#endif  // bin_PluginManager_h

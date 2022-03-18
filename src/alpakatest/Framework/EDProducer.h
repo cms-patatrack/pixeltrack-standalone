@@ -1,5 +1,7 @@
-#ifndef EDProducerBase_h
-#define EDProducerBase_h
+#ifndef Framework_EDProducer_h
+#define Framework_EDProducer_h
+
+#include <utility>
 
 #include "Framework/WaitingTaskWithArenaHolder.h"
 
@@ -50,4 +52,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_EDProducer_h

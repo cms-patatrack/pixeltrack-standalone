@@ -1,5 +1,5 @@
-#ifndef DataFormats_FEDRawData_fed_trailer_h
-#define DataFormats_FEDRawData_fed_trailer_h
+#ifndef DataFormats_fed_trailer_h
+#define DataFormats_fed_trailer_h
 
 #include <cstdint>
 
@@ -73,4 +73,4 @@ typedef struct fedt_struct {
 }
 #endif
 
-#endif  // DataFormats_FEDRawData_fed_trailer_h
+#endif  // DataFormats_fed_trailer_h

@@ -1,5 +1,5 @@
-#ifndef DataFormats_FEDRawData_fed_header_h
-#define DataFormats_FEDRawData_fed_header_h
+#ifndef DataFormats_fed_header_h
+#define DataFormats_fed_header_h
 
 #include <cstdint>
 
@@ -63,4 +63,4 @@ typedef struct fedh_struct {
 }
 #endif
 
-#endif  // DataFormats_FEDRawData_fed_header_h
+#endif  // DataFormats_fed_header_h

@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_WaitingTaskList_h
-#define FWCore_Concurrency_WaitingTaskList_h
+#ifndef Framework_WaitingTaskList_h
+#define Framework_WaitingTaskList_h
 // -*- C++ -*-
 //
 // Package:     Concurrency
@@ -72,6 +72,8 @@
 
 // system include files
 #include <atomic>
+#include <exception>
+#include <memory>
 
 // user include files
 #include "Framework/WaitingTask.h"
@@ -160,4 +162,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_WaitingTaskList_h

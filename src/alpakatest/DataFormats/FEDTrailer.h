@@ -1,5 +1,5 @@
-#ifndef DataFormats_FEDRawData_FEDTrailer_h
-#define DataFormats_FEDRawData_FEDTrailer_h
+#ifndef DataFormats_FEDTrailer_h
+#define DataFormats_FEDTrailer_h
 
 /** \class FEDTrailer
  *  Helper class to interpret/create FED trailer words.
@@ -59,4 +59,4 @@ public:
 private:
   const fedt_struct* theTrailer;
 };
-#endif  // DataFormats_FEDRawData_FEDTrailer_h
+#endif  // DataFormats_FEDTrailer_h

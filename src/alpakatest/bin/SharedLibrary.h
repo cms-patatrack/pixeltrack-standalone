@@ -1,5 +1,5 @@
-#ifndef FWCore_PluginManager_SharedLibrary_h
-#define FWCore_PluginManager_SharedLibrary_h
+#ifndef bin_SharedLibrary_h
+#define bin_SharedLibrary_h
 // -*- C++ -*-
 //
 // Package:     PluginManager
@@ -50,4 +50,4 @@ namespace edmplugin {
   };
 
 }  // namespace edmplugin
-#endif
+#endif  // bin_SharedLibrary_h

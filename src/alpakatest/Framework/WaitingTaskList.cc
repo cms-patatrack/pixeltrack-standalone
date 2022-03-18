@@ -12,7 +12,9 @@
 //
 
 // system include files
+#include <atomic>
 #include <cassert>
+#include <exception>
 
 #include <tbb/task.h>
 
