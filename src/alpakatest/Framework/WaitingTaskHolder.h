@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_WaitingTaskHolder_h
-#define FWCore_Concurrency_WaitingTaskHolder_h
+#ifndef Framework_WaitingTaskHolder_h
+#define Framework_WaitingTaskHolder_h
 // -*- C++ -*-
 //
 // Package:     FWCore/Concurrency
@@ -20,6 +20,8 @@
 
 // system include files
 #include <cassert>
+#include <exception>
+#include <utility>
 #include <tbb/task_group.h>
 
 // user include files
@@ -119,4 +121,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_WaitingTaskHolder_h

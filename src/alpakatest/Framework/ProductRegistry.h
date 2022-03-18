@@ -1,5 +1,5 @@
-#ifndef ProductRegistry_h
-#define ProductRegistry_h
+#ifndef Framework_ProductRegistry_h
+#define Framework_ProductRegistry_h
 
 #include <memory>
 #include <set>
@@ -10,6 +10,7 @@
 
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
+#include "Framework/demangle.h"
 
 namespace edm {
   class ProductRegistry {
@@ -29,7 +30,7 @@ namespace edm {
       auto succeeded = typeToIndex_.emplace(ti, Indices{currentModuleIndex_, ind});
 #endif
       if (not succeeded.second) {
-        throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " already exists");
+        throw std::runtime_error(std::string("Product of type ") + demangle<T> + " already exists");
       }
       return EDPutTokenT<T>{ind};
     }
@@ -38,7 +39,7 @@ namespace edm {
     EDGetTokenT<T> consumes() {
       const auto found = typeToIndex_.find(std::type_index(typeid(T)));
       if (found == typeToIndex_.end()) {
-        throw std::runtime_error(std::string("Product of type ") + typeid(T).name() + " is not produced");
+        throw std::runtime_error(std::string("Product of type ") + demangle<T> + " is not produced");
       }
       consumedModules_.insert(found->second.moduleIndex());
       return EDGetTokenT<T>{found->second.productIndex()};
@@ -74,4 +75,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_ProductRegistry_h

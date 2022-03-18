@@ -1,9 +1,11 @@
-#ifndef Worker_h
-#define Worker_h
+#ifndef Framework_Worker_h
+#define Framework_Worker_h
 
 #include <atomic>
-#include <vector>
+#include <exception>
 //#include <iostream>
+#include <utility>
+#include <vector>
 
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
@@ -110,4 +112,4 @@ namespace edm {
     std::atomic<bool> workStarted_;
   };
 }  // namespace edm
-#endif
+#endif  // Framework_Worker_h

@@ -1,5 +1,5 @@
-#ifndef FWCore_Concurrency_FunctorTask_h
-#define FWCore_Concurrency_FunctorTask_h
+#ifndef Framework_FunctorTask_h
+#define Framework_FunctorTask_h
 // -*- C++ -*-
 //
 // Package:     Concurrency
@@ -22,6 +22,7 @@
 #include <atomic>
 #include <exception>
 #include <memory>
+#include <utility>
 
 // user include files
 #include "Framework/TaskBase.h"
@@ -46,4 +47,4 @@ namespace edm {
   }
 }  // namespace edm
 
-#endif
+#endif  // Framework_FunctorTask_h

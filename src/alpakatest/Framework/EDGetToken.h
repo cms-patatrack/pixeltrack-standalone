@@ -1,5 +1,5 @@
-#ifndef FWCore_Utilities_EDGetToken_h
-#define FWCore_Utilities_EDGetToken_h
+#ifndef Framework_EDGetToken_h
+#define Framework_EDGetToken_h
 // -*- C++ -*-
 //
 // Package:     FWCore/Utilities
@@ -82,4 +82,4 @@ namespace edm {
   };
 }  // namespace edm
 
-#endif
+#endif  // Framework_EDGetToken_h

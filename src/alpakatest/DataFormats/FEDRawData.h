@@ -1,5 +1,5 @@
-#ifndef FEDRawData_FEDRawData_h
-#define FEDRawData_FEDRawData_h
+#ifndef DataFormats_FEDRawData_h
+#define DataFormats_FEDRawData_h
 
 /** \class FEDRawData
  *
@@ -52,4 +52,4 @@ private:
   Data data_;
 };
 
-#endif
+#endif  // DataFormats_FEDRawData_h

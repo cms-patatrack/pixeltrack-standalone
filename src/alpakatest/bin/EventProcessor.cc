@@ -1,3 +1,8 @@
+#include <exception>
+#include <filesystem>
+#include <string>
+#include <vector>
+
 #include "Framework/ESPluginFactory.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"

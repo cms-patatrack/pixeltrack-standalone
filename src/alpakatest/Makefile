@@ -108,7 +108,7 @@ PLUGINNAMES += $(1)_cuda
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 endif
-endif # if PORTABLE_SRC is empty
+endif # if PORTABLE_SRC is not empty
 ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
