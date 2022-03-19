@@ -2,7 +2,7 @@ kokkos_EXTERNAL_DEPENDS := TBB KOKKOS EIGEN
 ifeq ($(KOKKOS_DEVICE_PARALLEL),CUDA)
   kokkos_EXTERNAL_DEPENDS += CUDA
 else ifeq ($(KOKKOS_DEVICE_PARALLEL),HIP)
-  kokkos_EXTERNAL_DEPENDS += HIP
+  kokkos_EXTERNAL_DEPENDS += ROCM
 endif
 BeamSpotProducer_DEPENDS := Framework KokkosCore KokkosDataFormats DataFormats
 KokkosCore_DEPENDS := Framework

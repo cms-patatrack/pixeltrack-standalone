@@ -1,4 +1,4 @@
-hiptest_EXTERNAL_DEPENDS := TBB HIP BOOST BACKTRACE
+hiptest_EXTERNAL_DEPENDS := TBB ROCM BOOST BACKTRACE
 CUDACore_DEPENDS := Framework
 Test1_DEPENDS := Framework CUDACore DataFormats
 Test2_DEPENDS := Framework CUDACore

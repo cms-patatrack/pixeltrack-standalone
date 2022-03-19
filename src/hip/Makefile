@@ -10,7 +10,7 @@ test_nvidiagpu:
 test_amdagpu: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
-#	$(TARGET) --maxEvents 2
+	$(TARGET) --maxEvents 2
 	@echo "Succeeded"
 test_intelagpu:
 test_auto:
@@ -78,7 +78,7 @@ run_$(1): $(1)
 test_$(2): run_$(1)
 endef
 $(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
-KNOWN_FAILING_TESTS=testEigenGPUNoFit prefixScan_t eigenSoA_t radixSort_t gpuVertexFinder_t
+KNOWN_FAILING_TESTS=testEigenGPU testEigenGPUNoFit
 TEST_EXE_CUDA_RUN := $(filter-out $(patsubst %,$(TEST_DIR)/$(TARGET_NAME)/%,$(KNOWN_FAILING_TESTS)),$(TESTS_EXE_CUDA))
 $(foreach test,$(TEST_EXE_CUDA_RUN),$(eval $(call RUNTEST_template,$(test),amdgpu)))
 
@@ -146,7 +146,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 # Tests
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(HIP_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(CXX) $(CXXFLAGS) $(ROCM_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 	@cp $(@D)/$*.cc.d $(@D)/$*.cc.d.tmp; \
 	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.d.tmp > $(@D)/$*.cc.d; \
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
@@ -159,7 +159,7 @@ $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o | $(LIBS)
 
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cu
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(HIP_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(ROCM_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
 
 $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
