@@ -305,7 +305,7 @@ $(foreach target,$(TARGETS_ALL),$(eval $(call TARGET_ALL_DEPS_template,$(target)
 
 # Split targets by required toolchain
 TARGETS_CUDA :=
-TARGETS_HIP :=
+TARGETS_ROCM :=
 TARGETS_SYCL :=
 define SPLIT_TARGETS_template
 ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
@@ -315,7 +315,7 @@ endef
 TOOLCHAINS := CUDA ROCM SYCL
 $(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
 
-TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_HIP) $(TARGETS_SYCL),$(TARGETS_ALL))
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
@@ -323,7 +323,7 @@ ifdef CUDA_BASE
 TARGETS += $(TARGETS_CUDA)
 endif
 ifdef ROCM_BASE
-TARGETS += $(TARGETS_HIP)
+TARGETS += $(TARGETS_ROCM)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
