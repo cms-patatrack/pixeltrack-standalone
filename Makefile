@@ -260,9 +260,13 @@ export KOKKOS_DEPS := $(KOKKOS_LIB)
 
 # Intel oneAPI
 ONEAPI_BASE := /opt/intel/oneapi
-ONEAPI_ENV  := $(ONEAPI_BASE)/setvars.sh
-DPCT_BASE   := $(ONEAPI_BASE)/dpcpp-ct/latest
-SYCL_BASE   := $(ONEAPI_BASE)/compiler/latest/linux
+ifneq ($(wildcard $(ONEAPI_BASE)),)
+# OneAPI platform found
+ONEAPI_ENV    := $(ONEAPI_BASE)/setvars.sh
+DPCT_BASE     := $(ONEAPI_BASE)/dpcpp-ct/latest
+SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
+DPCT_CXXFLAGS := -isystem $(DPCT_BASE)/include
+endif
 SYCL_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Wno-non-template-friend -Werror=format-contains-nul -Werror=return-local-addr -Werror=unused-but-set-variable
 
 # to use a different toolchain
@@ -279,9 +283,10 @@ else
 SYCL_BASE :=
 endif
 endif
+USER_SYCLFLAGS :=
 ifdef SYCL_BASE
 export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
-export SYCL_CXXFLAGS := -fsycl -isystem $(DPCT_BASE)/include $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS))
+export SYCL_CXXFLAGS := -fsycl $(DPCT_CXXFLAGS) $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
 ifdef CUDA_BASE
 export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
 export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
