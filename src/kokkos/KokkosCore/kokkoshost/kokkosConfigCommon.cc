@@ -3,9 +3,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#ifdef KOKKOS_ENABLE_CUDA
-#include "CUDACore/StreamCache.h"
-#endif
 
 namespace kokkos_common {
   class InitializeScopeGuard::Impl {
@@ -39,6 +36,9 @@ namespace kokkos_common {
     ~Impl() {
 #ifdef KOKKOS_ENABLE_CUDA
       cms::kokkos::getExecSpaceCache<Kokkos::Cuda>().clear();
+#endif
+#ifdef KOKKOS_ENABLE_HIP
+      cms::kokkos::getExecSpaceCache<Kokkos::Experimental::HIP>().clear();
 #endif
       Kokkos::finalize();
     }

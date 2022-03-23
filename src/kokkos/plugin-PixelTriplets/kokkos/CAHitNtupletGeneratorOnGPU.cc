@@ -66,8 +66,7 @@ namespace KOKKOS_NAMESPACE {
                  0.15000000596,     // dcaCutInnerTriplet
                  0.25,              // dcaCutOuterTriplet
                  makeQualityCuts()) {
-    auto const& execSpaceWrapped = cms::kokkos::getExecSpaceCache<KokkosExecSpace>().get();
-    auto const& execSpace = execSpaceWrapped->space();
+    auto const& execSpace = *cms::kokkos::getExecSpaceCache<KokkosExecSpace>().get();
     m_counters = cms::kokkos::make_shared<Counters, KokkosDeviceMemSpace>(execSpace);
 #ifdef DUMP_GPU_TK_TUPLES
     printf("TK: %s %s % %s %s %s %s %s %s %s %s %s %s %s %s %s\n",

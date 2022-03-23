@@ -10,7 +10,6 @@
 #ifdef KOKKOS_ENABLE_CUDA
 #include "CUDACore/EventCache.h"
 #include "CUDACore/SharedEventPtr.h"
-#include "CUDACore/SharedStreamPtr.h"
 #endif
 #include "KokkosCore/ExecSpaceCache.h"
 #include "Framework/WaitingTaskHolder.h"
@@ -45,10 +44,10 @@ namespace cms {
         }
         void synchronizeWith(ExecSpaceSpecific const& other) const { other.execSpace().fence(); }
 
-        ExecSpace const& execSpace() const { return space_->space(); }
+        ExecSpace const& execSpace() const { return *space_; }
 
       private:
-        std::shared_ptr<ExecSpaceWrapper<ExecSpace>> space_;
+        std::shared_ptr<ExecSpace> space_;
       };
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -56,9 +55,9 @@ namespace cms {
       class ExecSpaceSpecific<Kokkos::Cuda> : public ExecSpaceSpecificBase {
       public:
         ExecSpaceSpecific() : ExecSpaceSpecific(getExecSpaceCache<Kokkos::Cuda>().get()) {}
-        explicit ExecSpaceSpecific(std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> execSpace)
+        explicit ExecSpaceSpecific(std::shared_ptr<Kokkos::Cuda> execSpace)
             : ExecSpaceSpecific(std::move(execSpace), cms::cuda::getEventCache().get()) {}
-        explicit ExecSpaceSpecific(std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> execSpace,
+        explicit ExecSpaceSpecific(std::shared_ptr<Kokkos::Cuda> execSpace,
                                    cms::cuda::SharedEventPtr event)
             : space_(std::move(execSpace)), event_(std::move(event)) {}
 
@@ -76,20 +75,20 @@ namespace cms {
           // Intentionally not checking the return value to avoid throwing
           // exceptions. If this call would fail, we should get failures
           // elsewhere as well.
-          cudaEventRecord(event_.get(), space_->stream());
+          cudaEventRecord(event_.get(), space_->cuda_stream());
         }
 
         void enqueueCallback(edm::WaitingTaskWithArenaHolder holder);
 
         void synchronizeWith(ExecSpaceSpecific const& other);
 
-        int device() const { return space_->space().cuda_device(); }
-        Kokkos::Cuda const& execSpace() const { return space_->space(); }
+        int device() const { return space_->cuda_device(); }
+        Kokkos::Cuda const& execSpace() const { return *space_; }
 
       private:
         bool isAvailable() const;
 
-        std::shared_ptr<ExecSpaceWrapper<Kokkos::Cuda>> space_;
+        std::shared_ptr<Kokkos::Cuda> space_;
         cms::cuda::SharedEventPtr event_;
       };
 #endif
