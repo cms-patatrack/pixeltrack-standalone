@@ -15,7 +15,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     using Hist = TrackingRecHit2DSoAView::Hist;
 
-    TrackingRecHit2DAlpaka() = default;
+    TrackingRecHit2DAlpaka() = delete;  // alpaka buffers are not default-constructible
 
     explicit TrackingRecHit2DAlpaka(uint32_t nHits,
                                     const pixelCPEforGPU::ParamsOnGPU* cpeParams,

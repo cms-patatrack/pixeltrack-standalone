@@ -239,8 +239,8 @@ int main(void) {
     alpaka::memcpy(queue, d_y, h_y, n);
     alpaka::memcpy(queue, d_adc, h_adc, n);
 
-// Launch CUDA Kernels
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+// Launch CUDA/HIP Kernels
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
     const auto threadsPerBlockOrElementsPerThread = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
 #else
     // NB: can be tuned.

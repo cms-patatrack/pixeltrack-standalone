@@ -16,9 +16,14 @@ test_nvidiagpu: $(TARGET)
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --cuda
 	@echo "Succeeded"
-test_intelagpu:
+test_amdgpu: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --hip
+	@echo "Succeeded"
+test_intelgpu:
 test_auto:
-.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
+.PHONY: test_cpu test_nvidiagpu test_amdgpu test_intelgpu test_auto
 
 EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
@@ -29,6 +34,9 @@ PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DSRC_DIR=$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME) -DALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED -DALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED -DALPAKA_HOST_ONLY
 ifdef CUDA_BASE
 MY_CXXFLAGS += -DALPAKA_ACC_GPU_CUDA_ENABLED -DALPAKA_ACC_GPU_CUDA_ONLY_MODE
+endif
+ifdef ROCM_BASE
+MY_CXXFLAGS += -DALPAKA_ACC_GPU_HIP_ENABLED -DALPAKA_ACC_GPU_HIP_ONLY_MODE
 endif
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
 LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
@@ -69,8 +77,16 @@ $(1)_CUDA_LDFLAGS := -l$(1)_cuda
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/$(1)/lib$(1)_cudalink.o)
 endif
+# ROCm backend
+ifdef ROCM_BASE
+$(1)_ROCM_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.rocm.o))
+$(1)_ROCM_DEP := $$($(1)_ROCM_OBJ:$.o=$.d)
+$(1)_ROCM_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_rocm.so
+LIBS += $$($(1)_ROCM_LIB)
+$(1)_ROCM_LDFLAGS := -l$(1)_rocm
+endif
 endif # if PORTABLE_SRC is not empty
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP)
 endef
 $(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 
@@ -108,8 +124,16 @@ PLUGINNAMES += $(1)_cuda
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 endif
+# ROCm backend
+ifdef ROCM_BASE
+$(1)_ROCM_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.rocm.o))
+$(1)_ROCM_DEP := $$($(1)_ROCM_OBJ:$.o=$.d)
+$(1)_ROCM_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_rocm.so
+PLUGINS += $$($(1)_ROCM_LIB)
+PLUGINNAMES += $(1)_rocm
+endif
 endif # if PORTABLE_SRC is not empty
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
@@ -130,11 +154,17 @@ TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
 TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
 TESTS_CUDADLINK := $(TESTS_CUDA_OBJ:$cu.o=$cudadlink.o)
 endif
+# ROCm backend
+ifdef ROCM_BASE
+TESTS_ROCM_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.rocm.o))
+TESTS_ROCM_DEP := $(TESTS_ROCM_OBJ:$.o=$.d)
+TESTS_ROCM_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.rocm,$(TESTS_PORTABLE_SRC))
+endif
 #
-TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE)
-ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP)
+TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE) $(TESTS_ROCM_EXE)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP) $(TESTS_ROCM_DEP)
 # Needed to keep the unit test object files after building $(TARGET)
-.SECONDARY: $(TESTS_SERIAL_OBJ) $(TESTS_TBB_OBJ) $(TESTS_CUDA_OBJ) $(TESTS_CUDADLINK)
+.SECONDARY: $(TESTS_SERIAL_OBJ) $(TESTS_TBB_OBJ) $(TESTS_CUDA_OBJ) $(TESTS_CUDADLINK) $(TESTS_ROCM_OBJ)
 
 define RUNTEST_template
 run_$(1): $(1)
@@ -147,6 +177,7 @@ endef
 $(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
 $(foreach test,$(TESTS_TBB_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
 $(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
+$(foreach test,$(TESTS_ROCM_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
 
 -include $(ALL_DEPENDS)
 
@@ -180,6 +211,10 @@ $$($(1)_CUDA_LIB): $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNA
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CXX) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
+$$($(1)_ROCM_LIB): $$($(1)_ROCM_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $$($(1)_ROCM_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
 # Anything depending on Alpaka
 # Portable code, for serial backend
 $(OBJ_DIR)/$(2)/alpaka/%.cc.serial.o: $(SRC_DIR)/$(2)/alpaka/%.cc
@@ -209,6 +244,13 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
+endif
+
+# Portable code, for ROCm backend
+ifdef ROCM_BASE
+$(OBJ_DIR)/$(2)/alpaka/%.cc.rocm.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(MY_CXXFLAGS) -DALPAKA_ACC_GPU_HIP_ASYNC_BACKEND -UALPAKA_HOST_ONLY $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -c $$< -o $$@ -MMD
 endif
 
 endef
@@ -264,6 +306,17 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/t
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $< -o $@
 
 $(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+endif
+
+# ROCm backend
+ifdef ROCM_BASE
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(ROCM_HIPCC) $(HIPCC_CXXFLAGS) $(ROCM_TEST_CXXFLAGS) $(MY_CXXFLAGS) -DALPAKA_ACC_GPU_HIP_ASYNC_BACKEND -UALPAKA_HOST_ONLY $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.rocm: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif

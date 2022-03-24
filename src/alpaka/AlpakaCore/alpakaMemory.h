@@ -25,6 +25,9 @@ namespace cms {
   inline constexpr bool is_unbounded_array_v = is_unbounded_array<T>::value;
 }  // namespace cms
 
+#include <alpaka/alpaka.hpp>
+#include <alpaka/alpakaExtra.hpp>
+
 #include "AlpakaCore/AllocatorPolicy.h"
 #include "AlpakaCore/CachedBufAlloc.h"
 #include "AlpakaCore/alpakaConfig.h"
@@ -75,12 +78,19 @@ namespace cms::alpakatools {
   template <typename TBuf>
   void pin_buffer(TBuf& buffer) {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    if (not devices<alpaka::PltfUniformCudaHipRt>.empty()) {
+    if (not cms::alpakatools::devices<alpaka::PltfCudaRt>.empty()) {
       // it is possible to initialise the CUDA runtime and call cudaHostRegister
       // only if the system has at least one supported GPU
       alpaka::prepareForAsyncCopy(buffer);
     }
 #endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    if (not cms::alpakatools::devices<alpaka::PltfHipRt>.empty()) {
+      // it is possible to initialise the ROCm runtime and call hipHostRegister
+      // only if the system has at least one supported GPU
+      alpaka::prepareForAsyncCopy(buffer);
+    }
+#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
   }
 
   // scalar and 1-dimensional host buffers

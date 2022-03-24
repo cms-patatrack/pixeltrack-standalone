@@ -19,9 +19,9 @@ namespace eigenSoA {
     using Scalar = T;
 
     ALPAKA_FN_HOST_ACC constexpr Scalar& operator()(int32_t i) { return data_[i]; }
-    ALPAKA_FN_ACC constexpr const Scalar operator()(int32_t i) const { return data_[i]; }
+    ALPAKA_FN_HOST_ACC constexpr const Scalar operator()(int32_t i) const { return data_[i]; }
     ALPAKA_FN_HOST_ACC constexpr Scalar& operator[](int32_t i) { return data_[i]; }
-    ALPAKA_FN_ACC constexpr const Scalar operator[](int32_t i) const { return data_[i]; }
+    ALPAKA_FN_HOST_ACC constexpr const Scalar operator[](int32_t i) const { return data_[i]; }
 
     ALPAKA_FN_HOST_ACC constexpr Scalar* data() { return data_; }
     ALPAKA_FN_HOST_ACC constexpr Scalar const* data() const { return data_; }

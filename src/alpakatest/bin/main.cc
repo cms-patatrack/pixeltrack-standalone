@@ -1,10 +1,14 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <exception>
 #include <filesystem>
 #include <iomanip>
+#include <ios>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <tbb/global_control.h>
@@ -20,8 +24,20 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name
-        << ": [--serial] [--tbb] [--cuda] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+        << name << ": "
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+        << "[--serial] "
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+        << "[--tbb] "
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+        << "[--cuda] "
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+        << "[--hip] "
+#endif
+        << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer]\n\n"
         << "Options\n"
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
@@ -32,6 +48,9 @@ namespace {
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
         << " --cuda              Use CUDA backend\n"
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+        << " --hip               Use ROCm/HIP backend\n"
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
@@ -55,6 +74,7 @@ int main(int argc, char** argv) {
   int runForMinutes = -1;
   std::filesystem::path datadir;
   bool transfer = false;
+  bool empty = false;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -70,6 +90,10 @@ int main(int argc, char** argv) {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    } else if (*i == "--hip") {
+      backends.emplace_back(Backend::HIP);
 #endif
     } else if (*i == "--numberOfThreads") {
       ++i;
@@ -88,6 +112,8 @@ int main(int argc, char** argv) {
       datadir = *i;
     } else if (*i == "--transfer") {
       transfer = true;
+    } else if (*i == "--empty") {
+      empty = true;
     } else {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -128,27 +154,35 @@ int main(int argc, char** argv) {
     cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
   }
 #endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+  if (std::find(backends.begin(), backends.end(), Backend::HIP) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_rocm_async::Platform>();
+  }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not backends.empty()) {
-    auto addModules = [&](std::string const& prefix, Backend backend) {
+  if (not empty) {
+    auto addModules = [&](std::string const& accelerator_namespace, Backend backend) {
       if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-        edmodules.emplace_back(prefix + "TestProducer");
-        edmodules.emplace_back(prefix + "TestProducer3");
-        edmodules.emplace_back(prefix + "TestProducer2");
+        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer");
+        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer3");
+        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer2");
       }
     };
 
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
-    addModules("alpaka_serial_sync::", Backend::SERIAL);
+    addModules("alpaka_serial_sync", Backend::SERIAL);
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
-    addModules("alpaka_tbb_async::", Backend::TBB);
+    addModules("alpaka_tbb_async", Backend::TBB);
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-    addModules("alpaka_cuda_async::", Backend::CUDA);
+    addModules("alpaka_cuda_async", Backend::CUDA);
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+    addModules("alpaka_rocm_async", Backend::HIP);
 #endif
     esmodules = {"IntESProducer"};
     if (transfer) {

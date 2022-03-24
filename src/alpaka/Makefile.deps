@@ -2,6 +2,9 @@ alpaka_EXTERNAL_DEPENDS := TBB EIGEN ALPAKA BOOST BACKTRACE
 ifdef CUDA_BASE
 alpaka_EXTERNAL_DEPENDS += CUDA
 endif
+ifdef ROCM_BASE
+alpaka_EXTERNAL_DEPENDS += ROCM
+endif
 AlpakaCore_DEPENDS := Framework
 BeamSpotProducer_DEPENDS := Framework AlpakaCore AlpakaDataFormats DataFormats
 PixelTrackFitting_DEPENDS := Framework AlpakaCore AlpakaDataFormats

@@ -119,7 +119,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     nDigis_ = digis.nDigis();
     nModules_ = digis.nModules();
-    h_adc = std::move(digis.adcToHostAsync(ctx.stream()));
+    h_adc = digis.adcToHostAsync(ctx.stream());
 
     nClusters_ = clusters.nClusters();
     h_clusInModule = cms::alpakatools::make_host_buffer<uint32_t[]>(ctx.stream(), nModules_);
@@ -129,17 +129,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     nHits_ = hits.nHits();
 
-    h_lx = std::move(hits.xlToHostAsync(ctx.stream()));
-    h_ly = std::move(hits.ylToHostAsync(ctx.stream()));
-    h_lex = std::move(hits.xerrToHostAsync(ctx.stream()));
-    h_ley = std::move(hits.yerrToHostAsync(ctx.stream()));
-    h_gx = std::move(hits.xgToHostAsync(ctx.stream()));
-    h_gy = std::move(hits.ygToHostAsync(ctx.stream()));
-    h_gz = std::move(hits.zgToHostAsync(ctx.stream()));
-    h_gr = std::move(hits.rgToHostAsync(ctx.stream()));
-    h_charge = std::move(hits.chargeToHostAsync(ctx.stream()));
-    h_sizex = std::move(hits.xsizeToHostAsync(ctx.stream()));
-    h_sizey = std::move(hits.ysizeToHostAsync(ctx.stream()));
+    h_lx = hits.xlToHostAsync(ctx.stream());
+    h_ly = hits.ylToHostAsync(ctx.stream());
+    h_lex = hits.xerrToHostAsync(ctx.stream());
+    h_ley = hits.yerrToHostAsync(ctx.stream());
+    h_gx = hits.xgToHostAsync(ctx.stream());
+    h_gy = hits.ygToHostAsync(ctx.stream());
+    h_gz = hits.zgToHostAsync(ctx.stream());
+    h_gr = hits.rgToHostAsync(ctx.stream());
+    h_charge = hits.chargeToHostAsync(ctx.stream());
+    h_sizex = hits.xsizeToHostAsync(ctx.stream());
+    h_sizey = hits.ysizeToHostAsync(ctx.stream());
   }
 
   void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -222,6 +222,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::ofstream out("histograms_alpaka_tbb.txt");
 #elif defined ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
     std::ofstream out("histograms_alpaka_cuda.txt");
+#elif defined ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND
+    std::ofstream out("histograms_alpaka_hip.txt");
 #else
 #error "Support for a new Alpaka backend must be added here"
 #endif

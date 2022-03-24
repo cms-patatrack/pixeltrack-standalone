@@ -37,7 +37,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // NB: Shared memory size? Is it enough?
       constexpr uint32_t MAXTK = 512;
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
       auto& it = alpaka::declareSharedVar<uint32_t[MAXTK], __COUNTER__>(acc);   // track index
       auto& zz = alpaka::declareSharedVar<float[MAXTK], __COUNTER__>(acc);      // z pos
       auto& newV = alpaka::declareSharedVar<uint8_t[MAXTK], __COUNTER__>(acc);  // 0 or 1

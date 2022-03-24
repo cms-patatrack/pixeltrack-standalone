@@ -53,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           sortInd[0] = 0;
         return;
       }
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
       auto& sws = alpaka::declareSharedVar<uint16_t[1024], __COUNTER__>(acc);
       // sort using only 16 bits
       cms::alpakatools::radixSort<Acc1D, float, 2>(acc, ptv2, sortInd, sws, nvFinal);

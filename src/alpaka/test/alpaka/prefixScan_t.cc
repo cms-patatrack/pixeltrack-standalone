@@ -54,12 +54,14 @@ template <typename T>
 struct testWarpPrefixScan {
   template <typename TAcc>
   ALPAKA_FN_ACC void operator()(const TAcc& acc, uint32_t size) const {
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) && defined(__CUDA_ARCH__) || \
+    defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) && defined(__HIP_DEVICE_COMPILE__)
     assert(size <= 32);
     auto& c = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
     auto& co = alpaka::declareSharedVar<T[1024], __COUNTER__>(acc);
 
-    uint32_t const blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u]);
-    uint32_t const blockThreadIdx(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
+    uint32_t const blockDimension = alpaka::getWorkDiv<alpaka::Block, alpaka::Threads>(acc)[0u];
+    uint32_t const blockThreadIdx = alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u];
     auto i = blockThreadIdx;
     c[i] = 1;
     alpaka::syncBlockThreads(acc);
@@ -76,9 +78,10 @@ struct testWarpPrefixScan {
       if (c[i] != c[i - 1] + 1)
         printf(format_traits<T>::failed_msg, size, i, blockDimension, c[i], c[i - 1]);
       assert(c[i] == c[i - 1] + 1);
-      assert(c[i] == i + 1);
+      assert(c[i] == static_cast<T>(i + 1));
       assert(c[i] == co[i]);
     }
+#endif
   }
 };
 
@@ -116,7 +119,7 @@ int main() {
   Queue queue(device);
 
   // WARP PREFIXSCAN (OBVIOUSLY GPU-ONLY)
-#ifdef ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
   std::cout << "warp level" << std::endl;
 
   const auto threadsPerBlockOrElementsPerThread = 32;

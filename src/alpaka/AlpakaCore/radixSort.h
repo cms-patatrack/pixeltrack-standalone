@@ -69,6 +69,8 @@ namespace cms::alpakatools {
             typename RF>
   ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSortImpl(
       const TAcc& acc, T const* __restrict__ a, uint16_t* ind, uint16_t* ind2, uint32_t size, RF reorder) {
+#if (defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && defined(__CUDA_ARCH__)) || \
+    (defined(ALPAKA_ACC_GPU_HIP_ENABLED) && defined(__HIP_DEVICE_COMPILE__))
     const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
     const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
 
@@ -110,7 +112,11 @@ namespace cms::alpakatools {
         auto laneId = idx & 0x1f;
 
         for (int offset = 1; offset < 32; offset <<= 1) {
+#if defined(__CUDA_ARCH__)
           auto y = __shfl_up_sync(0xffffffff, x, offset);
+#elif defined(__HIP_DEVICE_COMPILE__)
+          auto y = __shfl_up(x, offset);
+#endif
           if (laneId >= (uint32_t)offset)
             x += y;
         }
@@ -166,8 +172,11 @@ namespace cms::alpakatools {
         });
         alpaka::syncBlockThreads(acc);
 
-        if (threadIdxLocal == 0)
+        if (threadIdxLocal == 0) {
           ibs -= sb;
+          // cms-patatrack/pixeltrack-standalone#210
+          alpaka::mem_fence(acc, alpaka::memory_scope::Grid{});
+        }
         alpaka::syncBlockThreads(acc);
       }
 
@@ -205,6 +214,7 @@ namespace cms::alpakatools {
 
     // now move negative first... (if signed)
     reorder(acc, a, ind, ind2, size);
+#endif
   }
 
   template <typename TAcc,
