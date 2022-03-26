@@ -19,7 +19,7 @@ namespace alpaka {
     std::function<void()> task_;
   };
 
-  namespace traits {
+  namespace trait {
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
     //! The CUDA async queue enqueue trait specialization for "safe tasks"
@@ -57,7 +57,7 @@ namespace alpaka {
     };
 #endif  // ALPAKA_ACC_GPU_HIP_ENABLED
 
-  }  // namespace traits
+  }  // namespace trait
 
 }  // namespace alpaka
 
