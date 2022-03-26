@@ -226,7 +226,7 @@ namespace cms {
 }  // namespace cms
 
 namespace alpaka {
-  namespace traits {
+  namespace trait {
 
     //#############################################################################
     //! The trait for getting the size of the block shared dynamic memory for a kernel.
@@ -246,8 +246,7 @@ namespace alpaka {
         return static_cast<size_t>(numBlocks) * sizeof(T);
       }
     };
-
-  }  // namespace traits
+  }  // namespace trait
 }  // namespace alpaka
 
 #endif  // AlpakaCore_prefixScan_h
