@@ -182,11 +182,11 @@ int main() {
   auto nThreads = 256;
   auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
-  hipLaunchKernelGGL(count, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), a_d.get(), N);
+  count<<<nBlocks, nThreads, 0, 0>>>(v_d.get(), a_d.get(), N);
 
   launchFinalize(a_d.get(), 0);
-  hipLaunchKernelGGL(verify, dim3(1), dim3(1), 0, 0, a_d.get());
-  hipLaunchKernelGGL(fill, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), a_d.get(), N);
+  verify<<<1, 1, 0, 0>>>(a_d.get());
+  fill<<<nBlocks, nThreads, 0, 0>>>(v_d.get(), a_d.get(), N);
 #else
   count(v_d, a_d.get(), N);
   launchFinalize(a_d.get());
@@ -226,17 +226,17 @@ int main() {
   cudaCheck(hipMalloc(&dc_d, sizeof(AtomicPairCounter)));
   cudaCheck(hipMemset(dc_d, 0, sizeof(AtomicPairCounter)));
   nBlocks = (N + nThreads - 1) / nThreads;
-  hipLaunchKernelGGL(fillBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, v_d.get(), a_d.get(), N);
-  hipLaunchKernelGGL(cms::hip::finalizeBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, a_d.get());
-  hipLaunchKernelGGL(verifyBulk, dim3(1), dim3(1), 0, 0, a_d.get(), dc_d);
+  fillBulk<<<nBlocks, nThreads, 0, 0>>>(dc_d, v_d.get(), a_d.get(), N);
+  cms::hip::finalizeBulk<<<nBlocks, nThreads, 0, 0>>>(dc_d, a_d.get());
+  verifyBulk<<<1, 1, 0, 0>>>(a_d.get(), dc_d);
 
   cudaCheck(hipMemcpy(&la, a_d.get(), sizeof(Assoc), hipMemcpyDeviceToHost));
   cudaCheck(hipMemcpy(&dc, dc_d, sizeof(AtomicPairCounter), hipMemcpyDeviceToHost));
 
   cudaCheck(hipMemset(dc_d, 0, sizeof(AtomicPairCounter)));
-  hipLaunchKernelGGL(fillBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, v_d.get(), sa_d.get(), N);
-  hipLaunchKernelGGL(cms::hip::finalizeBulk, dim3(nBlocks), dim3(nThreads), 0, 0, dc_d, sa_d.get());
-  hipLaunchKernelGGL(verifyBulk, dim3(1), dim3(1), 0, 0, sa_d.get(), dc_d);
+  fillBulk<<<nBlocks, nThreads, 0, 0>>>(dc_d, v_d.get(), sa_d.get(), N);
+  cms::hip::finalizeBulk<<<nBlocks, nThreads, 0, 0>>>(dc_d, sa_d.get());
+  verifyBulk<<<1, 1, 0, 0>>>(sa_d.get(), dc_d);
 
 #else
   dc_d = &dc;
@@ -281,13 +281,13 @@ int main() {
 
 #ifdef __HIPCC__
   nBlocks = (4 * N + nThreads - 1) / nThreads;
-  hipLaunchKernelGGL(countMulti, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), m1_d.get(), N);
-  hipLaunchKernelGGL(countMultiLocal, dim3(nBlocks), dim3(nThreads), 0, 0, v_d.get(), m2_d.get(), N);
-  hipLaunchKernelGGL(verifyMulti, dim3(1), dim3(Multiplicity::totbins()), 0, 0, m1_d.get(), m2_d.get());
+  countMulti<<<nBlocks, nThreads, 0, 0>>>(v_d.get(), m1_d.get(), N);
+  countMultiLocal<<<nBlocks, nThreads, 0, 0>>>(v_d.get(), m2_d.get(), N);
+  verifyMulti<<<1, Multiplicity::totbins(), 0, 0>>>(m1_d.get(), m2_d.get());
 
   launchFinalize(m1_d.get(), 0);
   launchFinalize(m2_d.get(), 0);
-  hipLaunchKernelGGL(verifyMulti, dim3(1), dim3(Multiplicity::totbins()), 0, 0, m1_d.get(), m2_d.get());
+  verifyMulti<<<1, Multiplicity::totbins(), 0, 0>>>(m1_d.get(), m2_d.get());
 
   cudaCheck(hipGetLastError());
   cudaCheck(hipDeviceSynchronize());

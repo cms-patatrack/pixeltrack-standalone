@@ -104,10 +104,10 @@ namespace gpuVertexFinder {
 #endif
 
 #ifdef __HIPCC__
-    hipLaunchKernelGGL(init, dim3(1), dim3(1), 0, stream, soa, ws_d.get());
+    init<<<1, 1, 0, stream>>>(soa, ws_d.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-    hipLaunchKernelGGL(loadTracks, dim3(numberOfBlocks), dim3(blockSize), 0, stream, tksoa, soa, ws_d.get(), ptMin);
+    loadTracks<<<numberOfBlocks, blockSize, 0, stream>>>(tksoa, soa, ws_d.get(), ptMin);
     cudaCheck(hipGetLastError());
 #else
     cms::hipcompat::resetGrid();
@@ -119,46 +119,32 @@ namespace gpuVertexFinder {
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
-      hipLaunchKernelGGL(
-          vertexFinderOneKernel, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderOneKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
 #else
-      hipLaunchKernelGGL(
-          vertexFinderKernel1, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderKernel1<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       cudaCheck(hipGetLastError());
       // one block per vertex...
-      hipLaunchKernelGGL(splitVerticesKernel, dim3(1024), dim3(128), 0, stream, soa, ws_d.get(), 9.f);
+      splitVerticesKernel<<<1024, 128, 0, stream>>>(soa, ws_d.get(), 9.f);
       cudaCheck(hipGetLastError());
-      hipLaunchKernelGGL(vertexFinderKernel2, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get());
+      vertexFinderKernel2<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
 #endif
     } else {  // five kernels
       if (useDensity_) {
-        hipLaunchKernelGGL(clusterTracksByDensityKernel,
-                           dim3(1),
-                           dim3(1024 - 256),
-                           0,
-                           stream,
-                           soa,
-                           ws_d.get(),
-                           minT,
-                           eps,
-                           errmax,
-                           chi2max);
+        clusterTracksByDensityKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       } else if (useDBSCAN_) {
-        hipLaunchKernelGGL(
-            clusterTracksDBSCAN, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksDBSCAN<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       } else if (useIterative_) {
-        hipLaunchKernelGGL(
-            clusterTracksIterative, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksIterative<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
       }
       cudaCheck(hipGetLastError());
-      hipLaunchKernelGGL(fitVerticesKernel, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), 50.);
+      fitVerticesKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), 50.);
       cudaCheck(hipGetLastError());
       // one block per vertex...
-      hipLaunchKernelGGL(splitVerticesKernel, dim3(1024), dim3(128), 0, stream, soa, ws_d.get(), 9.f);
+      splitVerticesKernel<<<1024, 128, 0, stream>>>(soa, ws_d.get(), 9.f);
       cudaCheck(hipGetLastError());
-      hipLaunchKernelGGL(fitVerticesKernel, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get(), 5000.);
+      fitVerticesKernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get(), 5000.);
       cudaCheck(hipGetLastError());
-      hipLaunchKernelGGL(sortByPt2Kernel, dim3(1), dim3(1024 - 256), 0, stream, soa, ws_d.get());
+      sortByPt2Kernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
     }
     cudaCheck(hipGetLastError());
 #else  // __HIPCC__
