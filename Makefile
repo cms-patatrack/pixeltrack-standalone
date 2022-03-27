@@ -77,7 +77,7 @@ export CUDA_DLINKFLAGS
 endif
 
 # ROCm
-ROCM_BASE := /usr/local/rocm-4.0.0
+ROCM_BASE := /opt/rocm-5.0.2
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=

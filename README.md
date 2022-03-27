@@ -16,6 +16,7 @@
     * [`cudacompat`](#cudacompat)
     * [`hip` and `hiptest`](#hip-and-hiptest)
     * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
+    * [`alpaka` and `alpakatest`](#alpaka-and-alpakatest)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
 * [Contribution guide](#contribution-guide)
@@ -36,7 +37,7 @@ The application is designed to require minimal dependencies on the system. All p
 
 In addition, the individual programs assume the following be found from the system
 
-| Application  | CMake (>= 3.16)    | CUDA 11.2                   | ROCm 4.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
+| Application  | CMake (>= 3.16)    | CUDA 11.2                   | ROCm 5.0               | [Intel oneAPI Base Toolkit](https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit.html) |
 |--------------|--------------------|-----------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `cudatest`   |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 | `cuda`       |                    | :heavy_check_mark:          |                        |                                                                                                                  |
@@ -47,13 +48,15 @@ In addition, the individual programs assume the following be found from the syst
 | `hip`        |                    |                             | :heavy_check_mark:     |                                                                                                                  |
 | `kokkostest` | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
 | `kokkos`     | :heavy_check_mark: | :white_check_mark: (1)      | :white_check_mark: (2) |                                                                                                                  |
-| `alpakatest` |                    | :heavy_check_mark:          |                        |                                                                                                                  |
-| `alpaka`     |                    | :heavy_check_mark:          |                        |                                                                                                                  |
+| `alpakatest` |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
+| `alpaka`     |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
 | `sycltest`   |                    |                             |                        | :heavy_check_mark:                                                                                               |
 |              |                    |                             |                        |                                                                                                                  |
 
 1. `kokkos` and `kokkostest` have an optional dependence on CUDA, by default it is required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 2. `kokkos` and `kokkostest` have an optional dependence on ROCm, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
+3. `alpaka` and `alpakatest` have an optional dependence on CUDA, by default it is required (see [`alpaka` and `alpakatest`](#alpaka-and-alpakatest) for more details)
+4. `alpaka` and `alpakatest` have an optional dependence on ROCm, by default it is not required (see [`alpaka` and `alpakatest`](#alpaka-and-alpakatest) for more details)
 
 
 All other dependencies (listed below) are downloaded and built automatically
@@ -314,8 +317,6 @@ The program contains the changes from following external PRs on top of `cuda`
 
 The path to ROCm can be set with `ROCM_BASE` variable.
 
-Note that `hip` does not currently run.
-
 
 #### `kokkos` and `kokkostest`
 
@@ -364,9 +365,27 @@ $ make kokkos ...
 | `-DKOKKOS_SERIALONLY_DISABLE_ATOMICS`  | Disable Kokkos (real) atomics, can be used with Serial-only build |
 
 
-#### `alpaka`
+#### `alpaka` and `alpakatest`
+
+##### Supported backends
 
 The `alpaka` code base is loosely based on the `cuda` code base, with some minor changes introduced during the porting.
+
+The `alpaka` and `alpakatest` always support the CPU backends (serial synchronous and oneTBB asynchronous).
+They can be built with _either_ the CUDA backend _or_ the HIP/ROCm backend, with
+```bash
+make alpaka ... CUDA_BASE=path_to_cuda ROCM_BASE=
+```
+or
+```bash
+make alpaka ... CUDA_BASE= ROCM_BASE=path_to_rocm
+```
+
+Due to conflicting symbols in the two backends and in Alpaka itself, rnabling both backends at the same time
+results in compilation errors or undefined behaviour.
+
+
+##### Memory allocation strategy
 
 The use of caching allocator can be disabled at compile time setting the
 `ALPAKA_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
