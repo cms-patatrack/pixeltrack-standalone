@@ -135,7 +135,7 @@ int main() {
       gen(ev);
 
 #ifdef __HIPCC__
-      hipLaunchKernelGGL(gpuVertexFinder::init, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
+      gpuVertexFinder::init<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
 #else
       onGPU_d->init();
       ws_d->init();
@@ -168,7 +168,7 @@ int main() {
 
       uint32_t nv = 0;
 #ifdef __HIPCC__
-      hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
+      print<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
       cudaCheck(hipGetLastError());
       cudaCheck(hipDeviceSynchronize());
 
@@ -177,7 +177,7 @@ int main() {
 #else
       cms::hip::launch(CLUSTERIZE, {1, 512 + 256}, onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #endif
-      hipLaunchKernelGGL(print, dim3(1), dim3(1), 0, 0, onGPU_d.get(), ws_d.get());
+      print<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
 
       cudaCheck(hipGetLastError());
       cudaCheck(hipDeviceSynchronize());

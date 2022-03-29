@@ -50,14 +50,14 @@ int main() {
 
   int numBlocks = 5;
   int numThreadsPerBlock = 256;
-  hipLaunchKernelGGL(vector_pushback, dim3(numBlocks), dim3(numThreadsPerBlock), 0, 0, d_obj_ptr);
+  vector_pushback<<<numBlocks, numThreadsPerBlock, 0, 0>>>(d_obj_ptr);
   cudaCheck(hipGetLastError());
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(obj_ptr, d_obj_ptr, sizeof(cms::hip::SimpleVector<int>), hipMemcpyDefault));
 
   assert(obj_ptr->size() == (numBlocks * numThreadsPerBlock < maxN ? numBlocks * numThreadsPerBlock : maxN));
-  hipLaunchKernelGGL(vector_reset, dim3(numBlocks), dim3(numThreadsPerBlock), 0, 0, d_obj_ptr);
+  vector_reset<<<numBlocks, numThreadsPerBlock, 0, 0>>>(d_obj_ptr);
   cudaCheck(hipGetLastError());
   cudaCheck(hipDeviceSynchronize());
 
@@ -65,7 +65,7 @@ int main() {
 
   assert(obj_ptr->size() == 0);
 
-  hipLaunchKernelGGL(vector_emplace_back, dim3(numBlocks), dim3(numThreadsPerBlock), 0, 0, d_obj_ptr);
+  vector_emplace_back<<<numBlocks, numThreadsPerBlock, 0, 0>>>(d_obj_ptr);
   cudaCheck(hipGetLastError());
   cudaCheck(hipDeviceSynchronize());
 

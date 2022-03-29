@@ -72,8 +72,7 @@ cms::hip::device::unique_ptr<float[]> gpuAlgo1(hipStream_t stream) {
   int blocksPerGrid = (NUM_VALUES + threadsPerBlock - 1) / threadsPerBlock;
 
   auto d_c = cms::hip::make_device_unique<float[]>(NUM_VALUES, stream);
-  hipLaunchKernelGGL(
-      vectorAdd, dim3(blocksPerGrid), dim3(threadsPerBlock), 0, stream, d_a.get(), d_b.get(), d_c.get(), NUM_VALUES);
+  vectorAdd<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(d_a.get(), d_b.get(), d_c.get(), NUM_VALUES);
 
   auto d_ma = cms::hip::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
   auto d_mb = cms::hip::make_device_unique<float[]>(NUM_VALUES * NUM_VALUES, stream);
@@ -86,29 +85,10 @@ cms::hip::device::unique_ptr<float[]> gpuAlgo1(hipStream_t stream) {
     blocksPerGrid3.x = ceil(double(NUM_VALUES) / double(threadsPerBlock3.x));
     blocksPerGrid3.y = ceil(double(NUM_VALUES) / double(threadsPerBlock3.y));
   }
-  hipLaunchKernelGGL(
-      vectorProd, dim3(blocksPerGrid3), dim3(threadsPerBlock3), 0, stream, d_a.get(), d_b.get(), d_ma.get(), NUM_VALUES);
-  hipLaunchKernelGGL(
-      vectorProd, dim3(blocksPerGrid3), dim3(threadsPerBlock3), 0, stream, d_a.get(), d_c.get(), d_mb.get(), NUM_VALUES);
-  hipLaunchKernelGGL(matrixMul,
-                     dim3(blocksPerGrid3),
-                     dim3(threadsPerBlock3),
-                     0,
-                     stream,
-                     d_ma.get(),
-                     d_mb.get(),
-                     d_mc.get(),
-                     NUM_VALUES);
-
-  hipLaunchKernelGGL(matrixMulVector,
-                     dim3(blocksPerGrid),
-                     dim3(threadsPerBlock),
-                     0,
-                     stream,
-                     d_mc.get(),
-                     d_b.get(),
-                     d_c.get(),
-                     NUM_VALUES);
+  vectorProd<<<blocksPerGrid3, threadsPerBlock3, 0, stream>>>(d_a.get(), d_b.get(), d_ma.get(), NUM_VALUES);
+  vectorProd<<<blocksPerGrid3, threadsPerBlock3, 0, stream>>>(d_a.get(), d_c.get(), d_mb.get(), NUM_VALUES);
+  matrixMul<<<blocksPerGrid3, threadsPerBlock3, 0, stream>>>(d_ma.get(), d_mb.get(), d_mc.get(), NUM_VALUES);
+  matrixMulVector<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(d_mc.get(), d_b.get(), d_c.get(), NUM_VALUES);
 
   return d_a;
 }

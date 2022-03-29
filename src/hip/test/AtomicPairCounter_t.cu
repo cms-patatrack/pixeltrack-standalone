@@ -55,9 +55,9 @@ int main() {
   // hipMemset(n_d, 0, N*sizeof(int));
   cudaCheck(hipMalloc(&m_d, M * sizeof(int)));
 
-  hipLaunchKernelGGL(update, dim3(2000), dim3(512), 0, 0, dc_d, n_d, m_d, 10000);
-  hipLaunchKernelGGL(finalize, dim3(1), dim3(1), 0, 0, dc_d, n_d, m_d, 10000);
-  hipLaunchKernelGGL(verify, dim3(2000), dim3(512), 0, 0, dc_d, n_d, m_d, 10000);
+  update<<<2000, 512, 0, 0>>>(dc_d, n_d, m_d, 10000);
+  finalize<<<1, 1, 0, 0>>>(dc_d, n_d, m_d, 10000);
+  verify<<<2000, 512, 0, 0>>>(dc_d, n_d, m_d, 10000);
 
   cms::hip::AtomicPairCounter dc;
   cudaCheck(hipMemcpy(&dc, dc_d, sizeof(cms::hip::AtomicPairCounter), hipMemcpyDeviceToHost));

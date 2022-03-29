@@ -84,7 +84,7 @@ int main() {
   float* p_d;
   cudaCheck(hipMalloc(&p_d, 1024 * 4));
   cudaCheck(hipMemcpy(p_d, p, 1024 * 4, hipMemcpyDefault));
-  hipLaunchKernelGGL(testBasicSoA, dim3(1), dim3(1024), 0, 0, p_d);
+  testBasicSoA<<<1, 1024, 0, 0>>>(p_d);
   cudaCheck(hipGetLastError());
   cudaCheck(hipMemcpy(p, p_d, 1024 * 4, hipMemcpyDefault));
   cudaCheck(hipDeviceSynchronize());

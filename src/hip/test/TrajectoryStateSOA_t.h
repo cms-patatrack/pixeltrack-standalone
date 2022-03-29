@@ -66,7 +66,7 @@ int main() {
 #ifdef __HIPCC__
   TS* ts_d;
   cudaCheck(hipMalloc(&ts_d, sizeof(TS)));
-  hipLaunchKernelGGL(testTSSoA, dim3(1), dim3(64), 0, 0, ts_d, 128);
+  testTSSoA<<<1, 64, 0, 0>>>(ts_d, 128);
   cudaCheck(hipGetLastError());
   cudaCheck(hipMemcpy(&ts, ts_d, sizeof(TS), hipMemcpyDefault));
   cudaCheck(hipDeviceSynchronize());

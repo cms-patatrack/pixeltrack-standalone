@@ -82,7 +82,7 @@ void testMultiply() {
   cudaCheck(hipMemcpy(
       multiply_resultGPU, &multiply_result, sizeof(Eigen::Matrix<double, row1, col2>), hipMemcpyHostToDevice));
 
-  hipLaunchKernelGGL(kernelMultiply, dim3(1), dim3(1), 0, 0, JGPU, CGPU, multiply_resultGPU);
+  kernelMultiply<<<1, 1, 0, 0>>>(JGPU, CGPU, multiply_resultGPU);
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(
@@ -110,7 +110,7 @@ void testInverse3x3() {
   cudaCheck(hipMalloc((void **)&mGPUret, sizeof(Matrix3d)));
   cudaCheck(hipMemcpy(mGPU, &m, sizeof(Matrix3d), hipMemcpyHostToDevice));
 
-  hipLaunchKernelGGL(kernelInverse3x3, dim3(1), dim3(1), 0, 0, mGPU, mGPUret);
+  kernelInverse3x3<<<1, 1, 0, 0>>>(mGPU, mGPUret);
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mCPUret, mGPUret, sizeof(Matrix3d), hipMemcpyDeviceToHost));
@@ -139,7 +139,7 @@ void testInverse4x4() {
   cudaCheck(hipMalloc((void **)&mGPUret, sizeof(Matrix4d)));
   cudaCheck(hipMemcpy(mGPU, &m, sizeof(Matrix4d), hipMemcpyHostToDevice));
 
-  hipLaunchKernelGGL(kernelInverse4x4, dim3(1), dim3(1), 0, 0, mGPU, mGPUret);
+  kernelInverse4x4<<<1, 1, 0, 0>>>(mGPU, mGPUret);
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mCPUret, mGPUret, sizeof(Matrix4d), hipMemcpyDeviceToHost));
@@ -168,7 +168,7 @@ void testInverse5x5() {
   cudaCheck(hipMalloc((void **)&mGPUret, sizeof(Matrix5d)));
   cudaCheck(hipMemcpy(mGPU, &m, sizeof(Matrix5d), hipMemcpyHostToDevice));
 
-  hipLaunchKernelGGL(kernelInverse5x5, dim3(1), dim3(1), 0, 0, mGPU, mGPUret);
+  kernelInverse5x5<<<1, 1, 0, 0>>>(mGPU, mGPUret);
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mCPUret, mGPUret, sizeof(Matrix5d), hipMemcpyDeviceToHost));
@@ -201,7 +201,7 @@ void testEigenvalues() {
   cudaCheck(hipMalloc((void **)&ret_gpu, sizeof(Eigen::SelfAdjointEigenSolver<Matrix3d>::RealVectorType)));
   cudaCheck(hipMemcpy(m_gpu, &m, sizeof(Matrix3d), hipMemcpyHostToDevice));
 
-  hipLaunchKernelGGL(kernel, dim3(1), dim3(1), 0, 0, m_gpu, ret_gpu);
+  kernel<<<1, 1, 0, 0>>>(m_gpu, ret_gpu);
   cudaCheck(hipDeviceSynchronize());
 
   cudaCheck(hipMemcpy(mgpudebug, m_gpu, sizeof(Matrix3d), hipMemcpyDeviceToHost));

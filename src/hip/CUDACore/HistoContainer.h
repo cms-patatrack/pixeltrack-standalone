@@ -80,15 +80,8 @@ namespace cms {
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      hipLaunchKernelGGL(multiBlockPrefixScan,
-                         dim3(nblocks),
-                         dim3(nthreads),
-                         sizeof(int32_t) * nblocks,
-                         stream,
-                         poff,
-                         poff,
-                         Histo::totbins(),
-                         ppsws);
+      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks, stream>>>(
+          poff, poff, Histo::totbins(), ppsws);
       cudaCheck(hipGetLastError());
 #else
       h->finalize();
@@ -110,10 +103,10 @@ namespace cms {
       launchZero(h, stream);
 #ifdef __HIPCC__
       auto nblocks = (totSize + nthreads - 1) / nthreads;
-      hipLaunchKernelGGL(countFromVector, dim3(nblocks), dim3(nthreads), 0, stream, h, nh, v, offsets);
+      countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
       cudaCheck(hipGetLastError());
       launchFinalize(h, stream);
-      hipLaunchKernelGGL(fillFromVector, dim3(nblocks), dim3(nthreads), 0, stream, h, nh, v, offsets);
+      fillFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
       cudaCheck(hipGetLastError());
 #else
       countFromVector(h, nh, v, offsets);

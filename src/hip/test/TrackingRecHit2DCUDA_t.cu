@@ -27,8 +27,8 @@ namespace testTrackingRecHit2D {
 
   void runKernels(TrackingRecHit2DSOAView* hits) {
     assert(hits);
-    hipLaunchKernelGGL(fill, dim3(1), dim3(1024), 0, 0, hits);
-    hipLaunchKernelGGL(verify, dim3(1), dim3(1024), 0, 0, hits);
+    fill<<<1, 1024, 0, 0>>>(hits);
+    verify<<<1, 1024, 0, 0>>>(hits);
   }
 
 }  // namespace testTrackingRecHit2D
