@@ -99,29 +99,36 @@
       }                                                                                                              \
       typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                  \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;  \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::scalar>::DataType<CPP_TYPE>                \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {                                                                   \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       },                                                                                                             \
       /* Column */                                                                                                   \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::column>::DataType<CPP_TYPE>                \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {                                                                   \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
         return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                    \
                    ParentClass::byteAlignment;                                                                       \
@@ -131,19 +138,23 @@
       /* Eigen column */                                                                                             \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::eigen>::DataType<CPP_TYPE>                 \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (                                                              \
          parent_.BOOST_PP_CAT(NAME, _),                                                                              \
          parent_.BOOST_PP_CAT(NAME, Stride_));                                                                       \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
         return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *            \
                ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;               \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;   \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE::Scalar const* BOOST_PP_CAT(addressOf_, NAME)() const {                                               \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() {                                                           \
         return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
@@ -204,10 +215,10 @@
 #define _DECLARE_SOA_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                     \
   _SWITCH_ON_TYPE(                                                                                                 \
       VALUE_TYPE,                                                                              /* Scalar */        \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE& NAME() { return *BOOST_PP_CAT(NAME, _); }, /* Column */        \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE* NAME() {                                                       \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME() { return *BOOST_PP_CAT(NAME, _); }, /* Column */                     \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE* NAME() {                                                                    \
         return BOOST_PP_CAT(NAME, _);                                                                              \
-      } ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE& NAME(size_t index) { return BOOST_PP_CAT(NAME, _)[index]; }, \
+      } SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME(size_t index) { return BOOST_PP_CAT(NAME, _)[index]; },              \
       /* Eigen column */ /* Unsupported for the moment TODO */                                                     \
       BOOST_PP_EMPTY())
 
@@ -219,12 +230,12 @@
 #define _DECLARE_SOA_CONST_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                               \
   _SWITCH_ON_TYPE(                                                                                                 \
       VALUE_TYPE,                                                                                     /* Scalar */ \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE NAME() const { return *(BOOST_PP_CAT(NAME, _)); }, /* Column */ \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE const* NAME()                                                   \
-          const { return BOOST_PP_CAT(NAME, _); } ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE NAME(size_t index)  \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return *(BOOST_PP_CAT(NAME, _)); },              /* Column */ \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE const* NAME()                                                                \
+          const { return BOOST_PP_CAT(NAME, _); } SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index)               \
               const { return *(BOOST_PP_CAT(NAME, _) + index); }, /* Eigen column */                               \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CPP_TYPE::Scalar const* NAME()                                           \
-          const { return BOOST_PP_CAT(NAME, _); } ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t BOOST_PP_CAT(         \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE::Scalar const* NAME()                                                        \
+          const { return BOOST_PP_CAT(NAME, _); } SOA_HOST_DEVICE_INLINE size_t BOOST_PP_CAT(                      \
               NAME, Stride)() { return BOOST_PP_CAT(NAME, Stride_); })
 
 #define _DECLARE_SOA_CONST_ACCESSOR(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_CONST_ACCESSOR_IMPL TYPE_NAME)
@@ -278,7 +289,7 @@
     using SoAConstValueWithConf = cms::soa::SoAConstValue<COLUMN_TYPE, C, conditionalAlignment>;                                          \
                                                                                                                                           \
     /* dump the SoA internal structure */                                                                                                 \
-    ALPAKA_FN_HOST                                                                                                                        \
+    SOA_HOST_ONLY                                                                                                                         \
     void toStream(std::ostream & os) const {                                                                                              \
       os << #CLASS "(" << nElements_ << " elements, byte alignement= " << byteAlignment << ", @"<< mem_ <<"): " << std::endl;             \
       os << "  sizeof(" #CLASS "): " << sizeof(CLASS) << std::endl;                                                                       \
@@ -301,13 +312,13 @@
    */                                                                                                                                     \
     struct SoAMetadata {                                                                                                                  \
       friend CLASS;                                                                                                                       \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t size() const { return parent_.nElements_; }                                              \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t byteSize() const { return parent_.byteSize_; }                                           \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t byteAlignment() const { return CLASS::byteAlignment; }                                   \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE std::byte* data() { return parent_.mem_; }                                                      \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const std::byte* data() const { return parent_.mem_; }                                          \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE std::byte* nextByte() const { return parent_.mem_ + parent_.byteSize_; }                        \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE CLASS cloneToNewAddress(std::byte* addr) const {                                                \
+      SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                           \
+      SOA_HOST_DEVICE_INLINE size_t byteSize() const { return parent_.byteSize_; }                                                        \
+      SOA_HOST_DEVICE_INLINE size_t byteAlignment() const { return CLASS::byteAlignment; }                                                \
+      SOA_HOST_DEVICE_INLINE std::byte* data() { return parent_.mem_; }                                                                   \
+      SOA_HOST_DEVICE_INLINE const std::byte* data() const { return parent_.mem_; }                                                       \
+      SOA_HOST_DEVICE_INLINE std::byte* nextByte() const { return parent_.mem_ + parent_.byteSize_; }                                     \
+      SOA_HOST_DEVICE_INLINE CLASS cloneToNewAddress(std::byte* addr) const {                                                             \
         return CLASS(addr, parent_.nElements_);                                                                                           \
       }                                                                                                                                   \
       _ITERATE_ON_ALL(_DEFINE_METADATA_MEMBERS, ~, __VA_ARGS__)                                                                           \
@@ -316,13 +327,13 @@
       SoAMetadata(const SoAMetadata&) = delete;                                                                                           \
                                                                                                                                           \
     private:                                                                                                                              \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                           \
+      SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                        \
       const CLASS& parent_;                                                                                                               \
       typedef CLASS ParentClass;                                                                                                          \
     };                                                                                                                                    \
     friend SoAMetadata;                                                                                                                   \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                              \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                          \
+    SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                           \
+    SOA_HOST_DEVICE_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                                       \
                                                                                                                                           \
     /* Trivial constuctor */                                                                                                              \
     CLASS()                                                                                                                               \
@@ -332,7 +343,7 @@
           _ITERATE_ON_ALL_COMMA(_DECLARE_MEMBER_TRIVIAL_CONSTRUCTION, ~, __VA_ARGS__) {}                                                  \
                                                                                                                                           \
     /* Constructor relying on user provided storage */                                                                                    \
-    ALPAKA_FN_HOST CLASS(std::byte* mem, size_t nElements) : mem_(mem), nElements_(nElements), byteSize_(0) {                             \
+    SOA_HOST_ONLY CLASS(std::byte* mem, size_t nElements) : mem_(mem), nElements_(nElements), byteSize_(0) {                              \
       if constexpr (alignmentEnforcement == AlignmentEnforcement::Enforced)                                                               \
         if (reinterpret_cast<intptr_t>(mem) % byteAlignment)                                                                              \
           throw std::out_of_range("In " #CLASS "::" #CLASS ": misaligned buffer");                                                        \
@@ -345,18 +356,18 @@
     }                                                                                                                                     \
                                                                                                                                           \
     /* Constructor relying on user provided storage */                                                                                    \
-    ALPAKA_FN_ACC CLASS(bool devConstructor, std::byte* mem, size_t nElements) : mem_(mem), nElements_(nElements) {                       \
+    SOA_DEVICE_ONLY CLASS(bool devConstructor, std::byte* mem, size_t nElements) : mem_(mem), nElements_(nElements) {                     \
       auto curMem = mem_;                                                                                                                 \
       _ITERATE_ON_ALL(_ASSIGN_SOA_COLUMN_OR_SCALAR, ~, __VA_ARGS__)                                                                       \
     }                                                                                                                                     \
                                                                                                                                           \
     /* dump the SoA internal structure */                                                                                                 \
     template <typename T>                                                                                                                 \
-    ALPAKA_FN_HOST friend void dump();                                                                                                    \
+    SOA_HOST_ONLY friend void dump();                                                                                                     \
                                                                                                                                           \
   private:                                                                                                                                \
     /* Range checker conditional to the macro _DO_RANGECHECK */                                                                           \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                   \
+    SOA_HOST_DEVICE_INLINE                                                                                                                \
     void rangeCheck(size_t index) const {                                                                                                 \
       if constexpr (_DO_RANGECHECK) {                                                                                                     \
         if (index >= nElements_) {                                                                                                        \

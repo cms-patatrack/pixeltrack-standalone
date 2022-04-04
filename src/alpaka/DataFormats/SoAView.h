@@ -51,9 +51,9 @@ namespace cms::soa {
   template <class C>
   struct ConstValueTraits<C, SoAColumnType::scalar> {
     // Just take to SoAValue type to generate the right constructor.
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE ConstValueTraits(size_t, const typename C::valueType*) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE ConstValueTraits(size_t, const typename C::Params&) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE ConstValueTraits(size_t, const typename C::ConstParams&) {}
+    SOA_HOST_DEVICE_INLINE ConstValueTraits(size_t, const typename C::valueType*) {}
+    SOA_HOST_DEVICE_INLINE ConstValueTraits(size_t, const typename C::Params&) {}
+    SOA_HOST_DEVICE_INLINE ConstValueTraits(size_t, const typename C::ConstParams&) {}
     // Any attempt to do anything with the "scalar" value a const element will fail.
   };
 
@@ -82,9 +82,10 @@ namespace cms::soa {
       BOOST_PP_CAT(ParametersTypeOf_, LOCAL_NAME);                                                                 \
   constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                               \
       BOOST_PP_CAT(TypeOf_, LAYOUT_NAME)::SoAMetadata::BOOST_PP_CAT(ColumnTypeOf_, LAYOUT_MEMBER);                 \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE DATA auto* BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {                    \
+  SOA_HOST_DEVICE_INLINE DATA auto* BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {                                 \
     return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, LOCAL_NAME)().addr_;                                  \
   };                                                                                                               \
+  SOA_HOST_DEVICE_INLINE                                                                                           \
   DATA BOOST_PP_CAT(ParametersTypeOf_, LOCAL_NAME) BOOST_PP_CAT(parametersOf_, LOCAL_NAME)() const {               \
     return parent_.BOOST_PP_CAT(LOCAL_NAME, Parameters_);                                                          \
   };
@@ -206,7 +207,7 @@ namespace cms::soa {
  * Declaration of the members accessors of the const element subclass
  */
 #define _DECLARE_VIEW_CONST_ELEMENT_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                 \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                     \
+  SOA_HOST_DEVICE_INLINE                                                                                  \
       typename SoAConstValueWithConf<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME),                \
                                      typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::RefToConst \
       LOCAL_NAME() const {                                                                                \
@@ -263,12 +264,12 @@ namespace cms::soa {
  */
 #define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                         \
   /* Column or scalar */                                                                                \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE auto& LOCAL_NAME() {                                              \
+  SOA_HOST_DEVICE_INLINE auto& LOCAL_NAME() {                                                           \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))();           \
   }                                                                                                     \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE auto& LOCAL_NAME(size_t index) {                                  \
+  SOA_HOST_DEVICE_INLINE auto& LOCAL_NAME(size_t index) {                                               \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))(index);      \
@@ -282,12 +283,12 @@ namespace cms::soa {
  */
 #define _DECLARE_VIEW_SOA_CONST_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                   \
   /* Column or scalar */                                                                                \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE auto LOCAL_NAME() const {                                         \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() const {                                                      \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))();             \
   }                                                                                                     \
-  ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE auto LOCAL_NAME(size_t index) const {                             \
+  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) const {                                          \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::constAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))(index);        \
@@ -349,7 +350,7 @@ namespace cms::soa {
    */                                                                                                                                       \
     struct SoAMetadata {                                                                                                                    \
       friend CLASS;                                                                                                                         \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t size() const { return parent_.nElements_; }                                                \
+      SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                             \
       /* Alias layout or view types to name-derived identifyer to allow simpler definitions */                                              \
       _ITERATE_ON_ALL(_DECLARE_VIEW_LAYOUT_TYPE_ALIAS, ~, LAYOUTS_LIST)                                                                     \
                                                                                                                                             \
@@ -361,18 +362,18 @@ namespace cms::soa {
       SoAMetadata(const SoAMetadata&) = delete;                                                                                             \
                                                                                                                                             \
     private:                                                                                                                                \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                             \
+      SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                          \
       const CLASS& parent_;                                                                                                                 \
     };                                                                                                                                      \
     friend SoAMetadata;                                                                                                                     \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                            \
+    SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                             \
+    SOA_HOST_DEVICE_INLINE SoAMetadata soaMetadata() { return SoAMetadata(*this); }                                                         \
                                                                                                                                             \
     /* Trivial constuctor */                                                                                                                \
     CLASS() {}                                                                                                                              \
                                                                                                                                             \
     /* Constructor relying on user provided layouts or views */                                                                             \
-    ALPAKA_FN_HOST CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, BOOST_PP_EMPTY(), LAYOUTS_LIST))                      \
+    SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, BOOST_PP_EMPTY(), LAYOUTS_LIST))                       \
         : nElements_([&]() -> size_t {                                                                                                      \
             bool set = false;                                                                                                               \
             size_t ret = 0;                                                                                                                 \
@@ -382,14 +383,14 @@ namespace cms::soa {
           _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                        \
                                                                                                                                             \
     /* Constructor relying on individually provided column addresses */                                                                     \
-    ALPAKA_FN_HOST CLASS(size_t nElements,                                                                                                  \
+    SOA_HOST_ONLY CLASS(size_t nElements,                                                                                                   \
                         _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS,                                               \
                                               BOOST_PP_EMPTY(),                                                                             \
                                               VALUE_LIST))                                                                                  \
         : nElements_(nElements), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                        \
                                                                                                                                             \
     struct const_element {                                                                                                                  \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                   \
+      SOA_HOST_DEVICE_INLINE                                                                                                                \
       const_element(size_t index, /* Declare parameters */                                                                                  \
                     _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_VALUE_ARG, const, VALUE_LIST))                                              \
           : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONST_ELEM_MEMBER_INIT, index, VALUE_LIST) {}                                               \
@@ -400,11 +401,11 @@ namespace cms::soa {
     };                                                                                                                                      \
                                                                                                                                             \
     struct element {                                                                                                                        \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                   \
+      SOA_HOST_DEVICE_INLINE                                                                                                                \
       element(size_t index, /* Declare parameters */                                                                                        \
               _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEMENT_VALUE_ARG, BOOST_PP_EMPTY(), VALUE_LIST))                                         \
           : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_ELEM_MEMBER_INIT, index, VALUE_LIST) {}                                                     \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                   \
+      SOA_HOST_DEVICE_INLINE                                                                                                                \
       element& operator=(const element& other) {                                                                                            \
         _ITERATE_ON_ALL(_DECLARE_VIEW_ELEMENT_VALUE_COPY, ~, VALUE_LIST)                                                                    \
         return *this;                                                                                                                       \
@@ -413,7 +414,7 @@ namespace cms::soa {
     };                                                                                                                                      \
                                                                                                                                             \
     /* AoS-like accessor (non-const) */                                                                                                     \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                     \
+    SOA_HOST_DEVICE_INLINE                                                                                                                  \
     element operator[](size_t index) {                                                                                                      \
       if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                    \
         if (index >= nElements_)                                                                                                            \
@@ -423,7 +424,7 @@ namespace cms::soa {
     }                                                                                                                                       \
                                                                                                                                             \
     /* AoS-like accessor (const) */                                                                                                         \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                     \
+    SOA_HOST_DEVICE_INLINE                                                                                                                  \
     const_element operator[](size_t index) const {                                                                                          \
       if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                    \
         if (index >= nElements_)                                                                                                            \
@@ -438,7 +439,7 @@ namespace cms::soa {
                                                                                                                                             \
     /* dump the SoA internal structure */                                                                                                   \
     template <typename T>                                                                                                                   \
-    ALPAKA_FN_HOST friend void dump();                                                                                                      \
+    SOA_HOST_ONLY friend void dump();                                                                                                       \
                                                                                                                                             \
   private:                                                                                                                                  \
     size_t nElements_ = 0;                                                                                                                  \
@@ -480,7 +481,7 @@ namespace cms::soa {
    */                                                                                                                                     \
     struct SoAMetadata {                                                                                                                  \
       friend CLASS;                                                                                                                       \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t size() const { return parent_.nElements_; }                                              \
+      SOA_HOST_DEVICE_INLINE size_t size() const { return parent_.nElements_; }                                                           \
       /* Alias layout/view types to name-derived identifyer to allow simpler definitions */                                               \
       _ITERATE_ON_ALL(_DECLARE_VIEW_LAYOUT_TYPE_ALIAS, ~, LAYOUTS_LIST)                                                                   \
                                                                                                                                           \
@@ -491,17 +492,17 @@ namespace cms::soa {
       SoAMetadata(const SoAMetadata&) = delete;                                                                                           \
                                                                                                                                           \
     private:                                                                                                                              \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                           \
+      SOA_HOST_DEVICE_INLINE SoAMetadata(const CLASS& parent) : parent_(parent) {}                                                        \
       const CLASS& parent_;                                                                                                               \
     };                                                                                                                                    \
     friend SoAMetadata;                                                                                                                   \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                              \
+    SOA_HOST_DEVICE_INLINE const SoAMetadata soaMetadata() const { return SoAMetadata(*this); }                                           \
                                                                                                                                           \
     /* Trivial constuctor */                                                                                                              \
     CLASS() {}                                                                                                                            \
                                                                                                                                           \
     /* Constructor relying on user provided layouts or views */                                                                           \
-    ALPAKA_FN_HOST CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, const, LAYOUTS_LIST))                               \
+    SOA_HOST_ONLY CLASS(_ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_PARAMETERS, const, LAYOUTS_LIST))                                \
         : nElements_([&]() -> size_t {                                                                                                    \
             bool set = false;                                                                                                             \
             size_t ret = 0;                                                                                                               \
@@ -511,12 +512,12 @@ namespace cms::soa {
           _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS, ~, VALUE_LIST) {}                                                      \
                                                                                                                                           \
     /* Constructor relying on individually provided column addresses */                                                                   \
-    ALPAKA_FN_HOST CLASS(size_t nElements,                                                                                                \
+    SOA_HOST_ONLY CLASS(size_t nElements,                                                                                                 \
                         _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONSTRUCTION_BYCOLUMN_PARAMETERS, const, VALUE_LIST))                         \
         : nElements_(nElements), _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_MEMBER_INITIALIZERS_BYCOLUMN, ~, VALUE_LIST) {}                      \
                                                                                                                                           \
     struct const_element {                                                                                                                \
-      ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                 \
+      SOA_HOST_DEVICE_INLINE                                                                                                              \
       const_element(size_t index, /* Declare parameters */                                                                                \
                     _ITERATE_ON_ALL_COMMA(_DECLARE_CONST_VIEW_ELEMENT_VALUE_ARG, const, VALUE_LIST))                                      \
           : _ITERATE_ON_ALL_COMMA(_DECLARE_VIEW_CONST_ELEM_MEMBER_INIT, index, VALUE_LIST) {}                                             \
@@ -527,7 +528,7 @@ namespace cms::soa {
     };                                                                                                                                    \
                                                                                                                                           \
     /* AoS-like accessor (const) */                                                                                                       \
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE                                                                                                   \
+    SOA_HOST_DEVICE_INLINE                                                                                                                \
     const_element operator[](size_t index) const {                                                                                        \
       if constexpr (rangeChecking == cms::soa::RangeChecking::Enabled) {                                                                  \
         if (index >= nElements_)                                                                                                          \
@@ -541,7 +542,7 @@ namespace cms::soa {
                                                                                                                                           \
     /* dump the SoA internal structure */                                                                                                 \
     template <typename T>                                                                                                                 \
-    ALPAKA_FN_HOST friend void dump();                                                                                                    \
+    SOA_HOST_ONLY friend void dump();                                                                                                     \
                                                                                                                                           \
   private:                                                                                                                                \
     size_t nElements_ = 0;                                                                                                                \

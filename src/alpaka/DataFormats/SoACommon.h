@@ -10,6 +10,19 @@
 #include <cassert>
 #include <ostream>
 
+// CUDA attributes
+#ifdef __CUDACC__
+#define SOA_HOST_ONLY ALPAKA_FN_HOST
+#define SOA_DEVICE_ONLY ALPAKA_FN_ACC
+#define SOA_HOST_DEVICE ALPAKA_FN_HOST_ACC
+#define SOA_HOST_DEVICE_INLINE ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE
+#else
+#define SOA_HOST_ONLY
+#define SOA_DEVICE_ONLY
+#define SOA_HOST_DEVICE
+#define SOA_HOST_DEVICE_INLINE inline
+#endif
+
 // Exception throwing (or willful crash in kernels)
 #if defined(__CUDACC__) && defined(__CUDA_ARCH__)
 #define SOA_THROW_OUT_OF_RANGE(A) \
@@ -70,12 +83,12 @@ namespace cms::soa {
     typedef T ValueType;
     typedef const ValueType* TupleOrPointerType;
     const ValueType* addr_ = nullptr;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const ValueType* addr) : addr_(addr) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const SoAConstParametersImpl& o) { addr_ = o.addr_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const SoAParametersImpl<columnType, ValueType>& o) {
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const ValueType* addr) : addr_(addr) {}
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const SoAConstParametersImpl& o) { addr_ = o.addr_; }
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const SoAParametersImpl<columnType, ValueType>& o) {
       addr_ = o.addr_;
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl() {}
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl() {}
     static bool checkAlignement(ValueType* addr, size_t byteAlignment) {
       return reinterpret_cast<intptr_t>(addr) % byteAlignment;
     }
@@ -89,26 +102,26 @@ namespace cms::soa {
     typedef std::tuple<ScalarType*, size_t> TupleOrPointerType;
     const ScalarType* addr_ = nullptr;
     size_t stride_ = 0;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const ScalarType* addr, size_t stride)
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const ScalarType* addr, size_t stride)
         : addr_(addr), stride_(stride) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const TupleOrPointerType tuple)
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const TupleOrPointerType tuple)
         : addr_(std::get<0>(tuple)), stride_(std::get<1>(tuple)) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const ScalarType* addr) : addr_(addr) {}
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const ScalarType* addr) : addr_(addr) {}
     // Trick setter + return self-reference allowing commat-free 2-stage construction in macro contexts (in combination with the
     // addr-only constructor.
     SoAConstParametersImpl& setStride(size_t stride) {
       stride_ = stride;
       return *this;
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const SoAConstParametersImpl& o) {
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const SoAConstParametersImpl& o) {
       addr_ = o.addr_;
       stride_ = o.stride_;
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl(const SoAParametersImpl<columnType, ValueType>& o) {
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl(const SoAParametersImpl<columnType, ValueType>& o) {
       addr_ = o.addr_;
       stride_ = o.stride_;
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstParametersImpl() {}
+    SOA_HOST_DEVICE_INLINE SoAConstParametersImpl() {}
     static bool checkAlignement(const TupleOrPointerType tuple, size_t byteAlignment) {
       const auto& [addr, stride] = tuple;
       return reinterpret_cast<intptr_t>(addr) % byteAlignment;
@@ -133,8 +146,8 @@ namespace cms::soa {
     typedef SoAConstParametersImpl<columnType, ValueType> ConstType;
     friend ConstType;
     ValueType* addr_ = nullptr;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl(ValueType* addr) : addr_(addr) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl() {}
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl(ValueType* addr) : addr_(addr) {}
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl() {}
     static bool checkAlignement(ValueType* addr, size_t byteAlignment) {
       return reinterpret_cast<intptr_t>(addr) % byteAlignment;
     }
@@ -150,12 +163,12 @@ namespace cms::soa {
     typedef std::tuple<ScalarType*, size_t> TupleOrPointerType;
     ScalarType* addr_ = nullptr;
     size_t stride_ = 0;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl(ScalarType* addr, size_t stride)
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl(ScalarType* addr, size_t stride)
         : addr_(addr), stride_(stride) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl(const TupleOrPointerType tuple)
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl(const TupleOrPointerType tuple)
         : addr_(std::get<0>(tuple)), stride_(std::get<1>(tuple)) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl() {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAParametersImpl(ScalarType* addr) : addr_(addr) {}
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl() {}
+    SOA_HOST_DEVICE_INLINE SoAParametersImpl(ScalarType* addr) : addr_(addr) {}
     // Trick setter + return self-reference allowing commat-free 2-stage construction in macro contexts (in combination with the
     // addr-only constructor.
     SoAParametersImpl& setStride(size_t stride) {
@@ -195,31 +208,31 @@ namespace cms::soa {
     typedef typename Restr::Reference Ref;
     typedef typename Restr::PointerToConst PtrToConst;
     typedef typename Restr::ReferenceToConst RefToConst;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAValue(size_t i, T* col) : idx_(i), col_(col) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAValue(size_t i, SoAParametersImpl<COLUMN_TYPE, T> params)
+    SOA_HOST_DEVICE_INLINE SoAValue(size_t i, T* col) : idx_(i), col_(col) {}
+    SOA_HOST_DEVICE_INLINE SoAValue(size_t i, SoAParametersImpl<COLUMN_TYPE, T> params)
         : idx_(i), col_(params.addr_) {}
-    /* ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE operator T&() { return col_[idx_]; } */
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE Ref operator()() {
+    /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
+    SOA_HOST_DEVICE_INLINE Ref operator()() {
       // Ptr type will add the restrict qualifyer if needed
       Ptr col = alignedCol();
       return col[idx_];
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE RefToConst operator()() const {
+    SOA_HOST_DEVICE_INLINE RefToConst operator()() const {
       // PtrToConst type will add the restrict qualifyer if needed
       PtrToConst col = alignedCol();
       return col[idx_];
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE Ptr operator&() { return &alignedCol()[idx_]; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE PtrToConst operator&() const { return &alignedCol()[idx_]; }
+    SOA_HOST_DEVICE_INLINE Ptr operator&() { return &alignedCol()[idx_]; }
+    SOA_HOST_DEVICE_INLINE PtrToConst operator&() const { return &alignedCol()[idx_]; }
     template <typename T2>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE Ref operator=(const T2& v) {
+    SOA_HOST_DEVICE_INLINE Ref operator=(const T2& v) {
       return alignedCol()[idx_] = v;
     }
     typedef Val valueType;
     static constexpr auto valueSize = sizeof(T);
 
   private:
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE Ptr alignedCol() const {
+    SOA_HOST_DEVICE_INLINE Ptr alignedCol() const {
       if constexpr (ALIGNMENT) {
         return reinterpret_cast<Ptr>(__builtin_assume_aligned(col_, ALIGNMENT));
       }
@@ -244,12 +257,12 @@ namespace cms::soa {
     typedef typename Restr::Reference Ref;
     typedef typename Restr::PointerToConst PtrToConst;
     typedef typename Restr::ReferenceToConst RefToConst;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAValue(size_t i, typename C::Scalar* col, size_t stride)
+    SOA_HOST_DEVICE_INLINE SoAValue(size_t i, typename C::Scalar* col, size_t stride)
         : val_(col + i, C::RowsAtCompileTime, C::ColsAtCompileTime, Eigen::InnerStride<Eigen::Dynamic>(stride)),
           crCol_(col),
           cVal_(crCol_ + i, C::RowsAtCompileTime, C::ColsAtCompileTime, Eigen::InnerStride<Eigen::Dynamic>(stride)),
           stride_(stride) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAValue(size_t i, SoAParametersImpl<SoAColumnType::eigen, C> params)
+    SOA_HOST_DEVICE_INLINE SoAValue(size_t i, SoAParametersImpl<SoAColumnType::eigen, C> params)
         : val_(params.addr_ + i,
                C::RowsAtCompileTime,
                C::ColsAtCompileTime,
@@ -260,19 +273,19 @@ namespace cms::soa {
                 C::ColsAtCompileTime,
                 Eigen::InnerStride<Eigen::Dynamic>(params.stride_)),
           stride_(params.stride_) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE MapType& operator()() { return val_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const CMapType& operator()() const { return cVal_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE operator C() { return val_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE operator const C() const { return cVal_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE C* operator&() { return &val_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const C* operator&() const { return &cVal_; }
+    SOA_HOST_DEVICE_INLINE MapType& operator()() { return val_; }
+    SOA_HOST_DEVICE_INLINE const CMapType& operator()() const { return cVal_; }
+    SOA_HOST_DEVICE_INLINE operator C() { return val_; }
+    SOA_HOST_DEVICE_INLINE operator const C() const { return cVal_; }
+    SOA_HOST_DEVICE_INLINE C* operator&() { return &val_; }
+    SOA_HOST_DEVICE_INLINE const C* operator&() const { return &cVal_; }
     template <class C2>
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE MapType& operator=(const C2& v) {
+    SOA_HOST_DEVICE_INLINE MapType& operator=(const C2& v) {
       return val_ = v;
     }
     typedef typename C::Scalar ValueType;
     static constexpr auto valueSize = sizeof(C::Scalar);
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t stride() const { return stride_; }
+    SOA_HOST_DEVICE_INLINE size_t stride() const { return stride_; }
 
   private:
     MapType val_;
@@ -306,23 +319,23 @@ namespace cms::soa {
     typedef typename Restr::ReferenceToConst RefToConst;
     typedef SoAParametersImpl<COLUMN_TYPE, T> Params;
     typedef SoAConstParametersImpl<COLUMN_TYPE, T> ConstParams;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstValue(size_t i, const T* col) : idx_(i), col_(col) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstValue(size_t i, SoAParametersImpl<COLUMN_TYPE, T> params)
+    SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, const T* col) : idx_(i), col_(col) {}
+    SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, SoAParametersImpl<COLUMN_TYPE, T> params)
         : idx_(i), col_(params.addr_) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstValue(size_t i, SoAConstParametersImpl<COLUMN_TYPE, T> params)
+    SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, SoAConstParametersImpl<COLUMN_TYPE, T> params)
         : idx_(i), col_(params.addr_) {}
-    /* ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE operator T&() { return col_[idx_]; } */
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE RefToConst operator()() const {
+    /* SOA_HOST_DEVICE_INLINE operator T&() { return col_[idx_]; } */
+    SOA_HOST_DEVICE_INLINE RefToConst operator()() const {
       // Ptr type will add the restrict qualifyer if needed
       PtrToConst col = alignedCol();
       return col[idx_];
     }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const T* operator&() const { return &alignedCol()[idx_]; }
+    SOA_HOST_DEVICE_INLINE const T* operator&() const { return &alignedCol()[idx_]; }
     typedef T valueType;
     static constexpr auto valueSize = sizeof(T);
 
   private:
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE PtrToConst alignedCol() const {
+    SOA_HOST_DEVICE_INLINE PtrToConst alignedCol() const {
       if constexpr (ALIGNMENT) {
         return reinterpret_cast<PtrToConst>(__builtin_assume_aligned(col_, ALIGNMENT));
       }
@@ -342,23 +355,23 @@ namespace cms::soa {
     typedef Eigen::Map<const C, 0, Eigen::InnerStride<Eigen::Dynamic>> CMapType;
     typedef CMapType& RefToConst;
     typedef SoAConstParametersImpl<SoAColumnType::eigen, C> ConstParams;
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstValue(size_t i, typename C::Scalar* col, size_t stride)
+    SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, typename C::Scalar* col, size_t stride)
         : crCol_(col),
           cVal_(crCol_ + i, C::RowsAtCompileTime, C::ColsAtCompileTime, Eigen::InnerStride<Eigen::Dynamic>(stride)),
           stride_(stride) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAConstValue(size_t i, SoAConstParametersImpl<SoAColumnType::eigen, C> params)
+    SOA_HOST_DEVICE_INLINE SoAConstValue(size_t i, SoAConstParametersImpl<SoAColumnType::eigen, C> params)
         : crCol_(params.addr_),
           cVal_(crCol_ + i,
                 C::RowsAtCompileTime,
                 C::ColsAtCompileTime,
                 Eigen::InnerStride<Eigen::Dynamic>(params.stride_)),
           stride_(params.stride_) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const CMapType& operator()() const { return cVal_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE operator const C() const { return cVal_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const C* operator&() const { return &cVal_; }
+    SOA_HOST_DEVICE_INLINE const CMapType& operator()() const { return cVal_; }
+    SOA_HOST_DEVICE_INLINE operator const C() const { return cVal_; }
+    SOA_HOST_DEVICE_INLINE const C* operator&() const { return &cVal_; }
     typedef typename C::Scalar ValueType;
     static constexpr auto valueSize = sizeof(C::Scalar);
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE size_t stride() const { return stride_; }
+    SOA_HOST_DEVICE_INLINE size_t stride() const { return stride_; }
 
   private:
     const typename C::Scalar* __restrict__ crCol_;
@@ -443,11 +456,11 @@ namespace cms::soa {
   // Column
   template <typename T>
   struct SoAColumnAccessorsImpl<T, SoAColumnType::column, SoAAccessType::mutableAccess> {
-    //ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAColumnAccessorsImpl(T* baseAddress) : baseAddress_(baseAddress) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::column, T>& params)
+    //SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(T* baseAddress) : baseAddress_(baseAddress) {}
+    SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::column, T>& params)
         : params_(params) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE T* operator()() { return params_.addr_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE T& operator()(size_t index) { return params_.addr_[index]; }
+    SOA_HOST_DEVICE_INLINE T* operator()() { return params_.addr_; }
+    SOA_HOST_DEVICE_INLINE T& operator()(size_t index) { return params_.addr_[index]; }
 
   private:
     SoAParametersImpl<SoAColumnType::column, T> params_;
@@ -456,11 +469,11 @@ namespace cms::soa {
   // Const column
   template <typename T>
   struct SoAColumnAccessorsImpl<T, SoAColumnType::column, SoAAccessType::constAccess> {
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE
+    SOA_HOST_DEVICE_INLINE
     SoAColumnAccessorsImpl(const SoAConstParametersImpl<SoAColumnType::column, T>& params)
         : params_(params) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE const T* operator()() const { return params_.addr_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE T operator()(size_t index) const { return params_.addr_[index]; }
+    SOA_HOST_DEVICE_INLINE const T* operator()() const { return params_.addr_; }
+    SOA_HOST_DEVICE_INLINE T operator()(size_t index) const { return params_.addr_[index]; }
 
   private:
     SoAConstParametersImpl<SoAColumnType::column, T> params_;
@@ -469,13 +482,10 @@ namespace cms::soa {
   // Scalar
   template <typename T>
   struct SoAColumnAccessorsImpl<T, SoAColumnType::scalar, SoAAccessType::mutableAccess> {
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::scalar, T>& params)
+    SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::scalar, T>& params)
         : params_(params) {}
-    //private:
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE T& operator()() { return *params_.addr_; }
-
-  public:
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void operator()(size_t index) const {
+    SOA_HOST_DEVICE_INLINE T& operator()() { return *params_.addr_; }
+    SOA_HOST_DEVICE_INLINE void operator()(size_t index) const {
       assert(false && "Indexed access impossible for SoA scalars.");
     }
 
@@ -486,11 +496,11 @@ namespace cms::soa {
   // Const scalar
   template <typename T>
   struct SoAColumnAccessorsImpl<T, SoAColumnType::scalar, SoAAccessType::constAccess> {
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE
+    SOA_HOST_DEVICE_INLINE
     SoAColumnAccessorsImpl(const SoAConstParametersImpl<SoAColumnType::scalar, T>& params)
         : params_(params) {}
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE T operator()() const { return *params_.addr_; }
-    ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void operator()(size_t index) const {
+    SOA_HOST_DEVICE_INLINE T operator()() const { return *params_.addr_; }
+    SOA_HOST_DEVICE_INLINE void operator()(size_t index) const {
       assert(false && "Indexed access impossible for SoA scalars.");
     }
 
@@ -534,7 +544,7 @@ namespace cms::soa {
 // Small wrapper for stream insertion of SoA printing
 template <typename SOA,
           typename SOACHECKED = typename std::enable_if<std::is_base_of<cms::soa::BaseLayout, SOA>::value, SOA>::type>
-ALPAKA_FN_HOST std::ostream& operator<<(std::ostream& os, const SOA& soa) {
+SOA_HOST_ONLY std::ostream& operator<<(std::ostream& os, const SOA& soa) {
   soa.toStream(os);
   return os;
 }
