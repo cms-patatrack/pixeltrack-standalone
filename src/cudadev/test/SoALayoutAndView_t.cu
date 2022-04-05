@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include "DataFormats/SoALayout.h"
 #include "DataFormats/SoAView.h"
+#include "CUDACore/cudaCheck.h"
 #include <memory>
 #include <cstdlib>
 #include <Eigen/Dense>
@@ -11,8 +12,8 @@
 // Scalars, Columns of scalars and of Eigen vectors
 // View to each of them, from one and multiple stores.
 
-GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
-                             SoA1ViewTemplate,
+GENERATE_SOA_LAYOUT_AND_VIEW(SoAHostDeviceLayoutTemplate,
+                             SoAHostDeviceViewTemplate,
                              // predefined static scalars
                              // size_t size;
                              // size_t alignment;
@@ -21,152 +22,253 @@ GENERATE_SOA_LAYOUT_AND_VIEW(SoA1LayoutTemplate,
                              SOA_COLUMN(double, x),
                              SOA_COLUMN(double, y),
                              SOA_COLUMN(double, z),
-                             SOA_COLUMN(double, sum),
-                             SOA_COLUMN(double, prod),
                              SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
                              SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
                              SOA_EIGEN_COLUMN(Eigen::Vector3d, r),
-                             SOA_COLUMN(uint16_t, color),
-                             SOA_COLUMN(int32_t, value),
-                             SOA_COLUMN(double *, py),
-                             SOA_COLUMN(uint32_t, count),
-                             SOA_COLUMN(uint32_t, anotherCount),
-
                              // scalars: one value for the whole structure
-                             SOA_SCALAR(const char *, description),
+                             SOA_SCALAR(const char*, description),
                              SOA_SCALAR(uint32_t, someNumber))
 
-using SoA1Layout = SoA1LayoutTemplate<>;
-using SoA1View = SoA1ViewTemplate<>;
+using SoAHostDeviceLayout = SoAHostDeviceLayoutTemplate<>;
+using SoAHostDeviceView =
+    SoAHostDeviceViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
 
-// A partial view (artificial mix of store and view)
-GENERATE_SOA_VIEW(SoA1View2GTemplate,
-                  SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SoA1Layout, soa1), SOA_VIEW_LAYOUT(SoA1View, soa1v)),
-                  SOA_VIEW_VALUE_LIST(SOA_VIEW_VALUE(soa1, x),
-                                      SOA_VIEW_VALUE(soa1v, y),
-                                      SOA_VIEW_VALUE(soa1, color),
-                                      SOA_VIEW_VALUE(soa1v, value),
-                                      SOA_VIEW_VALUE(soa1v, count),
-                                      SOA_VIEW_VALUE(soa1, anotherCount),
-                                      SOA_VIEW_VALUE(soa1v, description),
-                                      SOA_VIEW_VALUE(soa1, someNumber)))
+GENERATE_SOA_LAYOUT_AND_VIEW(SoADeviceOnlyLayoutTemplate,
+                             SoADeviceOnlyViewTemplate,
+                             SOA_COLUMN(uint16_t, color),
+                             SOA_COLUMN(double, value),
+                             SOA_COLUMN(double*, py),
+                             SOA_COLUMN(uint32_t, count),
+                             SOA_COLUMN(uint32_t, anotherCount))
 
-using SoA1View2G = SoA1View2GTemplate<>;
+using SoADeviceOnlyLayout = SoADeviceOnlyLayoutTemplate<>;
+using SoADeviceOnlyView =
+    SoADeviceOnlyViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
 
-// Same partial view, yet const.
-GENERATE_SOA_CONST_VIEW(SoA1View2Gconst,
-                        SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SoA1Layout, soa1), SOA_VIEW_LAYOUT(SoA1View, soa1v)),
-                        SOA_VIEW_VALUE_LIST(SOA_VIEW_VALUE(soa1, x),
-                                            SOA_VIEW_VALUE(soa1v, y),
-                                            SOA_VIEW_VALUE(soa1, a),
-                                            SOA_VIEW_VALUE(soa1, b),
-                                            SOA_VIEW_VALUE(soa1, r),
-                                            SOA_VIEW_VALUE(soa1, color),
-                                            SOA_VIEW_VALUE(soa1v, value),
-                                            SOA_VIEW_VALUE(soa1v, count),
-                                            SOA_VIEW_VALUE(soa1, anotherCount),
-                                            SOA_VIEW_VALUE(soa1v, description),
-                                            SOA_VIEW_VALUE(soa1, someNumber)))
+// A 1 to 1 view of the store (except for unsupported types).
+GENERATE_SOA_VIEW(SoAFullDeviceViewTemplate,
+                  SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(SoAHostDeviceLayout, soaHD),
+                                       SOA_VIEW_LAYOUT(SoADeviceOnlyLayout, soaDO)),
+                  SOA_VIEW_LAYOUT_LIST(SOA_VIEW_VALUE(soaHD, x),
+                                       SOA_VIEW_VALUE(soaHD, y),
+                                       SOA_VIEW_VALUE(soaHD, z),
+                                       SOA_VIEW_VALUE(soaDO, color),
+                                       SOA_VIEW_VALUE(soaDO, value),
+                                       SOA_VIEW_VALUE(soaDO, py),
+                                       SOA_VIEW_VALUE(soaDO, count),
+                                       SOA_VIEW_VALUE(soaDO, anotherCount),
+                                       SOA_VIEW_VALUE(soaHD, description),
+                                       SOA_VIEW_VALUE(soaHD, someNumber)))
 
-// Parameter reusing kernels.  The disassembly will indicate whether the compiler uses the wanted cache hits and uses
-// `restrict` hints avoid multiple reduce loads.
-// The PTX can be obtained using -ptx insterad of -c when compiling.
-template <typename T>
-__device__ void addAndMulTemplate(T soa, size_t size) {
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx >= size)
-    return;
-  auto si = soa[idx];
-  si.sum() = si.x() + si.y();
-  si.prod() = si.x() * si.y();
+using SoAFullDeviceView =
+    SoAFullDeviceViewTemplate<cms::soa::CacheLineSize::NvidiaGPU, cms::soa::AlignmentEnforcement::Enforced>;
+
+// Eigen cross product kernel (on store)
+__global__ void crossProduct(SoAHostDeviceView soa, const unsigned int numElements) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i>=numElements) return;
+  auto si = soa[i];
+  si.r() = si.a().cross(si.b());
 }
 
-__global__ void aAMDef(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
-                                        cms::soa::AlignmentEnforcement::Relaxed,
-                                        cms::soa::RestrictQualify::Disabled> soa,
-                       size_t size) {
-  addAndMulTemplate(soa, size);
+// Device-only producer kernel
+__global__ void producerKernel(SoAFullDeviceView soa, const unsigned int numElements) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i>=numElements) return;
+  auto si = soa[i];
+  si.color() &= 0x55 << i % (sizeof(si.color()) - sizeof(char));
+  si.value() = sqrt(si.x() * si.x() + si.y() * si.y() + si.z() * si.z());
 }
 
-__global__ void aAMRestrict(SoA1ViewTemplate<cms::soa::CacheLineSize::defaultSize,
-                                             cms::soa::AlignmentEnforcement::Relaxed,
-                                             cms::soa::RestrictQualify::Enabled> soa,
-                            size_t size) {
-  addAndMulTemplate(soa, size);
+// Device-only consumer with result in host-device area
+__global__ void consumerKernel(SoAFullDeviceView soa, const unsigned int numElements) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i>=numElements) return;
+  auto si = soa[i];
+  si.x() = si.color() * si.value();
 }
 
-const size_t size = 10000;
+// Get a view like the default, except for range checking
+using RangeCheckingHostDeviceView = SoAHostDeviceViewTemplate<SoAHostDeviceView::byteAlignment,
+                                                              SoAHostDeviceView::alignmentEnforcement,
+                                                              SoAHostDeviceView::restrictQualify,
+                                                              cms::soa::RangeChecking::Enabled>;
 
-int main() {
-  // Allocate buffer
-  std::unique_ptr<std::byte, decltype(&std::free)> buffer(
-      static_cast<std::byte *>(std::aligned_alloc(SoA1Layout::defaultAlignment, SoA1Layout::computeDataSize(size))),
-      std::free);
-  SoA1Layout soa1(buffer.get(), size);
-  SoA1View soa1view(soa1);
-  SoA1View2G soa1v2g(soa1, soa1view);
-  SoA1View2Gconst soa1v2gconst(soa1, soa1view);
-  // Write to view
-  for (size_t i = 0; i < size; i++) {
-    auto s = soa1view[i];
-    s.x = 1.0 * i;
-    s.y = 2.0 * i;
-    s.z = 3.0 * i;
-    s.color() = i;
-    s.a()(0) = 1.0 * i;
-    s.a()(1) = 2.0 * i;
-    s.a()(2) = 3.0 * i;
-    s.b()(0) = 3.0 * i;
-    s.b()(1) = 2.0 * i;
-    s.b()(2) = 1.0 * i;
-    s.r() = s.a().cross(s.b());
+// We expect to just run one thread.
+__global__ void rangeCheckKernel(RangeCheckingHostDeviceView soa) {
+#if defined(__CUDACC__) && defined(__CUDA_ARCH__)
+  printf("About to fail range check in CUDA thread: %d\n", threadIdx.x);
+#endif
+  [[maybe_unused]] auto si = soa[soa.soaMetadata().size()];
+  printf("We should not have reached here\n");
+}
+
+int main(void) {
+  cudaStream_t stream;
+  cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+
+  // Non-aligned number of elements to check alignment features.
+  constexpr unsigned int numElements = 65537;
+
+  // Allocate buffer and store on host
+  size_t hostDeviceSize = SoAHostDeviceLayout::computeDataSize(numElements);
+  std::byte * h_buf = nullptr;
+  cudaCheck(cudaMallocHost(&h_buf, hostDeviceSize));
+  SoAHostDeviceLayout h_soahdLayout(h_buf, numElements);
+  SoAHostDeviceView h_soahd(h_soahdLayout);
+
+  // Alocate buffer, stores and views on the device (single, shared buffer).
+  size_t deviceOnlySize = SoADeviceOnlyLayout::computeDataSize(numElements);
+  std::byte * d_buf = nullptr;
+  cudaCheck(cudaMallocHost(&d_buf, hostDeviceSize + deviceOnlySize));
+  SoAHostDeviceLayout d_soahdLayout(d_buf, numElements);
+  SoADeviceOnlyLayout d_soadoLayout(d_soahdLayout.soaMetadata().nextByte(), numElements);
+  SoAHostDeviceView d_soahdView(d_soahdLayout);
+  SoAFullDeviceView d_soaFullView(d_soahdLayout, d_soadoLayout);
+
+  // Assert column alignments
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_x()) % decltype(h_soahd)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_y()) % decltype(h_soahd)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_z()) % decltype(h_soahd)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_a()) % decltype(h_soahd)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_b()) % decltype(h_soahd)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_r()) % decltype(h_soahd)::byteAlignment);
+  assert(0 ==
+         reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_description()) % decltype(h_soahd)::byteAlignment);
+  assert(0 ==
+         reinterpret_cast<uintptr_t>(h_soahd.soaMetadata().addressOf_someNumber()) % decltype(h_soahd)::byteAlignment);
+
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_x()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_y()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_z()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_a()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_b()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_r()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_description()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soahdLayout.soaMetadata().addressOf_someNumber()) %
+                  decltype(d_soahdLayout)::byteAlignment);
+
+  assert(0 == reinterpret_cast<uintptr_t>(d_soadoLayout.soaMetadata().addressOf_color()) %
+                  decltype(d_soadoLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soadoLayout.soaMetadata().addressOf_value()) %
+                  decltype(d_soadoLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soadoLayout.soaMetadata().addressOf_py()) %
+                  decltype(d_soadoLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soadoLayout.soaMetadata().addressOf_count()) %
+                  decltype(d_soadoLayout)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soadoLayout.soaMetadata().addressOf_anotherCount()) %
+                  decltype(d_soadoLayout)::byteAlignment);
+
+  // Views should get the same alignment as the stores they refer to
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_x()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_y()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_z()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  // Limitation of views: we have to get scalar member addresses via metadata.
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_description()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_someNumber()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_color()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_value()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_py()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_count()) %
+                  decltype(d_soaFullView)::byteAlignment);
+  assert(0 == reinterpret_cast<uintptr_t>(d_soaFullView.soaMetadata().addressOf_anotherCount()) %
+                  decltype(d_soaFullView)::byteAlignment);
+
+  // Initialize and fill the host buffer
+  std::memset(h_soahdLayout.soaMetadata().data(), 0, hostDeviceSize);
+  for (size_t i = 0; i < numElements; ++i) {
+    auto si = h_soahd[i];
+    si.x() = si.a()(0) = si.b()(2) = 1.0 * i + 1.0;
+    si.y() = si.a()(1) = si.b()(1) = 2.0 * i;
+    si.z() = si.a()(2) = si.b()(0) = 3.0 * i - 1.0;
   }
-  // Check direct read back
-  for (size_t i = 0; i < size; i++) {
-    auto s = soa1view[i];
-    assert(s.x() == 1.0 * i);
-    assert(s.y() == 2.0 * i);
-    assert(s.z() == 3.0 * i);
-    assert(s.color() == i);
-    assert(s.a()(0) == 1.0 * i);
-    assert(s.a()(1) == 2.0 * i);
-    assert(s.a()(2) == 3.0 * i);
-    assert(s.b()(0) == 3.0 * i);
-    assert(s.b()(1) == 2.0 * i);
-    assert(s.b()(2) == 1.0 * i);
-    assert(s.r() == s.a().cross(s.b()));
-  }
-  // Check readback through other views
-  for (size_t i = 0; i < size; i++) {
-    auto sv = soa1view[i];
-    auto sv2g = soa1v2g[i];
-    auto sv2gc = soa1v2gconst[i];
-    assert(sv.x() == 1.0 * i);
-    assert(sv.y() == 2.0 * i);
-    assert(sv.z() == 3.0 * i);
-    assert(sv.color() == i);
-    assert(sv2g.x() == 1.0 * i);
-    assert(sv2g.y() == 2.0 * i);
-    assert(sv2g.color() == i);
-    assert(sv2gc.x() == 1.0 * i);
-    assert(sv2gc.y() == 2.0 * i);
-    assert(sv2gc.color() == i);
+  auto& sn = h_soahd.someNumber();
+  sn = numElements + 2;
+
+  // Push to device
+  cudaCheck(cudaMemcpyAsync(d_buf, h_buf, hostDeviceSize, cudaMemcpyDefault, stream));
+
+  // Process on device
+  crossProduct<<<(numElements + 255) / 256, 256, 0, stream>>>(d_soahdView, numElements);
+
+  // Paint the device only with 0xFF initially
+  cudaCheck(cudaMemsetAsync(d_soadoLayout.soaMetadata().data(), 0xFF, d_soadoLayout.soaMetadata().byteSize(), stream));
+  
+  // Produce to the device only area
+  producerKernel<<<(numElements + 255) / 256, 256, 0, stream>>>(d_soaFullView, numElements);
+
+  // Consume the device only area and generate a result on the host-device area
+  consumerKernel<<<(numElements + 255) / 256, 256, 0, stream>>>(d_soaFullView, numElements);
+
+  // Get result back
+  cudaCheck(cudaMemcpyAsync(h_buf, d_buf, hostDeviceSize, cudaMemcpyDefault, stream));
+
+  // Wait and validate.
+  cudaCheck(cudaStreamSynchronize(stream));
+  for (size_t i = 0; i < numElements; ++i) {
+    auto si = h_soahd[i];
+    assert(si.r() == si.a().cross(si.b()));
+    double initialX = 1.0 * i + 1.0;
+    double initialY = 2.0 * i;
+    double initialZ = 3.0 * i - 1.0;
+    uint16_t expectedColor = 0x55 << i % (sizeof(uint16_t) - sizeof(char));
+    double expectedX = expectedColor * sqrt(initialX * initialX + initialY * initialY + initialZ * initialZ);
+    if (abs(si.x() - expectedX) / expectedX >= 2 * std::numeric_limits<double>::epsilon()) {
+      std::cout << "X failed: for i=" << i << std::endl
+                << "initialX=" << initialX << " initialY=" << initialY << " initialZ=" << initialZ << std::endl
+                << "expectedX=" << expectedX << std::endl
+                << "resultX=" << si.x() << " resultY=" << si.y() << " resultZ=" << si.z() << std::endl
+                << "relativeDiff=" << abs(si.x() - expectedX) / expectedX
+                << " epsilon=" << std::numeric_limits<double>::epsilon() << std::endl;
+      assert(false);
+    }
   }
 
   // Validation of range checking
   try {
     // Get a view like the default, except for range checking
-    SoA1ViewTemplate<SoA1View::byteAlignment,
-                     SoA1View::alignmentEnforcement,
-                     SoA1View::restrictQualify,
-                     cms::soa::RangeChecking::Enabled>
-        soa1viewRangeChecking(soa1);
+    SoAHostDeviceViewTemplate<SoAHostDeviceView::byteAlignment,
+                              SoAHostDeviceView::alignmentEnforcement,
+                              SoAHostDeviceView::restrictQualify,
+                              cms::soa::RangeChecking::Enabled>
+        soa1viewRangeChecking(h_soahdLayout);
     // This should throw an exception
     [[maybe_unused]] auto si = soa1viewRangeChecking[soa1viewRangeChecking.soaMetadata().size()];
     assert(false);
-  } catch (const std::out_of_range &) {
+  } catch (const std::out_of_range&) {
   }
 
-  // Print out the layout
-  std::cout << soa1 << std::endl;
+  // Validation of range checking in a kernel
+  // Get a view like the default, except for range checking
+  RangeCheckingHostDeviceView soa1viewRangeChecking(d_soahdLayout);
+  // This should throw an exception in the kernel
+  try {
+    rangeCheckKernel<<<1,1,0,stream>>>(soa1viewRangeChecking);
+  } catch (const std::out_of_range&) {
+    std::cout << "Exception received in enqueue." << std::endl;
+  }
+
+  // Wait and validate (that we failed).
+  try {
+    cudaCheck(cudaStreamSynchronize(stream));
+  } catch (const std::runtime_error&) {
+    std::cout << "Exception received in wait." << std::endl;
+  }
+
+  std::cout << "OK" << std::endl;
 }
