@@ -460,6 +460,7 @@ namespace cms::soa {
     SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::column, T>& params)
         : params_(params) {}
     SOA_HOST_DEVICE_INLINE T* operator()() { return params_.addr_; }
+    typedef T* NoParamReturnType;
     SOA_HOST_DEVICE_INLINE T& operator()(size_t index) { return params_.addr_[index]; }
 
   private:
@@ -473,6 +474,7 @@ namespace cms::soa {
     SoAColumnAccessorsImpl(const SoAConstParametersImpl<SoAColumnType::column, T>& params)
         : params_(params) {}
     SOA_HOST_DEVICE_INLINE const T* operator()() const { return params_.addr_; }
+    typedef T* NoParamReturnType;
     SOA_HOST_DEVICE_INLINE T operator()(size_t index) const { return params_.addr_[index]; }
 
   private:
@@ -485,6 +487,7 @@ namespace cms::soa {
     SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::scalar, T>& params)
         : params_(params) {}
     SOA_HOST_DEVICE_INLINE T& operator()() { return *params_.addr_; }
+    typedef T& NoParamReturnType;
     SOA_HOST_DEVICE_INLINE void operator()(size_t index) const {
       assert(false && "Indexed access impossible for SoA scalars.");
     }
@@ -500,6 +503,7 @@ namespace cms::soa {
     SoAColumnAccessorsImpl(const SoAConstParametersImpl<SoAColumnType::scalar, T>& params)
         : params_(params) {}
     SOA_HOST_DEVICE_INLINE T operator()() const { return *params_.addr_; }
+    typedef T NoParamReturnType;
     SOA_HOST_DEVICE_INLINE void operator()(size_t index) const {
       assert(false && "Indexed access impossible for SoA scalars.");
     }
@@ -508,17 +512,40 @@ namespace cms::soa {
     SoAConstParametersImpl<SoAColumnType::scalar, T> params_;
   };
 
+  template <typename T>
+  struct SoAColumnAccessorsImpl<T, SoAColumnType::eigen, SoAAccessType::mutableAccess> {
+    //SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(T* baseAddress) : baseAddress_(baseAddress) {}
+    SOA_HOST_DEVICE_INLINE SoAColumnAccessorsImpl(const SoAParametersImpl<SoAColumnType::eigen, T>& params)
+        : params_(params) {}
+    SOA_HOST_DEVICE_INLINE typename T::Scalar* operator()() { return params_.addr_; }
+    typedef typename T::Scalar* NoParamReturnType;
+    //SOA_HOST_DEVICE_INLINE T& operator()(size_t index) { return params_.addr_[index]; }
+
+  private:
+    SoAParametersImpl<SoAColumnType::eigen, T> params_;
+  };
+
+  // Const column
+  template <typename T>
+  struct SoAColumnAccessorsImpl<T, SoAColumnType::eigen, SoAAccessType::constAccess> {
+    SOA_HOST_DEVICE_INLINE
+    SoAColumnAccessorsImpl(const SoAConstParametersImpl<SoAColumnType::eigen, T>& params)
+        : params_(params) {}
+    SOA_HOST_DEVICE_INLINE const typename T::Scalar* operator()() const { return params_.addr_; }
+    typedef typename T::Scalar* NoParamReturnType;
+    //SOA_HOST_DEVICE_INLINE T operator()(size_t index) const { return params_.addr_[index]; }
+
+  private:
+    SoAConstParametersImpl<SoAColumnType::eigen, T> params_;
+  };
+  
   /* A helper template stager avoiding comma in macros */
   template <typename T>
   struct SoAAccessors {
-    // TODO: useful?
-    using myInt = int;
     template <auto columnType>
     struct ColumnType {
-      using myInt = int;
       template <auto accessType>
       struct AccessType : public SoAColumnAccessorsImpl<T, columnType, accessType> {
-        using myInt = int;
         using SoAColumnAccessorsImpl<T, columnType, accessType>::SoAColumnAccessorsImpl;
       };
     };

@@ -264,7 +264,11 @@ namespace cms::soa {
  */
 #define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                         \
   /* Column or scalar */                                                                                \
-  SOA_HOST_DEVICE_INLINE auto& LOCAL_NAME() {                                                           \
+  SOA_HOST_DEVICE_INLINE                                                                                \
+  typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::            \
+        template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
+            cms::soa::SoAAccessType::mutableAccess>::NoParamReturnType                                  \
+  LOCAL_NAME() {                                                                                        \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))();           \
