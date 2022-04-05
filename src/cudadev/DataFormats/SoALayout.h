@@ -99,27 +99,36 @@
       }                                                                                                              \
       typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                  \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::scalar;  \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::scalar>::DataType<CPP_TYPE>                \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
       }                                                                                                              \
-      CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); },                          \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
+      CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {                                                                   \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
+      },                                                                                                             \
       /* Column */                                                                                                   \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::column>::DataType<CPP_TYPE>                \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (parent_.BOOST_PP_CAT(NAME, _));                               \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE const* BOOST_PP_CAT(addressOf_, NAME)() const {                                                       \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE* BOOST_PP_CAT(addressOf_, NAME)() {                                                                   \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
         return (((parent_.nElements_ * sizeof(CPP_TYPE) - 1) / ParentClass::byteAlignment) + 1) *                    \
                    ParentClass::byteAlignment;                                                                       \
@@ -129,20 +138,26 @@
       /* Eigen column */                                                                                             \
       typedef cms::soa::SoAParameters_ColumnType<cms::soa::SoAColumnType::eigen>::DataType<CPP_TYPE>                 \
         BOOST_PP_CAT(ParametersTypeOf_, NAME);                                                                       \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       BOOST_PP_CAT(ParametersTypeOf_, NAME) BOOST_PP_CAT(parametersOf_, NAME)() const {                              \
         return  BOOST_PP_CAT(ParametersTypeOf_, NAME) (                                                              \
          parent_.BOOST_PP_CAT(NAME, _),                                                                              \
          parent_.BOOST_PP_CAT(NAME, Stride_));                                                                       \
       }                                                                                                              \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       size_t BOOST_PP_CAT(NAME, Pitch()) const {                                                                     \
         return (((parent_.nElements_ * sizeof(CPP_TYPE::Scalar) - 1) / ParentClass::byteAlignment) + 1) *            \
                ParentClass::byteAlignment * CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime;               \
       } typedef CPP_TYPE BOOST_PP_CAT(TypeOf_, NAME);                                                                \
       constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, NAME) = cms::soa::SoAColumnType::eigen;   \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
       CPP_TYPE::Scalar const* BOOST_PP_CAT(addressOf_, NAME)() const {                                               \
-        return parent_.BOOST_PP_CAT(NAME, _);                                                                        \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
       }                                                                                                              \
-      CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() { return parent_.BOOST_PP_CAT(NAME, _); }                   \
+      SOA_HOST_DEVICE_INLINE                                                                                         \
+      CPP_TYPE::Scalar* BOOST_PP_CAT(addressOf_, NAME)() {                                                           \
+        return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, NAME)().addr_;                                      \
+      }                                                                                                              \
 )
 // clang-format on
 #define _DEFINE_METADATA_MEMBERS(R, DATA, TYPE_NAME) _DEFINE_METADATA_MEMBERS_IMPL TYPE_NAME
@@ -197,14 +212,14 @@
 /**
  * Direct access to column pointer and indexed access
  */
-#define _DECLARE_SOA_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                        \
-  _SWITCH_ON_TYPE(                                                                                    \
-      VALUE_TYPE,                                                                 /* Scalar */        \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME() { return *BOOST_PP_CAT(NAME, _); }, /* Column */        \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE* NAME() {                                                       \
-        return BOOST_PP_CAT(NAME, _);                                                                 \
-      } SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME(size_t index) { return BOOST_PP_CAT(NAME, _)[index]; }, \
-      /* Eigen column */ /* Unsupported for the moment TODO */                                        \
+#define _DECLARE_SOA_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                                     \
+  _SWITCH_ON_TYPE(                                                                                                 \
+      VALUE_TYPE,                                                                              /* Scalar */        \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME() { return *BOOST_PP_CAT(NAME, _); }, /* Column */                     \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE* NAME() {                                                                    \
+        return BOOST_PP_CAT(NAME, _);                                                                              \
+      } SOA_HOST_DEVICE_INLINE CPP_TYPE& NAME(size_t index) { return BOOST_PP_CAT(NAME, _)[index]; },              \
+      /* Eigen column */ /* Unsupported for the moment TODO */                                                     \
       BOOST_PP_EMPTY())
 
 #define _DECLARE_SOA_ACCESSOR(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_ACCESSOR_IMPL TYPE_NAME)
@@ -212,16 +227,16 @@
 /**
  * Direct access to column pointer (const) and indexed access.
  */
-#define _DECLARE_SOA_CONST_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                  \
-  _SWITCH_ON_TYPE(                                                                                    \
-      VALUE_TYPE,                                                                        /* Scalar */ \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return *(BOOST_PP_CAT(NAME, _)); }, /* Column */ \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE const* NAME()                                                   \
-          const { return BOOST_PP_CAT(NAME, _); } SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index)  \
-              const { return *(BOOST_PP_CAT(NAME, _) + index); }, /* Eigen column */                  \
-      SOA_HOST_DEVICE_INLINE CPP_TYPE::Scalar const* NAME() const {                                   \
-        return BOOST_PP_CAT(NAME, _);                                                                 \
-      } SOA_HOST_DEVICE_INLINE size_t BOOST_PP_CAT(NAME, Stride)() { return BOOST_PP_CAT(NAME, Stride_); })
+#define _DECLARE_SOA_CONST_ACCESSOR_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                               \
+  _SWITCH_ON_TYPE(                                                                                                 \
+      VALUE_TYPE,                                                                                     /* Scalar */ \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE NAME() const { return *(BOOST_PP_CAT(NAME, _)); },              /* Column */ \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE const* NAME()                                                                \
+          const { return BOOST_PP_CAT(NAME, _); } SOA_HOST_DEVICE_INLINE CPP_TYPE NAME(size_t index)               \
+              const { return *(BOOST_PP_CAT(NAME, _) + index); }, /* Eigen column */                               \
+      SOA_HOST_DEVICE_INLINE CPP_TYPE::Scalar const* NAME()                                                        \
+          const { return BOOST_PP_CAT(NAME, _); } SOA_HOST_DEVICE_INLINE size_t BOOST_PP_CAT(                      \
+              NAME, Stride)() { return BOOST_PP_CAT(NAME, Stride_); })
 
 #define _DECLARE_SOA_CONST_ACCESSOR(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_CONST_ACCESSOR_IMPL TYPE_NAME)
 

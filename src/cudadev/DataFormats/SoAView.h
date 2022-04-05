@@ -82,10 +82,10 @@ namespace cms::soa {
       BOOST_PP_CAT(ParametersTypeOf_, LOCAL_NAME);                                                                 \
   constexpr static cms::soa::SoAColumnType BOOST_PP_CAT(ColumnTypeOf_, LOCAL_NAME) =                               \
       BOOST_PP_CAT(TypeOf_, LAYOUT_NAME)::SoAMetadata::BOOST_PP_CAT(ColumnTypeOf_, LAYOUT_MEMBER);                 \
-  SOA_HOST_DEVICE_INLINE                                                                                           \
-  DATA BOOST_PP_CAT(TypeOf_, LOCAL_NAME) * BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {                          \
-    return parent_.BOOST_PP_CAT(LOCAL_NAME, _);                                                                    \
+  SOA_HOST_DEVICE_INLINE DATA auto* BOOST_PP_CAT(addressOf_, LOCAL_NAME)() const {                                 \
+    return parent_.soaMetadata().BOOST_PP_CAT(parametersOf_, LOCAL_NAME)().addr_;                                  \
   };                                                                                                               \
+  SOA_HOST_DEVICE_INLINE                                                                                           \
   DATA BOOST_PP_CAT(ParametersTypeOf_, LOCAL_NAME) BOOST_PP_CAT(parametersOf_, LOCAL_NAME)() const {               \
     return parent_.BOOST_PP_CAT(LOCAL_NAME, Parameters_);                                                          \
   };
@@ -206,12 +206,12 @@ namespace cms::soa {
 /**
  * Declaration of the members accessors of the const element subclass
  */
-#define _DECLARE_VIEW_CONST_ELEMENT_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)             \
-  SOA_HOST_DEVICE_INLINE                                                                              \
-  typename SoAConstValueWithConf<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME),                \
-                                 typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::RefToConst \
-  LOCAL_NAME() const {                                                                                \
-    return BOOST_PP_CAT(LOCAL_NAME, _)();                                                             \
+#define _DECLARE_VIEW_CONST_ELEMENT_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                 \
+  SOA_HOST_DEVICE_INLINE                                                                                  \
+      typename SoAConstValueWithConf<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME),                \
+                                     typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::RefToConst \
+      LOCAL_NAME() const {                                                                                \
+    return BOOST_PP_CAT(LOCAL_NAME, _)();                                                                 \
   }
 
 #define _DECLARE_VIEW_CONST_ELEMENT_ACCESSOR(R, DATA, LAYOUT_MEMBER_NAME) \
@@ -264,12 +264,16 @@ namespace cms::soa {
  */
 #define _DECLARE_VIEW_SOA_ACCESSOR_IMPL(LAYOUT_NAME, LAYOUT_MEMBER, LOCAL_NAME)                         \
   /* Column or scalar */                                                                                \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME() {                                                            \
+  SOA_HOST_DEVICE_INLINE                                                                                \
+  typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::            \
+        template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
+            cms::soa::SoAAccessType::mutableAccess>::NoParamReturnType                                  \
+  LOCAL_NAME() {                                                                                        \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))();           \
   }                                                                                                     \
-  SOA_HOST_DEVICE_INLINE auto LOCAL_NAME(size_t index) {                                                \
+  SOA_HOST_DEVICE_INLINE auto& LOCAL_NAME(size_t index) {                                               \
     return typename cms::soa::SoAAccessors<typename BOOST_PP_CAT(SoAMetadata::TypeOf_, LOCAL_NAME)>::   \
         template ColumnType<BOOST_PP_CAT(SoAMetadata::ColumnTypeOf_, LOCAL_NAME)>::template AccessType< \
             cms::soa::SoAAccessType::mutableAccess>(BOOST_PP_CAT(LOCAL_NAME, Parameters_))(index);      \
