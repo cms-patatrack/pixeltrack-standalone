@@ -222,6 +222,7 @@ int main(void) {
                   alpaka::createTaskKernel<::ALPAKA_ACCELERATOR_NAMESPACE::Acc1D>(
                       workDivMaxNumModules, crossProduct(), d_soahdView, numElements));
 
+  // Paint the device only with 0xFF initially
   alpaka::ViewSubView<Device, std::byte, Dim1D, Idx> d_doSubBuf(
       d_buf,
       /* length */ Idx(d_soadoLayout.soaMetadata().byteSize()),
