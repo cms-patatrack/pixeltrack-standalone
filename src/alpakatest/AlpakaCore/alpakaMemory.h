@@ -26,7 +26,6 @@ namespace cms {
 }  // namespace cms
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/alpakaExtra.hpp>
 
 #include "AlpakaCore/AllocatorPolicy.h"
 #include "AlpakaCore/CachedBufAlloc.h"

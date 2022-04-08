@@ -15,7 +15,6 @@
 #include <boost/core/demangle.hpp>
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/alpakaExtra.hpp>
 
 #include "AlpakaCore/alpakaDevices.h"
 
