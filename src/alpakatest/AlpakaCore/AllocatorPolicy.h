@@ -22,7 +22,7 @@ namespace cms::alpakatools {
 #else
       AllocatorPolicy::Synchronous;
 #endif
-#endif  // defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#endif  // defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED || defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
 #if defined ALPAKA_ACC_GPU_CUDA_ENABLED
   template <>
