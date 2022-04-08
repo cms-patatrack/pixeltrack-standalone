@@ -4,7 +4,6 @@
 #include <type_traits>
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/alpakaExtra.hpp>
 
 namespace alpaka_common {
 

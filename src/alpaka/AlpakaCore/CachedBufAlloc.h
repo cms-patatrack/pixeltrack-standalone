@@ -2,7 +2,6 @@
 #define AlpakaCore_CachedBufAlloc_h
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/alpakaExtra.hpp>
 
 #include "AlpakaCore/getDeviceCachingAllocator.h"
 #include "AlpakaCore/getHostCachingAllocator.h"

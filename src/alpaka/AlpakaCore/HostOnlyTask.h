@@ -5,7 +5,6 @@
 #include <memory>
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/alpakaExtra.hpp>
 
 namespace alpaka {
 
