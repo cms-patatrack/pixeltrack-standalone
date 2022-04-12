@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <utility>
 
+#include <alpaka/alpaka.hpp>
+
 #include "AlpakaCore/alpakaConfig.h"
 
 using namespace alpaka_common;
