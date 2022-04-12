@@ -583,8 +583,8 @@ $(HWLOC_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
-	cd $@ && git checkout b074b0df68a96321dc73261ab2b9d3d41180f18c
+	git clone git@github.com:fwyzard/alpaka.git -b develop $@
+	cd $@ && git checkout 90a6997db4374aeecea8a7bba70d32503cb14956
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
