@@ -25,31 +25,31 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name << ": "
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
         << "[--serial] "
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
         << "[--tbb] "
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
         << "[--cuda] "
 #endif
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
         << "[--hip] "
 #endif
         << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
            "[--transfer] [--validation]\n\n"
         << "Options\n"
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
         << " --serial            Use CPU Serial backend\n"
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
         << " --tbb               Use CPU TBB backend\n"
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
         << " --cuda              Use CUDA backend\n"
 #endif
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
         << " --hip               Use ROCm/HIP backend\n"
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
@@ -84,19 +84,19 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
     } else if (*i == "--serial") {
       backends.emplace_back(Backend::SERIAL);
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
     } else if (*i == "--tbb") {
       backends.emplace_back(Backend::TBB);
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
     } else if (*i == "--cuda") {
       backends.emplace_back(Backend::CUDA);
 #endif
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
     } else if (*i == "--hip") {
       backends.emplace_back(Backend::HIP);
 #endif
@@ -150,22 +150,22 @@ int main(int argc, char** argv) {
   }
 
   // Initialiase the selected backends
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
   if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
     cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
   }
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
   if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
     cms::alpakatools::initialise<alpaka_tbb_async::Platform>();
   }
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
   if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
     cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
   }
 #endif
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
   if (std::find(backends.begin(), backends.end(), Backend::HIP) != backends.end()) {
     cms::alpakatools::initialise<alpaka_rocm_async::Platform>();
   }
@@ -198,16 +198,16 @@ int main(int argc, char** argv) {
         esmodules.emplace_back(accelerator_namespace + "::" + "PixelCPEFastESProducer");
       }
     };
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
     addModules("alpaka_serial_sync", Backend::SERIAL);
 #endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
     addModules("alpaka_tbb_async", Backend::TBB);
 #endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
     addModules("alpaka_cuda_async", Backend::CUDA);
 #endif
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
     addModules("alpaka_rocm_async", Backend::HIP);
 #endif
   }
