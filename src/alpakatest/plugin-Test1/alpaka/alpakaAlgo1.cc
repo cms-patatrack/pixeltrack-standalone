@@ -90,7 +90,7 @@ namespace {
      Obviously not optimized (and contains printf anyway), incorporated to verify results.
   */
   namespace debug {
-    constexpr float TOLERANCE_RATIO = 0.01;
+    [[maybe_unused]] constexpr float TOLERANCE_RATIO = 0.01;
 
     struct verifyVectorAdd {
       template <typename T_Acc, typename T_Data>
