@@ -114,8 +114,6 @@ int main() {
 
   const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
   const Device device(alpaka::getDevByIdx<Platform>(0u));
-  const Vec1D size(1u);
-
   Queue queue(device);
 
   // WARP PREFIXSCAN (OBVIOUSLY GPU-ONLY)
