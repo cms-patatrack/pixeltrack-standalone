@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <unordered_map>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -55,7 +56,7 @@ namespace {
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
-        << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed"
+        << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
            "(default -1 for disabled; conflicts with --maxEvents)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -64,10 +65,60 @@ namespace {
   }
 }  // namespace
 
+bool getOptionalArgument(std::vector<std::string> const& args, std::vector<std::string>::iterator& i, int& value) {
+  auto it = i;
+  ++it;
+  if (it == args.end()) {
+    return false;
+  }
+  try {
+    value = std::stoi(*it);
+    ++i;
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool getOptionalArgument(std::vector<std::string> const& args, std::vector<std::string>::iterator& i, float& value) {
+  auto it = i;
+  ++it;
+  if (it == args.end()) {
+    return false;
+  }
+  try {
+    value = std::stof(*it);
+    ++i;
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool getOptionalArgument(std::vector<std::string> const& args,
+                         std::vector<std::string>::iterator& i,
+                         std::filesystem::path& value) {
+  auto it = i;
+  ++it;
+  if (it == args.end()) {
+    return false;
+  }
+  value = *it;
+  return true;
+}
+
+template <typename T>
+void getArgument(std::vector<std::string> const& args, std::vector<std::string>::iterator& i, T& value) {
+  if (not getOptionalArgument(args, i, value)) {
+    std::cerr << "error: " << *i << " expects an argument" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+}
+
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
-  std::vector<Backend> backends;
+  std::unordered_map<Backend, float> backends;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -81,35 +132,38 @@ int main(int argc, char** argv) {
       return EXIT_SUCCESS;
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
     } else if (*i == "--serial") {
-      backends.emplace_back(Backend::SERIAL);
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::SERIAL, weight);
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
     } else if (*i == "--tbb") {
-      backends.emplace_back(Backend::TBB);
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::TBB, weight);
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
     } else if (*i == "--cuda") {
-      backends.emplace_back(Backend::CUDA);
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::CUDA, weight);
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
     } else if (*i == "--hip") {
-      backends.emplace_back(Backend::HIP);
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::HIP, weight);
 #endif
     } else if (*i == "--numberOfThreads") {
-      ++i;
-      numberOfThreads = std::stoi(*i);
+      getArgument(args, i, numberOfThreads);
     } else if (*i == "--numberOfStreams") {
-      ++i;
-      numberOfStreams = std::stoi(*i);
+      getArgument(args, i, numberOfStreams);
     } else if (*i == "--maxEvents") {
-      ++i;
-      maxEvents = std::stoi(*i);
+      getArgument(args, i, maxEvents);
     } else if (*i == "--runForMinutes") {
-      ++i;
-      runForMinutes = std::stoi(*i);
+      getArgument(args, i, runForMinutes);
     } else if (*i == "--data") {
-      ++i;
-      datadir = *i;
+      getArgument(args, i, datadir);
     } else if (*i == "--transfer") {
       transfer = true;
     } else if (*i == "--empty") {
@@ -140,64 +194,64 @@ int main(int argc, char** argv) {
 
   // Initialiase the selected backends
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
-  if (std::find(backends.begin(), backends.end(), Backend::SERIAL) != backends.end()) {
+  if (backends.find(Backend::SERIAL) != backends.end()) {
     cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
-  if (std::find(backends.begin(), backends.end(), Backend::TBB) != backends.end()) {
+  if (backends.find(Backend::TBB) != backends.end()) {
     cms::alpakatools::initialise<alpaka_tbb_async::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
-  if (std::find(backends.begin(), backends.end(), Backend::CUDA) != backends.end()) {
+  if (backends.find(Backend::CUDA) != backends.end()) {
     cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
-  if (std::find(backends.begin(), backends.end(), Backend::HIP) != backends.end()) {
+  if (backends.find(Backend::HIP) != backends.end()) {
     cms::alpakatools::initialise<alpaka_rocm_async::Platform>();
   }
 #endif
 
   // Initialize EventProcessor
-  std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
+  edm::Alternatives alternatives;
   if (not empty) {
-    auto addModules = [&](std::string const& accelerator_namespace, Backend backend) {
-      if (std::find(backends.begin(), backends.end(), backend) != backends.end()) {
-        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer");
-        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer3");
-        edmodules.emplace_back(accelerator_namespace + "::" + "TestProducer2");
-      }
-    };
-
-#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
-    addModules("alpaka_serial_sync", Backend::SERIAL);
-#endif
-#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
-    addModules("alpaka_tbb_async", Backend::TBB);
-#endif
-#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
-    addModules("alpaka_cuda_async", Backend::CUDA);
-#endif
-#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
-    addModules("alpaka_rocm_async", Backend::HIP);
-#endif
+    // host-only ESModules
     esmodules = {"IntESProducer"};
-    if (transfer) {
-      // add modules for transfer
+    for (auto const& [backend, weight] : backends) {
+      std::string prefix = "alpaka_" + name(backend) + "::";
+      // "portable" EDModules
+      std::vector<std::string> edmodules;
+      edmodules.emplace_back(prefix + "TestProducer");
+      edmodules.emplace_back(prefix + "TestProducer3");
+      edmodules.emplace_back(prefix + "TestProducer2");
+      if (transfer) {
+        // add modules for transfer
+      }
+      alternatives.emplace_back(backend, weight, std::move(edmodules));
     }
   }
   edm::EventProcessor processor(
-      maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, false);
+      maxEvents, runForMinutes, numberOfStreams, std::move(alternatives), std::move(esmodules), datadir, false);
 
   if (runForMinutes < 0) {
-    std::cout << "Processing " << processor.maxEvents() << " events, of which " << numberOfStreams
-              << " concurrently, with " << numberOfThreads << " threads." << std::endl;
+    std::cout << "Processing " << processor.maxEvents() << " events,";
   } else {
-    std::cout << "Processing for about " << runForMinutes << " minutes with " << numberOfStreams
-              << " concurrent events and " << numberOfThreads << " threads." << std::endl;
+    std::cout << "Processing for about " << runForMinutes << " minutes,";
+  }
+  {
+    std::cout << " with " << numberOfStreams << " concurrent events (";
+    bool need_comma = false;
+    for (auto const& [backend, streams] : processor.backends()) {
+      if (need_comma) {
+        std::cout << ", ";
+      }
+      std::cout << streams << " on " << backend;
+      need_comma = true;
+    }
+    std::cout << ") and " << numberOfThreads << " threads." << std::endl;
   }
 
   // Initialize the TBB thread pool
