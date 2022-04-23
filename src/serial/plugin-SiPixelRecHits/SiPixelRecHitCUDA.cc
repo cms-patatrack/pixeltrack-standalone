@@ -46,7 +46,8 @@ void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
     std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
   }
 
-  iEvent.emplace(tokenHit_, gpuAlgo_.makeHits(digis, clusters, bs, &fcpe.getCPUProduct()));
+  iEvent.emplace(tokenHit_, gpuAlgo_.makeHits(digis, clusters, bs, &fcpe.getCPUProduct()));  // stessa sintassi di questa linea
+  // makehits con i miei dati
 }
 
 DEFINE_FWK_MODULE(SiPixelRecHitCUDA);

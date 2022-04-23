@@ -20,10 +20,7 @@ namespace pixelgpudetails {
     PixelRecHitGPUKernel& operator=(const PixelRecHitGPUKernel&) = delete;
     PixelRecHitGPUKernel& operator=(PixelRecHitGPUKernel&&) = delete;
 
-    TrackingRecHit2DCPU makeHits(SiPixelDigisSoA const& digis_d,
-                                 SiPixelClustersSoA const& clusters_d,
-                                 BeamSpotPOD const& bs_d,
-                                 pixelCPEforGPU::ParamsOnGPU const* cpeParams) const;
+    TrackingRecHit2DCPU makeHits(int filename_number) const;
   };
 }  // namespace pixelgpudetails
 
