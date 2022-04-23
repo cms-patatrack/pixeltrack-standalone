@@ -98,12 +98,11 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
+    //edmodules = {
+    //    "BeamSpotToPOD", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "myClass", "PixelVertexProducerCUDA"};
     edmodules = {
-        "BeamSpotToPOD", "SiPixelRawToClusterCUDA", "SiPixelRecHitCUDA", "CAHitNtupletCUDA", "PixelVertexProducerCUDA"};
-    esmodules = {"BeamSpotESProducer",
-                 "SiPixelFedCablingMapGPUWrapperESProducer",
-                 "SiPixelGainCalibrationForHLTGPUESProducer",
-                 "PixelCPEFastESProducer"};
+        "myClass", "CAHitNtupletCUDA"};
+    esmodules = {};
     if (validation) {
       edmodules.emplace_back("CountValidator");
     }

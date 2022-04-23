@@ -4,6 +4,9 @@ CAHitNtupletCUDA pluginPixelTriplets.so
 CountValidator pluginValidation.so
 HistoValidator pluginValidation.so
 myClass pluginPixelTriplets.so
+SiPixelFedCablingMapGPUWrapperESProducer pluginSiPixelClusterizer.so
+SiPixelGainCalibrationForHLTGPUESProducer pluginSiPixelClusterizer.so
+SiPixelRawToClusterCUDA pluginSiPixelClusterizer.so
 PixelCPEFastESProducer pluginSiPixelRecHits.so
 PixelVertexProducerCUDA pluginPixelVertexFinding.so
 SiPixelRecHitCUDA pluginSiPixelRecHits.so
