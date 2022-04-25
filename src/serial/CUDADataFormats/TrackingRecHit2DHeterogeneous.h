@@ -61,6 +61,8 @@ private:
   Hist* m_hist;
   uint32_t* m_hitsLayerStart;
   int16_t* m_iphi;
+
+  int event_number;
 };
 
 template <typename Traits>
