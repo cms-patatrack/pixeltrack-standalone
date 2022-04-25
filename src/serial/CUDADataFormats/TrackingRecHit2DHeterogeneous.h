@@ -124,8 +124,10 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
 
 // My constructor
 template <typename Traits>
-TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<double> x_coord,
-    std::vector<double> y_coord, std::vector<double> z_coord, std::vector<double> r_coord)
+TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<double>& x_coord,
+                                                                     std::vector<double>& y_coord, 
+                                                                     std::vector<double>& z_coord, 
+                                                                     std::vector<double>& r_coord)
     : m_nHits(x_coord.size()) {
   TrackingRecHit2DSOAView view;
 

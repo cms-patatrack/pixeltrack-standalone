@@ -24,8 +24,8 @@ private:
   pixelgpudetails::PixelRecHitGPUKernel algo_;
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
   edm::EDPutTokenT<std::vector<float>> test_Token;
-  // tokenHitCPU_ non dovrebbe essere un PutToken?
-  //edm::EDPutTokenT<TrackingRecHit2DCPU> tokenHitCPU_;   // Sembra di si, niente piu errori
+  // tokenHitCPU_ should be a PutToken, right?
+  edm::EDPutTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
 };
 
 myClass::myClass(edm::ProductRegistry& reg)
@@ -37,7 +37,7 @@ void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   std::cout << "I'm here!" << '\n';
   std::vector<float> test = {7,6,5,4,3,2,1};
   iEvent.emplace(test_Token, test);
-  //iEvent.emplace(tokenHitCPU_, algo_.makeHits(test_file));
+  iEvent.emplace(tokenHitCPU_, algo_.makeHits(test_file));
 }
 
 DEFINE_FWK_MODULE(myClass);
