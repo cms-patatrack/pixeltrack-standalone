@@ -89,48 +89,57 @@ namespace pixelgpudetails {
     std::vector<double> hits_y_coordinates;
     std::vector<double> hits_z_coordinates;
     std::vector<double> hits_r_coordinates;
-  
+
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
     } else {
     std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
     std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
-    
+
     // Read the x_ns*.dat.dat file
-    std::ifstream is_1, is_2, is_3;
+    std::ifstream is_1;
     is_1.open(x_file_name);
-    int a;
+    double a;
 
     // Create the vector containing all the x coordinates of the hits
-    for(int i = 0; is_1 >> a; ++i) { hits_x_coordinates.push_back(a); }
+    for(int i = 0; is_1 >> a; ++i) {
+      hits_x_coordinates.push_back(a);
+    }
     is_1.close();
 
     // Read the y_ns*.dat.dat file
+    std::ifstream is_2;
     is_2.open(y_file_name);
-    int b;
+    double b;
 
     // Create the vector containing all the y coordinates of the hits
-    for(int i = 0; is_2 >> b; ++i) { hits_y_coordinates.push_back(b); }
+    for(int i = 0; is_2 >> b; ++i) { 
+      hits_y_coordinates.push_back(b); }
     is_2.close();
 
     // Read the z_ns*.dat.dat file
+    std::ifstream is_3;
     is_3.open(z_file_name);
-    int c;
+    double c;
 
     // Create the vector containing all the z coordinates of the hits
-    for(int i = 0; is_3 >> c; ++i) { hits_z_coordinates.push_back(c); }
+    for(int i = 0; is_3 >> c; ++i) { 
+      hits_z_coordinates.push_back(c); }
     is_3.close();
 
     for(int i = 0 ; i < static_cast<int>(hits_y_coordinates.size()); ++i) {
-      hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates.at(i),2) + pow(hits_z_coordinates.at(i),2)));
+      hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
     }
 
-    std::cout << hits_z_coordinates.size() << '\n';
-    std::cout << n_hits_map[file_number] << '\n';
+    std::cout << "in vector = " << hits_x_coordinates.size() << '\n';
+    std::cout << "check4" << '\n';
+    std::cout << "from map = " << n_hits_map[file_number] << '\n';
+    std::cout << "check5" << '\n';
   }
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates);
+    std::cout << "fine makeHits" << '\n';
     return hits_d;
   }
 

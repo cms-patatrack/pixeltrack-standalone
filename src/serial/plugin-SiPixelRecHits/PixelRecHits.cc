@@ -96,7 +96,7 @@ namespace pixelgpudetails {
     std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
     std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
-    
+
     // Read the x_ns*.dat.dat file
     std::ifstream is_1, is_2, is_3;
     is_1.open(x_file_name);
@@ -126,8 +126,8 @@ namespace pixelgpudetails {
       hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
     }
 
-    std::cout << hits_z_coordinates.size() << '\n';
-    std::cout << n_hits_map[file_number] << '\n';
+    std::cout << "in vector = " << hits_z_coordinates.size() << '\n';
+    std::cout << "from map = " << n_hits_map[file_number] << '\n';
   }
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates);

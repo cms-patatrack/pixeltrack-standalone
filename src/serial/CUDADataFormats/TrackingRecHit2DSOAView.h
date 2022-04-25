@@ -38,7 +38,7 @@ public:
   __device__ __forceinline__ float& yerrLocal(int i) { return m_yerr[i]; }
   __device__ __forceinline__ float yerrLocal(int i) const { return __ldg(m_yerr + i); }
 
-  __device__ __forceinline__ void setxGlobal(int i, double x_) { m_xg[i] = x_; }
+  __device__ __forceinline__ void setxGlobal(int i, float x_) { m_xg[i] = x_; }
   __device__ __forceinline__ float& xGlobal(int i) { return m_xg[i]; }
   __device__ __forceinline__ float xGlobal(int i) const { return __ldg(m_xg + i); }
   __device__ __forceinline__ void setyGlobal(int i, double y_) { m_yg[i] = y_; }

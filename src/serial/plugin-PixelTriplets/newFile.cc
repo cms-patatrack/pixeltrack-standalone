@@ -10,7 +10,7 @@
 #include "PixelRecHitsCustom.h"
 
 // I take a generic file number, just for reference
-int test_file = 4590;
+int test_file = 6000;
 
 class myClass : public edm::EDProducer {
 public:
@@ -20,11 +20,9 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
   
-  // // // Fix algo_ type
   pixelgpudetails::PixelRecHitGPUKernelCustom algo_;
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
   edm::EDPutTokenT<std::vector<float>> test_Token;
-  // tokenHitCPU_ should be a PutToken, right?
   edm::EDPutTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
 };
 
@@ -39,9 +37,7 @@ void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
 
   std::vector<float> test = {7,6,5,4,3,2,1};
   iEvent.emplace(test_Token, test);
-  std::cout << "I'm here2!" << '\n';
   iEvent.emplace(tokenHitCPU_, algo_.makeHits2(test_file));
-  std::cout << "I'm here3!" << '\n';
 }
 
 DEFINE_FWK_MODULE(myClass);

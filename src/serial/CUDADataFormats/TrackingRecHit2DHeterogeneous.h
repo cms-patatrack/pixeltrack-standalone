@@ -3,6 +3,8 @@
 
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 #include "CUDADataFormats/HeterogeneousSoA.h"
+#include <vector>
+#include <iostream>
 
 template <typename Traits>
 class TrackingRecHit2DHeterogeneous {
@@ -40,6 +42,8 @@ public:
   auto phiBinner() { return m_hist; }
   auto iphi() { return m_iphi; }
 
+  TrackingRecHit2DSOAView getView() const { return view_; }
+
 private:
   static constexpr uint32_t n16 = 4;
   static constexpr uint32_t n32 = 9;
@@ -63,6 +67,8 @@ private:
   int16_t* m_iphi;
 
   int event_number;
+
+  TrackingRecHit2DSOAView view_;
 };
 
 template <typename Traits>
@@ -134,12 +140,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   TrackingRecHit2DSOAView view;
 
   view.setnHits(static_cast<uint32_t>(x_coord.size()));
-  //m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
-  //m_AverageGeometryStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::AverageGeometry>(stream);
-  //view->m_averageGeometry = m_AverageGeometryStore.get();
-  //view->m_cpeParams = cpeParams;
-  //view->m_hitsModuleStart = hitsModuleStart;
-
+ 
   // if empy do not bother
   //if (0 == nHits) {
   //  m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
@@ -148,15 +149,20 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
   // copy all the pointers
   //m_hist = view->m_hist = m_HistStore.get();
-
+  view.setxGlobal(0,static_cast<float>(x_coord[0]));
   for(uint32_t j = 0; j < view.nHits(); ++j) {
-    view.setxGlobal(j,x_coord[j]);
+    std::cout << "patata3" << '\n';
+    std::cout << x_coord[j] << '\n';
+    view.setxGlobal(j,static_cast<float>(x_coord[j]));
+    std::cout << "riempito" << '\n';
     view.setyGlobal(j,y_coord[j]);
     view.setzGlobal(j,z_coord[j]);
     view.setrGlobal(j,r_coord[j]);
 
     // m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
   }
+
+  view_ = view;
 
   // transfer view
   //m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
