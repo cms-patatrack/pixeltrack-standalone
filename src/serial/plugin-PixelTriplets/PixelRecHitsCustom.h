@@ -10,15 +10,15 @@
 
 namespace pixelgpudetails {
 
-  class PixelRecHitGPUKernel {
+  class PixelRecHitGPUKernelCustom {
   public:
-    PixelRecHitGPUKernel() = default;
-    ~PixelRecHitGPUKernel() = default;
+    PixelRecHitGPUKernelCustom() = default;
+    ~PixelRecHitGPUKernelCustom() = default;
 
-    PixelRecHitGPUKernel(const PixelRecHitGPUKernel&) = delete;
-    PixelRecHitGPUKernel(PixelRecHitGPUKernel&&) = delete;
-    PixelRecHitGPUKernel& operator=(const PixelRecHitGPUKernel&) = delete;
-    PixelRecHitGPUKernel& operator=(PixelRecHitGPUKernel&&) = delete;
+    PixelRecHitGPUKernelCustom(const PixelRecHitGPUKernelCustom&) = delete;
+    PixelRecHitGPUKernelCustom(PixelRecHitGPUKernelCustom&&) = delete;
+    PixelRecHitGPUKernelCustom& operator=(const PixelRecHitGPUKernelCustom&) = delete;
+    PixelRecHitGPUKernelCustom& operator=(PixelRecHitGPUKernelCustom&&) = delete;
 
     TrackingRecHit2DCPU makeHits(SiPixelDigisSoA const& digis_d, SiPixelClustersSoA const& clusters_d,
               BeamSpotPOD const& bs_d, pixelCPEforGPU::ParamsOnGPU const* cpeParams) const;

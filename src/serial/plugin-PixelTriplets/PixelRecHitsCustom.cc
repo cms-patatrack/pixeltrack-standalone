@@ -8,8 +8,8 @@
 #include "plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.h"  // !
 #include "plugin-SiPixelClusterizer/gpuClusteringConstants.h"        // !
 
-#include "PixelRecHits.h"
-#include "gpuPixelRecHits.h"
+#include "PixelRecHitsCustom.h"
+#include "plugin-SiPixelRecHits/gpuPixelRecHits.h"
 
 #include <vector>
 #include <map>
@@ -62,7 +62,7 @@ namespace {
 namespace pixelgpudetails {
 
   // crea un nuovo costruttore con i miei vettori
-  TrackingRecHit2DCPU PixelRecHitGPUKernel::makeHits(SiPixelDigisSoA const& digis_d,
+  TrackingRecHit2DCPU PixelRecHitGPUKernelCustom::makeHits(SiPixelDigisSoA const& digis_d,
                                                      SiPixelClustersSoA const& clusters_d,
                                                      BeamSpotPOD const& bs_d,
                                                      pixelCPEforGPU::ParamsOnGPU const* cpeParams) const {
@@ -84,7 +84,7 @@ namespace pixelgpudetails {
     return hits_d;
   }
 
-  TrackingRecHit2DCPU PixelRecHitGPUKernel::makeHits2(int file_number) const {
+  TrackingRecHit2DCPU PixelRecHitGPUKernelCustom::makeHits2(int file_number) const {
     std::vector<double> hits_x_coordinates;
     std::vector<double> hits_y_coordinates;
     std::vector<double> hits_z_coordinates;
@@ -123,7 +123,7 @@ namespace pixelgpudetails {
     is_3.close();
 
     for(int i = 0 ; i < static_cast<int>(hits_y_coordinates.size()); ++i) {
-      hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
+      hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates.at(i),2) + pow(hits_z_coordinates.at(i),2)));
     }
 
     std::cout << hits_z_coordinates.size() << '\n';

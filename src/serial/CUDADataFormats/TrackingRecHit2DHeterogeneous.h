@@ -18,10 +18,10 @@ public:
                                          pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                          uint32_t const* hitsModuleStart,
                                          cudaStream_t stream);
-  TrackingRecHit2DHeterogeneous(std::vector<double> x_coord,
-                                std::vector<double> y_coord, 
-                                std::vector<double> z_coord, 
-                                std::vector<double> r_coord);
+  TrackingRecHit2DHeterogeneous(std::vector<double>& x_coord,
+                                std::vector<double>& y_coord, 
+                                std::vector<double>& z_coord, 
+                                std::vector<double>& r_coord);
 
   ~TrackingRecHit2DHeterogeneous() = default;
 
