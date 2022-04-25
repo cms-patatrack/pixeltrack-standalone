@@ -25,6 +25,7 @@ public:
   template <typename>
   friend class TrackingRecHit2DHeterogeneous;
 
+  __device__ __forceinline__ void setnHits(uint32_t nHits) { m_nHits = nHits; }
   __device__ __forceinline__ uint32_t nHits() const { return m_nHits; }
 
   __device__ __forceinline__ float& xLocal(int i) { return m_xl[i]; }
@@ -37,12 +38,16 @@ public:
   __device__ __forceinline__ float& yerrLocal(int i) { return m_yerr[i]; }
   __device__ __forceinline__ float yerrLocal(int i) const { return __ldg(m_yerr + i); }
 
+  __device__ __forceinline__ void setxGlobal(int i, double x_) { m_xg[i] = x_; }
   __device__ __forceinline__ float& xGlobal(int i) { return m_xg[i]; }
   __device__ __forceinline__ float xGlobal(int i) const { return __ldg(m_xg + i); }
+  __device__ __forceinline__ void setyGlobal(int i, double y_) { m_yg[i] = y_; }
   __device__ __forceinline__ float& yGlobal(int i) { return m_yg[i]; }
   __device__ __forceinline__ float yGlobal(int i) const { return __ldg(m_yg + i); }
+  __device__ __forceinline__ void setzGlobal(int i, double z_) { m_zg[i] = z_; }
   __device__ __forceinline__ float& zGlobal(int i) { return m_zg[i]; }
   __device__ __forceinline__ float zGlobal(int i) const { return __ldg(m_zg + i); }
+  __device__ __forceinline__ void setrGlobal(int i, double r_) { m_rg[i] = r_; }
   __device__ __forceinline__ float& rGlobal(int i) { return m_rg[i]; }
   __device__ __forceinline__ float rGlobal(int i) const { return __ldg(m_rg + i); }
 

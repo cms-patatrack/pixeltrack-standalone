@@ -62,7 +62,7 @@ namespace {
 namespace pixelgpudetails {
 
   // crea un nuovo costruttore con i miei vettori
-  /*TrackingRecHit2DCPU PixelRecHitGPUKernel::makeHits(SiPixelDigisSoA const& digis_d,
+  TrackingRecHit2DCPU PixelRecHitGPUKernel::makeHits(SiPixelDigisSoA const& digis_d,
                                                      SiPixelClustersSoA const& clusters_d,
                                                      BeamSpotPOD const& bs_d,
                                                      pixelCPEforGPU::ParamsOnGPU const* cpeParams) const {
@@ -82,16 +82,15 @@ namespace pixelgpudetails {
     }
 
     return hits_d;
-  }*/
+  }
 
   TrackingRecHit2DCPU PixelRecHitGPUKernel::makeHits(int file_number) const {
     std::vector<double> hits_x_coordinates;
     std::vector<double> hits_y_coordinates;
     std::vector<double> hits_z_coordinates;
     std::vector<double> hits_r_coordinates;
-    int event_identifier = file_number + 4590;
   
-    if(event_identifier >= 5000 && event_identifier < 5500) {
+    if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
     } else {
     std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
@@ -128,7 +127,7 @@ namespace pixelgpudetails {
     }
 
     std::cout << hits_z_coordinates.size() << '\n';
-    std::cout << n_hits_map[event_identifier] << '\n';
+    std::cout << n_hits_map[file_number] << '\n';
   }
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates);

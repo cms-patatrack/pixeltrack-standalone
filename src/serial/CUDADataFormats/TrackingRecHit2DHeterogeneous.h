@@ -122,13 +122,14 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
   m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
 }
 
+// My constructor
 template <typename Traits>
 TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<double> x_coord,
     std::vector<double> y_coord, std::vector<double> z_coord, std::vector<double> r_coord)
     : m_nHits(x_coord.size()) {
   TrackingRecHit2DSOAView view;
 
-  view->m_nHits = x_coord.size();
+  view.setnHits(static_cast<uint32_t>(x_coord.size()));
   //m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
   //m_AverageGeometryStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::AverageGeometry>(stream);
   //view->m_averageGeometry = m_AverageGeometryStore.get();
@@ -136,25 +137,25 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   //view->m_hitsModuleStart = hitsModuleStart;
 
   // if empy do not bother
-  if (0 == nHits) {
-    m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-    return;
-  }
+  //if (0 == nHits) {
+  //  m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
+  //  return;
+  //}
 
   // copy all the pointers
   //m_hist = view->m_hist = m_HistStore.get();
 
-  for(int j = 0; j < view->m_nHits; ++j) {
-    view->m_xg = x_coord[j];
-    view->m_yg = y_coord[j];
-    view->m_zg = z_coord[j];
-    view->m_rg = r_coord[j];
+  for(uint32_t j = 0; j < view.nHits(); ++j) {
+    view.setxGlobal(j,x_coord[j]);
+    view.setyGlobal(j,y_coord[j]);
+    view.setzGlobal(j,z_coord[j]);
+    view.setrGlobal(j,r_coord[j]);
 
     // m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
   }
 
   // transfer view
-  m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
+  //m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
 }
 
 using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::CPUTraits>;

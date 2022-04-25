@@ -20,7 +20,8 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
   edm::EDGetTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
 
-  //TrackingRecHit2DCPU PixelRecHitGPUKernel algo_;
+  // // // Fix algo_ type
+  TrackingRecHit2DCPU algo_;
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
   edm::EDPutTokenT<std::vector<float>> test_Token;
 };
