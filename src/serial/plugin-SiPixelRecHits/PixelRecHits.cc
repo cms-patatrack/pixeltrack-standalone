@@ -18,7 +18,7 @@
 #include <fstream>
 
 
-std::string path = "/home/simone/Documents/thesis/not_sorted/";
+std::string path = "/home/simonb/documents/thesis/not_sorted/";
 int n_events = 1770;
 
 std::map<int,int> def_hits_map() {
