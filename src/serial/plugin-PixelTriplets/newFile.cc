@@ -18,7 +18,7 @@ public:
   
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
-  //edm::EDGetTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
+  edm::EDGetTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
 
   //TrackingRecHit2DCPU PixelRecHitGPUKernel algo_;
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
@@ -34,7 +34,7 @@ void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   std::cout << "I'm here!" << '\n';
   std::vector<float> test = {7,6,5,4,3,2,1};
   iEvent.emplace(test_Token, test);
-  //iEvent.emplace(tokenHitCPU_, algo_.makeHits(test_file));
+  iEvent.emplace(tokenHitCPU_, algo_.makeHits(test_file));
 }
 
 DEFINE_FWK_MODULE(myClass);
