@@ -30,8 +30,8 @@ private:
 
 myClass::myClass(edm::ProductRegistry& reg)
     : gpuAlgo_(reg),
-      test_Token(reg.produces<std::vector<float>>())/*,
-      tokenHitCPU_(reg.produces<TrackingRecHit2DCPU>())*/ {}
+      test_Token(reg.produces<std::vector<float>>()),
+      tokenHitCPU_(reg.produces<TrackingRecHit2DCPU>()) {}
 
 void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   std::cout << "I'm here!" << '\n';
