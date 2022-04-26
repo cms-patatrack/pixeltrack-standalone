@@ -161,7 +161,6 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
     // m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
   }
-
   view_ = view;
 
   // transfer view
