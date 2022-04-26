@@ -132,14 +132,11 @@ namespace pixelgpudetails {
       hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
     }
 
-    std::cout << "in vector = " << hits_x_coordinates.size() << '\n';
-    std::cout << "check4" << '\n';
-    std::cout << "from map = " << n_hits_map[file_number] << '\n';
-    std::cout << "check5" << '\n';
+    //std::cout << "in vector = " << hits_x_coordinates.size() << '\n';
+    //std::cout << "from map = " << n_hits_map[file_number] << '\n';
   }
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates);
-    std::cout << "fine makeHits" << '\n';
     return hits_d;
   }
 

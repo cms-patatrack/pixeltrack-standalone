@@ -38,15 +38,19 @@ public:
   __device__ __forceinline__ float& yerrLocal(int i) { return m_yerr[i]; }
   __device__ __forceinline__ float yerrLocal(int i) const { return __ldg(m_yerr + i); }
 
+  __device__ __forceinline__ void setxSize(int size_) { m_xg = new float[size_]; }
   __device__ __forceinline__ void setxGlobal(int i, float x_) { m_xg[i] = x_; }
   __device__ __forceinline__ float& xGlobal(int i) { return m_xg[i]; }
   __device__ __forceinline__ float xGlobal(int i) const { return __ldg(m_xg + i); }
+  __device__ __forceinline__ void setySize(int size_) { m_yg = new float[size_]; }
   __device__ __forceinline__ void setyGlobal(int i, double y_) { m_yg[i] = y_; }
   __device__ __forceinline__ float& yGlobal(int i) { return m_yg[i]; }
   __device__ __forceinline__ float yGlobal(int i) const { return __ldg(m_yg + i); }
+  __device__ __forceinline__ void setzSize(int size_) { m_zg = new float[size_]; }
   __device__ __forceinline__ void setzGlobal(int i, double z_) { m_zg[i] = z_; }
   __device__ __forceinline__ float& zGlobal(int i) { return m_zg[i]; }
   __device__ __forceinline__ float zGlobal(int i) const { return __ldg(m_zg + i); }
+  __device__ __forceinline__ void setrSize(int size_) { m_rg = new float[size_]; }
   __device__ __forceinline__ void setrGlobal(int i, double r_) { m_rg[i] = r_; }
   __device__ __forceinline__ float& rGlobal(int i) { return m_rg[i]; }
   __device__ __forceinline__ float rGlobal(int i) const { return __ldg(m_rg + i); }

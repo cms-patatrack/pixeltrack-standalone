@@ -149,12 +149,12 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
   // copy all the pointers
   //m_hist = view->m_hist = m_HistStore.get();
-  view.setxGlobal(0,static_cast<float>(x_coord[0]));
+  view.setxSize(view.nHits());
+  view.setySize(view.nHits());
+  view.setzSize(view.nHits());
+  view.setrSize(view.nHits());
   for(uint32_t j = 0; j < view.nHits(); ++j) {
-    std::cout << "patata3" << '\n';
-    std::cout << x_coord[j] << '\n';
     view.setxGlobal(j,static_cast<float>(x_coord[j]));
-    std::cout << "riempito" << '\n';
     view.setyGlobal(j,y_coord[j]);
     view.setzGlobal(j,z_coord[j]);
     view.setrGlobal(j,r_coord[j]);
