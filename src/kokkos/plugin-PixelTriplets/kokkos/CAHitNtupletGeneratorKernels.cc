@@ -225,8 +225,9 @@ namespace KOKKOS_NAMESPACE {
   }
 
   void CAHitNtupletGeneratorKernels::buildDoublets(HitsOnCPU const &hh, KokkosExecSpace const &execSpace) {
+    std::cout << "Il fatto che io non printi questa cosa è molto strano" << '\n';
     auto nhits = hh.nHits();
-
+    std::cout << "Vediamo se setto il numero di hits" << '\n';
 #ifdef NTUPLE_DEBUG
     std::cout << "building Doublets out of " << nhits << " Hits" << std::endl;
 #endif
@@ -243,6 +244,7 @@ namespace KOKKOS_NAMESPACE {
         CAConstants::maxNumOfActiveDoublets(), execSpace);
     device_theCellTracksContainer_ = cms::kokkos::make_shared<CAConstants::CellTracks[], KokkosDeviceMemSpace>(
         CAConstants::maxNumOfActiveDoublets(), execSpace);
+    std::cout << "Stranamente questi device cosi non hanno dato problemi" << '\n';
 
     {
       auto isOuterHitOfCell = cms::kokkos::to_view(device_isOuterHitOfCell_);
