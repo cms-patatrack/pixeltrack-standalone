@@ -85,6 +85,8 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   cms::cuda::launchZero(tuples_d, cudaStream);
 
   auto nhits = hh.nHits();
+  std::cout << nhits << '\n';
+  std::cout << pixelGPUConstants::maxNumberOfHits << '\n';
   assert(nhits <= pixelGPUConstants::maxNumberOfHits);
 
   // std::cout << "N hits " << nhits << std::endl;
