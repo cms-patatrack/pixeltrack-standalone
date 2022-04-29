@@ -20,10 +20,11 @@ public:
                                          pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                          uint32_t const* hitsModuleStart,
                                          cudaStream_t stream);
-  TrackingRecHit2DHeterogeneous(std::vector<double>& x_coord,
-                                std::vector<double>& y_coord, 
-                                std::vector<double>& z_coord, 
-                                std::vector<double>& r_coord);
+  TrackingRecHit2DHeterogeneous(std::vector<float>& x_coord,
+                                std::vector<float>& y_coord, 
+                                std::vector<float>& z_coord, 
+                                std::vector<float>& r_coord,
+                                cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
 
@@ -42,7 +43,7 @@ public:
   auto phiBinner() { return m_hist; }
   auto iphi() { return m_iphi; }
 
-  TrackingRecHit2DSOAView getView() const { return view_; }
+  //TrackingRecHit2DSOAView getView() const { return view_; }
 
 private:
   static constexpr uint32_t n16 = 4;
@@ -68,7 +69,7 @@ private:
 
   int event_number;
 
-  TrackingRecHit2DSOAView view_;
+  //TrackingRecHit2DSOAView view_;
 };
 
 template <typename Traits>
@@ -132,14 +133,20 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
 
 // My constructor
 template <typename Traits>
-TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<double>& x_coord,
-                                                                     std::vector<double>& y_coord, 
-                                                                     std::vector<double>& z_coord, 
-                                                                     std::vector<double>& r_coord)
+TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<float>& x_coord,
+                                                                     std::vector<float>& y_coord, 
+                                                                     std::vector<float>& z_coord, 
+                                                                     std::vector<float>& r_coord,
+                                                                     cudaStream_t stream)
     : m_nHits(x_coord.size()) {
-  TrackingRecHit2DSOAView view;
-
-  view.setnHits(static_cast<uint32_t>(x_coord.size()));
+  auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
+  view->m_nHits = x_coord.size();
+  //TrackingRecHit2DSOAView view;
+  m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
+  std::cout << m_HistStore->nbins() << '\n';
+  m_hist = view->m_hist = m_HistStore.get();
+  std::cout << view->m_hist->nbins() << '\n';
+  //view.setnHits(static_cast<uint32_t>(x_coord.size()));
  
   // if empy do not bother
   //if (0 == nHits) {
@@ -149,19 +156,29 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
   // copy all the pointers
   //m_hist = view->m_hist = m_HistStore.get();
-  view.setxSize(view.nHits());
-  view.setySize(view.nHits());
-  view.setzSize(view.nHits());
-  view.setrSize(view.nHits());
-  for(uint32_t j = 0; j < view.nHits(); ++j) {
-    view.setxGlobal(j,static_cast<float>(x_coord[j]));
-    view.setyGlobal(j,y_coord[j]);
-    view.setzGlobal(j,z_coord[j]);
-    view.setrGlobal(j,r_coord[j]);
+  //view.setxSize(view.nHits());
+  //view.setySize(view.nHits());
+  //view.setzSize(view.nHits());
+  //view.setrSize(view.nHits());
+  view->m_xg = x_coord.data();
+  view->m_yg = y_coord.data();
+  view->m_zg = z_coord.data();
+  view->m_rg = r_coord.data();
 
+  m_view.reset(view.release()); 
+  
+  /*for(uint32_t j = 0; j < view->m_nHits; ++j) {
+    //view.setxGlobal(j,static_cast<float>(x_coord[j]));
+    //view.setyGlobal(j,y_coord[j]);
+    //view.setzGlobal(j,z_coord[j]);
+    //view.setrGlobal(j,r_coord[j]);
+    view->m_xg[j] = x_coord[j];
+    view->m_yg[j] = y_coord[j];
+    view->m_zg[j] = z_coord[j];
+    view->m_rg[j] = r_coord[j];
     // m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
-  }
-  view_ = view;
+  }*/
+  //view_ = view;
 
   // transfer view
   //m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version

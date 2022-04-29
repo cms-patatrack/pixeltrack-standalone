@@ -34,13 +34,13 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
 
   auto const& hits = iEvent.get(tokenHitCPU_);
   auto const& test = iEvent.get(test_Token);
-  for(auto &x : test){
-    std::cout << x << std::endl;
-  }
-  std::cout << "x[0] = " << hits.getView().xGlobal(0) << '\n';
-  std::cout << "y[0] = " << hits.getView().yGlobal(0) << '\n';
-  std::cout << "z[0] = " << hits.getView().zGlobal(0) << '\n';
-  std::cout << "r[0] = " << hits.getView().rGlobal(0) << '\n';
+  //for(auto &x : test){
+  //  std::cout << x << std::endl;
+  //}
+  //std::cout << "x[0] = " << hits->m_xg[0] << '\n';
+  //std::cout << "y[0] = " << hits->m_xg[0] << '\n';
+  //std::cout << "z[0] = " << hits->m_xg[0] << '\n';
+  //std::cout << "r[0] = " << hits->m_xg[0] << '\n';
 
   iEvent.emplace(tokenTrackCPU_, gpuAlgo_.makeTuples(hits, bf));
 }

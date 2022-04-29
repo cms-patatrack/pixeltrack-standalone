@@ -85,10 +85,10 @@ namespace pixelgpudetails {
   }
 
   TrackingRecHit2DCPU PixelRecHitGPUKernelCustom::makeHits2(int file_number) const {
-    std::vector<double> hits_x_coordinates;
-    std::vector<double> hits_y_coordinates;
-    std::vector<double> hits_z_coordinates;
-    std::vector<double> hits_r_coordinates;
+    std::vector<float> hits_x_coordinates;
+    std::vector<float> hits_y_coordinates;
+    std::vector<float> hits_z_coordinates;
+    std::vector<float> hits_r_coordinates;
 
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
@@ -100,7 +100,7 @@ namespace pixelgpudetails {
     // Read the x_ns*.dat.dat file
     std::ifstream is_1;
     is_1.open(x_file_name);
-    double a;
+    float a;
 
     // Create the vector containing all the x coordinates of the hits
     for(int i = 0; is_1 >> a; ++i) {
@@ -111,7 +111,7 @@ namespace pixelgpudetails {
     // Read the y_ns*.dat.dat file
     std::ifstream is_2;
     is_2.open(y_file_name);
-    double b;
+    float b;
 
     // Create the vector containing all the y coordinates of the hits
     for(int i = 0; is_2 >> b; ++i) { 
@@ -121,7 +121,7 @@ namespace pixelgpudetails {
     // Read the z_ns*.dat.dat file
     std::ifstream is_3;
     is_3.open(z_file_name);
-    double c;
+    float c;
 
     // Create the vector containing all the z coordinates of the hits
     for(int i = 0; is_3 >> c; ++i) { 
@@ -136,7 +136,7 @@ namespace pixelgpudetails {
     //std::cout << "from map = " << n_hits_map[file_number] << '\n';
   }
 
-    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates);
+    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, nullptr);
     return hits_d;
   }
 

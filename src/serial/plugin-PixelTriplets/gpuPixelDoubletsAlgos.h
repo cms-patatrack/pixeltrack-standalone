@@ -53,27 +53,36 @@ namespace gpuPixelDoublets {
     using Hist = TrackingRecHit2DSOAView::Hist;
 
     auto const& __restrict__ hist = hh.phiBinner();
+    std::cout << "phiBinner è ok" << '\n';
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
-    assert(offsets);
+    //assert(offsets);
 
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
+    std::cout << "Sta lambda mi puzza" << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
     // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
     const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
+    std::cout << "maxNumLayPairs" << '\n';
     assert(nPairs <= nPairsMax);
     __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
+    std::cout << "dopo riga 69" << '\n';
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
+      std::cout << "prova0" << '\n';
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
+      std::cout << "prova1" << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
+        std::cout << "prova1" << '\n';
       }
       ntot = innerLayerCumulativeSize[nPairs - 1];
+      std::cout << "prova1" << '\n';
     }
+    std::cout << "il problema è nell'if" << '\n';
     __syncthreads();
-
+    std::cout << "Riga 79" << '\n';
     // x runs faster
     auto idy = blockIdx.y * blockDim.y + threadIdx.y;
     auto first = threadIdx.x;
@@ -104,6 +113,7 @@ namespace gpuPixelDoublets {
       assert(i < offsets[inner + 1]);
 
       // found hit corresponding to our cuda thread, now do the job
+      std::cout << "Forse è il prossimo, detectorIndex" << '\n';
       auto mi = hh.detectorIndex(i);
       if (mi > 2000)
         continue;  // invalid
@@ -237,6 +247,7 @@ namespace gpuPixelDoublets {
         printf("OuterHitOfCell full for %d in layer %d/%d, %d,%d %d\n", i, inner, outer, nmin, tot, tooMany);
 #endif
     }  // loop in block...
+    std::cout << "Fine di doubletsFromHist" << '\n';
   }
 
 }  // namespace gpuPixelDoublets
