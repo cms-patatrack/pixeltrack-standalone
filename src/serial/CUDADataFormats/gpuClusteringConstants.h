@@ -8,7 +8,7 @@ namespace pixelGPUConstants {
   constexpr uint32_t maxNumberOfHits = 24 * 1024;
 #else
   constexpr uint32_t maxNumberOfHits =
-      48 * 1024;  // data at pileup 50 has 18300 +/- 3500 hits; 40000 is around 6 sigma away
+      110000;  // data at pileup 50 has 18300 +/- 3500 hits; 40000 is around 6 sigma away
 #endif
 }  // namespace pixelGPUConstants
 
