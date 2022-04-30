@@ -67,6 +67,9 @@ namespace gpuPixelDoublets {
                                CellNeighbors* cellNeighborsContainer,
                                CellTracksVector* cellTracks,
                                CellTracks* cellTracksContainer) {
+    std::cout << "The max number of active doublets is " << CAConstants::maxNumOfActiveDoublets() << '\n';
+    std::cout << "isOuterHitOfCell = " << isOuterHitOfCell << '\n';
+
     assert(isOuterHitOfCell);
     int first = blockIdx.x * blockDim.x + threadIdx.x;
     for (int i = first; i < nHits; i += gridDim.x * blockDim.x)

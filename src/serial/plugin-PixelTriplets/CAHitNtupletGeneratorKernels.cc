@@ -29,6 +29,9 @@ void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStr
   device_isOuterHitOfCell_.reset(
       (GPUCACell::OuterHitOfCell *)malloc(std::max(1U, nhits) * sizeof(GPUCACell::OuterHitOfCell)));
   assert(device_isOuterHitOfCell_.get());
+  std::cout << device_isOuterHitOfCell_.get() << '\n';
+  std::cout << device_theCellNeighbors_.get() << '\n';
+  std::cout << device_theCellTracks_.get() << '\n';
 
   cellStorage_.reset((unsigned char *)malloc(CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
                                              CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks)));

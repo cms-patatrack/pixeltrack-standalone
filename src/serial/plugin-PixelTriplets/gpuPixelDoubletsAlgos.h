@@ -67,9 +67,7 @@ namespace gpuPixelDoublets {
     __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
-      std::cout << "Prima di usare layerPairs" << '\n';
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
-      std::cout << "Sono riuscito a usare layerPairs" << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
       }
