@@ -53,8 +53,8 @@ namespace gpuPixelDoublets {
     using Hist = TrackingRecHit2DSOAView::Hist;
 
     auto const& __restrict__ hist = hh.phiBinner();
-    std::cout << "phiBinner è ok" << '\n';
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
+    std::cout << "Offests[0] = " << offsets[10] << '\n';
     assert(offsets);
 
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
