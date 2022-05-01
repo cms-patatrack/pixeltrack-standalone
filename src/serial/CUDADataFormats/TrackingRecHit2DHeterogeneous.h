@@ -154,8 +154,9 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
   m_store32 = Traits::template make_device_unique<float[]>(x_coord.size() * n32 + 11, stream);
   auto get32 = [&](int i) { return m_store32.get() + i * x_coord.size(); };
-
+  std::cout << "get32(1)" << get32(1) << '\n';
   m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
+  std::cout << "hitsLayerStart init" << m_hitsLayerStart[0] << '\n';
 
   m_view.reset(view.release()); 
 }
