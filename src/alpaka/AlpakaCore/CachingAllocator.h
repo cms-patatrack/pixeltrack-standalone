@@ -90,6 +90,11 @@ namespace cms::alpakatools {
     using Event = alpaka::Event<Queue>;  // the events used to synchronise the operations
     using Buffer = alpaka::Buf<Device, std::byte, alpaka::DimInt<1u>, size_t>;
 
+    // The "memory device" type can either be the same as the "synchronisation device" type, or be the host CPU.
+    static_assert(std::is_same_v<Device, alpaka::Dev<Queue>> or std::is_same_v<Device, alpaka::DevCpu>,
+                  "The \"memory device\" type can either be the same as the \"synchronisation device\" type, or be the "
+                  "host CPU.");
+
     struct CachedBytes {
       size_t free = 0;       // total bytes freed and cached on this device
       size_t live = 0;       // total bytes currently in use oin this device
@@ -311,11 +316,24 @@ namespace cms::alpakatools {
       return false;
     }
 
+    Buffer allocateBuffer(size_t bytes, Queue const& queue) {
+      if constexpr (std::is_same_v<Device, alpaka::Dev<Queue>>) {
+        // allocate device memory
+        return alpaka::allocBuf<std::byte, size_t>(device_, bytes);
+      } else if constexpr (std::is_same_v<Device, alpaka::DevCpu>) {
+        // allocate pinned host memory
+        return alpaka::allocMappedBuf<std::byte, size_t>(device_, alpaka::getDev(queue), bytes);
+      } else {
+        // unsupported combination
+        static_assert(std::is_same_v<Device, alpaka::Dev<Queue>> or std::is_same_v<Device, alpaka::DevCpu>,
+                      "The \"memory device\" type can either be the same as the \"synchronisation device\" type, or be "
+                      "the host CPU.");
+      }
+    }
+
     void allocateNewBlock(BlockDescriptor& block) {
       try {
-        // FIXME simplify alpaka::Vec<alpaka::DimInt<1u>, size_t>{block.bytes} to block.bytes ?
-        block.buffer =
-            alpaka::allocBuf<std::byte, size_t>(device_, alpaka::Vec<alpaka::DimInt<1u>, size_t>{block.bytes});
+        block.buffer = allocateBuffer(block.bytes, *block.queue);
       } catch (std::runtime_error const& e) {
         // the allocation attempt failed: free all cached blocks on the device and retry
         if (debug_) {
@@ -329,25 +347,8 @@ namespace cms::alpakatools {
         freeAllCached();
 
         // throw an exception if it fails again
-        block.buffer =
-            alpaka::allocBuf<std::byte, size_t>(device_, alpaka::Vec<alpaka::DimInt<1u>, size_t>{block.bytes});
+        block.buffer = allocateBuffer(block.bytes, *block.queue);
       }
-
-      // for host memory, pin the newly allocated block
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-      if (not cms::alpakatools::devices<alpaka::PltfCudaRt>.empty()) {
-        // it is possible to initialise the CUDA runtime and call cudaHostRegister
-        // only if the system has at least one supported GPU
-        alpaka::prepareForAsyncCopy(*block.buffer);
-      }
-#endif  // ALPAKA_ACC_GPU_CUDA_ENABLED
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-      if (not cms::alpakatools::devices<alpaka::PltfHipRt>.empty()) {
-        // it is possible to initialise the ROCm runtime and call hipHostRegister
-        // only if the system has at least one supported GPU
-        alpaka::prepareForAsyncCopy(*block.buffer);
-      }
-#endif  // ALPAKA_ACC_GPU_HIP_ENABLED
 
       // create a new event associated to the "synchronisation device"
       block.event = Event{block.device()};

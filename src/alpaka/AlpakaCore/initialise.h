@@ -1,31 +1,26 @@
 #ifndef AlpakaCore_initialise_h
 #define AlpakaCore_initialise_h
 
-#include <iostream>
-
-#include <alpaka/alpaka.hpp>
-
-#include "AlpakaCore/alpakaDevices.h"
-#include "Framework/demangle.h"
+#include "AlpakaCore/alpakaConfig.h"
 
 namespace cms::alpakatools {
 
   template <typename TPlatform>
-  void initialise() {
-    constexpr const char* suffix[] = {"devices.", "device:", "devices:"};
+  void initialise();
 
-    if (devices<TPlatform>.empty()) {
-      devices<TPlatform> = enumerate<TPlatform>();
-      auto size = devices<TPlatform>.size();
-      //std::cout << edm::demangle<TPlatform> << " platform succesfully initialised." << std::endl;
-      std::cout << "Found " << size << " " << suffix[size < 2 ? size : 2] << std::endl;
-      for (auto const& device : devices<TPlatform>) {
-        std::cout << "  - " << alpaka::getName(device) << std::endl;
-      }
-    } else {
-      //std::cout << edm::demangle<TPlatform> << " platform already initialised." << std::endl;
-    }
-  }
+  // explicit template instantiation declaration
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
+  extern template void initialise<alpaka_serial_sync::Platform>();
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
+  extern template void initialise<alpaka_tbb_async::Platform>();
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
+  extern template void initialise<alpaka_cuda_async::Platform>();
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
+  extern template void initialise<alpaka_rocm_async::Platform>();
+#endif
 
 }  // namespace cms::alpakatools
 

@@ -24,6 +24,8 @@ namespace alpaka {
     //! The CUDA async queue enqueue trait specialization for "safe tasks"
     template <>
     struct Enqueue<QueueCudaRtNonBlocking, HostOnlyTask> {
+      using TApi = ApiCudaRt;
+
       static void CUDART_CB callback(cudaStream_t /*queue*/, cudaError_t /*status*/, void* arg) {
         //ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(status);
         std::unique_ptr<HostOnlyTask> pTask(static_cast<HostOnlyTask*>(arg));
@@ -42,7 +44,9 @@ namespace alpaka {
     //! The HIP async queue enqueue trait specialization for "safe tasks"
     template <>
     struct Enqueue<QueueHipRtNonBlocking, HostOnlyTask> {
-      static void HIPRT_CB callback(hipStream_t /*queue*/, hipError_t /*status*/, void* arg) {
+      using TApi = ApiHipRt;
+
+      static void callback(hipStream_t /*queue*/, hipError_t /*status*/, void* arg) {
         //ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(status);
         std::unique_ptr<HostOnlyTask> pTask(static_cast<HostOnlyTask*>(arg));
         (*pTask)();

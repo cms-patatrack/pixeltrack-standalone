@@ -1,3 +1,4 @@
+#include <cmath>
 #include <exception>
 #include <filesystem>
 #include <string>
@@ -13,7 +14,7 @@ namespace edm {
   EventProcessor::EventProcessor(int maxEvents,
                                  int runForMinutes,
                                  int numberOfStreams,
-                                 std::vector<std::string> const& path,
+                                 Alternatives alternatives,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
                                  bool validation)
@@ -24,9 +25,23 @@ namespace edm {
       esp->produce(eventSetup_);
     }
 
+    // normalise the total weight to the number of streams
+    float total = 0.;
+    for (auto const& alternative : alternatives) {
+      total += alternative.weight;
+    }
     //schedules_.reserve(numberOfStreams);
-    for (int i = 0; i < numberOfStreams; ++i) {
-      schedules_.emplace_back(registry_, pluginManager_, &source_, &eventSetup_, i, path);
+    float cumulative = 0.;
+    int lower_range = 0;
+    int upper_range = 0;
+    for (auto& alternative : alternatives) {
+      cumulative += alternative.weight;
+      lower_range = upper_range;
+      upper_range = static_cast<int>(std::round(cumulative * numberOfStreams / total));
+      for (int i = lower_range; i < upper_range; ++i) {
+        schedules_.emplace_back(registry_, pluginManager_, &source_, &eventSetup_, i, alternative.path);
+      }
+      streamsPerBackend_.emplace_back(alternative.backend, upper_range - lower_range);
     }
   }
 
