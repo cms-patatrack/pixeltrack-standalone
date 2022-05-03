@@ -68,10 +68,17 @@ namespace gpuPixelDoublets {
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
+      std::cout << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
+      std::cout << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
+        std::cout << "innerLayerCumulativeSize[i] " << innerLayerCumulativeSize[i] << '\n';
       }
+      #ifdef PATATA
       ntot = innerLayerCumulativeSize[nPairs - 1];
+      #else
+      ntot = 100000;
+      #endif
     }
     __syncthreads();
     // x runs faster
@@ -79,18 +86,28 @@ namespace gpuPixelDoublets {
     auto first = threadIdx.x;
     auto stride = blockDim.x;
 
+    std::cout << "Prova" << '\n';
+    std::cout << ntot << '\n';
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
+      std::cout << "Dentro al for" << '\n';
+      std::cout << "pairLayerId " << pairLayerId << '\n';
       while (j >= innerLayerCumulativeSize[pairLayerId++])
+      std::cout << "pairLayerId " << pairLayerId << '\n';
         ;
+      std::cout << "dentro al while" << '\n';
       --pairLayerId;  // move to lower_bound ??
-
+      std::cout << "pairLayerId " << pairLayerId << '\n';
+      std::cout << "pair1 " << layerPairs[0] << '\n';
+      std::cout << "pair2 " << layerPairs[1] << '\n';
       assert(pairLayerId < nPairs);
       assert(j < innerLayerCumulativeSize[pairLayerId]);
       assert(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
 
       uint8_t inner = layerPairs[2 * pairLayerId];
       uint8_t outer = layerPairs[2 * pairLayerId + 1];
+      std::cout << "inner" << inner << '\n';
+      std::cout << "outer" << outer << '\n';
       assert(outer > inner);
 
       auto hoff = Hist::histOff(outer);
@@ -100,6 +117,8 @@ namespace gpuPixelDoublets {
 
       // printf("Hit in Layer %d %d %d %d\n", i, inner, pairLayerId, j);
 
+      std::cout << "offsets[inner]" << offsets[inner] << '\n';
+      std::cout << "offsets[inner+1]" << offsets[inner+1] << '\n';
       assert(i >= offsets[inner]);
       assert(i < offsets[inner + 1]);
 

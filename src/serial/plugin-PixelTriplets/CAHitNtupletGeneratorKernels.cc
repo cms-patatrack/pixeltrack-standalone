@@ -80,9 +80,7 @@ template <>
 void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *tracks_d, cudaStream_t cudaStream) {
   auto *tuples_d = &tracks_d->hitIndices;
   std::cout << tracks_d->m_nTracks << '\n';
-  std::cout << "tuples_d = " << tuples_d << '\n';
   auto *quality_d = (Quality *)(&tracks_d->m_quality);
-  std::cout << "quality_d = " << quality_d << '\n';
 
   assert(tuples_d && quality_d);
 

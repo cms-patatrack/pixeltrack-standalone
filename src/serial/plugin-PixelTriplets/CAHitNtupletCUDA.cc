@@ -38,6 +38,7 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   PixelTrackHeterogeneous tuples_ = gpuAlgo_.makeTuples(hits, bf);
   std::cout << "m_nTracks = " << tuples_->m_nTracks << '\n';
   iEvent.emplace(tokenTrackCPU_, gpuAlgo_.makeTuples(hits, bf));
+  std::cout << "--------------------------------------------------------------------------------" << '\n';
 }
 
 DEFINE_FWK_MODULE(CAHitNtupletCUDA);

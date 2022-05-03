@@ -5,23 +5,23 @@
 
 namespace gpuPixelDoublets {
 
-  constexpr int nPairs = 13 + 2 + 4;    // Devo cambiare npairs
-  static_assert(nPairs <= CAConstants::maxNumbedddrOfLayerPairs());   // devo cambiare pure questo (20)
+  constexpr int nPairs = 20;    // Devo cambiare npairs
+  static_assert(nPairs <= CAConstants::maxNumberOfLayerPairs());   // devo cambiare pure questo (20)
 
   // start constants
   // clang-format off
 
-  /*
+  
   constexpr uint8_t layerPairs[2 * nPairs] = {
-      0, 1, 0, 4, 0, 7,              // BPIX1 (3)
-      1, 2, 1, 4, 1, 7,              // BPIX2 (5)
-      4, 5, 7, 8,                    // FPIX1 (8)
-      2, 3, 2, 4, 2, 7, 5, 6, 8, 9,  // BPIX3 & FPIX2 (13)
-      0, 2, 1, 3,                    // Jumping Barrel (15)
-      0, 5, 0, 8,                    // Jumping Forward (BPIX1,FPIX2)
-      4, 6, 7, 9                     // Jumping Forward (19)
+    0, 1, 0, 4, 0, 7,              // BPIX1 (3)
+    1, 2, 1, 4, 1, 7,              // BPIX2 (5)
+    4, 5, 7, 8,                    // FPIX1 (8)
+    2, 3, 2, 4, 2, 7, 5, 6, 8, 9,  // BPIX3 & FPIX2 (13)
+    0, 2, 1, 3,                    // Jumping Barrel (15)
+    0, 5, 0, 8,                    // Jumping Forward (BPIX1,FPIX2)
+    4, 6, 7, 9                     // Jumping Forward (19)
   };
-  */
+  
   /*
   constexpr uint8_t layerPairs[2 * nPairs] = {
     0, 1, 1, 2, 2, 3,                                // BV8
@@ -47,13 +47,20 @@ namespace gpuPixelDoublets {
                                                     // DV14DV18
   };
   */
-  constexpr uint8_t layerPairs[2 * nPairs] = {
-    0, 1, 1, 2, 2, 3,                                // BV8
-    4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10,             // DV7
-    11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17,  // DV9
-    0, 4, 1, 4                                       // BV8DV7
-    0, 11, 1, 11, 2, 11                              // BV8DV9
-  };
+  //constexpr uint8_t layerPairs[2 * nPairs] = {
+  //  0, 1, 1, 2, 2, 3,                                // BV8
+  //  4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10,             // DV7
+  //  1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2,  // DV9
+  //  0, 4, 1, 4,                                      // BV8DV7
+  //  0, 2, 1, 2, 2, 3                              // BV8DV9
+  //};
+  //constexpr uint8_t layerPairs[2 * nPairs] = {
+  //  1, 2, 1, 2, 1, 2,                                // BV8
+  //  1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2,              // DV7
+  //  1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2,              // DV9
+  //  1, 2, 1, 2,                                      // BV8DV7
+  //  1, 2, 1, 2, 1, 2                                 // BV8DV9
+  //};
 
   constexpr int16_t phi0p05 = 522;  // round(521.52189...) = phi2short(0.05);
   constexpr int16_t phi0p06 = 626;  // round(625.82270...) = phi2short(0.06);
