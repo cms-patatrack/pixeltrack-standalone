@@ -89,6 +89,7 @@ namespace pixelgpudetails {
     std::vector<float> hits_y_coordinates;
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
+    std::vector<int> global_indexes;
 
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
@@ -132,8 +133,13 @@ namespace pixelgpudetails {
       hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
     }
 
-    //std::cout << "in vector = " << hits_x_coordinates.size() << '\n';
-    //std::cout << "from map = " << n_hits_map[file_number] << '\n';
+    // Fill the hit's global indexes
+    std::ifstream is_4;
+    int d;
+    for(int i = 0; is_4 >> d; ++i) { 
+      global_indexes.push_back(d); 
+    }
+    is_4.close();
   }
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, nullptr);

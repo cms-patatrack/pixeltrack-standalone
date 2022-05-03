@@ -100,7 +100,7 @@ private:
   pixelCPEforGPU::ParamsOnGPU const* m_cpeParams;  // forwarded from setup, NOT owned
   uint32_t const* m_hitsModuleStart;               // forwarded from clusters
 
-  uint32_t* m_hitsLayerStart;
+  uint32_t* m_hitsLayerStart;   // 
 
   Hist* m_hist;
 

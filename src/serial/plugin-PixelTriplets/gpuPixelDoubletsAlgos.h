@@ -54,10 +54,10 @@ namespace gpuPixelDoublets {
 
     auto const& __restrict__ hist = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
-    std::cout << "Offests[0] = " << offsets[10] << '\n';
+    std::cout << "Offests[10] = " << offsets[10] << '\n';
     assert(offsets);
 
-    auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
+    auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
@@ -124,7 +124,11 @@ namespace gpuPixelDoublets {
         // if ideal treat inner ladder as outer
         if (inner == 0)
           assert(mi < 96);
+        #ifdef NOTRACKML
         isOuterLadder = ideal_cond ? true : 0 == (mi / 8) % 2;  // only for B1/B2/B3 B4 is opposite, FPIX:noclue...
+        #else
+        isOuterLadder = true;
+        #endif
 
         // in any case we always test mes>0 ...
         mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;

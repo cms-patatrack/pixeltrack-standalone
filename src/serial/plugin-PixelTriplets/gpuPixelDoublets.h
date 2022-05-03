@@ -22,9 +22,10 @@ namespace gpuPixelDoublets {
       4, 6, 7, 9                     // Jumping Forward (19)
   };
   */
+  /*
   constexpr uint8_t layerPairs[2 * nPairs] = {
-    0, 1, 1, 2, 2, 3                                // BV8
-    18, 19, 19, 20, 20, 21                          // BV13
+    0, 1, 1, 2, 2, 3,                                // BV8
+    18, 19, 19, 20, 20, 21,                          // BV13
     34, 35                                          // BV17
     4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10             // DV7
     11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17  // DV9
@@ -44,6 +45,14 @@ namespace gpuPixelDoublets {
                                                     // BV13BV17
                                                     // BV13DV18
                                                     // DV14DV18
+  };
+  */
+  constexpr uint8_t layerPairs[2 * nPairs] = {
+    0, 1, 1, 2, 2, 3,                                // BV8
+    4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10,             // DV7
+    11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17,  // DV9
+    0, 4, 1, 4                                       // BV8DV7
+    0, 11, 1, 11, 2, 11                              // BV8DV9
   };
 
   constexpr int16_t phi0p05 = 522;  // round(521.52189...) = phi2short(0.05);

@@ -30,7 +30,7 @@ CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
       gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
-  auto bf = 0.0114256972711507;  // 1/fieldInGeV
+  auto bf = 0.0114256972711507*2;  // 1/fieldInGeV
 
   auto const& hits = iEvent.get(tokenHitCPU_);
   auto const& test = iEvent.get(test_Token);
