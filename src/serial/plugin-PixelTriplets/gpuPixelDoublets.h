@@ -5,7 +5,7 @@
 
 namespace gpuPixelDoublets {
 
-  constexpr int nPairs = 20;    // Devo cambiare npairs
+  constexpr int nPairs = 24;    // Devo cambiare npairs
   static_assert(nPairs <= CAConstants::maxNumberOfLayerPairs());   // devo cambiare pure questo (20)
 
   // start constants

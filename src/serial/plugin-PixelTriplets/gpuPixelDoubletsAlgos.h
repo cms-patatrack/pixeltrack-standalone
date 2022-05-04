@@ -74,7 +74,7 @@ namespace gpuPixelDoublets {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
         std::cout << "innerLayerCumulativeSize[i] " << innerLayerCumulativeSize[i] << '\n';
       }
-      #ifdef PATATA
+      #ifdef TEST
       ntot = innerLayerCumulativeSize[nPairs - 1];
       #else
       ntot = 100000;
@@ -91,11 +91,14 @@ namespace gpuPixelDoublets {
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
       std::cout << "Dentro al for" << '\n';
+      std::cout << 'j' << j << '\n';
       std::cout << "pairLayerId " << pairLayerId << '\n';
       while (j >= innerLayerCumulativeSize[pairLayerId++])
+      std::cout << "innerlcs[pL]" << innerLayerCumulativeSize[pairLayerId] << '\n';
       std::cout << "pairLayerId " << pairLayerId << '\n';
         ;
       std::cout << "dentro al while" << '\n';
+      std::cout << "pairLayerId " << pairLayerId << '\n';
       --pairLayerId;  // move to lower_bound ??
       std::cout << "pairLayerId " << pairLayerId << '\n';
       std::cout << "pair1 " << layerPairs[0] << '\n';
@@ -150,7 +153,11 @@ namespace gpuPixelDoublets {
         #endif
 
         // in any case we always test mes>0 ...
+        #ifdef NOTRACKML
         mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;
+        #else
+        mes = -1;
+        #endif
 
         if (inner == 0 && outer > 3)  // B1 and F1
           if (mes > 0 && mes < minYsizeB1)
