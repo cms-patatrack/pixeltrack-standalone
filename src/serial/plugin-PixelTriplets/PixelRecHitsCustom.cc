@@ -97,6 +97,7 @@ namespace pixelgpudetails {
     std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
     std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
+    std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
 
     // Read the x_ns*.dat.dat file
     std::ifstream is_1;
@@ -135,6 +136,7 @@ namespace pixelgpudetails {
 
     // Fill the hit's global indexes
     std::ifstream is_4;
+    is_4.open(index_file_name);
     int d;
     for(int i = 0; is_4 >> d; ++i) { 
       global_indexes.push_back(d); 
