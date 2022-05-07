@@ -108,44 +108,51 @@ namespace pixelgpudetails {
     for(int i = 0; is_1 >> a; ++i) {
       hits_x_coordinates.push_back(a);
     }
-    is_1.close();
+      is_1.close();
 
-    // Read the y_ns*.dat.dat file
-    std::ifstream is_2;
-    is_2.open(y_file_name);
-    float b;
+      // Read the y_ns*.dat.dat file
+      std::ifstream is_2;
+      is_2.open(y_file_name);
+      float b;
 
-    // Create the vector containing all the y coordinates of the hits
-    for(int i = 0; is_2 >> b; ++i) { 
-      hits_y_coordinates.push_back(b); }
-    is_2.close();
+      // Create the vector containing all the y coordinates of the hits
+      for(int i = 0; is_2 >> b; ++i) { 
+        hits_y_coordinates.push_back(b); }
+      is_2.close();
 
-    // Read the z_ns*.dat.dat file
-    std::ifstream is_3;
-    is_3.open(z_file_name);
-    float c;
+      // Read the z_ns*.dat.dat file
+      std::ifstream is_3;
+      is_3.open(z_file_name);
+      float c;
 
-    // Create the vector containing all the z coordinates of the hits
-    for(int i = 0; is_3 >> c; ++i) { 
-      hits_z_coordinates.push_back(c); }
-    is_3.close();
+      // Create the vector containing all the z coordinates of the hits
+      for(int i = 0; is_3 >> c; ++i) { 
+        hits_z_coordinates.push_back(c); }
+      is_3.close();
 
-    for(int i = 0 ; i < static_cast<int>(hits_y_coordinates.size()); ++i) {
-      hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
+      for(int i = 0 ; i < static_cast<int>(hits_y_coordinates.size()); ++i) {
+        hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
+      }
+
+      // Fill the hit's global indexes
+      std::ifstream is_4;
+      is_4.open(index_file_name);
+      int d;
+      for(int i = 0; is_4 >> d; ++i) { 
+        global_indexes.push_back(d); 
+      }
+      std::cout << "index[0]" << global_indexes[0] << '\n';
+      is_4.close();
     }
 
-    // Fill the hit's global indexes
-    std::ifstream is_4;
-    is_4.open(index_file_name);
-    int d;
-    for(int i = 0; is_4 >> d; ++i) { 
-      global_indexes.push_back(d); 
+    std::vector<int> layerStart_;
+    for(int j = 0; j < global_indexes.size() - 1; ++j) {
+      if(global_indexes[j+1] != global_indexes[j]) {
+        layerStart_.push_back(j+1);
+      }
     }
-    std::cout << "index[0]" << global_indexes[0] << '\n';
-    is_4.close();
-  }
 
-    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, nullptr);
+    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
     return hits_d;
   }
 
