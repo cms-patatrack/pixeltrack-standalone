@@ -24,7 +24,7 @@ public:
                                 std::vector<float>& y_coord, 
                                 std::vector<float>& z_coord, 
                                 std::vector<float>& r_coord,
-                                std::vector<int>& layerStart,
+                                std::vector<uint32_t>& layerStart,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -138,7 +138,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<float>& y_coord, 
                                                                      std::vector<float>& z_coord, 
                                                                      std::vector<float>& r_coord,
-                                                                     std::vector<int>& layerStart,
+                                                                     std::vector<uint32_t>& layerStart,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
@@ -156,8 +156,10 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   //auto get32 = [&](int i) { return m_store32.get() + i * x_coord.size(); };
   //std::cout << "get32(1)" << get32(1)[98] << '\n';
   //m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
-  m_hitsLayerStart = layerStart;
-  std::cout << "hitsLayerStart init" << m_hitsLayerStart[0] << '\n';
+  std::cout << "mmmhhh" << '\n';
+  view->m_hitsLayerStart = layerStart.data();
+  std::cout << "lei è pazzo le dico sir" << '\n';
+  //std::cout << "hitsLayerStart init" << m_hitsLayerStart[0] << '\n';
 
   m_view.reset(view.release()); 
 }

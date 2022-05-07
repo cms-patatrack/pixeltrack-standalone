@@ -145,14 +145,18 @@ namespace pixelgpudetails {
       is_4.close();
     }
 
-    std::vector<int> layerStart_;
-    for(int j = 0; j < global_indexes.size() - 1; ++j) {
+    std::cout << "qui ci arrivo" << '\n';
+    std::vector<uint32_t> layerStart_;
+    for(int j = 0; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
-        layerStart_.push_back(j+1);
+        layerStart_.push_back(static_cast<uint32_t>(j+1));
       }
     }
+    std::cout << layerStart_[0] << '\n';
 
+    std::cout << "circolare, niente da vedere" << '\n';
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
+    std::cout << "tutto ok" << '\n';
     return hits_d;
   }
 

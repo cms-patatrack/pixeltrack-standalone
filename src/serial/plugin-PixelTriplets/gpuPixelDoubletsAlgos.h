@@ -109,8 +109,8 @@ namespace gpuPixelDoublets {
 
       uint8_t inner = layerPairs[2 * pairLayerId];
       uint8_t outer = layerPairs[2 * pairLayerId + 1];
-      std::cout << "inner" << inner << '\n';
-      std::cout << "outer" << outer << '\n';
+      std::cout << "inner" << unsigned(inner) << '\n';
+      std::cout << "outer" << unsigned(outer) << '\n';
       assert(outer > inner);
 
       auto hoff = Hist::histOff(outer);
@@ -123,6 +123,7 @@ namespace gpuPixelDoublets {
       std::cout << "offsets[inner]" << offsets[inner] << '\n';
       std::cout << "offsets[inner+1]" << offsets[inner+1] << '\n';
       assert(i >= offsets[inner]);
+      std::cout << "i" << i << '\n';
       assert(i < offsets[inner + 1]);
 
       // found hit corresponding to our cuda thread, now do the job

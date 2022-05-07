@@ -89,6 +89,7 @@ namespace pixelgpudetails {
     std::vector<float> hits_y_coordinates;
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
+    std::vector<int> global_indexes;
   
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
@@ -96,6 +97,7 @@ namespace pixelgpudetails {
     std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
     std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
+    std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
 
     // Read the x_ns*.dat.dat file
     std::ifstream is_1, is_2, is_3;
@@ -126,11 +128,24 @@ namespace pixelgpudetails {
       hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
     }
 
-    std::cout << "in vector = " << hits_z_coordinates.size() << '\n';
-    std::cout << "from map = " << n_hits_map[file_number] << '\n';
+    // Fill the hit's global indexes
+      std::ifstream is_4;
+      is_4.open(index_file_name);
+      int d;
+      for(int i = 0; is_4 >> d; ++i) { 
+        global_indexes.push_back(d); 
+      }
+      std::cout << "index[0]" << global_indexes[0] << '\n';
+      is_4.close();
   }
+    std::vector<uint32_t> layerStart_;
+    for(int j = 0; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
+      if(global_indexes[j+1] != global_indexes[j]) {
+        layerStart_.push_back(static_cast<uint32_t>(j+1));
+      }
+    }
 
-    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates,nullptr);
+    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
     return hits_d;
   }
 
