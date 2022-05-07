@@ -141,6 +141,7 @@ namespace pixelgpudetails {
     for(int i = 0; is_4 >> d; ++i) { 
       global_indexes.push_back(d); 
     }
+    std::cout << "index[0]" << global_indexes[0] << '\n';
     is_4.close();
   }
 

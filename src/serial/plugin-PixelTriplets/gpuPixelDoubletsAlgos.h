@@ -153,11 +153,11 @@ namespace gpuPixelDoublets {
         #endif
 
         // in any case we always test mes>0 ...
-        #ifdef NOTRACKML
+        //#ifdef NOTRACKML
         mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;
-        #else
-        mes = -1;
-        #endif
+        //#else
+        //mes = -1;
+        //#endif
 
         if (inner == 0 && outer > 3)  // B1 and F1
           if (mes > 0 && mes < minYsizeB1)
