@@ -55,9 +55,21 @@ namespace gpuPixelDoublets {
     auto const& __restrict__ hist = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
     std::cout << "Offests[10] = " << offsets[10] << '\n';
+    std::cout << "Offests[9] = " << offsets[9] << '\n';
     assert(offsets);
 
+    std::vector<uint8_t> layers = {10,9,8,7,6,5,4,        // vol7
+                                   0,1,2,3,               // vol8
+                                   11,12,13,14,15,16,17,  // vol9
+                                   27,26,25,24,23,22,     // vol12
+                                   18,19,20,21,           // vol13
+                                   28,29,30,31,32,33,     // vol14
+                                   41,40,39,38,37,36,     // vol16
+                                   34,35,                 // vol17
+                                   42,43,44,45,46,47};    // vol18
+
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
+    std::cout << "laysize(10) " << layerSize(10) << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
@@ -86,11 +98,9 @@ namespace gpuPixelDoublets {
     auto first = threadIdx.x;
     auto stride = blockDim.x;
 
-    std::cout << "Prova" << '\n';
     std::cout << ntot << '\n';
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
-      std::cout << "Dentro al for" << '\n';
       std::cout << 'j' << j << '\n';
       std::cout << "pairLayerId " << pairLayerId << '\n';
       while (j >= innerLayerCumulativeSize[pairLayerId++])

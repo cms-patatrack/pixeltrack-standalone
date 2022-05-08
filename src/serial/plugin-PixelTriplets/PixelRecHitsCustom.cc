@@ -20,6 +20,7 @@
 
 std::string path = "/home/simonb/documents/thesis/not_sorted/";
 int n_events = 1770;
+int nLayers = 48;
 
 std::map<int,int> def_hits_map() {
   std::map<int,int> event_nhits = {};
@@ -145,14 +146,18 @@ namespace pixelgpudetails {
       is_4.close();
     }
 
-    std::cout << "qui ci arrivo" << '\n';
+    std::map<int,uint32_t> layer_map = {{0,0}};
     std::vector<uint32_t> layerStart_;
-    for(int j = 0; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
+    for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
-        layerStart_.push_back(static_cast<uint32_t>(j+1));
+        layer_map[global_indexes[j+1]] = j+1;
       }
     }
-    std::cout << layerStart_[0] << '\n';
+
+    for(int j = 0; j <= nLayers; ++j) {
+      layerStart_.push_back(layer_map[j]);
+    }
+    std::cout << layerStart_[10] << '\t' << layerStart_[9] << '\n';
 
     std::cout << "circolare, niente da vedere" << '\n';
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);

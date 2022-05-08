@@ -152,14 +152,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   view->m_zg = z_coord.data();
   view->m_rg = r_coord.data();
 
-  //m_store32 = Traits::template make_device_unique<float[]>(x_coord.size() * n32 + 11, stream);
-  //auto get32 = [&](int i) { return m_store32.get() + i * x_coord.size(); };
-  //std::cout << "get32(1)" << get32(1)[98] << '\n';
-  //m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
-  std::cout << "mmmhhh" << '\n';
   view->m_hitsLayerStart = layerStart.data();
-  std::cout << "lei è pazzo le dico sir" << '\n';
-  //std::cout << "hitsLayerStart init" << m_hitsLayerStart[0] << '\n';
 
   m_view.reset(view.release()); 
 }
