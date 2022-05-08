@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <algorithm>
 
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "DataFormats/approx_atan2.h"
@@ -21,6 +22,12 @@ namespace gpuPixelDoublets {
   using CellTracks = CAConstants::CellTracks;
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
+
+  auto getIndex(uint8_t i, std::vector<uint8_t> layers_) {
+    auto it = std::find(layers_.begin(), layers_.end(), i);
+    int index = std::distance(layers_.begin(), it);
+    return index;
+  }
 
   __device__ __forceinline__ void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
                                                     uint32_t nPairs,
@@ -54,8 +61,6 @@ namespace gpuPixelDoublets {
 
     auto const& __restrict__ hist = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
-    std::cout << "Offests[10] = " << offsets[10] << '\n';
-    std::cout << "Offests[9] = " << offsets[9] << '\n';
     assert(offsets);
 
     std::vector<uint8_t> layers = {10,9,8,7,6,5,4,        // vol7
@@ -68,7 +73,11 @@ namespace gpuPixelDoublets {
                                    34,35,                 // vol17
                                    42,43,44,45,46,47};    // vol18
 
+    #ifdef NOTRACKML
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
+    #else
+    auto layerSize = [=](uint8_t li) { return offsets[layers[getIndex(li,layers)+1]] - offsets[li]; };
+    #endif
     std::cout << "laysize(10) " << layerSize(10) << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
@@ -80,11 +89,13 @@ namespace gpuPixelDoublets {
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
+      std::cout << layerSize(1) << '\n';
+      std::cout << layerSize(layerPairs[0]) << '\n';
       std::cout << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
       std::cout << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-        std::cout << "innerLayerCumulativeSize[i] " << innerLayerCumulativeSize[i] << '\n';
+        std::cout << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
       }
       #ifdef TEST
       ntot = innerLayerCumulativeSize[nPairs - 1];
@@ -101,16 +112,10 @@ namespace gpuPixelDoublets {
     std::cout << ntot << '\n';
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
-      std::cout << 'j' << j << '\n';
-      std::cout << "pairLayerId " << pairLayerId << '\n';
       while (j >= innerLayerCumulativeSize[pairLayerId++])
       std::cout << "innerlcs[pL]" << innerLayerCumulativeSize[pairLayerId] << '\n';
-      std::cout << "pairLayerId " << pairLayerId << '\n';
         ;
-      std::cout << "dentro al while" << '\n';
-      std::cout << "pairLayerId " << pairLayerId << '\n';
       --pairLayerId;  // move to lower_bound ??
-      std::cout << "pairLayerId " << pairLayerId << '\n';
       std::cout << "pair1 " << layerPairs[0] << '\n';
       std::cout << "pair2 " << layerPairs[1] << '\n';
       assert(pairLayerId < nPairs);

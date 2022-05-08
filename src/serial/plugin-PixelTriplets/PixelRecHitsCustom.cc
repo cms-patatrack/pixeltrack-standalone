@@ -159,9 +159,7 @@ namespace pixelgpudetails {
     }
     std::cout << layerStart_[10] << '\t' << layerStart_[9] << '\n';
 
-    std::cout << "circolare, niente da vedere" << '\n';
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
-    std::cout << "tutto ok" << '\n';
     return hits_d;
   }
 
