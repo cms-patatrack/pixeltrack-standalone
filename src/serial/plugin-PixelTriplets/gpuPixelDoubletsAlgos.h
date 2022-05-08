@@ -76,12 +76,14 @@ namespace gpuPixelDoublets {
     #ifdef NOTRACKML
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
     #else
-    auto layerSize = [=](uint8_t li) { return offsets[layers[getIndex(li,layers)+1]] - offsets[li]; };
+    auto layerSize = [=](uint8_t lay) { return offsets[getIndex(lay,layers)+1] - offsets[getIndex(lay,layers)]; };
     #endif
     
     for(int j = 0; j < 48; ++j) {
       std::cout << "layerSize" << j << ' ' << layerSize(j) << '\n';
     }
+    std::cout << "offset4 " << offsets[4] << '\n';
+    std::cout << "offset0 " << offsets[0] << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,

@@ -101,12 +101,9 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DC
   CAHitNtupletGeneratorKernelsCPU kernels(m_params);
   kernels.counters_ = m_counters;
   kernels.allocateOnGPU(nullptr);
-  std::cout << "Ho allocato sulla GPU" << '\n';
 
   kernels.buildDoublets(hits_d, nullptr);
-  std::cout << "Ho buildato i doppietti" << '\n';
   kernels.launchKernels(hits_d, soa, nullptr);
-  std::cout << "Ha lanciato i kernels" << '\n';
   kernels.fillHitDetIndices(hits_d.view(), soa, nullptr);  // in principle needed only if Hits not "available"
 
   if (0 == hits_d.nHits())

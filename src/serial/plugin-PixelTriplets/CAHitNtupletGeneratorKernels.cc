@@ -73,7 +73,6 @@ void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStr
                                          m_params.doZ0Cut_,
                                          m_params.doPtCut_,
                                          m_params.maxNumberOfDoublets_);
-  std::cout << "Ho eseguito correttamente getDoubletsFromHisto" << '\n';
 }
 
 template <>

@@ -142,22 +142,23 @@ namespace pixelgpudetails {
       for(int i = 0; is_4 >> d; ++i) { 
         global_indexes.push_back(d); 
       }
-      std::cout << "index[0]" << global_indexes[0] << '\n';
       is_4.close();
     }
 
-    std::map<int,uint32_t> layer_map = {{0,0}};
-    std::vector<uint32_t> layerStart_;
+    //std::map<int,uint32_t> layer_map = {{0,0}};
+    std::vector<uint32_t> layerStart_ = {0};
     for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
-        layer_map[global_indexes[j+1]] = j+1;
+        //layer_map[global_indexes[j+1]] = j+1;
+        layerStart_.push_back(j+1);
       }
     }
 
-    for(int j = 0; j <= nLayers; ++j) {
-      layerStart_.push_back(layer_map[j]);
-    }
-    std::cout << layerStart_[10] << '\t' << layerStart_[9] << '\n';
+    //for(int j = 0; j <= nLayers; ++j) {
+    //  layerStart_.push_back(layer_map[j]);
+    //  std::cout << layer_map[j] << '\n';
+    //}
+    std::cout << layerStart_[0] << '\t' << layerStart_[1] << '\n';
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
     return hits_d;
