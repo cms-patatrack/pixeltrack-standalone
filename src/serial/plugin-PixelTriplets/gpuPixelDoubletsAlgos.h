@@ -78,7 +78,10 @@ namespace gpuPixelDoublets {
     #else
     auto layerSize = [=](uint8_t li) { return offsets[layers[getIndex(li,layers)+1]] - offsets[li]; };
     #endif
-    std::cout << "laysize(10) " << layerSize(10) << '\n';
+    
+    for(int j = 0; j < 48; ++j) {
+      std::cout << "layerSize" << j << ' ' << layerSize(j) << '\n';
+    }
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
