@@ -160,9 +160,9 @@ namespace pixelgpudetails {
     for(int j = 0; j < 48; ++j) {
       std::cout << layerStart_[j] << '\n';
     }
-    std::cout << layerStart_[0] << '\t' << layerStart_[1] << '\n';
 
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
+    std::cout << "da makehits" << hits_d.view()->hitsLayerStart()[0] << '\n';
     return hits_d;
   }
 

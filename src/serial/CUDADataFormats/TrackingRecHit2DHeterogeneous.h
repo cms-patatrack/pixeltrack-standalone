@@ -47,7 +47,7 @@ public:
   //TrackingRecHit2DSOAView getView() const { return view_; }
 
 private:
-  static constexpr uint32_t n16 = 4;
+  static constexpr uint32_t n16 = 0;
   static constexpr uint32_t n32 = 9;
   static_assert(sizeof(uint32_t) == sizeof(float));  // just stating the obvious
 
@@ -155,6 +155,8 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   view->m_hitsLayerStart = layerStart.data();
   std::cout << "prova " << layerStart.data()[0] << '\n';  // it prints 0
 
+  m_hitsLayerStart = layerStart.data();
+  std::cout << m_hitsLayerStart[0] << '\n';
   m_view.reset(view.release()); 
 }
 

@@ -138,6 +138,8 @@ namespace gpuPixelDoublets {
                                 bool doPtCut,
                                 uint32_t maxNumOfDoublets) {
     auto const& __restrict__ hh = *hhp;
+    std::cout << "da doublets " << hh.hitsLayerStart()[0] << '\n';
+    std::cout << hhp->hitsLayerStart()[0] << '\n';
     doubletsFromHisto(layerPairs,
                       nActualPairs,
                       cells,

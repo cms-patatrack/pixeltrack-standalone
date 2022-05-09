@@ -17,6 +17,7 @@ void CAHitNtupletGeneratorKernelsCPU::fillHitDetIndices(HitsView const *hv, TkSo
 template <>
 void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStream_t stream) {
   auto nhits = hh.nHits();
+  std::cout << "da build " << hh.view()->hitsLayerStart()[0] << '\n';
   std::cout << "buildDoublets nHits = " << nhits << '\n';
 
 #ifdef NTUPLE_DEBUG
@@ -29,9 +30,6 @@ void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStr
   device_isOuterHitOfCell_.reset(
       (GPUCACell::OuterHitOfCell *)malloc(std::max(1U, nhits) * sizeof(GPUCACell::OuterHitOfCell)));
   assert(device_isOuterHitOfCell_.get());
-  std::cout << device_isOuterHitOfCell_.get() << '\n';
-  std::cout << device_theCellNeighbors_.get() << '\n';
-  std::cout << device_theCellTracks_.get() << '\n';
 
   cellStorage_.reset((unsigned char *)malloc(CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
                                              CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks)));

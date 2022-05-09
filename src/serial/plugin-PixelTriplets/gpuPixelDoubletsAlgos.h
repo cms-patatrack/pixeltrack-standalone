@@ -60,12 +60,13 @@ namespace gpuPixelDoublets {
     using Hist = TrackingRecHit2DSOAView::Hist;
 
     auto const& __restrict__ hist = hh.phiBinner();
-    uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
+    auto const* offsets = hh.hitsLayerStart();
     for(int j = 0; j < 48; ++j) {
       std::cout << offsets[j] << '\n';
-      if(offsets[j]) {
-        std::cout << j << '\n';
-      }
+      std::cout << hh.hitsLayerStart()[j] << '\n';
+      //if(offsets[j]) {
+      //  std::cout << j << '\n';
+      //}
     }
     assert(offsets);
 

@@ -36,6 +36,7 @@ void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   std::vector<float> test = {7,6,5,4,3,2,1};
   iEvent.emplace(test_Token, test);
   iEvent.emplace(tokenHitCPU_, algo_.makeHits2(test_file));
+  std::cout << "da procuder " << algo_.makeHits2(test_file).view()->hitsLayerStart()[0] << '\n';
 }
 
 DEFINE_FWK_MODULE(myClass);
