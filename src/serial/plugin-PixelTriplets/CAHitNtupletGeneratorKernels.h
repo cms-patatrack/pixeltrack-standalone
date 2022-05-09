@@ -3,6 +3,7 @@
 
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "GPUCACell.h"
+#include "HelixFitOnGPU.h"
 
 // #define DUMP_GPU_TK_TUPLES
 

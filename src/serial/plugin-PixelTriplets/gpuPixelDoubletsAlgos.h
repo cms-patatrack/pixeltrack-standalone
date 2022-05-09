@@ -80,17 +80,17 @@ namespace gpuPixelDoublets {
                                    34,35,                 // vol17
                                    42,43,44,45,46,47};    // vol18
 
-    #ifdef NOTRACKML
+    //#ifdef NOTRACKML
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
-    #else
-    auto layerSize = [=](uint8_t lay) { return offsets[getIndex(lay,layers)+1] - offsets[getIndex(lay,layers)]; };
-    #endif
+    //#else
+    //auto layerSize = [=](uint8_t lay) { return offsets[getIndex(lay,layers)+1] - offsets[getIndex(lay,layers)]; };
+    //#endif
     
-    for(int j = 0; j < 48; ++j) {
-      std::cout << "layerSize" << j << ' ' << layerSize(j) << '\n';
-    }
-    std::cout << "offset4 " << offsets[4] << '\n';
-    std::cout << "offset0 " << offsets[0] << '\n';
+    //for(int j = 0; j < 48; ++j) {
+    //  std::cout << "layerSize" << j << ' ' << layerSize(j) << '\n';
+    //}
+    //std::cout << "offset4 " << offsets[4] << '\n';
+    //std::cout << "offset0 " << offsets[0] << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
@@ -103,17 +103,18 @@ namespace gpuPixelDoublets {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
       std::cout << layerSize(1) << '\n';
       std::cout << layerSize(layerPairs[0]) << '\n';
-      std::cout << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
-      std::cout << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
+      //std::cout << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
+      //std::cout << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-        std::cout << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
+        //std::cout << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
       }
-      #ifdef TEST
-      ntot = innerLayerCumulativeSize[nPairs - 1];
-      #else
-      ntot = 100000;
-      #endif
+      //#ifdef TEST
+      //ntot = innerLayerCumulativeSize[nPairs - 1];
+      ntot = 1500;
+      //#else
+      //ntot = 100000;
+      //#endif
     }
     __syncthreads();
     // x runs faster
@@ -121,15 +122,14 @@ namespace gpuPixelDoublets {
     auto first = threadIdx.x;
     auto stride = blockDim.x;
 
-    std::cout << ntot << '\n';
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
-      while (j >= innerLayerCumulativeSize[pairLayerId++])
-      std::cout << "innerlcs[pL]" << innerLayerCumulativeSize[pairLayerId] << '\n';
+      std::cout << "j" << j << '\n';
+      std::cout << "innerroba " << innerLayerCumulativeSize[0] << '\n';
+      while (j >= innerLayerCumulativeSize[pairLayerId++]) {
         ;
+      }
       --pairLayerId;  // move to lower_bound ??
-      std::cout << "pair1 " << layerPairs[0] << '\n';
-      std::cout << "pair2 " << layerPairs[1] << '\n';
       assert(pairLayerId < nPairs);
       assert(j < innerLayerCumulativeSize[pairLayerId]);
       assert(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
@@ -142,21 +142,28 @@ namespace gpuPixelDoublets {
 
       auto hoff = Hist::histOff(outer);
 
+      std::cout << "pairid" << pairLayerId << '\n';
+      std::cout << "j " << j << '\n';
       auto i = (0 == pairLayerId) ? j : j - innerLayerCumulativeSize[pairLayerId - 1];
+      std::cout << "i before offset" << i << '\n';
       i += offsets[inner];
-
+      std::cout << "offset inner" << offsets[inner] << '\n';
+      std::cout << "offset inner + 1" << offsets[inner+1] << '\n';
+      std::cout << "i after offset" << i  << '\n';
       // printf("Hit in Layer %d %d %d %d\n", i, inner, pairLayerId, j);
 
       std::cout << "offsets[inner]" << offsets[inner] << '\n';
       std::cout << "offsets[inner+1]" << offsets[inner+1] << '\n';
       assert(i >= offsets[inner]);
-      std::cout << "i" << i << '\n';
+      std::cout << "i " << i << '\n';
       assert(i < offsets[inner + 1]);
 
+
+      std::cout << "----------------------------------------------" << '\n';
       // found hit corresponding to our cuda thread, now do the job
-      auto mi = hh.detectorIndex(i);
-      if (mi > 2000)
-        continue;  // invalid
+      // auto mi = hh.detectorIndex(i);   metti tutti isOuterLadder
+      //if (mi > 2000)
+      //  continue;  // invalid
 
       /* maybe clever, not effective when zoCut is on
       auto bpos = (mi%8)/4;  // if barrel is 1 for z>0
@@ -170,10 +177,11 @@ namespace gpuPixelDoublets {
         continue;
 
       int16_t mes = -1;  // make compiler happy
+      doClusterCut = false;
       if (doClusterCut) {
         // if ideal treat inner ladder as outer
-        if (inner == 0)
-          assert(mi < 96);
+        //if (inner == 0)
+        //  assert(mi < 96);
         #ifdef NOTRACKML
         isOuterLadder = ideal_cond ? true : 0 == (mi / 8) % 2;  // only for B1/B2/B3 B4 is opposite, FPIX:noclue...
         #else
@@ -182,19 +190,19 @@ namespace gpuPixelDoublets {
 
         // in any case we always test mes>0 ...
         //#ifdef NOTRACKML
-        mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;
+        //mes = inner > 0 || isOuterLadder ? hh.clusterSizeY(i) : -1;
         //#else
         //mes = -1;
         //#endif
 
-        if (inner == 0 && outer > 3)  // B1 and F1
-          if (mes > 0 && mes < minYsizeB1)
-            continue;                 // only long cluster  (5*8)
-        if (inner == 1 && outer > 3)  // B2 and F1
-          if (mes > 0 && mes < minYsizeB2)
-            continue;
+        //if (inner == 0 && outer > 3)  // B1 and F1
+        //  if (mes > 0 && mes < minYsizeB1)
+        //    continue;                 // only long cluster  (5*8)
+        //if (inner == 1 && outer > 3)  // B2 and F1
+        //  if (mes > 0 && mes < minYsizeB2)
+        //    continue;
       }
-      auto mep = hh.iphi(i);
+      auto mep = hh.iphi(i);    // riempire iphi in qualche modo
       auto mer = hh.rGlobal(i);
 
       // all cuts: true if fails

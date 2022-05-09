@@ -11,6 +11,7 @@
 
 #include "CAHitNtupletGeneratorOnGPU.h"
 
+
 namespace {
 
   template <typename T>

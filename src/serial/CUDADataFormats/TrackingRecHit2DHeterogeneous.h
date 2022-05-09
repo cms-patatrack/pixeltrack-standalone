@@ -147,12 +147,29 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
   m_hist = view->m_hist = m_HistStore.get();
  
-  view->m_xg = x_coord.data();
-  view->m_yg = y_coord.data();
-  view->m_zg = z_coord.data();
-  view->m_rg = r_coord.data();
+  view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
+  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+    view->m_xg[j] = x_coord[j];
+  }
+  view->m_yg = (float*)malloc(x_coord.size()*sizeof(float));
+  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+    view->m_yg[j] = y_coord[j];
+  }
+  view->m_zg = (float*)malloc(x_coord.size()*sizeof(float));
+  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+    view->m_zg[j] = z_coord[j];
+  }
+  view->m_rg = (float*)malloc(x_coord.size()*sizeof(float));
+  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+    view->m_rg[j] = r_coord[j];
+  }
 
-  view->m_hitsLayerStart = layerStart.data();
+  //view->m_hitsLayerStart = layerStart.data();
+  view->m_hitsLayerStart = (uint32_t*)malloc(layerStart.size()*sizeof(uint32_t));
+  for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
+    view->m_hitsLayerStart[j] = layerStart[j];
+  }
+  std::cout << view->m_hitsLayerStart[0] << '\n';
   std::cout << "prova " << layerStart.data()[0] << '\n';  // it prints 0
 
   m_hitsLayerStart = layerStart.data();
