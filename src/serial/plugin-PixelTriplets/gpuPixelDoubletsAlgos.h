@@ -61,6 +61,10 @@ namespace gpuPixelDoublets {
 
     auto const& __restrict__ hist = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
+    for(int j = 0; j < 48; ++j) {
+      std::cout << offsets[j] << '\n';
+    }
+
     assert(offsets);
 
     std::vector<uint8_t> layers = {10,9,8,7,6,5,4,        // vol7

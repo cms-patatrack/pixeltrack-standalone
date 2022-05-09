@@ -153,6 +153,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   view->m_rg = r_coord.data();
 
   view->m_hitsLayerStart = layerStart.data();
+  std::cout << "prova " << layerStart.data()[0] << '\n';  // it prints 0
 
   m_view.reset(view.release()); 
 }
