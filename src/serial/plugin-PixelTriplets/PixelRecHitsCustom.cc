@@ -149,7 +149,6 @@ namespace pixelgpudetails {
     std::vector<uint32_t> layerStart_ = {0};
     for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
-        //layer_map[global_indexes[j+1]] = j+1;
         layerStart_.push_back(j+1);
       }
     }
