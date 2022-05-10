@@ -91,18 +91,20 @@ namespace pixelgpudetails {
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
     std::vector<int> global_indexes;
+    std::vector<int> phi;
 
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
     } else {
     //std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
-    //std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
+    std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     //std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
     //std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
     std::string x_file_name = path + "x_blue" + std::to_string(file_number) + ".dat";
-    std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
+    //std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_blue" + std::to_string(file_number) + ".dat";
     std::string index_file_name = path + "globalIndexes_blue" + std::to_string(file_number) + ".dat";
+    std::string phi_file_name = path + "phi_blue" + std::to_string(file_number) + ".dat";
 
     // Read the x_ns*.dat.dat file
     std::ifstream is_1;
@@ -147,25 +149,25 @@ namespace pixelgpudetails {
         global_indexes.push_back(d); 
       }
       is_4.close();
+
+      // Fill phi
+      std::ifstream is_5;
+      is_5.open(phi_file_name);
+      int e;
+      for(int i = 0; is_5 >> e; ++i) {
+        phi.push_back(e);
+      }
+      is_5.close();
     }
 
-    //std::map<int,uint32_t> layer_map = {{0,0}};
     std::vector<uint32_t> layerStart_ = {0};
     for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
         layerStart_.push_back(j+1);
       }
     }
-
-    //for(int j = 0; j <= nLayers; ++j) {
-    //  layerStart_.push_back(layer_map[j]);
-    //  std::cout << layer_map[j] << '\n';
-    //}
-    for(int j = 0; j < 48; ++j) {
-      std::cout << layerStart_[j] << '\n';
-    }
-
-    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, nullptr);
+    
+    TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, nullptr);
     std::cout << "da makehits" << hits_d.view()->hitsLayerStart()[0] << '\n';
     return hits_d;
   }

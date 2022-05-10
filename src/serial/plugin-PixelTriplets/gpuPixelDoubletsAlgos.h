@@ -56,16 +56,17 @@ namespace gpuPixelDoublets {
     constexpr float dzdrFact = 8 * 0.0285 / 0.015;  // from dz/dr to "DY"
 
     bool isOuterLadder = ideal_cond;
+    //std::cout7 << "isOuterLadder" << isOuterLadder << '\n';
 
     using Hist = TrackingRecHit2DSOAView::Hist;
 
     auto const& __restrict__ hist = hh.phiBinner();
     auto const* offsets = hh.hitsLayerStart();
     for(int j = 0; j < 48; ++j) {
-      std::cout << offsets[j] << '\n';
-      std::cout << hh.hitsLayerStart()[j] << '\n';
+      //std::cout7 << offsets[j] << '\n';
+      //std::cout7 << hh.hitsLayerStart()[j] << '\n';
       //if(offsets[j]) {
-      //  std::cout << j << '\n';
+      //  //std::cout7 << j << '\n';
       //}
     }
     assert(offsets);
@@ -85,12 +86,6 @@ namespace gpuPixelDoublets {
     //#else
     //auto layerSize = [=](uint8_t lay) { return offsets[getIndex(lay,layers)+1] - offsets[getIndex(lay,layers)]; };
     //#endif
-    
-    //for(int j = 0; j < 48; ++j) {
-    //  std::cout << "layerSize" << j << ' ' << layerSize(j) << '\n';
-    //}
-    //std::cout << "offset4 " << offsets[4] << '\n';
-    //std::cout << "offset0 " << offsets[0] << '\n';
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
@@ -101,13 +96,13 @@ namespace gpuPixelDoublets {
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
-      std::cout << layerSize(1) << '\n';
-      std::cout << layerSize(layerPairs[0]) << '\n';
-      //std::cout << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
-      //std::cout << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
+      //std::cout7 << layerSize(1) << '\n';
+      //std::cout7 << layerSize(layerPairs[0]) << '\n';
+      ////std::cout7 << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
+      ////std::cout7 << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-        //std::cout << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
+        ////std::cout7 << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
       }
       //#ifdef TEST
       //ntot = innerLayerCumulativeSize[nPairs - 1];
@@ -124,8 +119,8 @@ namespace gpuPixelDoublets {
 
     uint32_t pairLayerId = 0;  // cannot go backward
     for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
-      std::cout << "j" << j << '\n';
-      std::cout << "innerroba " << innerLayerCumulativeSize[0] << '\n';
+      ////std::cout7 << "j" << j << '\n';
+      ////std::cout7 << "innerroba " << innerLayerCumulativeSize[0] << '\n';
       while (j >= innerLayerCumulativeSize[pairLayerId++]) {
         ;
       }
@@ -136,26 +131,26 @@ namespace gpuPixelDoublets {
 
       uint8_t inner = layerPairs[2 * pairLayerId];
       uint8_t outer = layerPairs[2 * pairLayerId + 1];
-      std::cout << "inner" << unsigned(inner) << '\n';
-      std::cout << "outer" << unsigned(outer) << '\n';
+      ////std::cout7 << "inner" << unsigned(inner) << '\n';
+      //std::cout7 << "outer" << unsigned(outer) << '\n';
       assert(outer > inner);
 
       auto hoff = Hist::histOff(outer);
 
-      std::cout << "pairid" << pairLayerId << '\n';
-      std::cout << "j " << j << '\n';
+      //std::cout7 << "pairid" << pairLayerId << '\n';
+      //std::cout7 << "j " << j << '\n';
       auto i = (0 == pairLayerId) ? j : j - innerLayerCumulativeSize[pairLayerId - 1];
-      std::cout << "i before offset" << i << '\n';
+      //std::cout7 << "i before offset" << i << '\n';
       i += offsets[inner];
-      std::cout << "offset inner" << offsets[inner] << '\n';
-      std::cout << "offset inner + 1" << offsets[inner+1] << '\n';
-      std::cout << "i after offset" << i  << '\n';
+      //std::cout7 << "offset inner" << offsets[inner] << '\n';
+      //std::cout7 << "offset inner + 1" << offsets[inner+1] << '\n';
+      //std::cout7 << "i after offset" << i  << '\n';
       // printf("Hit in Layer %d %d %d %d\n", i, inner, pairLayerId, j);
 
-      std::cout << "offsets[inner]" << offsets[inner] << '\n';
-      std::cout << "offsets[inner+1]" << offsets[inner+1] << '\n';
+      //std::cout7 << "offsets[inner]" << offsets[inner] << '\n';
+      //std::cout7 << "offsets[inner+1]" << offsets[inner+1] << '\n';
       assert(i >= offsets[inner]);
-      std::cout << "i " << i << '\n';
+      //std::cout7 << "i " << i << '\n';
       assert(i < offsets[inner + 1]);
 
       // found hit corresponding to our cuda thread, now do the job
@@ -168,11 +163,11 @@ namespace gpuPixelDoublets {
       auto fpos = (outer>3) & (outer<7);
       if ( ((inner<3) & (outer>3)) && bpos!=fpos) continue;
       */
-
+     
       auto mez = hh.zGlobal(i);
 
-      if (mez < minz[pairLayerId] || mez > maxz[pairLayerId])
-        continue;
+      // if (mez < minz[pairLayerId] || mez > maxz[pairLayerId])
+      //   continue;
 
       int16_t mes = -1;  // make compiler happy
       doClusterCut = false;
@@ -225,14 +220,14 @@ namespace gpuPixelDoublets {
 
       auto zsizeCut = [&](int j) {
         auto onlyBarrel = outer < 4;
-        auto so = hh.clusterSizeY(j);
+        //auto so = hh.clusterSizeY(j);
+        int so = 30;
         auto dy = inner == 0 ? maxDYsize12 : maxDYsize;
         // in the barrel cut on difference in size
         // in the endcap on the prediction on the first layer (actually in the barrel only: happen to be safe for endcap as well)
         // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
         auto zo = hh.zGlobal(j);
         auto ro = hh.rGlobal(j);
-        std::cout << "dy" << dy << '\n';
         return onlyBarrel ? mes > 0 && so > 0 && std::abs(so - mes) > dy
                           : (inner < 4) && mes > 0 &&
                                 std::abs(mes - int(std::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
@@ -261,34 +256,39 @@ namespace gpuPixelDoublets {
         auto const* __restrict__ p = hist.begin(kk + hoff);
         auto const* __restrict__ e = hist.end(kk + hoff);
         p += first;
+        std::cout << "prima del for" << '\n';
+        std::cout << "p,e" << *p << ' ' << *e << '\n';
         for (; p < e; p += stride) {
+          std::cout << "p,e,stride" << p << ' ' << e << ' ' << stride << '\n';
           auto oi = __ldg(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
-          auto mo = hh.detectorIndex(oi);   // cosa caspita sarebbe?
-          if (mo > 2000)
-            continue;  //    invalid
+          //auto mo = hh.detectorIndex(oi);   // cosa caspita sarebbe?
+          //if (mo > 2000)
+          //  continue;  //    invalid
 
-          if (doZ0Cut && z0cutoff(oi))
-            continue;
+          //if (doZ0Cut && z0cutoff(oi))
+          //  continue;
 
           auto mop = hh.iphi(oi);
           uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
-          if (idphi > iphicut)
-            continue;
+          //if (idphi > iphicut)
+          //  continue;
 
-          if (doClusterCut && zsizeCut(oi))
-            continue;
-          if (doPtCut && ptcut(oi, idphi))
-            continue;
+          //if (doClusterCut && zsizeCut(oi))
+          //  continue;
+          //if (doPtCut && ptcut(oi, idphi))
+          //  continue;
 
           auto ind = atomicAdd(nCells, 1);
+          std::cout << "ind,maxdubl" << ind << ' ' << maxNumOfDoublets << '\n';
           if (ind >= maxNumOfDoublets) {
             atomicSub(nCells, 1);
             break;
           }  // move to SimpleVector??
           // int layerPairId, int doubletId, int innerHitId, int outerHitId)
           cells[ind].init(*cellNeighbors, *cellTracks, hh, pairLayerId, ind, i, oi);
+          std::cout << "inner x" << cells[ind].get_inner_x(hh) << '\n';
           isOuterHitOfCell[oi].push_back(ind);
 #ifdef GPU_DEBUG
           if (isOuterHitOfCell[oi].full())
@@ -302,7 +302,7 @@ namespace gpuPixelDoublets {
         printf("OuterHitOfCell full for %d in layer %d/%d, %d,%d %d\n", i, inner, outer, nmin, tot, tooMany);
 #endif
     }  // loop in block...
-    std::cout << "Fine di doubletsFromHist" << '\n';
+    //std::cout7 << "Fine di doubletsFromHist" << '\n';
   }
 
 }  // namespace gpuPixelDoublets

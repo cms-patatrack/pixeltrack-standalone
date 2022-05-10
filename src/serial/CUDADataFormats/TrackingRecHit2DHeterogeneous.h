@@ -25,6 +25,7 @@ public:
                                 std::vector<float>& z_coord, 
                                 std::vector<float>& r_coord,
                                 std::vector<uint32_t>& layerStart,
+                                std::vector<int>& phi,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -139,13 +140,14 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<float>& z_coord, 
                                                                      std::vector<float>& r_coord,
                                                                      std::vector<uint32_t>& layerStart,
+                                                                     std::vector<int>& phi,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
   
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
-  m_hist = view->m_hist = m_HistStore.get();
+  m_hist = view->m_hist = (Hist*)malloc(m_HistStore->capacity()*sizeof(Hist));
  
   view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
   for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
@@ -169,11 +171,14 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
     view->m_hitsLayerStart[j] = layerStart[j];
   }
-  std::cout << view->m_hitsLayerStart[0] << '\n';
-  std::cout << "prova " << layerStart.data()[0] << '\n';  // it prints 0
 
   m_hitsLayerStart = layerStart.data();
-  std::cout << m_hitsLayerStart[0] << '\n';
+
+  view->m_iphi = (int16_t*)malloc(x_coord.size()*sizeof(int16_t));
+  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+    view->m_iphi[j] = phi[j];
+  }
+
   m_view.reset(view.release()); 
 }
 
