@@ -158,8 +158,6 @@ namespace gpuPixelDoublets {
       std::cout << "i " << i << '\n';
       assert(i < offsets[inner + 1]);
 
-
-      std::cout << "----------------------------------------------" << '\n';
       // found hit corresponding to our cuda thread, now do the job
       // auto mi = hh.detectorIndex(i);   metti tutti isOuterLadder
       //if (mi > 2000)
@@ -234,6 +232,7 @@ namespace gpuPixelDoublets {
         // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
         auto zo = hh.zGlobal(j);
         auto ro = hh.rGlobal(j);
+        std::cout << "dy" << dy << '\n';
         return onlyBarrel ? mes > 0 && so > 0 && std::abs(so - mes) > dy
                           : (inner < 4) && mes > 0 &&
                                 std::abs(mes - int(std::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
@@ -266,7 +265,7 @@ namespace gpuPixelDoublets {
           auto oi = __ldg(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
-          auto mo = hh.detectorIndex(oi);
+          auto mo = hh.detectorIndex(oi);   // cosa caspita sarebbe?
           if (mo > 2000)
             continue;  //    invalid
 

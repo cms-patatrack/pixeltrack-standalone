@@ -95,10 +95,14 @@ namespace pixelgpudetails {
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
     } else {
-    std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
-    std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
-    std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
-    std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
+    //std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
+    //std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
+    //std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
+    //std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
+    std::string x_file_name = path + "x_blue" + std::to_string(file_number) + ".dat";
+    std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
+    std::string z_file_name = path + "z_blue" + std::to_string(file_number) + ".dat";
+    std::string index_file_name = path + "globalIndexes_blue" + std::to_string(file_number) + ".dat";
 
     // Read the x_ns*.dat.dat file
     std::ifstream is_1;
