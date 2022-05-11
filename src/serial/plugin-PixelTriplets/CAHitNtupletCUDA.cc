@@ -33,7 +33,6 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto bf = 0.0114256972711507*2;  // 1/fieldInGeV
 
   auto const& hits = iEvent.get(tokenHitCPU_);
-  std::cout << "da ntuplet" << hits.view()->hitsLayerStart()[0] << '\n';
   auto const& test = iEvent.get(test_Token);
   
   PixelTrackHeterogeneous tuples_ = gpuAlgo_.makeTuples(hits, bf);

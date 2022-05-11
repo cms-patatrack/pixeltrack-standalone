@@ -97,11 +97,11 @@ namespace pixelgpudetails {
       std::cout << "This file is missing" << '\n';
     } else {
     //std::string x_file_name = path + "x_ns" + std::to_string(file_number) + ".dat";
-    std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
+    //std::string y_file_name = path + "y_ns" + std::to_string(file_number) + ".dat";
     //std::string z_file_name = path + "z_ns" + std::to_string(file_number) + ".dat";
     //std::string index_file_name = path + "globalIndexes_ns" + std::to_string(file_number) + ".dat";
     std::string x_file_name = path + "x_blue" + std::to_string(file_number) + ".dat";
-    //std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
+    std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_blue" + std::to_string(file_number) + ".dat";
     std::string index_file_name = path + "globalIndexes_blue" + std::to_string(file_number) + ".dat";
     std::string phi_file_name = path + "phi_blue" + std::to_string(file_number) + ".dat";
@@ -168,7 +168,6 @@ namespace pixelgpudetails {
     }
     
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, nullptr);
-    std::cout << "da makehits" << hits_d.view()->hitsLayerStart()[0] << '\n';
     return hits_d;
   }
 

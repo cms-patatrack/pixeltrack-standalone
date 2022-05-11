@@ -60,6 +60,7 @@ namespace gpuPixelDoublets {
 
     using Hist = TrackingRecHit2DSOAView::Hist;
 
+    std::cout << "inizio algos" << '\n';
     auto const& __restrict__ hist = hh.phiBinner();
     auto const* offsets = hh.hitsLayerStart();
     for(int j = 0; j < 48; ++j) {
@@ -165,7 +166,6 @@ namespace gpuPixelDoublets {
       */
      
       auto mez = hh.zGlobal(i);
-
       // if (mez < minz[pairLayerId] || mez > maxz[pairLayerId])
       //   continue;
 
@@ -197,7 +197,6 @@ namespace gpuPixelDoublets {
       }
       auto mep = hh.iphi(i);    // riempire iphi in qualche modo
       auto mer = hh.rGlobal(i);
-
       // all cuts: true if fails
       constexpr float z0cut = 12.f;      // cm
       constexpr float hardPtCut = 0.5f;  // GeV
@@ -239,7 +238,6 @@ namespace gpuPixelDoublets {
       auto kh = Hist::bin(int16_t(mep + iphicut));
       auto incr = [](auto& k) { return k = (k + 1) % Hist::nbins(); };
       // bool piWrap = std::abs(kh-kl) > Hist::nbins()/2;
-
 #ifdef GPU_DEBUG
       int tot = 0;
       int nmin = 0;
@@ -302,7 +300,7 @@ namespace gpuPixelDoublets {
         printf("OuterHitOfCell full for %d in layer %d/%d, %d,%d %d\n", i, inner, outer, nmin, tot, tooMany);
 #endif
     }  // loop in block...
-    //std::cout7 << "Fine di doubletsFromHist" << '\n';
+    std::cout << "Fine di doubletsFromHist" << '\n';
   }
 
 }  // namespace gpuPixelDoublets
