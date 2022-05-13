@@ -81,7 +81,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::wait(queue);
 #endif
 
-#if defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND && defined ALPAKA_DISABLE_CACHING_ALLOCATOR
+#if (defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND || defined ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_SYNC_BACKEND) && defined ALPAKA_DISABLE_CACHING_ALLOCATOR
       // FIXME this is required to keep the host buffer inside hits_d alive; it could be removed once the host buffers are also stream-ordered
       alpaka::wait(queue);
 #endif

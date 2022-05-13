@@ -86,6 +86,9 @@ namespace alpaka {
   class AccCpuSerial;
 
   template <typename TDim, typename TIdx>
+  class AccCpuFibers;
+
+  template <typename TDim, typename TIdx>
   class AccCpuTbbBlocks;
 
   template <typename TDim, typename TIdx>

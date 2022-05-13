@@ -111,6 +111,29 @@ namespace alpaka_serial_sync {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_serial_sync
 #endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
 
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+namespace alpaka_fibers_sync {
+  using namespace alpaka_common;
+
+  using Platform = alpaka::PltfCpu;
+  using Device = alpaka::DevCpu;
+  using Queue = alpaka::QueueCpuBlocking;
+  using Event = alpaka::EventCpu;
+
+  template <typename TDim>
+  using Acc = alpaka::AccCpuFibers<TDim, Idx>;
+  using Acc1D = Acc<Dim1D>;
+  using Acc2D = Acc<Dim2D>;
+  using Acc3D = Acc<Dim3D>;
+
+}  // namespace alpaka_fibers_sync
+
+#endif  // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
+
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_SYNC_BACKEND
+#define ALPAKA_ACCELERATOR_NAMESPACE alpaka_fibers_sync
+#endif  // ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_SYNC_BACKEND
+
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
 namespace alpaka_tbb_async {
   using namespace alpaka_common;

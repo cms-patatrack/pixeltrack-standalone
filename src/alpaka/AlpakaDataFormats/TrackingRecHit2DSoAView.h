@@ -21,6 +21,10 @@ namespace alpaka_tbb_async {
   class TrackingRecHit2DAlpaka;
 }
 
+namespace alpaka_fibers_sync {
+  class TrackingRecHit2DAlpaka;
+}
+
 namespace alpaka_serial_sync {
   class TrackingRecHit2DAlpaka;
 }
@@ -38,6 +42,7 @@ public:
   friend class alpaka_cuda_async::TrackingRecHit2DAlpaka;
   friend class alpaka_rocm_async::TrackingRecHit2DAlpaka;
   friend class alpaka_tbb_async::TrackingRecHit2DAlpaka;
+  friend class alpaka_fibers_sync::TrackingRecHit2DAlpaka;
   friend class alpaka_serial_sync::TrackingRecHit2DAlpaka;
 
   ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t nHits() const { return m_nHits; }
