@@ -172,12 +172,7 @@ namespace gpuPixelDoublets {
       int16_t mes = -1;  // make compiler happy
       doClusterCut = false;
       if (doClusterCut) {
-        // if ideal treat inner ladder as outer
-        //if (inner == 0)
-        //  assert(mi < 96);
-        #ifdef NOTRACKML
-        isOuterLadder = ideal_cond ? true : 0 == (mi / 8) % 2;  // only for B1/B2/B3 B4 is opposite, FPIX:noclue...
-        #else
+        // if ideal treat inner ladder as outerhttps://docs.google.com/document/d/15rYOJF7gU2R8XysKd-6_1EQoUYi27hxXDeSokcTIqHk/edit?usp=sharing
         isOuterLadder = true;
         #endif
 
@@ -251,20 +246,20 @@ namespace gpuPixelDoublets {
         if (kk != kl && kk != kh)
           nmin += hist.size(kk + hoff);
 #endif
-        std::cout << "kk " << kk << '\n';
-        std::cout << "hoff " << hoff << '\n';
-        std::cout << hist.bins[0] << '\n';
+        std::cout << "kk " << kk << '\n';      // prints 126
+        std::cout << "hoff " << hoff << '\n';  // prints 256
+        std::cout << hist.bins[0] << '\n';     // prints 0
         auto const* __restrict__ p = hist.begin(kk + hoff);
         auto const* __restrict__ e = hist.end(kk + hoff);
         p += first;
         std::cout << "prima del for" << '\n';
-        std::cout << "p,e" << *p << ' ' << *e << '\n';
+        std::cout << "p,e " << *p << ' ' << *e << '\n';   // prints 0 and 0, so it doesn't enter the for loop
         for (; p < e; p += stride) {
-          std::cout << "p,e,stride" << p << ' ' << e << ' ' << stride << '\n';
+          std::cout << "p,e,stride " << p << ' ' << e << ' ' << stride << '\n';   // see above
           auto oi = __ldg(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
-          //auto mo = hh.detectorIndex(oi);   // cosa caspita sarebbe?
+          //auto mo = hh.detectorIndex(oi);   // what is this?
           //if (mo > 2000)
           //  continue;  //    invalid
 
