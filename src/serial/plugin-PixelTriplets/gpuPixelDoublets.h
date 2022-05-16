@@ -33,7 +33,7 @@ namespace gpuPixelDoublets {
    
   constexpr int16_t phi0p05 = 522;  // round(521.52189...) = phi2short(0.05);
   constexpr int16_t phi0p06 = 626;  // round(625.82270...) = phi2short(0.06);
-  constexpr int16_t phi0p07 = 730;  // round(730.12648...) = phi2short(0.07);
+  constexpr int16_t phi0p07 = 703;  // round(730.12648...) = phi2short(0.07);
 
   constexpr int16_t phicuts[nPairs]{phi0p05,
                                     phi0p07,

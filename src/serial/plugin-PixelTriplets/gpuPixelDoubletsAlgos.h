@@ -252,12 +252,20 @@ namespace gpuPixelDoublets {
         TrackingRecHit2DSOAView::Hist hist2;
         auto const* __restrict__ p = hist2.begin(kk + hoff);
         auto const* __restrict__ e = hist2.end(kk + hoff);
-        p += 1;
+        std::cout << "nbins " << hist2.nbins() << '\n';
+        std::cout << "capacity " << hist2.capacity() << '\n';
+        std::cout << "nhists " << hist2.nhists() << '\n';
+        std::cout << "bin0 " << hist2.bin(0) << '\n';
+        std::cout << "binnbins " << hist2.bin(hist2.nbins()) << '\n';
+        std::cout << "tot " << hist2.totbins() << '\n';
+        std::cout << "manual p " <<  hist2.off[kk + hoff] << std::endl;
+        std::cout << "manual e " <<  hist2.off[kk + hoff + 1] << std::endl;
+        p += first;
         std::cout << "p,e " << p << ' ' << e << '\n';   // prints 0 and 0, so it doesn't enter the for loop
-        assert(p<e);
+        //*assert(p<e);
         std::cout << "prima del for" << '\n';
 
-        std::cout << " FIRST " << first << " Stride " << stride << std::endl;
+        std::cout << "FIRST " << first << " Stride " << stride << std::endl;
         for (; p < e; p += stride) {
           std::cout << "p,e,stride " << p << ' ' << e << ' ' << stride << '\n';   // see above
           auto oi = __ldg(p);

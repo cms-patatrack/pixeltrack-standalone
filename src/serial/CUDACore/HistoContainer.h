@@ -288,7 +288,7 @@ namespace cms {
     template <typename I,        // type stored in the container (usually an index in a vector of the input values)
               uint32_t MAXONES,  // max number of "ones"
               uint32_t MAXMANYS  // max number of "manys"
-              >
+              >hist2.bins +
     using OneToManyAssoc = HistoContainer<uint32_t, MAXONES, MAXMANYS, sizeof(uint32_t) * 8, I, 1>;
 
   }  // namespace cuda

@@ -16,6 +16,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 
 std::string path = "/home/simonb/documents/thesis/not_sorted/";
@@ -151,15 +152,22 @@ namespace pixelgpudetails {
       is_4.close();
 
       // Fill phi
-      std::ifstream is_5;
-      is_5.open(phi_file_name);
-      int e;
-      for(int i = 0; is_5 >> e; ++i) {
-        phi.push_back(e);
+      //std::ifstream is_5;
+      //is_5.open(phi_file_name);
+      //int e;
+      for(int i = 0; i < (int)(hits_x_coordinates.size()); ++i) {
+        //if(e < 1) {
+        //  
+        //} else if (e > 1) {
+        //
+        //}
+        float e = atan(hits_y_coordinates[i]/hits_x_coordinates[i]);
+        //std::cout << e << '\n';
+        //std::cout << (int)(e) << '\n';
+        phi.push_back(phi2short(e));
       }
-      is_5.close();
+      //is_5.close();
     }
-
     std::vector<uint32_t> layerStart_ = {0};
     for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
       if(global_indexes[j+1] != global_indexes[j]) {
