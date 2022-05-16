@@ -251,6 +251,9 @@ namespace gpuPixelDoublets {
         if (kk != kl && kk != kh)
           nmin += hist.size(kk + hoff);
 #endif
+        std::cout << "kk " << kk << '\n';
+        std::cout << "hoff " << hoff << '\n';
+        std::cout << hist.bins[0] << '\n';
         auto const* __restrict__ p = hist.begin(kk + hoff);
         auto const* __restrict__ e = hist.end(kk + hoff);
         p += first;

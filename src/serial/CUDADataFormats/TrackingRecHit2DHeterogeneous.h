@@ -147,8 +147,9 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
-  std::cout << "mhist size" << m_HistStore->capacity() << '\n';
-  m_hist = view->m_hist = (Hist*)malloc(m_HistStore->capacity()*sizeof(uint32_t));
+  m_hist = view->m_hist = m_HistStore.get();
+  //std::cout << "mhist size" << m_HistStore->capacity() << '\n';
+  //m_hist = view->m_hist = (Hist*)malloc(m_HistStore->capacity()*sizeof(uint32_t));
  
   view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
   for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
