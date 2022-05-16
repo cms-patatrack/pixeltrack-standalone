@@ -145,12 +145,19 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
   
+  m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
-  m_hist = view->m_hist = m_HistStore.get();
+  //m_hist = view->m_hist = m_HistStore.get();
   std::cout << "mhist size" << m_HistStore->capacity() << '\n';
-  m_hist = view->m_hist = (Hist*)malloc(m_HistStore->capacity()*sizeof(TrackingRecHit2DSOAView::Hist));
- 
+  view->m_hist = m_HistStore.release();
+  // m_hist = view->m_hist = (TrackingRecHit2DSOAView::Hist*)malloc(sizeof(TrackingRecHit2DSOAView::Hist));
+  // TrackingRecHit2DSOAView::Hist h;
+  // view->m_hist = &h;
+  //for(int i = 0; i < m_HistStore->capacity() << ++i) {
+  //  view->m_hist[i] = ;
+  //}
+
   view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
   for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
     view->m_xg[j] = x_coord[j];
@@ -168,7 +175,6 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
     view->m_rg[j] = r_coord[j];
   }
 
-  //view->m_hitsLayerStart = layerStart.data();
   view->m_hitsLayerStart = (uint32_t*)malloc(layerStart.size()*sizeof(uint32_t));
   for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
     view->m_hitsLayerStart[j] = layerStart[j];

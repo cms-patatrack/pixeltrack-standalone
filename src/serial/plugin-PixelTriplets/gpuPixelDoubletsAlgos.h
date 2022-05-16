@@ -174,7 +174,7 @@ namespace gpuPixelDoublets {
       if (doClusterCut) {
         // if ideal treat inner ladder as outerhttps://docs.google.com/document/d/15rYOJF7gU2R8XysKd-6_1EQoUYi27hxXDeSokcTIqHk/edit?usp=sharing
         isOuterLadder = true;
-        #endif
+        //#endif
 
         // in any case we always test mes>0 ...
         //#ifdef NOTRACKML
@@ -228,7 +228,7 @@ namespace gpuPixelDoublets {
       };
 
       auto iphicut = phicuts[pairLayerId];
-
+      std::cout << "phi cut " << iphicut << "mep " << mep << std::endl;
       auto kl = Hist::bin(int16_t(mep - iphicut));
       auto kh = Hist::bin(int16_t(mep + iphicut));
       auto incr = [](auto& k) { return k = (k + 1) % Hist::nbins(); };
@@ -246,14 +246,18 @@ namespace gpuPixelDoublets {
         if (kk != kl && kk != kh)
           nmin += hist.size(kk + hoff);
 #endif
-        std::cout << "kk " << kk << '\n';      // prints 126
-        std::cout << "hoff " << hoff << '\n';  // prints 256
-        std::cout << hist.bins[0] << '\n';     // prints 0
-        auto const* __restrict__ p = hist.begin(kk + hoff);
-        auto const* __restrict__ e = hist.end(kk + hoff);
-        p += first;
+        std::cout << "kk " << kk << '\n';      // printa 126
+        std::cout << "hoff " << hoff << '\n';  // printa 256
+        std::cout << hist.bins[0] << '\n';     // printa 0
+        TrackingRecHit2DSOAView::Hist hist2;
+        auto const* __restrict__ p = hist2.begin(kk + hoff);
+        auto const* __restrict__ e = hist2.end(kk + hoff);
+        p += 1;
+        std::cout << "p,e " << p << ' ' << e << '\n';   // prints 0 and 0, so it doesn't enter the for loop
+        assert(p<e);
         std::cout << "prima del for" << '\n';
-        std::cout << "p,e " << *p << ' ' << *e << '\n';   // prints 0 and 0, so it doesn't enter the for loop
+
+        std::cout << " FIRST " << first << " Stride " << stride << std::endl;
         for (; p < e; p += stride) {
           std::cout << "p,e,stride " << p << ' ' << e << ' ' << stride << '\n';   // see above
           auto oi = __ldg(p);
