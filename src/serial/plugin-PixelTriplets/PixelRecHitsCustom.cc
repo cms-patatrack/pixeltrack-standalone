@@ -105,7 +105,7 @@ namespace pixelgpudetails {
     std::string y_file_name = path + "y_blue" + std::to_string(file_number) + ".dat";
     std::string z_file_name = path + "z_blue" + std::to_string(file_number) + ".dat";
     std::string index_file_name = path + "globalIndexes_blue" + std::to_string(file_number) + ".dat";
-    std::string phi_file_name = path + "phi_blue" + std::to_string(file_number) + ".dat";
+    //std::string phi_file_name = path + "phi_blue" + std::to_string(file_number) + ".dat";
 
     // Read the x_ns*.dat.dat file
     std::ifstream is_1;

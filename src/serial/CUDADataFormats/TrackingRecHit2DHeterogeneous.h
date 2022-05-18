@@ -187,6 +187,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
     view->m_iphi[j] = phi[j];
   }
 
+  cms::cuda::fillManyFromVector(view->m_hist, 10, view->m_iphi, view->m_hitsLayerStart, x_coord.size(), 256);
   std::cout << "costruttore finito" << '\n';
   m_view.reset(view.release()); 
 }
