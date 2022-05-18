@@ -171,13 +171,18 @@ namespace pixelgpudetails {
     }
     
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, nullptr);
-    std::cout << "x " << hits_d.view()->xGlobal(0) << '\n';
-    std::cout << "y " << hits_d.view()->yGlobal(0) << '\n';
-    std::cout << "z " << hits_d.view()->zGlobal(0) << '\n';
+    //std::cout << "x " << hits_d.view()->xGlobal(0) << '\n';
+    //std::cout << "y " << hits_d.view()->yGlobal(0) << '\n';
+    //std::cout << "z " << hits_d.view()->zGlobal(0) << '\n';
     std::cout << "phi " << hits_d.view()->iphi(0) << '\n';
-    hits_d.view()->m_iphi = phi.data();
+
+    for(int i = 0; i < (int)(hits_x_coordinates.size()); ++i) {
+      hits_d.view()->setiphi(i,phi[i]);
+    }
+
+    //hits_d.view()->m_iphi = phi.data();
     //std::cout << hits_d.view()->m_iphi[10] << '\n';
-    cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.view()->m_iphi, hits_d.hitsLayerStart(), hits_d.nHits(), 256);
+    //cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.view()->m_iphi, hits_d.hitsLayerStart(), hits_d.nHits(), 256);
     std::cout << "tutto ok dopo fill" << '\n';
     return hits_d;
   }

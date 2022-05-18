@@ -56,6 +56,7 @@ public:
   __device__ __forceinline__ float rGlobal(int i) const { return __ldg(m_rg + i); }
 
   __device__ __forceinline__ int16_t& iphi(int i) { return m_iphi[i]; }
+  __device__ __forceinline__ void setiphi(int i, short phi_) { m_iphi[i] = phi_; }
   __device__ __forceinline__ int16_t iphi(int i) const { return __ldg(m_iphi + i); }
 
   __device__ __forceinline__ int32_t& charge(int i) { return m_charge[i]; }

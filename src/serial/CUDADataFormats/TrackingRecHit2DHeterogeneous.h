@@ -150,7 +150,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
   //m_hist = view->m_hist = m_HistStore.get();
   std::cout << "mhist size" << m_HistStore->capacity() << '\n';
-  view->m_hist = m_HistStore.release();
+  view->m_hist = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream).get();
   // m_hist = view->m_hist = (TrackingRecHit2DSOAView::Hist*)malloc(sizeof(TrackingRecHit2DSOAView::Hist));
   // TrackingRecHit2DSOAView::Hist h;
   // view->m_hist = &h;

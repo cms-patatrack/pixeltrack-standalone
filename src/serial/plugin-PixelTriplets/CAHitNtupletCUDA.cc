@@ -31,10 +31,12 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto bf = 0.0114256972711507*2;  // 1/fieldInGeV
 
   std::cout << "prima del get" << '\n';
-  auto const& hits = iEvent.get(tokenHitCPU_);
-  std::cout << "x" << hits.view()->xGlobal(0) << '\n';
-  std::cout << "y" << hits.view()->yGlobal(0) << '\n';
-  std::cout << "z" << hits.view()->zGlobal(0) << '\n';
+  TrackingRecHit2DCPU hits = iEvent.get(tokenHitCPU_);
+  cms::cuda::fillManyFromVector(hits.phiBinner(), 10, hits.view()->m_iphi, hits.hitsLayerStart(), hits.nHits(), 256);
+  std::cout << hits.view()->iphi(0) << '\n';
+  //std::cout << "x" << hits.view()->xGlobal(0) << '\n';
+  //std::cout << "y" << hits.view()->yGlobal(0) << '\n';
+  //std::cout << "z" << hits.view()->zGlobal(0) << '\n';
   
   //auto const& hits_view = hits.view();
   std::cout << "prima di tuples" << '\n';
