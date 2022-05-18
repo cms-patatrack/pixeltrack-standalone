@@ -16,7 +16,6 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  edm::EDGetTokenT<std::vector<float>> test_Token;
   edm::EDGetTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
   edm::EDPutTokenT<PixelTrackHeterogeneous> tokenTrackCPU_;
 
@@ -24,18 +23,23 @@ private:
 };
 
 CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
-    : test_Token{reg.consumes<std::vector<float>>()},
-      tokenHitCPU_{reg.consumes<TrackingRecHit2DCPU>()},
+    : tokenHitCPU_{reg.consumes<TrackingRecHit2DCPU>()},
       tokenTrackCPU_{reg.produces<PixelTrackHeterogeneous>()},
       gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto bf = 0.0114256972711507*2;  // 1/fieldInGeV
 
+  std::cout << "prima del get" << '\n';
   auto const& hits = iEvent.get(tokenHitCPU_);
-  auto const& test = iEvent.get(test_Token);
+  std::cout << "x" << hits.view()->xGlobal(0) << '\n';
+  std::cout << "y" << hits.view()->yGlobal(0) << '\n';
+  std::cout << "z" << hits.view()->zGlobal(0) << '\n';
   
+  //auto const& hits_view = hits.view();
+  std::cout << "prima di tuples" << '\n';
   PixelTrackHeterogeneous tuples_ = gpuAlgo_.makeTuples(hits, bf);
+  std::cout << "dopo tuples" << '\n';
   std::cout << "m_nTracks = " << tuples_->m_nTracks << '\n';
   iEvent.emplace(tokenTrackCPU_, gpuAlgo_.makeTuples(hits, bf));
   std::cout << "--------------------------------------------------------------------------------" << '\n';

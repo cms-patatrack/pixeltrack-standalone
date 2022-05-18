@@ -25,7 +25,7 @@ public:
                                 std::vector<float>& z_coord, 
                                 std::vector<float>& r_coord,
                                 std::vector<uint32_t>& layerStart,
-                                std::vector<int>& phi,
+                                std::vector<short>& phi,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -140,7 +140,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<float>& z_coord, 
                                                                      std::vector<float>& r_coord,
                                                                      std::vector<uint32_t>& layerStart,
-                                                                     std::vector<int>& phi,
+                                                                     std::vector<short>& phi,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
@@ -182,7 +182,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
 
   m_hitsLayerStart = layerStart.data();
 
-  view->m_iphi = (int16_t*)malloc(x_coord.size()*sizeof(int16_t));
+  view->m_iphi = (short*)malloc(x_coord.size()*sizeof(short));
   for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
     view->m_iphi[j] = phi[j];
   }

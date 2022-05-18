@@ -92,7 +92,7 @@ namespace pixelgpudetails {
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
     std::vector<int> global_indexes;
-    std::vector<int> phi;
+    std::vector<short> phi;
 
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';
@@ -115,8 +115,9 @@ namespace pixelgpudetails {
     // Create the vector containing all the x coordinates of the hits
     for(int i = 0; is_1 >> a; ++i) {
       hits_x_coordinates.push_back(a);
-    }
+      }
       is_1.close();
+      std::cout << "x " << hits_x_coordinates[0] << '\n';
 
       // Read the y_ns*.dat.dat file
       std::ifstream is_2;
@@ -125,8 +126,10 @@ namespace pixelgpudetails {
 
       // Create the vector containing all the y coordinates of the hits
       for(int i = 0; is_2 >> b; ++i) { 
-        hits_y_coordinates.push_back(b); }
+        hits_y_coordinates.push_back(b); 
+        }
       is_2.close();
+      std::cout << "y " << hits_y_coordinates[0] << '\n';
 
       // Read the z_ns*.dat.dat file
       std::ifstream is_3;
@@ -137,7 +140,7 @@ namespace pixelgpudetails {
       for(int i = 0; is_3 >> c; ++i) { 
         hits_z_coordinates.push_back(c); }
       is_3.close();
-
+      std::cout << "z " << hits_z_coordinates[0] << '\n';
       for(int i = 0 ; i < static_cast<int>(hits_y_coordinates.size()); ++i) {
         hits_r_coordinates.push_back(sqrt(pow(hits_y_coordinates[i],2) + pow(hits_z_coordinates[i],2)));
       }
@@ -152,21 +155,13 @@ namespace pixelgpudetails {
       is_4.close();
 
       // Fill phi
-      //std::ifstream is_5;
-      //is_5.open(phi_file_name);
-      //int e;
       for(int i = 0; i < (int)(hits_x_coordinates.size()); ++i) {
-        //if(e < 1) {
-        //  
-        //} else if (e > 1) {
-        //
-        //}
         float e = atan(hits_y_coordinates[i]/hits_x_coordinates[i]);
         //std::cout << e << '\n';
-        //std::cout << (int)(e) << '\n';
+        //std::cout << phi2short(e) << '\n';
         phi.push_back(phi2short(e));
       }
-      //is_5.close();
+      std::cout << "phi " << phi[0] << '\n';
     }
     std::vector<uint32_t> layerStart_ = {0};
     for(int j = 1; j < static_cast<int>(global_indexes.size()) - 1; ++j) {
@@ -176,6 +171,14 @@ namespace pixelgpudetails {
     }
     
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, nullptr);
+    std::cout << "x " << hits_d.view()->xGlobal(0) << '\n';
+    std::cout << "y " << hits_d.view()->yGlobal(0) << '\n';
+    std::cout << "z " << hits_d.view()->zGlobal(0) << '\n';
+    std::cout << "phi " << hits_d.view()->iphi(0) << '\n';
+    hits_d.view()->m_iphi = phi.data();
+    //std::cout << hits_d.view()->m_iphi[10] << '\n';
+    cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.view()->m_iphi, hits_d.hitsLayerStart(), hits_d.nHits(), 256);
+    std::cout << "tutto ok dopo fill" << '\n';
     return hits_d;
   }
 

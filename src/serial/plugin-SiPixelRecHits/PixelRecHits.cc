@@ -90,7 +90,7 @@ namespace pixelgpudetails {
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
     std::vector<int> global_indexes;
-    std::vector<int> phi;
+    std::vector<short> phi;
 
     if(file_number >= 5000 && file_number < 5500) {
       std::cout << "This file is missing" << '\n';

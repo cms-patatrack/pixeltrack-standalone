@@ -22,18 +22,17 @@ private:
   
   pixelgpudetails::PixelRecHitGPUKernelCustom algo_;
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
-  edm::EDPutTokenT<std::vector<float>> test_Token;
   edm::EDPutTokenT<TrackingRecHit2DCPU> tokenHitCPU_;
 };
 
 myClass::myClass(edm::ProductRegistry& reg)
     : algo_(),
       gpuAlgo_(reg),
-      test_Token(reg.produces<std::vector<float>>()),
       tokenHitCPU_(reg.produces<TrackingRecHit2DCPU>()) {}
 
 void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   iEvent.emplace(tokenHitCPU_, algo_.makeHits2(test_file));
+  std::cout << "tutto ok nel producer" << '\n';
 }
 
 DEFINE_FWK_MODULE(myClass);
