@@ -32,7 +32,6 @@ myClass::myClass(edm::ProductRegistry& reg)
 
 void myClass::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   iEvent.emplace(tokenHitCPU_, algo_.makeHits2(test_file));
-  std::cout << "tutto ok nel producer" << '\n';
 }
 
 DEFINE_FWK_MODULE(myClass);

@@ -26,6 +26,7 @@ public:
                                 std::vector<float>& r_coord,
                                 std::vector<uint32_t>& layerStart,
                                 std::vector<short>& phi,
+                                std::vector<int>& global_indexes,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -141,6 +142,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<float>& r_coord,
                                                                      std::vector<uint32_t>& layerStart,
                                                                      std::vector<short>& phi,
+                                                                     std::vector<int>& global_indexes,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
@@ -149,7 +151,6 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
   //m_hist = view->m_hist = m_HistStore.get();
-  std::cout << "mhist size" << m_HistStore->capacity() << '\n';
   view->m_hist = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream).get();
   // m_hist = view->m_hist = (TrackingRecHit2DSOAView::Hist*)malloc(sizeof(TrackingRecHit2DSOAView::Hist));
   // TrackingRecHit2DSOAView::Hist h;
@@ -187,8 +188,12 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
     view->m_iphi[j] = phi[j];
   }
 
+  view->m_detInd = (uint16_t*)malloc(x_coord.size()*sizeof(uint16_t));
+  for(int j = 0; j < (int)(x_coord.size()); ++j) {
+    view->m_detInd[j] = global_indexes[j];
+  }
+
   cms::cuda::fillManyFromVector(view->m_hist, 10, view->m_iphi, view->m_hitsLayerStart, x_coord.size(), 256);
-  std::cout << "costruttore finito" << '\n';
   m_view.reset(view.release()); 
 }
 

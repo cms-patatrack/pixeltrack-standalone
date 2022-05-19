@@ -66,6 +66,7 @@ public:
   __device__ __forceinline__ int16_t& clusterSizeY(int i) { return m_ysize[i]; }
   __device__ __forceinline__ int16_t clusterSizeY(int i) const { return __ldg(m_ysize + i); }
   __device__ __forceinline__ uint16_t& detectorIndex(int i) { return m_detInd[i]; }
+  __device__ __forceinline__ void setDetInd(int i, uint16_t ind_) { m_detInd[i] = ind_; }
   __device__ __forceinline__ uint16_t detectorIndex(int i) const { return __ldg(m_detInd + i); }
 
   __device__ __forceinline__ pixelCPEforGPU::ParamsOnGPU const& cpeParams() const { return *m_cpeParams; }

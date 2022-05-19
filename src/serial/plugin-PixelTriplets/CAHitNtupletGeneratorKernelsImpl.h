@@ -228,7 +228,11 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
 
     auto ro = thisCell.get_outer_r(hh);
     auto zo = thisCell.get_outer_z(hh);
-    auto isBarrel = thisCell.get_inner_detIndex(hh) < last_barrel_detIndex;
+    
+    //bool isBarrel = []
+    
+    //auto isBarrel = thisCell.get_inner_detIndex(hh) < last_barrel_detIndex;
+    auto isBarrel = true;
 
     for (int j = first; j < numberOfPossibleNeighbors; j += stride) {
       auto otherCell = __ldg(vi + j);
@@ -251,7 +255,8 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
       if (aligned &&
           thisCell.dcaCut(hh,
                           oc,
-                          oc.get_inner_detIndex(hh) < last_bpix1_detIndex ? dcaCutInnerTriplet : dcaCutOuterTriplet,
+                          //oc.get_inner_detIndex(hh) < last_bpix1_detIndex ? dcaCutInnerTriplet : dcaCutOuterTriplet,
+                          dcaCutInnerTriplet,
                           hardCurvCut)) {  // FIXME tune cuts
         oc.addOuterNeighbor(cellIndex, *cellNeighbors);
         thisCell.theUsed |= 1;
