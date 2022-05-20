@@ -20,13 +20,13 @@ public:
                                          pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                          uint32_t const* hitsModuleStart,
                                          cudaStream_t stream);
-  TrackingRecHit2DHeterogeneous(std::vector<float>& x_coord,
-                                std::vector<float>& y_coord, 
-                                std::vector<float>& z_coord, 
-                                std::vector<float>& r_coord,
-                                std::vector<uint32_t>& layerStart,
-                                std::vector<short>& phi,
-                                std::vector<int>& global_indexes,
+  TrackingRecHit2DHeterogeneous(std::vector<float> const& x_coord,
+                                std::vector<float> const& y_coord, 
+                                std::vector<float> const& z_coord, 
+                                std::vector<float> const& r_coord,
+                                std::vector<uint32_t> const& layerStart,
+                                std::vector<short> const& phi,
+                                std::vector<int> const& global_indexes,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -136,13 +136,13 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
 
 // My constructor
 template <typename Traits>
-TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<float>& x_coord,
-                                                                     std::vector<float>& y_coord, 
-                                                                     std::vector<float>& z_coord, 
-                                                                     std::vector<float>& r_coord,
-                                                                     std::vector<uint32_t>& layerStart,
-                                                                     std::vector<short>& phi,
-                                                                     std::vector<int>& global_indexes,
+TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector<float> const& x_coord,
+                                                                     std::vector<float> const& y_coord, 
+                                                                     std::vector<float> const& z_coord, 
+                                                                     std::vector<float> const& r_coord,
+                                                                     std::vector<uint32_t> const& layerStart,
+                                                                     std::vector<short> const& phi,
+                                                                     std::vector<int> const& global_indexes,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
@@ -150,14 +150,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
-  //m_hist = view->m_hist = m_HistStore.get();
-  view->m_hist = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream).get();
-  // m_hist = view->m_hist = (TrackingRecHit2DSOAView::Hist*)malloc(sizeof(TrackingRecHit2DSOAView::Hist));
-  // TrackingRecHit2DSOAView::Hist h;
-  // view->m_hist = &h;
-  //for(int i = 0; i < m_HistStore->capacity() << ++i) {
-  //  view->m_hist[i] = ;
-  //}
+  m_hist = view->m_hist = m_HistStore.get();
 
   view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
   for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {

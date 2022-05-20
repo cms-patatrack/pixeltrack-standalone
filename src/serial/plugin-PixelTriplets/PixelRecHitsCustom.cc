@@ -166,9 +166,11 @@ namespace pixelgpudetails {
       }
     }
     
+    int const N = hits_x_coordinates.size();
+
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, global_indexes, nullptr);
 
-    for(int i = 0; i < (int)(hits_x_coordinates.size()); ++i) {
+    for(int i = 0; i < N; ++i) {
       hits_d.view()->setiphi(i,phi[i]);
       hits_d.view()->setDetInd(i,global_indexes[i]);
     }
