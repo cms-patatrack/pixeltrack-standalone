@@ -89,7 +89,7 @@ namespace pixelgpudetails {
     std::vector<float> hits_y_coordinates;
     std::vector<float> hits_z_coordinates;
     std::vector<float> hits_r_coordinates;
-    std::vector<int> global_indexes;
+    std::vector<uint16_t> global_indexes;
     std::vector<short> phi;
 
     if(file_number >= 5000 && file_number < 5500) {
@@ -145,7 +145,7 @@ namespace pixelgpudetails {
       is_4.open(index_file_name);
       int d;
       for(int i = 0; is_4 >> d; ++i) { 
-        global_indexes.push_back(d); 
+        global_indexes.push_back((uint16_t)(d)); 
       }
       is_4.close();
 
@@ -167,7 +167,6 @@ namespace pixelgpudetails {
     }
     
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, global_indexes, nullptr);
-    std::cout << "da makehits" << hits_d.view()->hitsLayerStart()[0] << '\n';
     return hits_d;
   }
 

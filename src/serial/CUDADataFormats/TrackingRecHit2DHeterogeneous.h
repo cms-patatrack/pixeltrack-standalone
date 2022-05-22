@@ -26,7 +26,7 @@ public:
                                 std::vector<float> const& r_coord,
                                 std::vector<uint32_t> const& layerStart,
                                 std::vector<short> const& phi,
-                                std::vector<int> const& global_indexes,
+                                std::vector<uint16_t> const& global_indexes,
                                 cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
@@ -73,13 +73,13 @@ private:
   int event_number;
 
   // My members
-  std::vector<float> const& x_;
-  std::vector<float> const& y_;
-  std::vector<float> const& z_;
-  std::vector<float> const& r_;
-  std::vector<uint32_t> const& layerStart_;
-  std::vector<short> const& phi_;
-  std::vector<int> const& indexes_;
+  std::vector<float> x_;
+  std::vector<float> y_;
+  std::vector<float> z_;
+  std::vector<float> r_;
+  std::vector<uint32_t> layerStart_;
+  std::vector<short> phi_;
+  std::vector<uint16_t> indexes_;
 
   //TrackingRecHit2DSOAView view_;
 };
@@ -151,7 +151,7 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<float> const& r_coord,
                                                                      std::vector<uint32_t> const& layerStart,
                                                                      std::vector<short> const& phi,
-                                                                     std::vector<int> const& global_indexes,
+                                                                     std::vector<uint16_t> const& global_indexes,
                                                                      cudaStream_t stream)
     : m_nHits(x_coord.size()), x_(x_coord), y_(y_coord), z_(z_coord), r_(r_coord),
       layerStart_(layerStart), phi_(phi), indexes_(global_indexes) {
