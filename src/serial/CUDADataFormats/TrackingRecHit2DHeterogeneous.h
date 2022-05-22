@@ -72,6 +72,15 @@ private:
 
   int event_number;
 
+  // My members
+  std::vector<float> const& x_;
+  std::vector<float> const& y_;
+  std::vector<float> const& z_;
+  std::vector<float> const& r_;
+  std::vector<uint32_t> const& layerStart_;
+  std::vector<short> const& phi_;
+  std::vector<int> const& indexes_;
+
   //TrackingRecHit2DSOAView view_;
 };
 
@@ -144,47 +153,56 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
                                                                      std::vector<short> const& phi,
                                                                      std::vector<int> const& global_indexes,
                                                                      cudaStream_t stream)
-    : m_nHits(x_coord.size()) {
+    : m_nHits(x_coord.size()), x_(x_coord), y_(y_coord), z_(z_coord), r_(r_coord),
+      layerStart_(layerStart), phi_(phi), indexes_(global_indexes) {
   auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
   
   m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
   view->m_nHits = x_coord.size();
   m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
-  m_hist = view->m_hist = m_HistStore.get();
+  m_hist = view->m_hist = m_HistStore.get();    // release?
 
-  view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
-  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-    view->m_xg[j] = x_coord[j];
-  }
-  view->m_yg = (float*)malloc(x_coord.size()*sizeof(float));
-  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-    view->m_yg[j] = y_coord[j];
-  }
-  view->m_zg = (float*)malloc(x_coord.size()*sizeof(float));
-  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-    view->m_zg[j] = z_coord[j];
-  }
-  view->m_rg = (float*)malloc(x_coord.size()*sizeof(float));
-  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-    view->m_rg[j] = r_coord[j];
-  }
+  view->m_xg = x_.data();
+  view->m_yg = y_.data();
+  view->m_zg = z_.data();
+  view->m_rg = r_.data();
+  view->m_detInd = indexes_.data();
+  m_iphi = view->m_iphi = phi_.data();
+  m_hitsLayerStart = view->m_hitsLayerStart = layerStart_.data();
 
-  view->m_hitsLayerStart = (uint32_t*)malloc(layerStart.size()*sizeof(uint32_t));
-  for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
-    view->m_hitsLayerStart[j] = layerStart[j];
-  }
+  //view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
+  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+  //  view->m_xg[j] = x_coord[j];
+  //}
+  //view->m_yg = (float*)malloc(x_coord.size()*sizeof(float));
+  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+  //  view->m_yg[j] = y_coord[j];
+  //}
+  //view->m_zg = (float*)malloc(x_coord.size()*sizeof(float));
+  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+  //  view->m_zg[j] = z_coord[j];
+  //}
+  //view->m_rg = (float*)malloc(x_coord.size()*sizeof(float));
+  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+  //  view->m_rg[j] = r_coord[j];
+  //}
 
-  m_hitsLayerStart = layerStart.data();
-
-  view->m_iphi = (short*)malloc(x_coord.size()*sizeof(short));
-  for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-    view->m_iphi[j] = phi[j];
-  }
-
-  view->m_detInd = (uint16_t*)malloc(x_coord.size()*sizeof(uint16_t));
-  for(int j = 0; j < (int)(x_coord.size()); ++j) {
-    view->m_detInd[j] = global_indexes[j];
-  }
+  //view->m_hitsLayerStart = (uint32_t*)malloc(layerStart.size()*sizeof(uint32_t));
+  //for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
+  //  view->m_hitsLayerStart[j] = layerStart[j];
+  //}
+  //
+  //m_hitsLayerStart = layerStart.data();
+  //
+  //view->m_iphi = (short*)malloc(x_coord.size()*sizeof(short));
+  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
+  //  view->m_iphi[j] = phi[j];
+  //}
+  //
+  //view->m_detInd = (uint16_t*)malloc(x_coord.size()*sizeof(uint16_t));
+  //for(int j = 0; j < (int)(x_coord.size()); ++j) {
+  //  view->m_detInd[j] = global_indexes[j];
+  //}
 
   cms::cuda::fillManyFromVector(view->m_hist, 10, view->m_iphi, view->m_hitsLayerStart, x_coord.size(), 256);
   m_view.reset(view.release()); 
