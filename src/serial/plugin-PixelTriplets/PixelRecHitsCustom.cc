@@ -86,6 +86,7 @@ namespace pixelgpudetails {
     return hits_d;
   }
 
+  // My makeHits
   TrackingRecHit2DCPU PixelRecHitGPUKernelCustom::makeHits2(int file_number) const {
     std::vector<float> hits_x_coordinates;
     std::vector<float> hits_y_coordinates;

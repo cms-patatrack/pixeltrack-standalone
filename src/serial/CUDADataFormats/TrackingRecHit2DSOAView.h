@@ -82,8 +82,6 @@ public:
   __device__ __forceinline__ AverageGeometry& averageGeometry() { return *m_averageGeometry; }
   __device__ __forceinline__ AverageGeometry const& averageGeometry() const { return *m_averageGeometry; }
 
-  int16_t* m_iphi;
-
 private:
   // local coord
   float *m_xl, *m_yl;
@@ -91,6 +89,7 @@ private:
 
   // global coord
   float *m_xg, *m_yg, *m_zg, *m_rg;
+  int16_t* m_iphi;
 
   // cluster properties
   int32_t* m_charge;

@@ -40,6 +40,7 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   std::cout << hits.view()->detectorIndex(0) << '\n';
 
   PixelTrackHeterogeneous tuples_ = gpuAlgo_.makeTuples(hits, bf);
+  std::cout << "nTracks" << tuples_->m_nTracks << '\n';
   iEvent.emplace(tokenTrackCPU_, gpuAlgo_.makeTuples(hits, bf));
 }
 

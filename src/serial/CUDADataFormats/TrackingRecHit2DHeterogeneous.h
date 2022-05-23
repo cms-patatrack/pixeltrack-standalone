@@ -170,40 +170,6 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(std::vector
   m_iphi = view->m_iphi = phi_.data();
   m_hitsLayerStart = view->m_hitsLayerStart = layerStart_.data();
 
-  //view->m_xg = (float*)malloc(x_coord.size()*sizeof(float));
-  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-  //  view->m_xg[j] = x_coord[j];
-  //}
-  //view->m_yg = (float*)malloc(x_coord.size()*sizeof(float));
-  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-  //  view->m_yg[j] = y_coord[j];
-  //}
-  //view->m_zg = (float*)malloc(x_coord.size()*sizeof(float));
-  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-  //  view->m_zg[j] = z_coord[j];
-  //}
-  //view->m_rg = (float*)malloc(x_coord.size()*sizeof(float));
-  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-  //  view->m_rg[j] = r_coord[j];
-  //}
-
-  //view->m_hitsLayerStart = (uint32_t*)malloc(layerStart.size()*sizeof(uint32_t));
-  //for(int j = 0; j < static_cast<int>(layerStart.size()); ++j) {
-  //  view->m_hitsLayerStart[j] = layerStart[j];
-  //}
-  //
-  //m_hitsLayerStart = layerStart.data();
-  //
-  //view->m_iphi = (short*)malloc(x_coord.size()*sizeof(short));
-  //for(int j = 0; j < static_cast<int>(x_coord.size()); ++j) {
-  //  view->m_iphi[j] = phi[j];
-  //}
-  //
-  //view->m_detInd = (uint16_t*)malloc(x_coord.size()*sizeof(uint16_t));
-  //for(int j = 0; j < (int)(x_coord.size()); ++j) {
-  //  view->m_detInd[j] = global_indexes[j];
-  //}
-
   cms::cuda::fillManyFromVector(view->m_hist, 10, view->m_iphi, view->m_hitsLayerStart, x_coord.size(), 256);
   m_view.reset(view.release()); 
 }
