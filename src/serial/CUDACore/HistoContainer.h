@@ -258,7 +258,6 @@ namespace cms {
 
       __host__ __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
-        //std::cout << "t " << t << '\n';
         assert(b < nbins());
         b += histOff(nh);
         assert(b < totbins());

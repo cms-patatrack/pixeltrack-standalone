@@ -169,14 +169,6 @@ namespace pixelgpudetails {
     
     int const N = hits_x_coordinates.size();
 
-    std::cout << hits_x_coordinates[0] << '\n';
-    std::cout << hits_y_coordinates[0] << '\n'; 
-    std::cout << hits_z_coordinates[0] << '\n'; 
-    std::cout << hits_r_coordinates[0] << '\n'; 
-    std::cout << layerStart_[0] << '\n'; 
-    std::cout << phi[0] << '\n'; 
-    std::cout << global_indexes[0] << '\n'; 
-
     TrackingRecHit2DCPU hits_d(hits_x_coordinates, hits_y_coordinates, hits_z_coordinates, hits_r_coordinates, layerStart_, phi, global_indexes, nullptr);
 
     for(int i = 0; i < N; ++i) {

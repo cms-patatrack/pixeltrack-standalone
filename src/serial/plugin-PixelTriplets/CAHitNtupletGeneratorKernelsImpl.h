@@ -224,7 +224,9 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
     constexpr uint32_t last_bpix1_detIndex = 96;
     constexpr uint32_t last_barrel_detIndex = 1184;
     auto ri = thisCell.get_inner_r(hh);
+    //std::cout << "inner r " << ri << '\n';
     auto zi = thisCell.get_inner_z(hh);
+    //std::cout << "inner z " << zi << '\n';
 
     auto ro = thisCell.get_outer_r(hh);
     auto zo = thisCell.get_outer_z(hh);
@@ -252,12 +254,14 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
           zo,
           ptmin,
           isBarrel ? CAThetaCutBarrel : CAThetaCutForward);  // 2.f*thetaCut); // FIXME tune cuts
+      //if(aligned) { std::cout << "allineati" << '\n'; }
       if (aligned &&
           thisCell.dcaCut(hh,
                           oc,
                           //oc.get_inner_detIndex(hh) < last_bpix1_detIndex ? dcaCutInnerTriplet : dcaCutOuterTriplet,
                           dcaCutInnerTriplet,
                           hardCurvCut)) {  // FIXME tune cuts
+        std::cout << "allineati e cut" << '\n';
         oc.addOuterNeighbor(cellIndex, *cellNeighbors);
         thisCell.theUsed |= 1;
         oc.theUsed |= 1;

@@ -58,21 +58,7 @@ namespace gpuPixelDoublets {
 
     assert(offsets);
 
-    std::vector<uint8_t> layers = {10,9,8,7,6,5,4,        // vol7
-                                   0,1,2,3,               // vol8
-                                   11,12,13,14,15,16,17,  // vol9
-                                   27,26,25,24,23,22,     // vol12
-                                   18,19,20,21,           // vol13
-                                   28,29,30,31,32,33,     // vol14
-                                   41,40,39,38,37,36,     // vol16
-                                   34,35,                 // vol17
-                                   42,43,44,45,46,47};    // vol18
-
-    //#ifdef NOTRACKML
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };   // how many hits in that layer
-    //#else
-    //auto layerSize = [=](uint8_t lay) { return offsets[getIndex(lay,layers)+1] - offsets[getIndex(lay,layers)]; };
-    //#endif
 
     // nPairsMax to be optimized later (originally was 64).
     // If it should be much bigger, consider using a block-wide parallel prefix scan,
@@ -83,20 +69,10 @@ namespace gpuPixelDoublets {
     __shared__ uint32_t ntot;
     if (threadIdx.y == 0 && threadIdx.x == 0) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
-      //std::cout7 << layerSize(1) << '\n';
-      //std::cout7 << layerSize(layerPairs[0]) << '\n';
-      ////std::cout7 << "innerLayerCumulativeSize[0] " << innerLayerCumulativeSize[0] << '\n';
-      ////std::cout7 << "layerSize(layerPairs[3]) " << layerSize(layerPairs[3]) << '\n';
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-        ////std::cout7 << "innerLayerCumulativeSize[i]" << i << ' ' << innerLayerCumulativeSize[i] << '\n';
       }
-      //#ifdef TEST
-      //ntot = innerLayerCumulativeSize[nPairs - 1];
       ntot = 1500;
-      //#else
-      //ntot = 100000;
-      //#endif
     }
     __syncthreads();
     // x runs faster
@@ -282,6 +258,8 @@ namespace gpuPixelDoublets {
           }  // move to SimpleVector??
           // int layerPairId, int doubletId, int innerHitId, int outerHitId)
           cells[ind].init(*cellNeighbors, *cellTracks, hh, pairLayerId, ind, i, oi);
+          //std::cout << "cells " << cells[ind].get_inner_x(hh) << '\n';
+          //std::cout << "cells " << cells[ind].get_outer_x(hh) << '\n';
           //std::cout << "inner x" << cells[ind].get_inner_x(hh) << '\n';
           isOuterHitOfCell[oi].push_back(ind);
 #ifdef GPU_DEBUG
