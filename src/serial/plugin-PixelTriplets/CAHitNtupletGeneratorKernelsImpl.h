@@ -340,6 +340,7 @@ __global__ void kernel_fillMultiplicity(HitContainer const *__restrict__ foundNt
     if (quality[it] == trackQuality::dup)
       continue;
     assert(quality[it] == trackQuality::bad);
+    std::cout << "aaaaaaaaaaaaaaaaaaaa" << '\n';
     if (nhits > 5)
       printf("wrong mult %d %d\n", it, nhits);
     assert(nhits < 8);
@@ -454,6 +455,7 @@ __global__ void kernel_fillHitInTracks(HitContainer const *__restrict__ tuples,
     if (quality[idx] != trackQuality::loose)
       continue;
     for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h){
+      std::cout << "vado a fillare" << '\n';
       hitToTuple->fillDirect(*h, idx);
     }
   }
@@ -473,7 +475,7 @@ __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples
   for (int idx = first, ntot = tuples->size(); idx < ntot; idx += gridDim.x * blockDim.x) {
     assert(tuples->bins[idx] < nhits);
     hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
-    std::cout << "piero " << hh.detectorIndex(tuples->bins[idx]) << '\n';   // Printa sempre 10, 9 e 8o,.
+    std::cout << "detectorIndex(tuples->bins[idx]) " << hh.detectorIndex(tuples->bins[idx]) << '\n';   // Printa sempre 10, 9 e 8.
   }
 }
 
