@@ -261,7 +261,6 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
                           //oc.get_inner_detIndex(hh) < last_bpix1_detIndex ? dcaCutInnerTriplet : dcaCutOuterTriplet,
                           dcaCutInnerTriplet,
                           hardCurvCut)) {  // FIXME tune cuts
-        std::cout << "allineati e cut" << '\n';
         oc.addOuterNeighbor(cellIndex, *cellNeighbors);
         thisCell.theUsed |= 1;
         oc.theUsed |= 1;
@@ -354,13 +353,14 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
                                       Quality *__restrict__ quality) {
   int first = blockDim.x * blockIdx.x + threadIdx.x;
   for (int it = first, nt = tuples->nbins(); it < nt; it += gridDim.x * blockDim.x) {
-    auto nhits = tuples->size(it);
+    auto nhits = tuples->size(it);  // Sono tutti 3
     if (nhits == 0)
       break;  // guard
 
     // if duplicate: not even fit
-    if (quality[it] == trackQuality::dup)
+    if (quality[it] == trackQuality::dup){
       continue;
+    } 
 
     assert(quality[it] == trackQuality::bad);
 
@@ -388,9 +388,9 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
     // (see CAHitNtupletGeneratorGPU.cc)
     float pt = std::min<float>(tracks->pt(it), cuts.chi2MaxPt);
     float chi2Cut = cuts.chi2Scale *
-                    (cuts.chi2Coeff[0] + pt * (cuts.chi2Coeff[1] + pt * (cuts.chi2Coeff[2] + pt * cuts.chi2Coeff[3])));
+                    (cuts.chi2Coeff[0] + pt * (cuts.chi2Coeff[1] + pt * (cuts.chi2Coeff[2] + pt * cuts.chi2Coeff[3]))); // 20.4533
     // above number were for Quads not normalized so for the time being just multiple by ndof for Quads  (triplets to be understood)
-    if (3.f * tracks->chi2(it) >= chi2Cut) {
+    if (3.f * tracks->chi2(it) >= chi2Cut) {    // Qui non ci entra
 #ifdef NTUPLE_DEBUG
       printf("Bad fit %d size %d pt %f eta %f chi2 %f\n",
              it,
@@ -409,9 +409,10 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
     // (see CAHitNtupletGeneratorGPU.cc)
     auto const &region = (nhits > 3) ? cuts.quadruplet : cuts.triplet;
     bool isOk = (std::abs(tracks->tip(it)) < region.maxTip) and (tracks->pt(it) > region.minPt) and
-                (std::abs(tracks->zip(it)) < region.maxZip);
+                (std::abs(tracks->zip(it)) < region.maxZip);    // Sempre 0
 
-    if (isOk)
+    if (isOk)   // Qui dentro non entra, quindi non ci sono traiettorie loose
+      std::cout << "prova" << '\n';
       quality[it] = trackQuality::loose;
   }
 }
@@ -439,7 +440,7 @@ __global__ void kernel_countHitInTracks(HitContainer const *__restrict__ tuples,
     if (quality[idx] != trackQuality::loose)
       continue;
     for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h)
-      hitToTuple->countDirect(*h);
+      hitToTuple->countDirect(*h);    // Non capisco cosa faccia
   }
 }
 
@@ -452,8 +453,9 @@ __global__ void kernel_fillHitInTracks(HitContainer const *__restrict__ tuples,
       break;  // guard
     if (quality[idx] != trackQuality::loose)
       continue;
-    for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h)
+    for (auto h = tuples->begin(idx); h != tuples->end(idx); ++h){
       hitToTuple->fillDirect(*h, idx);
+    }
   }
 }
 
@@ -471,6 +473,7 @@ __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples
   for (int idx = first, ntot = tuples->size(); idx < ntot; idx += gridDim.x * blockDim.x) {
     assert(tuples->bins[idx] < nhits);
     hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);
+    std::cout << "piero " << hh.detectorIndex(tuples->bins[idx]) << '\n';   // Printa sempre 10, 9 e 8o,.
   }
 }
 
