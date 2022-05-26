@@ -340,7 +340,6 @@ __global__ void kernel_fillMultiplicity(HitContainer const *__restrict__ foundNt
     if (quality[it] == trackQuality::dup)
       continue;
     assert(quality[it] == trackQuality::bad);
-    std::cout << "aaaaaaaaaaaaaaaaaaaa" << '\n';
     if (nhits > 5)
       printf("wrong mult %d %d\n", it, nhits);
     assert(nhits < 8);
@@ -413,7 +412,6 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
                 (std::abs(tracks->zip(it)) < region.maxZip);    // Sempre 0
 
     if (isOk)   // Qui dentro non entra, quindi non ci sono traiettorie loose
-      std::cout << "prova" << '\n';
       quality[it] = trackQuality::loose;
   }
 }

@@ -155,8 +155,6 @@ namespace pixelgpudetails {
       // Fill phi
       for(int i = 0; i < (int)(hits_x_coordinates.size()); ++i) {
         float e = atan(hits_y_coordinates[i]/hits_x_coordinates[i]);
-        //std::cout << e << '\n';
-        //std::cout << phi2short(e) << '\n';
         phi.push_back(phi2short(e));
       }
     }
@@ -176,7 +174,6 @@ namespace pixelgpudetails {
       hits_d.view()->setDetInd(i,global_indexes[i]);
     }
 
-    //cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.view()->m_iphi, hits_d.hitsLayerStart(), hits_d.nHits(), 256);
     return hits_d;
   }
 

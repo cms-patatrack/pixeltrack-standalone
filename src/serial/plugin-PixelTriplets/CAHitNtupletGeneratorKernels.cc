@@ -74,6 +74,7 @@ void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStr
 template <>
 void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *tracks_d, cudaStream_t cudaStream) {
   auto *tuples_d = &tracks_d->hitIndices;
+  std::cout << tuples_d->psws << '\n';
   auto *quality_d = (Quality *)(&tracks_d->m_quality);
 
   assert(tuples_d && quality_d);
