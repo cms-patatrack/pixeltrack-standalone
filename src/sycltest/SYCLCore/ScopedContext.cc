@@ -11,15 +11,15 @@ namespace cms::sycltools {
 
     void sycl_exception_handler(cl::sycl::exception_list exceptions) {
       std::ostringstream msg;
-      msg << "Caught asynchronous SYCL exception:";
+      msg << "Caught asynchronous SYCL exception(s):";
       for (auto const &exc_ptr : exceptions) {
         try {
           std::rethrow_exception(exc_ptr);
         } catch (cl::sycl::exception const &e) {
           msg << '\n' << e.what();
         }
-        throw std::runtime_error(msg.str());
       }
+      throw std::runtime_error(msg.str());
     }
 
     ScopedContextBase::ScopedContextBase(edm::StreamID streamID)
