@@ -56,9 +56,12 @@ namespace cms::sycltools {
 
     void ScopedContextHolderHelper::enqueueCallback(sycl::queue stream) {
       // TODO: make truly asynchronous
-      // TODO: propagate exception to waitingTaskHolder_
-      stream.wait();
-      waitingTaskHolder_.doneWaiting(nullptr);
+      try {
+        stream.wait_and_throw();
+        waitingTaskHolder_.doneWaiting(nullptr);
+      } catch(...) {
+        waitingTaskHolder_.doneWaiting(std::current_exception());
+      }
     }
   }  // namespace impl
 
