@@ -3,9 +3,6 @@
 
 #include "PluginManager.h"
 
-#ifndef SRC_DIR
-#error "SRC_DIR undefined"
-#endif
 #ifndef LIB_DIR
 #error "LIB_DIR undefined"
 #endif
@@ -15,7 +12,7 @@
 
 namespace edmplugin {
   PluginManager::PluginManager() {
-    std::ifstream pluginMap(STR(SRC_DIR) "/plugins.txt");
+    std::ifstream pluginMap(STR(LIB_DIR) "/plugins.txt");
     std::string plugin, library;
     while (pluginMap >> plugin >> library) {
       //std::cout << "plugin " << plugin << " in " << library << std::endl;
