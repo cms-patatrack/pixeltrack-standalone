@@ -87,15 +87,12 @@ ROCM_LIBDIR := $(ROCM_BASE)/lib
 export ROCM_BASE
 export ROCM_DEPS := $(ROCM_LIBDIR)/libamdhip64.so
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
-ROCM_CLANG := $(ROCM_BASE)/llvm/bin/clang
-ROCM_CLANG_RESOURCE_DIR := $(shell $(ROCM_CLANG) -print-resource-dir)
-ROCM_CLANG_RUNTIME_DIR := $(shell $(ROCM_CLANG) -print-runtime-dir)
 HIPCC_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
 export HIPCC_CXXFLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --gcc-toolchain=$(GCC_TOOLCHAIN)
 export HIPCC_LDFLAGS := $(LDFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
-export ROCM_CXXFLAGS := -D__HIP_PLATFORM_HCC__ -D__HIP_PLATFORM_AMD__ -I$(ROCM_BASE)/include -I$(ROCM_BASE)/hip/include -I$(ROCM_BASE)/hsa/include -I$(ROCM_CLANG_RESOURCE_DIR) -I$(ROCM_BASE)/hiprand/include -I$(ROCM_BASE)/rocrand/include
-export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -L$(ROCM_BASE)/hip/lib -L$(ROCM_BASE)/hsa/lib -L$(ROCM_CLANG_RUNTIME_DIR) -L$(ROCM_BASE)/llvm/lib -lamdhip64
+export ROCM_CXXFLAGS := -D__HIP_PLATFORM_HCC__ -D__HIP_PLATFORM_AMD__ -I$(ROCM_BASE)/include -I$(ROCM_BASE)/hiprand/include -I$(ROCM_BASE)/rocrand/include
+export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64
 export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
