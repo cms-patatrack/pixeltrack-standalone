@@ -17,6 +17,7 @@
     * [`hip` and `hiptest`](#hip-and-hiptest)
     * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
     * [`alpaka` and `alpakatest`](#alpaka-and-alpakatest)
+    * [`stdpar`](#stdpar)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
 * [Contribution guide](#contribution-guide)
@@ -51,7 +52,7 @@ In addition, the individual programs assume the following be found from the syst
 | `alpakatest` |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
 | `alpaka`     |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
 | `sycltest`   |                    |                             |                        | :heavy_check_mark:                                                                                               |
-|              |                    |                             |                        |                                                                                                                  |
+| `stdpar`     |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 
 1. `kokkos` and `kokkostest` have an optional dependence on CUDA, by default it is required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 2. `kokkos` and `kokkostest` have an optional dependence on ROCm, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
@@ -78,6 +79,7 @@ All other dependencies (listed below) are downloaded and built automatically
 | `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |                                                                |                                                   |
 | `alpaka`     | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |                                                                |                                                   |
 | `sycltest`   | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |                                                                |                                                   |
+| `stdpar`     | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 
 
 1. Boost libraries from the system can also be used, but they need to be version 1.73.0 or newer
@@ -139,6 +141,7 @@ RHEL 8.x / CentOS 8.x use GCC 8 as their system compiler.
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |
 | `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `stdpar`     | `std::execution::par` version    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
 
@@ -401,6 +404,12 @@ compile time setting also the `ALPAKA_DISABLE_ASYNC_ALLOCATOR` preprocessor symb
 ```
 make alpaka ... USER_CXXFLAGS="-DALPAKA_DISABLE_CACHING_ALLOCATOR -DALPAKA_DISABLE_ASYNC_ALLOCATOR"
 ```
+
+### `stdpar`
+
+The `stdpar` program is cloned from `cudauvm` and currently intended
+to experiment the use of NVIDIA's implementation of
+`std::execution::par` with `nvc++` and in conjunction with direct CUDA code.
 
 ## Code structure
 
