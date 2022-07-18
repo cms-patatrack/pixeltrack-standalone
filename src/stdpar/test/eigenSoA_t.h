@@ -58,13 +58,13 @@ __global__ void testBasicSoA(float* p) {
 #include <memory>
 #include <random>
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   cms::cudatest::requireDevices();
 #endif
 
@@ -79,7 +79,7 @@ int main() {
     assert(p[i] > 0 && p[i] < 1.);
 
   std::cout << p[0] << std::endl;
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   float* p_d;
   cudaCheck(cudaMalloc(&p_d, 1024 * 4));
   cudaCheck(cudaMemcpy(p_d, p, 1024 * 4, cudaMemcpyDefault));

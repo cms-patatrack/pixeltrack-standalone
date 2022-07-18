@@ -53,14 +53,14 @@ namespace cms {
     template <typename Histo>
     inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
                                                           cudaStream_t stream
-#ifndef __CUDACC__
+#ifndef __NVCOMPILER
                                                           = cudaStreamDefault
 #endif
     ) {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
       cudaCheck(cudaMemsetAsync(poff, 0, size, stream));
 #else
       ::memset(poff, 0, size);
@@ -70,11 +70,11 @@ namespace cms {
     template <typename Histo>
     inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
                                                               cudaStream_t stream
-#ifndef __CUDACC__
+#ifndef __NVCOMPILER
                                                               = cudaStreamDefault
 #endif
     ) {
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
@@ -95,12 +95,12 @@ namespace cms {
                                                                   uint32_t totSize,
                                                                   int nthreads,
                                                                   cudaStream_t stream
-#ifndef __CUDACC__
+#ifndef __NVCOMPILER
                                                                   = cudaStreamDefault
 #endif
     ) {
       launchZero(h, stream);
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
       auto nblocks = (totSize + nthreads - 1) / nthreads;
       countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
       cudaCheck(cudaGetLastError());

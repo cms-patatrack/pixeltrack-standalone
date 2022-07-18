@@ -90,7 +90,7 @@ namespace gpuPixelDoublets {
   constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
 
   __global__
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
 #endif
       void getDoubletsFromHisto(GPUCACell* cells,

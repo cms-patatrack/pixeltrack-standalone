@@ -6,7 +6,7 @@
 #include <array>
 #include <memory>
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
@@ -96,7 +96,7 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   cms::cudatest::requireDevices();
   auto current_device = cms::cuda::currentDevice();
 #else
@@ -164,7 +164,7 @@ int main() {
   }
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
   assert(v_d.get());
   auto a_d = cms::cuda::make_device_unique<Assoc[]>(1, nullptr);
@@ -178,7 +178,7 @@ int main() {
 
   launchZero(a_d.get(), 0);
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   auto nThreads = 256;
   auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
@@ -196,7 +196,7 @@ int main() {
 
   Assoc la;
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
 #else
   memcpy(&la, a_d.get(), sizeof(Assoc));  // not required, easier
@@ -222,7 +222,7 @@ int main() {
   AtomicPairCounter* dc_d;
   AtomicPairCounter dc(0);
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   cudaCheck(cudaMalloc(&dc_d, sizeof(AtomicPairCounter)));
   cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
   nBlocks = (N + nThreads - 1) / nThreads;
@@ -269,7 +269,7 @@ int main() {
   std::cout << "found with ave occupancy " << double(ave) / N << ' ' << imax << std::endl;
 
   // here verify use of block local counters
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   auto m1_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
   auto m2_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
 #else
@@ -279,7 +279,7 @@ int main() {
   launchZero(m1_d.get(), 0);
   launchZero(m2_d.get(), 0);
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   nBlocks = (4 * N + nThreads - 1) / nThreads;
   countMulti<<<nBlocks, nThreads>>>(v_d.get(), m1_d.get(), N);
   countMultiLocal<<<nBlocks, nThreads>>>(v_d.get(), m2_d.get(), N);

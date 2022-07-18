@@ -83,7 +83,7 @@ namespace gpuVertexFinder {
   }
 #endif
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   ZVertexHeterogeneous Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on GPU" << std::endl;
 #ifdef CUDAUVM_DISABLE_MANAGED_VERTEX
@@ -100,7 +100,7 @@ namespace gpuVertexFinder {
     auto* soa = vertices.get();
     assert(soa);
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
 #if defined CUDAUVM_DISABLE_MANAGED_VERTEX || (!defined CUDAUVM_MANAGED_TEMPORARY)
     auto ws_d = cms::cuda::make_device_unique<WorkSpace>(stream);
 #else
@@ -110,7 +110,7 @@ namespace gpuVertexFinder {
     auto ws_d = std::make_unique<WorkSpace>();
 #endif
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
     init<<<1, 1, 0, stream>>>(soa, ws_d.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
@@ -122,7 +122,7 @@ namespace gpuVertexFinder {
     loadTracks(tksoa, soa, ws_d.get(), ptMin);
 #endif
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
@@ -154,7 +154,7 @@ namespace gpuVertexFinder {
       sortByPt2Kernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
     }
     cudaCheck(cudaGetLastError());
-#else  // __CUDACC__
+#else  // __NVCOMPILER
     if (useDensity_) {
       clusterTracksByDensity(soa, ws_d.get(), minT, eps, errmax, chi2max);
     } else if (useDBSCAN_) {

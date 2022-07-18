@@ -50,19 +50,19 @@ __global__ void testTSSoA(TS* pts, int n) {
   }
 }
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   cms::cudatest::requireDevices();
 #endif
 
   TS ts;
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
   TS* ts_d;
   cudaCheck(cudaMalloc(&ts_d, sizeof(TS)));
   testTSSoA<<<1, 64>>>(ts_d, 128);

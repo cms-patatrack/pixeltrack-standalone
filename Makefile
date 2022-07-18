@@ -26,8 +26,10 @@ endif
 USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings -Wfatal-errors
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
+export NVCXXFLAGS := -std=c++17 -fast -cuda -gpu=managed -stdpar -fpic -g
 export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs -ldl
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
+export LDFLAGS_NVCXX := $(NVCXXFLAGS) -Wl,-E -ldl
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
 
@@ -74,6 +76,23 @@ endef
 $(eval $(call CUFLAGS_template,$(CUDA_ARCH),))
 export CUDA_CUFLAGS
 export CUDA_DLINKFLAGS
+endif
+
+#Nvidia HPC sdk
+NVCXX_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.5
+ifeq ($(wildcard $(NVCXX_BASE)),)
+# HPC sdk not found
+NVCXX_BASE :=
+else
+NVCXX_LIBDIR := $(NVCXX_BASE)/cuda/lib64
+USER_CUDAFLAGS :=
+export NVCXX_BASE
+export NVCXX_DEPS := $(NVCXX_LIBDIR)/libcudart.so
+export NVCXX_ARCH := 35 50 60 70
+export NVCXX_CXXFLAGS := -I$(NVCXX_BASE)/cuda/include
+export NVCXX_TEST_CXXFLAGS := -DGPU_DEBUG
+export NVCXX_LDFLAGS := -L$(NVCXX_LIBDIR) -lcudart -lcudadevrt
+export NVCXX := $(NVCXX_BASE)/compilers/bin/nvc++
 endif
 
 # ROCm
@@ -132,7 +151,7 @@ EIGEN_BASE := $(EXTERNAL_BASE)/eigen
 export EIGEN_DEPS := $(EIGEN_BASE)
 export EIGEN_CXXFLAGS := -isystem $(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
 export EIGEN_LDFLAGS :=
-export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
+export EIGEN_NVCC_CXXFLAGS := 
 
 BOOST_BASE := /usr
 # Minimum required version of Boost, e.g. 1.78.0

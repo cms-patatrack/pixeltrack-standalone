@@ -1,7 +1,7 @@
 #ifndef HeterogeneousCoreCUDAUtilities_radixSort_H
 #define HeterogeneousCoreCUDAUtilities_radixSort_H
 
-#ifdef __CUDACC__
+#ifdef __NVCOMPILER
 
 #include <cstdint>
 #include <type_traits>
@@ -272,6 +272,6 @@ namespace cms {
   }  // namespace cuda
 }  // namespace cms
 
-#endif  // __CUDACC__
+#endif  // __NVCOMPILER
 
 #endif  // HeterogeneousCoreCUDAUtilities_radixSort_H

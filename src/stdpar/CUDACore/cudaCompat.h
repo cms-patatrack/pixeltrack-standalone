@@ -5,7 +5,7 @@
  * Everything you need to run cuda code in plain sequential c++ code
  */
 
-#ifndef __CUDACC__
+#ifndef __NVCOMPILER
 
 #include <algorithm>
 #include <cstdint>
