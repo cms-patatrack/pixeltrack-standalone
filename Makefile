@@ -52,7 +52,7 @@ export TEST_DIR := $(BASE_DIR)/test
 
 # System external definitions
 # CUDA
-CUDA_BASE := /usr/local/cuda
+CUDA_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.5/cuda
 ifeq ($(wildcard $(CUDA_BASE)),)
 # CUDA platform not found
 CUDA_BASE :=
