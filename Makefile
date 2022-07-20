@@ -79,20 +79,20 @@ export CUDA_DLINKFLAGS
 endif
 
 #Nvidia HPC sdk
-NVCXX_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.5
-ifeq ($(wildcard $(NVCXX_BASE)),)
+NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.5
+ifeq ($(wildcard $(NVHPC_BASE)),)
 # HPC sdk not found
-NVCXX_BASE :=
+NVHPC_BASE :=
 else
-NVCXX_LIBDIR := $(NVCXX_BASE)/cuda/lib64
-USER_CUDAFLAGS :=
-export NVCXX_BASE
-export NVCXX_DEPS := $(NVCXX_LIBDIR)/libcudart.so
-export NVCXX_ARCH := 35 50 60 70
-export NVCXX_CXXFLAGS := -I$(NVCXX_BASE)/cuda/include
-export NVCXX_TEST_CXXFLAGS := -DGPU_DEBUG
-export NVCXX_LDFLAGS := -L$(NVCXX_LIBDIR) -lcudart -lcudadevrt
-export NVCXX := $(NVCXX_BASE)/compilers/bin/nvc++
+NVHPC_LIBDIR := $(NVHPC_BASE)/cuda/lib64
+USER_NVHPCFLAGS :=
+export NVHPC_BASE
+export NVHPC_DEPS := $(NVHPC_LIBDIR)/libcudart.so
+export NVHPC_ARCH := 35 50 60 70
+export NVHPC_NVCXXFLAGS := 
+export NVHPC_TEST_NVCXXFLAGS := -DGPU_DEBUG
+export NVHPC_LDFLAGS := 
+export NVCXX := $(NVHPC_BASE)/compilers/bin/nvc++
 endif
 
 # ROCm
