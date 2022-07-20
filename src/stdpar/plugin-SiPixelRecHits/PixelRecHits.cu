@@ -1,6 +1,7 @@
 // C++ headers
 #include <algorithm>
 #include <numeric>
+#include <execution>
 
 // CUDA runtime
 #include <cuda_runtime.h>
@@ -8,28 +9,12 @@
 // CMSSW headers
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/device_unique_ptr.h"
+#include "Framework/CountingIterator.h"
 #include "plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.h"  // !
 #include "plugin-SiPixelClusterizer/gpuClusteringConstants.h"        // !
 
 #include "PixelRecHits.h"
 #include "gpuPixelRecHits.h"
-
-namespace {
-  __global__ void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
-                                    pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                    uint32_t* hitsLayerStart) {
-    auto i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    assert(0 == hitsModuleStart[0]);
-
-    if (i < 11) {
-      hitsLayerStart[i] = hitsModuleStart[cpeParams->layerGeometry().layerStart[i]];
-#ifdef GPU_DEBUG
-      printf("LayerStart %d %d: %d\n", i, cpeParams->layerGeometry().layerStart[i], hitsLayerStart[i]);
-#endif
-    }
-  }
-}  // namespace
 
 namespace pixelgpudetails {
 
@@ -58,8 +43,13 @@ namespace pixelgpudetails {
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
-      setHitsLayerStart<<<1, 32, 0, stream>>>(clusters_d.clusModuleStart(), cpeParams, hits_d.hitsLayerStart());
-      cudaCheck(cudaGetLastError());
+      auto hitsModuleStart = clusters_d.clusModuleStart();
+      auto layerStart = cpeParams->layerGeometry().layerStart;
+      auto hitsLayerStart = hits_d.hitsLayerStart();
+
+      std::for_each_n(std::execution::par, counting_iterator{0}, 11, [=](auto i) {
+        hitsLayerStart[i] = hitsModuleStart[layerStart[i]];
+      });
     }
 
     if (nHits) {
