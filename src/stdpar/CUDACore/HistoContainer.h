@@ -2,7 +2,7 @@
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
 #include <algorithm>
-#ifndef __CUDA_ARCH__
+#if !defined(__CUDA_ARCH__) && !defined(__NVCOMPILER)
 #include <atomic>
 #endif  // __CUDA_ARCH__
 #include <cstddef>
@@ -191,9 +191,9 @@ namespace cms {
           i = 0;
       }
 
-      __host__ __device__ __forceinline__ void add(CountersOnly const &co) {
+      __device__ inline void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-#ifdef __CUDA_ARCH__
+#ifdef __NVCOMPILER
           atomicAdd(off + i, co.off[i]);
 #else
           auto &a = (std::atomic<Counter> &)(off[i]);
@@ -202,8 +202,8 @@ namespace cms {
         }
       }
 
-      static __host__ __device__ __forceinline__ uint32_t atomicIncrement(Counter &x) {
-#ifdef __CUDA_ARCH__
+      static __device__ inline uint32_t atomicIncrement(Counter &x) {
+#ifdef __NVCOMPILER
         return atomicAdd(&x, 1);
 #else
         auto &a = (std::atomic<Counter> &)(x);
@@ -211,8 +211,8 @@ namespace cms {
 #endif
       }
 
-      static __host__ __device__ __forceinline__ uint32_t atomicDecrement(Counter &x) {
-#ifdef __CUDA_ARCH__
+      static __device__ inline uint32_t atomicDecrement(Counter &x) {
+#ifdef __NVCOMPILER
         return atomicSub(&x, 1);
 #else
         auto &a = (std::atomic<Counter> &)(x);
@@ -220,19 +220,19 @@ namespace cms {
 #endif
       }
 
-      __host__ __device__ __forceinline__ void countDirect(T b) {
+      __device__ __forceinline__ void countDirect(T b) {
         assert(b < nbins());
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fillDirect(T b, index_type j) {
+      __device__ __forceinline__ void fillDirect(T b, index_type j) {
         assert(b < nbins());
         auto w = atomicDecrement(off[b]);
         assert(w > 0);
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ int32_t bulkFill(AtomicPairCounter &apc, index_type const *v, uint32_t n) {
+      __device__ __forceinline__ int32_t bulkFill(AtomicPairCounter &apc, index_type const *v, uint32_t n) {
         auto c = apc.add(n);
         if (c.m >= nbins())
           return -int32_t(c.m);
@@ -242,11 +242,11 @@ namespace cms {
         return c.m;
       }
 
-      __host__ __device__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) {
+      __device__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) {
         off[apc.get().m] = apc.get().n;
       }
 
-      __host__ __device__ __forceinline__ void bulkFinalizeFill(AtomicPairCounter const &apc) {
+      __device__ __forceinline__ void bulkFinalizeFill(AtomicPairCounter const &apc) {
         auto m = apc.get().m;
         auto n = apc.get().n;
         if (m >= nbins()) {  // overflow!
@@ -259,13 +259,13 @@ namespace cms {
         }
       }
 
-      __host__ __device__ __forceinline__ void count(T t) {
+      __device__ __forceinline__ void count(T t) {
         uint32_t b = bin(t);
         assert(b < nbins());
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fill(T t, index_type j) {
+      __device__ __forceinline__ void fill(T t, index_type j) {
         uint32_t b = bin(t);
         assert(b < nbins());
         auto w = atomicDecrement(off[b]);
@@ -273,7 +273,7 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ void count(T t, uint32_t nh) {
+      __device__ __forceinline__ void count(T t, uint32_t nh) {
         uint32_t b = bin(t);
         assert(b < nbins());
         b += histOff(nh);
@@ -281,7 +281,7 @@ namespace cms {
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
+      __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
         assert(b < nbins());
         b += histOff(nh);
@@ -291,7 +291,7 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ void finalize(Counter *ws = nullptr) {
+      __device__ __forceinline__ void finalize(Counter *ws = nullptr) {
         assert(off[totbins() - 1] == 0);
         blockPrefixScan(off, totbins(), ws);
         assert(off[totbins() - 1] == off[totbins() - 2]);
