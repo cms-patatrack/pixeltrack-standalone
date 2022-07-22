@@ -2,6 +2,25 @@
 // Author: Felice Pantaleo, CERN
 //
 
+#if defined(EIGEN_USE_GPU) && defined(__NVCOMPILER)
+
+#ifndef EIGEN_COMP_NVCC
+#define EIGEN_COMP_NVCC 110700
+#endif
+
+#ifndef EIGEN_CUDACC
+#define EIGEN_CUDACC ON
+#endif
+
+#ifndef EIGEN_CUDA_ARCH
+#define EIGEN_CUDA_ARCH 860
+#endif
+
+#ifndef EIGEN_CUDA_SDK_VER
+#define EIGEN_CUDA_SDK_VER 11070
+#endif 
+#endif
+
 #include <cstdint>
 
 #include <cuda_runtime.h>
