@@ -7,7 +7,7 @@
 
 // including <cuda_runtime.h> would pull in the dependency on all of CUDA;
 // instead, just define away the CUDA specific attributes to keep GCC happy.
-#ifndef __NVCOMPILER
+#if !defined(__NVCOMPILER) && !defined(__CUDACC__)
 #ifndef __host__
 #define __host__
 #endif  // __host__

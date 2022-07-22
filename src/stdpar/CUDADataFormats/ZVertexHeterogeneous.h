@@ -10,9 +10,9 @@ using ZVertexHeterogeneous = HeterogeneousSoA<ZVertexSoA>;
 #else
 using ZVertexHeterogeneous = ManagedSoA<ZVertexSoA>;
 #endif
-#ifndef __NVCOMPILER
+
 #include "CUDACore/Product.h"
 using ZVertexCUDAProduct = cms::cuda::Product<ZVertexHeterogeneous>;
-#endif
+
 
 #endif

@@ -6,7 +6,7 @@
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/cuda_assert.h"
 
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
 
 template <typename T>
 __device__ void __forceinline__ warpPrefixScan(T const* __restrict__ ci, T* __restrict__ co, uint32_t i, uint32_t mask) {

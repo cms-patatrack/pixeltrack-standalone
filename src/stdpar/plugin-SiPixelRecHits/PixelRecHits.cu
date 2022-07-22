@@ -43,6 +43,7 @@ namespace pixelgpudetails {
 
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
+      //Get pointers to pass to the device
       auto hitsModuleStart = clusters_d.clusModuleStart();
       auto layerStart = cpeParams->layerGeometry().layerStart;
       auto hitsLayerStart = hits_d.hitsLayerStart();
