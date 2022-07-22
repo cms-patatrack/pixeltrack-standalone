@@ -6,7 +6,7 @@
 #include <array>
 #include <memory>
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
@@ -96,7 +96,7 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   cms::cudatest::requireDevices();
   auto current_device = cms::cuda::currentDevice();
 #else
@@ -164,7 +164,7 @@ int main() {
   }
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
   assert(v_d.get());
   auto a_d = cms::cuda::make_device_unique<Assoc[]>(1, nullptr);
@@ -178,7 +178,7 @@ int main() {
 
   launchZero(a_d.get(), 0);
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   auto nThreads = 256;
   auto nBlocks = (4 * N + nThreads - 1) / nThreads;
 
@@ -196,7 +196,7 @@ int main() {
 
   Assoc la;
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
 #else
   memcpy(&la, a_d.get(), sizeof(Assoc));  // not required, easier
@@ -222,12 +222,12 @@ int main() {
   AtomicPairCounter* dc_d;
   AtomicPairCounter dc(0);
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   cudaCheck(cudaMalloc(&dc_d, sizeof(AtomicPairCounter)));
   cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
   nBlocks = (N + nThreads - 1) / nThreads;
   fillBulk<<<nBlocks, nThreads>>>(dc_d, v_d.get(), a_d.get(), N);
-  finalizeBulk<<<nBlocks, nThreads>>>(dc_d, a_d.get());
+  cms::cuda::finalizeBulk<<<nBlocks, nThreads>>>(dc_d, a_d.get());
   verifyBulk<<<1, 1>>>(a_d.get(), dc_d);
 
   cudaCheck(cudaMemcpy(&la, a_d.get(), sizeof(Assoc), cudaMemcpyDeviceToHost));
@@ -235,7 +235,7 @@ int main() {
 
   cudaCheck(cudaMemset(dc_d, 0, sizeof(AtomicPairCounter)));
   fillBulk<<<nBlocks, nThreads>>>(dc_d, v_d.get(), sa_d.get(), N);
-  finalizeBulk<<<nBlocks, nThreads>>>(dc_d, sa_d.get());
+  cms::cuda::finalizeBulk<<<nBlocks, nThreads>>>(dc_d, sa_d.get());
   verifyBulk<<<1, 1>>>(sa_d.get(), dc_d);
 
 #else
@@ -269,7 +269,7 @@ int main() {
   std::cout << "found with ave occupancy " << double(ave) / N << ' ' << imax << std::endl;
 
   // here verify use of block local counters
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   auto m1_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
   auto m2_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
 #else
@@ -279,7 +279,7 @@ int main() {
   launchZero(m1_d.get(), 0);
   launchZero(m2_d.get(), 0);
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   nBlocks = (4 * N + nThreads - 1) / nThreads;
   countMulti<<<nBlocks, nThreads>>>(v_d.get(), m1_d.get(), N);
   countMultiLocal<<<nBlocks, nThreads>>>(v_d.get(), m2_d.get(), N);

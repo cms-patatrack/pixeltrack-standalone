@@ -9,7 +9,7 @@
 #include <set>
 #include <vector>
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
 
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
@@ -22,7 +22,7 @@
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 int main(void) {
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   cms::cudatest::requireDevices();
 #endif
 
@@ -37,7 +37,7 @@ int main(void) {
 
   auto h_clus = std::make_unique<int[]>(numElements);
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
   auto d_id = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
   auto d_x = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
   auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
@@ -239,7 +239,7 @@ int main(void) {
     assert(n <= numElements);
 
     uint32_t nModules = 0;
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
     size_t size32 = n * sizeof(unsigned int);
     size_t size16 = n * sizeof(unsigned short);
     // size_t size8 = n * sizeof(uint8_t);
@@ -342,7 +342,7 @@ int main(void) {
 
     std::cout << "found " << nModules << " Modules active" << std::endl;
 
-#ifdef __NVCOMPILER
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
     cudaCheck(cudaMemcpy(h_id.get(), d_id.get(), size16, cudaMemcpyDeviceToHost));
     cudaCheck(cudaMemcpy(h_clus.get(), d_clus.get(), size32, cudaMemcpyDeviceToHost));
     cudaCheck(cudaMemcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t), cudaMemcpyDeviceToHost));
