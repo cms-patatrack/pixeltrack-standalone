@@ -9,7 +9,10 @@ namespace cms {
 
 namespace {
   struct InitGrid {
-    InitGrid() { cms::cudacompat::resetGrid(); }
+    InitGrid() { 
+      cms::cudacompat::blockIdx = {0, 0, 0};
+      cms::cudacompat::gridDim = {1, 1, 1}; 
+      }
   };
 
   const InitGrid initGrid;
