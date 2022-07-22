@@ -1,6 +1,8 @@
 #include "RiemannFitOnGPU.h"
 #include "CUDACore/device_unique_ptr.h"
 
+#ifndef DISABLE_RFIT
+
 void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                          uint32_t nhits,
                                          uint32_t maxNumberOfTuples,
@@ -129,3 +131,10 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
     }
   }
 }
+
+#else
+void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
+                                         uint32_t nhits,
+                                         uint32_t maxNumberOfTuples,
+                                         cudaStream_t stream) {}
+#endif

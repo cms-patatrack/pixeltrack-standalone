@@ -3,6 +3,9 @@
 
 #include "FitUtils.h"
 
+#ifndef DISABLE_RFIT
+
+
 namespace Rfit {
 
   /*!  Compute the Radiation length in the uniform hypothesis
@@ -1001,5 +1004,8 @@ namespace Rfit {
   }
 
 }  // namespace Rfit
+
+
+#endif
 
 #endif  // RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
