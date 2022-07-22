@@ -26,13 +26,13 @@ namespace gpuVertexFinder {
 
     uint32_t nvIntermediate;  // the number of vertices after splitting pruning etc.
 
-    __host__ __device__ void init() {
+    __host__ __device__ inline void init() {
       ntrks = 0;
       nvIntermediate = 0;
     }
   };
 
-  __global__ void init(ZVertexSoA* pdata, WorkSpace* pws) {
+  __global__ inline void init(ZVertexSoA* pdata, WorkSpace* pws) {
     pdata->init();
     pws->init();
   }
@@ -64,7 +64,6 @@ namespace gpuVertexFinder {
     ~Producer() = default;
 
     ZVertexHeterogeneous makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const;
-    ZVertexHeterogeneous make(TkSoA const* tksoa, float ptMin) const;
 
   private:
     const bool oneKernel_;
