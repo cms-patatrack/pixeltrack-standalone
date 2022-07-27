@@ -26,7 +26,7 @@ endif
 USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings -Wfatal-errors
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
-export NVCXXFLAGS := -std=c++20 -O0 -cuda -gpu=managed -stdpar -fpic -g
+export NVCXXFLAGS := -std=c++20 -O0 -cuda -gpu=managed -stdpar -fpic -gopt $(USER_CXXFLAGS)
 export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs -ldl
 export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
 export LDFLAGS_NVCXX := $(NVCXXFLAGS) -Wl,-E -ldl
@@ -79,7 +79,7 @@ export CUDA_DLINKFLAGS
 endif
 
 #Nvidia HPC sdk
-NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.5
+NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.7
 ifeq ($(wildcard $(NVHPC_BASE)),)
 # HPC sdk not found
 NVHPC_BASE :=
@@ -90,7 +90,7 @@ export NVHPC_DEPS :=
 export NVHPC_NVCXXFLAGS := 
 export NVHPC_TEST_NVCXXFLAGS := -DGPU_DEBUG
 export NVHPC_LDFLAGS := 
-export NVCXX := $(NVHPC_BASE)/compilers/bin/nvc++
+export NVCXX := nvc++
 endif
 
 # ROCm
