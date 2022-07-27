@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <numeric>
 #include <execution>
+#include <ranges>
 
 // CUDA runtime
 #include <cuda_runtime.h>
@@ -9,7 +10,6 @@
 // CMSSW headers
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/device_unique_ptr.h"
-#include "Framework/CountingIterator.h"
 #include "plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.h"  // !
 #include "plugin-SiPixelClusterizer/gpuClusteringConstants.h"        // !
 
@@ -47,8 +47,8 @@ namespace pixelgpudetails {
       auto hitsModuleStart = clusters_d.clusModuleStart();
       auto layerStart = cpeParams->layerGeometry().layerStart;
       auto hitsLayerStart = hits_d.hitsLayerStart();
-
-      std::for_each_n(std::execution::par, counting_iterator{0}, 11, [=](auto i) {
+      auto iter = std::views::iota(0, 11);
+      std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
         hitsLayerStart[i] = hitsModuleStart[layerStart[i]];
       });
     }
