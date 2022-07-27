@@ -4,8 +4,6 @@
 #include "CUDACore/ESProduct.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-#include <cuda_runtime.h>
-
 #include <set>
 
 class SiPixelFedCablingMapGPUWrapper {

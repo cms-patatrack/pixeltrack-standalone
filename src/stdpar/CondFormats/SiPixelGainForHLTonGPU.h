@@ -5,17 +5,6 @@
 #include <cstdio>
 #include <tuple>
 
-// including <cuda_runtime.h> would pull in the dependency on all of CUDA;
-// instead, just define away the CUDA specific attributes to keep GCC happy.
-#if !defined(__NVCOMPILER) && !defined(__CUDACC__)
-#ifndef __host__
-#define __host__
-#endif  // __host__
-#ifndef __device__
-#define __device__
-#endif  // __device__
-#endif  // __NVCOMPILER
-
 #include "CUDACore/cuda_assert.h"
 
 struct SiPixelGainForHLTonGPU_DecodingStructure {
