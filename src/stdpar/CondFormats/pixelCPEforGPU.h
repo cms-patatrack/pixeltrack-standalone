@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <memory>
 
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "DataFormats/SOARotation.h"
@@ -54,18 +55,16 @@ namespace pixelCPEforGPU {
   };
 
   struct ParamsOnGPU {
-    CommonParams const* m_commonParams;
-    DetParams const* m_detParams;
-    LayerGeometry const* m_layerGeometry;
-    AverageGeometry const* m_averageGeometry;
+    std::shared_ptr<CommonParams const> m_commonParams;
+    std::shared_ptr<DetParams const[]> m_detParams;
+    std::shared_ptr<LayerGeometry const> m_layerGeometry;
+    std::shared_ptr<AverageGeometry const> m_averageGeometry;
 
     constexpr CommonParams const& __restrict__ commonParams() const {
-      CommonParams const* __restrict__ l = m_commonParams;
-      return *l;
+      return *m_commonParams;
     }
     constexpr DetParams const& __restrict__ detParams(int i) const {
-      DetParams const* __restrict__ l = m_detParams;
-      return l[i];
+      return m_detParams[i];
     }
     constexpr LayerGeometry const& __restrict__ layerGeometry() const { return *m_layerGeometry; }
     constexpr AverageGeometry const& __restrict__ averageGeometry() const { return *m_averageGeometry; }

@@ -3,6 +3,9 @@
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <ranges>
+#include <cstddef>
 
 // CMSSW includes
 #include "CUDACore/cudaCheck.h"
@@ -13,14 +16,13 @@
 
 SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const& cablingMap,
                                                                std::vector<unsigned char> const& modToUnp)
-    : hasQuality_(true) {
-  cablingMap_ = new SiPixelFedCablingMapGPU(cablingMap);
-
-  modToUnpDefault_ = new unsigned char[modToUnp.size()];
-  std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault_);
+    : hasQuality_(true),
+      //rvalue ref
+      cablingMap_{std::make_unique<SiPixelFedCablingMapGPU>(cablingMap)},
+      modToUnpDefault_{std::make_unique<unsigned char[]>(modToUnp.size())} {
+  auto iter = std::views::iota(std::size_t{0}, modToUnp.size());
+  std::for_each(
+      std::ranges::cbegin(iter), std::ranges::cend(iter), [&](const auto& i) { modToUnpDefault_[i] = modToUnp[i]; });
 }
 
-SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() {
-  delete cablingMap_;
-  delete[] modToUnpDefault_;
-}
+SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() {}

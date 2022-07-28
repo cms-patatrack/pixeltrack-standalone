@@ -5,6 +5,7 @@
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 #include <set>
+#include <memory>
 
 class SiPixelFedCablingMapGPUWrapper {
 public:
@@ -15,16 +16,16 @@ public:
   bool hasQuality() const { return hasQuality_; }
 
   // returns pointer to GPU memory
-  const SiPixelFedCablingMapGPU* cablingMap() const { return cablingMap_; }
+  const SiPixelFedCablingMapGPU* cablingMap() const { return cablingMap_.get(); }
 
   // returns pointer to GPU memory
-  const unsigned char* modToUnpAll() const { return modToUnpDefault_; }
+  const unsigned char* modToUnpAll() const { return modToUnpDefault_.get(); }
 
 private:
   bool hasQuality_;
 
-  SiPixelFedCablingMapGPU* cablingMap_ = nullptr;
-  unsigned char* modToUnpDefault_ = nullptr;
+  std::unique_ptr<SiPixelFedCablingMapGPU> cablingMap_;
+  std::unique_ptr<unsigned char[]> modToUnpDefault_;
 };
 
 #endif
