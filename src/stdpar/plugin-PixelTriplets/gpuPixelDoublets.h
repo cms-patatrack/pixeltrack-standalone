@@ -1,8 +1,6 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 
-#include "gpuPixelDoubletsAlgos.h"
-
 #define CONSTANT_VAR __constant__
 
 namespace gpuPixelDoublets {
