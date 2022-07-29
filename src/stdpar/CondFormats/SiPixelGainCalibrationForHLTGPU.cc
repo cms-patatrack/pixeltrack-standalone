@@ -1,6 +1,6 @@
-#include <cstring>
+#include <algorithm>
 #include <memory>
-#include <ranges>
+#include <vector>
 
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
@@ -20,8 +20,7 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
 #endif
 {
   gainForHLT_->v_pedestals = gainData_;
-  auto iter = std::views::iota(std::size_t{0}, gainData.size());
-  std::for_each(std::ranges::cbegin(iter), std::ranges::cend(iter), [&](const auto& i) { gainData_[i] = gainData[i]; });
+  std::copy(gainData.cbegin(), gainData.cend(), gainData_.get());
 }
 
 SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() {}
