@@ -19,7 +19,7 @@ public:
 
 private:
   std::unique_ptr<SiPixelGainForHLTonGPU> gainForHLT_;
-  std::shared_ptr<DecodingStructure[]> gainData_;
+  std::unique_ptr<DecodingStructure[]> gainData_;
 };
 
 #endif  // CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h

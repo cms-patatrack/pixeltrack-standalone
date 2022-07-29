@@ -12,13 +12,7 @@
 SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
                                                                  std::vector<DecodingStructure> const& gainData)
     : gainForHLT_{std::make_unique<SiPixelGainForHLTonGPU>(gain)},
-//make_shared for array
-#if __GNUC__ >= 12
-      gainData_{std::make_shared<DecodingStructure[]>(gainData.size())}
-#else
-      gainData_{new DecodingStructure[gainData.size()]}
-#endif
-{
+      gainData_{std::make_unique<DecodingStructure[]>(gainData.size())} {
   gainForHLT_->v_pedestals = gainData_.get();
   std::copy(gainData.cbegin(), gainData.cend(), gainData_.get());
 }
