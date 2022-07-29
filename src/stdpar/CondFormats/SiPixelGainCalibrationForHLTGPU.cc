@@ -19,7 +19,7 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
       gainData_{new DecodingStructure[gainData.size()]}
 #endif
 {
-  gainForHLT_->v_pedestals = gainData_;
+  gainForHLT_->v_pedestals = gainData_.get();
   std::copy(gainData.cbegin(), gainData.cend(), gainData_.get());
 }
 

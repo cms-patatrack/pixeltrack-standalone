@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <tuple>
-#include <memory>
 
 #include "CUDACore/cuda_assert.h"
 
@@ -36,7 +35,7 @@ public:
     assert(offset < 3088384);
     assert(0 == offset % 2);
 
-    DecodingStructure const* __restrict__ lp = v_pedestals.get();
+    DecodingStructure const* __restrict__ lp = v_pedestals;
     auto s = lp[offset / 2];
 
     isDeadColumn = (s.ped & 0xFF) == deadFlag_;
@@ -48,7 +47,7 @@ public:
   constexpr float decodeGain(unsigned int gain) const { return gain * gainPrecision + minGain_; }
   constexpr float decodePed(unsigned int ped) const { return ped * pedPrecision + minPed_; }
 
-  std::shared_ptr<DecodingStructure[]> v_pedestals;
+  DecodingStructure* v_pedestals;
   std::pair<Range, int> rangeAndCols[2000];
 
   float minPed_, maxPed_, minGain_, maxGain_;
