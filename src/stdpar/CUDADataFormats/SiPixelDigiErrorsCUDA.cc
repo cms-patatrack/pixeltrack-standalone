@@ -6,6 +6,7 @@
 #include "CUDACore/memsetAsync.h"
 
 #include <cassert>
+#include <cstring>
 
 SiPixelDigiErrorsCUDA::SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors, cudaStream_t stream)
     : formatterErrors_h(std::move(errors)) {

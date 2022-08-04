@@ -2,6 +2,7 @@
 #define RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
 
 #include <utility>
+#include <memory>
 
 #include "CUDACore/ESProduct.h"
 #include "CUDACore/HostAllocator.h"
@@ -13,14 +14,14 @@ public:
 
   ~PixelCPEFast();
 
-  pixelCPEforGPU::ParamsOnGPU const* get() const { return m_params; }
+  pixelCPEforGPU::ParamsOnGPU const* get() const { return m_params.get(); }
 
 private:
-  pixelCPEforGPU::ParamsOnGPU* m_params = nullptr;
-  pixelCPEforGPU::CommonParams* m_commonParams = nullptr;
-  pixelCPEforGPU::DetParams* m_detParams = nullptr;
-  pixelCPEforGPU::LayerGeometry* m_layerGeometry = nullptr;
-  pixelCPEforGPU::AverageGeometry* m_averageGeometry = nullptr;
+  std::unique_ptr<pixelCPEforGPU::ParamsOnGPU> m_params;
+  std::unique_ptr<pixelCPEforGPU::CommonParams> m_commonParams;
+  std::unique_ptr<pixelCPEforGPU::DetParams[]> m_detParams;
+  std::unique_ptr<pixelCPEforGPU::LayerGeometry> m_layerGeometry;
+  std::unique_ptr<pixelCPEforGPU::AverageGeometry> m_averageGeometry;
 };
 
 #endif  // RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h

@@ -100,12 +100,13 @@ void testFit() {
   std::cout << "Generated cov:\n" << hits_ge << std::endl;
 
   // FAST_FIT_CPU
-#ifdef USE_BL
   Vector4d fast_fit_results;
+#ifdef USE_BL
   BrokenLine::BL_Fast_fit(hits, fast_fit_results);
 #else
-  Vector4d fast_fit_results;
+#ifndef DISABLE_RFIT
   Rfit::Fast_fit(hits, fast_fit_results);
+#endif
 #endif
   std::cout << "Fitted values (FastFit, [X0, Y0, R, tan(theta)]):\n" << fast_fit_results << std::endl;
 
@@ -125,15 +126,18 @@ void testFit() {
   circle_fit_results.par(2) = B / std::abs(circle_fit_results.par(2));
   circle_fit_results.cov = Jacob * circle_fit_results.cov * Jacob.transpose();
 #else
+  Rfit::circle_fit circle_fit_results;
+  Rfit::line_fit line_fit_results;
+#ifndef DISABLE_RFIT
   Rfit::VectorNd<N> rad = (hits.block(0, 0, 2, N).colwise().norm());
   Rfit::Matrix2Nd<N> hits_cov = Rfit::Matrix2Nd<N>::Zero();
   Rfit::loadCovariance2D(hits_ge, hits_cov);
-  Rfit::circle_fit circle_fit_results =
+  circle_fit_results =
       Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
   // LINE_FIT CPU
-  Rfit::line_fit line_fit_results = Rfit::Line_fit(hits, hits_ge, circle_fit_results, fast_fit_results, B, true);
+  line_fit_results = Rfit::Line_fit(hits, hits_ge, circle_fit_results, fast_fit_results, B, true);
   Rfit::par_uvrtopak(circle_fit_results, B, true);
-
+#endif
 #endif
 
   std::cout << "Fitted values (CircleFit):\n"

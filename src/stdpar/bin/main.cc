@@ -11,7 +11,9 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
+#ifdef __NVCOMPILER
 #include <cuda_runtime.h>
+#endif
 
 #include "EventProcessor.h"
 #include "PosixClockGettime.h"
@@ -101,6 +103,8 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+
+#ifdef __NVCOMPILER
   int numberOfDevices;
   auto status = cudaGetDeviceCount(&numberOfDevices);
   if (cudaSuccess != status) {
@@ -108,6 +112,7 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
+#endif
 
 #ifdef CUDAUVM_DISABLE_ADVISE
   std::cout << "cudaMemAdvise() calls are disabled" << std::endl;

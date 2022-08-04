@@ -83,7 +83,6 @@ namespace gpuVertexFinder {
   }
 #endif
 
-#ifdef __CUDACC__
   ZVertexHeterogeneous Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on GPU" << std::endl;
 #ifdef CUDAUVM_DISABLE_MANAGED_VERTEX
@@ -91,38 +90,21 @@ namespace gpuVertexFinder {
 #else
     ZVertexHeterogeneous vertices(cms::cuda::make_managed_unique<ZVertexSoA>(stream));
 #endif  // CUDAUVM_DISABLE_MANAGED_VERTEX
-#else
-  ZVertexHeterogeneous Producer::make(TkSoA const* tksoa, float ptMin) const {
-    // std::cout << "producing Vertices on  CPU" <<    std::endl;
-    ZVertexHeterogeneous vertices(std::make_unique<ZVertexSoA>());
-#endif
+
     assert(tksoa);
     auto* soa = vertices.get();
     assert(soa);
-
-#ifdef __CUDACC__
 #if defined CUDAUVM_DISABLE_MANAGED_VERTEX || (!defined CUDAUVM_MANAGED_TEMPORARY)
     auto ws_d = cms::cuda::make_device_unique<WorkSpace>(stream);
 #else
     auto ws_d = cms::cuda::make_managed_unique<WorkSpace>(stream);
 #endif  // CUDAUVM_DISABLE_MANAGED_VERTEX
-#else
-    auto ws_d = std::make_unique<WorkSpace>();
-#endif
 
-#ifdef __CUDACC__
     init<<<1, 1, 0, stream>>>(soa, ws_d.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
     loadTracks<<<numberOfBlocks, blockSize, 0, stream>>>(tksoa, soa, ws_d.get(), ptMin);
     cudaCheck(cudaGetLastError());
-#else
-    cms::cudacompat::resetGrid();
-    init(soa, ws_d.get());
-    loadTracks(tksoa, soa, ws_d.get(), ptMin);
-#endif
-
-#ifdef __CUDACC__
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
@@ -154,24 +136,6 @@ namespace gpuVertexFinder {
       sortByPt2Kernel<<<1, 1024 - 256, 0, stream>>>(soa, ws_d.get());
     }
     cudaCheck(cudaGetLastError());
-#else  // __CUDACC__
-    if (useDensity_) {
-      clusterTracksByDensity(soa, ws_d.get(), minT, eps, errmax, chi2max);
-    } else if (useDBSCAN_) {
-      clusterTracksDBSCAN(soa, ws_d.get(), minT, eps, errmax, chi2max);
-    } else if (useIterative_) {
-      clusterTracksIterative(soa, ws_d.get(), minT, eps, errmax, chi2max);
-    }
-    // std::cout << "found " << (*ws_d).nvIntermediate << " vertices " << std::endl;
-    fitVertices(soa, ws_d.get(), 50.);
-    // one block per vertex!
-    blockIdx.x = 0;
-    gridDim.x = 1;
-    splitVertices(soa, ws_d.get(), 9.f);
-    resetGrid();
-    fitVertices(soa, ws_d.get(), 5000.);
-    sortByPt2(soa, ws_d.get());
-#endif
 
     return vertices;
   }

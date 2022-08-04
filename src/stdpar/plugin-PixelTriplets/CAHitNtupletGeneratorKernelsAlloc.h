@@ -3,7 +3,7 @@
 #include "CUDACore/cudaCheck.h"
 
 template <>
-#ifdef __CUDACC__
+#if defined(__NVCOMPILER) || defined(__CUDACC__)
 void CAHitNtupletGeneratorKernelsGPU::allocateOnGPU(cudaStream_t stream) {
 #else
 void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
@@ -26,7 +26,7 @@ void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
   device_nCells_ = (uint32_t*)(device_storage_.get() + 2);
 
   if
-#ifndef __CUDACC__
+#if !defined(__NVCOMPILER) && !defined(__CUDACC__)
       constexpr
 #endif
       (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {

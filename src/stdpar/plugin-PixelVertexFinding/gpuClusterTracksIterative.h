@@ -123,7 +123,9 @@ namespace gpuVertexFinder {
           auto be = std::min(Hist::bin(izt[i]) + 1, int(hist.nbins() - 1));
           if (nn[i] < minT)
             continue;  // DBSCAN core rule
-          auto loop = [&](uint32_t j) {
+          ++p;
+          for (; p < hist.end(be); ++p) {
+            auto j = *p;
             assert(i != j);
             if (nn[j] < minT)
               return;  // DBSCAN core rule
@@ -138,10 +140,7 @@ namespace gpuVertexFinder {
               more = true;
             }
             atomicMin(&iv[i], old);
-          };
-          ++p;
-          for (; p < hist.end(be); ++p)
-            loop(*p);
+          }
         }  // for i
       }
       if (threadIdx.x == 0)
