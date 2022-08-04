@@ -322,15 +322,16 @@ $(foreach target,$(TARGETS_ALL),$(eval $(call TARGET_ALL_DEPS_template,$(target)
 TARGETS_CUDA :=
 TARGETS_ROCM :=
 TARGETS_SYCL :=
+TARGETS_NVHPC :=
 define SPLIT_TARGETS_template
 ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
   TARGETS_$(1) += $(2)
 endif
 endef
-TOOLCHAINS := CUDA ROCM SYCL
+TOOLCHAINS := CUDA ROCM SYCL NVHPC
 $(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
 
-TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL),$(TARGETS_ALL))
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL) $(TARGETS_NVHPC),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
@@ -342,6 +343,9 @@ TARGETS += $(TARGETS_ROCM)
 endif
 ifdef SYCL_BASE
 TARGETS += $(TARGETS_SYCL)
+endif
+ifdef NVHPC_BASE
+TARGETS += $(TARGETS_NVHPC)
 endif
 # remove possible duplicates
 TARGETS := $(sort $(TARGETS))
