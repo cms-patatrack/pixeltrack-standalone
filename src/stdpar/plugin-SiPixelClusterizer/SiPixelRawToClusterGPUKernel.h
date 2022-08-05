@@ -2,11 +2,12 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
+#include <memory>
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/SiPixelDigiErrors.h"
+#include "CUDADataFormats/SiPixelClusters.h"
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/SimpleVector.h"
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
@@ -168,13 +169,8 @@ namespace pixelgpudetails {
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      cms::cuda::host::noncached::unique_ptr<unsigned int[]> word_;
-      cms::cuda::host::noncached::unique_ptr<unsigned char[]> fedId_;
-#else
-      cms::cuda::managed::unique_ptr<unsigned int[]> word_;
-      cms::cuda::managed::unique_ptr<unsigned char[]> fedId_;
-#endif
+      std::unique_ptr<unsigned int[]> word_;
+      std::unique_ptr<unsigned char[]> fedId_;
     };
 
     SiPixelRawToClusterGPUKernel() = default;

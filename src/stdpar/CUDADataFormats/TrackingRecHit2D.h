@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
-#define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
+#ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2D_h
+#define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2D_h
 
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 

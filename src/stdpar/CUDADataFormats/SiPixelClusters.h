@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
-#define CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
+#ifndef CUDADataFormats_SiPixelCluster_interface_SiPixelClusters_h
+#define CUDADataFormats_SiPixelCluster_interface_SiPixelClusters_h
 
 #include <memory>
 

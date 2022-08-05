@@ -1,5 +1,5 @@
 #include "CUDACore/Product.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
+#include "CUDADataFormats/SiPixelDigis.h"
 #include "DataFormats/SiPixelDigisSoA.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"

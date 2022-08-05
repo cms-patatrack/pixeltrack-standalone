@@ -6,9 +6,9 @@
 #include <cuda_runtime.h>
 
 #include "CUDADataFormats/BeamSpot.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/SiPixelClusters.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 namespace pixelgpudetails {
 

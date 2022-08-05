@@ -1,8 +1,8 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_plugins_HelixFitOnGPU_h
 #define RecoPixelVertexing_PixelTrackFitting_plugins_HelixFitOnGPU_h
 
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 #include "CAConstants.h"
 #include "FitResult.h"

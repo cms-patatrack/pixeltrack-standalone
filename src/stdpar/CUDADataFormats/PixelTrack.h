@@ -1,5 +1,5 @@
-#ifndef CUDADataFormatsTrackTrackHeterogeneous_H
-#define CUDADataFormatsTrackTrackHeterogeneous_H
+#ifndef CUDADataFormatsTrackTrack_H
+#define CUDADataFormatsTrackTrack_H
 
 #include <memory>
 

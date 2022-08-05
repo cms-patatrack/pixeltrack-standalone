@@ -18,14 +18,14 @@
 
 #ifndef EIGEN_CUDA_SDK_VER
 #define EIGEN_CUDA_SDK_VER 11070
-#endif 
+#endif
 #endif
 
 #include <cstdint>
 
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"

@@ -2,7 +2,7 @@
 
 #include "CUDACore/Product.h"
 #include "CUDACore/HostProduct.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
+#include "CUDADataFormats/PixelTrack.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"

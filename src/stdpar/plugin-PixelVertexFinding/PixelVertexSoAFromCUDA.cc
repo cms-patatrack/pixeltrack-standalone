@@ -2,7 +2,7 @@
 
 #include "CUDACore/Product.h"
 #include "CUDACore/HostProduct.h"
-#include "CUDADataFormats/ZVertexHeterogeneous.h"
+#include "CUDADataFormats/ZVertex.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"

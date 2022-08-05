@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <memory>
 
 // CUDA includes
 #include <cuda.h>
@@ -583,32 +584,14 @@ namespace pixelgpudetails {
 
       // wordCounter is the total no of words in each event to be trasfered on device
       assert(0 == wordCounter % 2);
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      auto word_d = cms::cuda::make_device_unique<uint32_t[]>(wordCounter, stream);
-      auto fedId_d = cms::cuda::make_device_unique<uint8_t[]>(wordCounter, stream);
-      cudaCheck(
-          cudaMemcpyAsync(word_d.get(), wordFed.word(), wordCounter * sizeof(uint32_t), cudaMemcpyDefault, stream));
-      cudaCheck(cudaMemcpyAsync(
-          fedId_d.get(), wordFed.fedId(), wordCounter * sizeof(uint8_t) / 2, cudaMemcpyDefault, stream));
-#else
-#ifndef CUDAUVM_DISABLE_PREFETCH
-      cudaCheck(cudaMemPrefetchAsync(wordFed.word(), wordCounter * sizeof(uint32_t), currentDevice, stream));
-      cudaCheck(cudaMemPrefetchAsync(wordFed.fedId(), wordCounter * sizeof(uint8_t) / 2, currentDevice, stream));
-#endif
-#endif
 
       // Launch rawToDigi kernel
       RawToDigi_kernel<<<blocks, threadsPerBlock, 0, stream>>>(
           cablingMap,
           modToUnp,
           wordCounter,
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-          word_d.get(),
-          fedId_d.get(),
-#else
           wordFed.word(),
           wordFed.fedId(),
-#endif
           digis_d.xx(),
           digis_d.yy(),
           digis_d.adc(),
@@ -705,25 +688,6 @@ namespace pixelgpudetails {
       digiErrors_d.prefetchAsync(cudaCpuDeviceId, stream);
 #endif
     }
-
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-    // read the number of modules into a data member, used by getProduct())
-    cudaCheck(cudaMemcpyAsync(
-        &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
-
-    // last element holds the number of all clusters
-    cudaCheck(cudaMemcpyAsync(&(nModules_Clusters_h[1]),
-                              clusters_d.clusModuleStart() + gpuClustering::MaxNumModules,
-                              sizeof(uint32_t),
-                              cudaMemcpyDefault,
-                              stream));
-#else
-    // read the number of modules into a data member, used by getProduct())
-    cudaCheck(cudaMemPrefetchAsync(clusters_d.moduleStart(), sizeof(uint32_t), cudaCpuDeviceId, stream));
-    // last element holds the number of all clusters
-    cudaCheck(cudaMemPrefetchAsync(
-        clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, sizeof(uint32_t), cudaCpuDeviceId, stream));
-#endif
 
 #ifdef GPU_DEBUG
     cudaDeviceSynchronize();

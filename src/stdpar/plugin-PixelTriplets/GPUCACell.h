@@ -12,8 +12,8 @@
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/VecArray.h"
 #include "CUDACore/cuda_assert.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 #include "CAConstants.h"
 #include "CircleEq.h"

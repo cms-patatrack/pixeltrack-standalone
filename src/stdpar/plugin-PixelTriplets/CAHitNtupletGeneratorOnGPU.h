@@ -4,8 +4,8 @@
 #include <cuda_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"

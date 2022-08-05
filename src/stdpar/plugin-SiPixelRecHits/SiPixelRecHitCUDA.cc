@@ -2,9 +2,9 @@
 
 #include "CUDADataFormats/BeamSpot.h"
 #include "CUDACore/Product.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/SiPixelClusters.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"

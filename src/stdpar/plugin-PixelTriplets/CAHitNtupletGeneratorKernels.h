@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
 
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
+#include "CUDADataFormats/PixelTrack.h"
 #include "GPUCACell.h"
 
 // #define DUMP_GPU_TK_TUPLES

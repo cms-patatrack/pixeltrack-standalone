@@ -6,7 +6,7 @@
 #include <limits>
 
 #include "CUDADataFormats/BeamSpot.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"

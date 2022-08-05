@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/SiPixelClusters.h"
 
 SiPixelClustersCUDA::SiPixelClustersCUDA(size_t maxClusters)
     : moduleStart_d{std::make_unique<uint32_t[]>(maxClusters + 1)},

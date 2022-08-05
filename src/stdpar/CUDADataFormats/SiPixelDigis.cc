@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
+#include "CUDADataFormats/SiPixelDigis.h"
 
 SiPixelDigisCUDA::SiPixelDigisCUDA(size_t maxFedWords)
     : xx_d{std::make_unique<uint16_t[]>(maxFedWords)},

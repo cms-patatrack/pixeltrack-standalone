@@ -1,4 +1,4 @@
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
 

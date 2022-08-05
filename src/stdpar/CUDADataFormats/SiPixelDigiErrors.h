@@ -1,5 +1,5 @@
-#ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
-#define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrorsCUDA_h
+#ifndef CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrors_h
+#define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrors_h
 
 #include <memory>
 #include <vector>

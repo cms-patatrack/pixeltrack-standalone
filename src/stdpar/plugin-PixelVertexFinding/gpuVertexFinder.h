@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "CUDADataFormats/ZVertexHeterogeneous.h"
+#include "CUDADataFormats/ZVertex.h"
 
 namespace gpuVertexFinder {
 
