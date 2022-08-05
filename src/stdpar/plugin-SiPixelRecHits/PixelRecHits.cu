@@ -20,7 +20,7 @@ namespace pixelgpudetails {
 
   TrackingRecHit2DCUDA PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigisCUDA const& digis_d,
                                                            SiPixelClustersCUDA const& clusters_d,
-                                                           BeamSpotCUDA const& bs_d,
+                                                           BeamSpot const& bs_d,
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                                            cudaStream_t stream) const {
     auto nHits = clusters_d.nClusters();

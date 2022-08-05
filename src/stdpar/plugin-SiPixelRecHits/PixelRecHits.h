@@ -5,7 +5,7 @@
 
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
+#include "CUDADataFormats/BeamSpot.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
@@ -24,7 +24,7 @@ namespace pixelgpudetails {
 
     TrackingRecHit2DCUDA makeHitsAsync(SiPixelDigisCUDA const& digis_d,
                                        SiPixelClustersCUDA const& clusters_d,
-                                       BeamSpotCUDA const& bs_d,
+                                       BeamSpot const& bs_d,
                                        pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                        cudaStream_t stream) const;
   };

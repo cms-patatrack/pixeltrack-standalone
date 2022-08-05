@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <limits>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
+#include "CUDADataFormats/BeamSpot.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"

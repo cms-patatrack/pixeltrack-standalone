@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
+#include "CUDADataFormats/BeamSpot.h"
 #include "CUDACore/Product.h"
 #include "CUDADataFormats/SiPixelClustersCUDA.h"
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
@@ -23,7 +23,7 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   // The mess with inputs will be cleaned up when migrating to the new framework
-  edm::EDGetTokenT<cms::cuda::Product<BeamSpotCUDA>> tBeamSpot;
+  edm::EDGetTokenT<cms::cuda::Product<BeamSpot>> tBeamSpot;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> token_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> tokenDigi_;
 
@@ -33,7 +33,7 @@ private:
 };
 
 SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
-    : tBeamSpot(reg.consumes<cms::cuda::Product<BeamSpotCUDA>>()),
+    : tBeamSpot(reg.consumes<cms::cuda::Product<BeamSpot>>()),
       token_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
       tokenDigi_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
       tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
