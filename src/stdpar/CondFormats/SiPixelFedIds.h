@@ -1,6 +1,7 @@
 #ifndef CondFormats_SiPixelFedIds_h
 #define CondFormats_SiPixelFedIds_h
 
+#include <utility>
 #include <vector>
 
 // Stripped-down version of SiPixelFedCablingMap

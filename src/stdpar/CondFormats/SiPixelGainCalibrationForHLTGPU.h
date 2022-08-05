@@ -1,7 +1,6 @@
 #ifndef CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
 #define CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h
 
-#include "CUDACore/ESProduct.h"
 #include <memory>
 
 class SiPixelGainForHLTonGPU;
@@ -13,7 +12,6 @@ class SiPixelGainCalibrationForHLTGPU {
 public:
   explicit SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
                                            std::vector<DecodingStructure> const& gainData);
-  ~SiPixelGainCalibrationForHLTGPU();
 
   const SiPixelGainForHLTonGPU* get() const { return gainForHLT_.get(); }
 
