@@ -1,15 +1,12 @@
 #ifndef CUDADataFormatsVertexZVertexHeterogeneous_H
 #define CUDADataFormatsVertexZVertexHeterogeneous_H
 
+#include <memory>
+
 #include "CUDADataFormats/ZVertexSoA.h"
-#include "CUDADataFormats/HeterogeneousSoA.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 
-#ifdef CUDAUVM_DISABLE_MANAGED_VERTEX
-using ZVertexHeterogeneous = HeterogeneousSoA<ZVertexSoA>;
-#else
-using ZVertexHeterogeneous = ManagedSoA<ZVertexSoA>;
-#endif
+using ZVertexHeterogeneous = std::unique_ptr<ZVertexSoA>;
 
 #include "CUDACore/Product.h"
 using ZVertexCUDAProduct = cms::cuda::Product<ZVertexHeterogeneous>;

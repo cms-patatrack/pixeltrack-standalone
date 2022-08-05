@@ -2,13 +2,9 @@
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
-#include "CUDADataFormats/HeterogeneousSoA.h"
 
-template <typename Traits>
 class TrackingRecHit2DHeterogeneous {
 public:
-  template <typename T>
-  using unique_ptr = typename Traits::template unique_ptr<T>;
 
   using Hist = TrackingRecHit2DSOAView::Hist;
 
@@ -68,13 +64,13 @@ private:
   static constexpr uint32_t n32 = 9;
   static_assert(sizeof(uint32_t) == sizeof(float));  // just stating the obvious
 
-  unique_ptr<uint16_t[]> m_store16;  //!
-  unique_ptr<float[]> m_store32;     //!
+  std::unique_ptr<uint16_t[]> m_store16;  //!
+  std::unique_ptr<float[]> m_store32;     //!
 
-  unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;                        //!
-  unique_ptr<TrackingRecHit2DSOAView::AverageGeometry> m_AverageGeometryStore;  //!
+  std::unique_ptr<TrackingRecHit2DSOAView::Hist> m_HistStore;                        //!
+  std::unique_ptr<TrackingRecHit2DSOAView::AverageGeometry> m_AverageGeometryStore;  //!
 
-  unique_ptr<TrackingRecHit2DSOAView> m_view;  //!
+  std::unique_ptr<TrackingRecHit2DSOAView> m_view;  //!
 
   uint32_t m_nHits;
 
@@ -89,16 +85,15 @@ private:
 #include "CUDACore/copyAsync.h"
 #include "CUDACore/cudaCheck.h"
 
-template <typename Traits>
-TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nHits,
+TrackingRecHit2DHeterogeneous::TrackingRecHit2DHeterogeneous(uint32_t nHits,
                                                                      pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                                                      uint32_t const* hitsModuleStart,
                                                                      cudaStream_t stream)
     : m_nHits(nHits), m_hitsModuleStart(hitsModuleStart) {
-  auto view = Traits::template make_host_unique<TrackingRecHit2DSOAView>(stream);
+  auto view = std::make_unique<TrackingRecHit2DSOAView>();
 
   view->m_nHits = nHits;
-  m_AverageGeometryStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::AverageGeometry>(stream);
+  m_AverageGeometryStore = std::make_unique<TrackingRecHit2DSOAView::AverageGeometry>();
   view->m_averageGeometry = m_AverageGeometryStore.get();
   view->m_cpeParams = cpeParams;
   view->m_hitsModuleStart = hitsModuleStart;
@@ -109,9 +104,9 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
     // if ordering is relevant they may have to be stored phi-ordered by layer or so
     // this will break 1to1 correspondence with cluster and module locality
     // so unless proven VERY inefficient we keep it ordered as generated
-    m_store16 = Traits::template make_device_unique<uint16_t[]>(nHits * n16, stream);
-    m_store32 = Traits::template make_device_unique<float[]>(nHits * n32 + 11, stream);
-    m_HistStore = Traits::template make_device_unique<TrackingRecHit2DSOAView::Hist>(stream);
+    m_store16 = std::make_unique<uint16_t[]>(nHits * n16);
+    m_store32 = std::make_unique<float[]>(nHits * n32 + 11);
+    m_HistStore = std::make_unique<TrackingRecHit2DSOAView::Hist>();
 
     auto get16 = [&](int i) { return m_store16.get() + i * nHits; };
     auto get32 = [&](int i) { return m_store32.get() + i * nHits; };
@@ -138,29 +133,17 @@ TrackingRecHit2DHeterogeneous<Traits>::TrackingRecHit2DHeterogeneous(uint32_t nH
 
     m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
   }
-
-  // transfer view
-  if constexpr (std::is_same<Traits, cms::cudacompat::GPUTraits>::value) {
-    m_view = Traits::template make_device_unique<TrackingRecHit2DSOAView>(stream);
-    cms::cuda::copyAsync(m_view, view, stream);
-  } else {
-    if constexpr (std::is_same<Traits, cms::cudacompat::ManagedTraits>::value) {
-#ifndef CUDAUVM_DISABLE_PREFETCH
-      cudaCheck(cudaMemPrefetchAsync(view.get(), sizeof(TrackingRecHit2DSOAView), cms::cuda::currentDevice(), stream));
-#endif
-    }
-    m_view.reset(view.release());  // NOLINT: std::move() breaks CUDA version
-  }
+    m_view.reset(view.release());
 }
 
 #ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::GPUTraits>;
-using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous<cms::cudacompat::GPUTraits>;
+using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous;
+using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous;
 #else
-using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::ManagedTraits>;
-using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous<cms::cudacompat::ManagedTraits>;
+using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous;
+using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous;
 #endif
-using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous<cms::cudacompat::CPUTraits>;
-using TrackingRecHit2DHost = TrackingRecHit2DHeterogeneous<cms::cudacompat::HostTraits>;
+using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous;
+using TrackingRecHit2DHost = TrackingRecHit2DHeterogeneous;
 
 #endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
