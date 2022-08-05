@@ -1,17 +1,12 @@
 #ifndef CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 #define CUDADataFormats_SiPixelCluster_interface_SiPixelClustersCUDA_h
 
-#include "CUDACore/device_unique_ptr.h"
-#include "CUDACore/managed_unique_ptr.h"
-#include "CUDACore/cudaCompat.h"
-
-#include <cuda_runtime.h>
+#include <memory>
 
 class SiPixelClustersCUDA {
 public:
   SiPixelClustersCUDA() = default;
-  explicit SiPixelClustersCUDA(size_t maxClusters, cudaStream_t stream);
-  ~SiPixelClustersCUDA();
+  explicit SiPixelClustersCUDA(size_t maxClusters);
 
   SiPixelClustersCUDA(const SiPixelClustersCUDA &) = delete;
   SiPixelClustersCUDA &operator=(const SiPixelClustersCUDA &) = delete;
@@ -41,10 +36,10 @@ public:
   public:
     // DeviceConstView() = default;
 
-    __device__ __forceinline__ uint32_t moduleStart(int i) const { return __ldg(moduleStart_ + i); }
-    __device__ __forceinline__ uint32_t clusInModule(int i) const { return __ldg(clusInModule_ + i); }
-    __device__ __forceinline__ uint32_t moduleId(int i) const { return __ldg(moduleId_ + i); }
-    __device__ __forceinline__ uint32_t clusModuleStart(int i) const { return __ldg(clusModuleStart_ + i); }
+    __forceinline__ uint32_t moduleStart(int i) const { return moduleStart_[i]; }
+    __forceinline__ uint32_t clusInModule(int i) const { return clusInModule_[i]; }
+    __forceinline__ uint32_t moduleId(int i) const { return moduleId_[i]; }
+    __forceinline__ uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
 
     friend SiPixelClustersCUDA;
 
@@ -58,29 +53,14 @@ public:
   DeviceConstView *view() const { return view_d.get(); }
 
 private:
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleStart_d;  // index of the first pixel of each module
+  std::unique_ptr<uint32_t[]> moduleStart_d;  // index of the first pixel of each module
   // originally from rechits
-  cms::cuda::device::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
+  std::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
 
-  cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
-#else
-  cms::cuda::managed::unique_ptr<uint32_t[]> moduleStart_d;  // index of the first pixel of each module
-  // originally from rechits
-  cms::cuda::managed::unique_ptr<uint32_t[]> clusModuleStart_d;  // index of the first cluster of each module
+  std::unique_ptr<DeviceConstView> view_d;  // "me" pointer
 
-  cms::cuda::managed::unique_ptr<DeviceConstView> view_d;  // "me" pointer
-
-  int device_;
-#endif
-#ifdef CUDAUVM_MANAGED_TEMPORARY
-  cms::cuda::managed::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
-  cms::cuda::managed::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
-
-#else
-  cms::cuda::device::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
-  cms::cuda::device::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
-#endif
+  std::unique_ptr<uint32_t[]> clusInModule_d;  // number of clusters found in each module
+  std::unique_ptr<uint32_t[]> moduleId_d;      // module id of each module
 
   uint32_t nClusters_h;
 };

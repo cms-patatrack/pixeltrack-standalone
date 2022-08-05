@@ -5,15 +5,13 @@
 
 class TrackingRecHit2DHeterogeneous {
 public:
-
   using Hist = TrackingRecHit2DSOAView::Hist;
 
   TrackingRecHit2DHeterogeneous() = default;
 
   explicit TrackingRecHit2DHeterogeneous(uint32_t nHits,
                                          pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                         uint32_t const* hitsModuleStart,
-                                         cudaStream_t stream);
+                                         uint32_t const* hitsModuleStart);
 
   ~TrackingRecHit2DHeterogeneous() = default;
 
@@ -32,32 +30,10 @@ public:
   auto phiBinner() { return m_hist; }
   auto iphi() { return m_iphi; }
 
-#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-  // only the local coord and detector index
-  cms::cuda::host::unique_ptr<float[]> localCoordToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
-
-  // for validation
-  cms::cuda::host::unique_ptr<float[]> globalCoordToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int32_t[]> chargeToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int16_t[]> sizeToHostAsync(cudaStream_t stream) const;
-#else
-
-  void localCoordToHostPrefetchAsync(int device, cudaStream_t stream) const;
-  void detIndexToHostPrefetchAsync(int device, cudaStream_t stream) const;
-  void hitsModuleStartToHostPrefetchAsync(int device, cudaStream_t stream) const;
-
-  void globalCoordToHostPrefetchAsync(int device, cudaStream_t stream) const;
-  void chargeToHostPrefetchAsync(int device, cudaStream_t stream) const;
-  void sizeToHostPrefetchAsync(int device, cudaStream_t stream) const;
-
   const float* localCoord() const { return m_store32.get(); }
   const float* globalCoord() const { return m_store32.get() + 4 * nHits(); }
   const int32_t* charge() const { return reinterpret_cast<int32_t*>(m_store32.get() + 8 * nHits()); }
   const int16_t* size() const { return reinterpret_cast<int16_t*>(m_store16.get() + 2 * nHits()); }
-
-#endif
 
 private:
   static constexpr uint32_t n16 = 4;
@@ -77,26 +53,20 @@ private:
   uint32_t const* m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
   // needed as kernel params...
-  Hist* m_hist;
-  uint32_t* m_hitsLayerStart;
-  int16_t* m_iphi;
+  Hist* m_hist {nullptr};
+  uint32_t* m_hitsLayerStart {nullptr};
+  int16_t* m_iphi {nullptr};
 };
 
-#include "CUDACore/copyAsync.h"
-#include "CUDACore/cudaCheck.h"
-
 TrackingRecHit2DHeterogeneous::TrackingRecHit2DHeterogeneous(uint32_t nHits,
-                                                                     pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                                     uint32_t const* hitsModuleStart,
-                                                                     cudaStream_t stream)
-    : m_nHits(nHits), m_hitsModuleStart(hitsModuleStart) {
-  auto view = std::make_unique<TrackingRecHit2DSOAView>();
-
-  view->m_nHits = nHits;
+                                                             pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                                             uint32_t const* hitsModuleStart)
+    : m_view{std::make_unique<TrackingRecHit2DSOAView>()}, m_nHits(nHits), m_hitsModuleStart(hitsModuleStart) {
+  m_view->m_nHits = nHits;
   m_AverageGeometryStore = std::make_unique<TrackingRecHit2DSOAView::AverageGeometry>();
-  view->m_averageGeometry = m_AverageGeometryStore.get();
-  view->m_cpeParams = cpeParams;
-  view->m_hitsModuleStart = hitsModuleStart;
+  m_view->m_averageGeometry = m_AverageGeometryStore.get();
+  m_view->m_cpeParams = cpeParams;
+  m_view->m_hitsModuleStart = hitsModuleStart;
 
   if (nHits > 0) {
     // the single arrays are not 128 bit alligned...
@@ -112,28 +82,27 @@ TrackingRecHit2DHeterogeneous::TrackingRecHit2DHeterogeneous(uint32_t nHits,
     auto get32 = [&](int i) { return m_store32.get() + i * nHits; };
 
     // copy all the pointers
-    m_hist = view->m_hist = m_HistStore.get();
+    m_hist = m_view->m_hist = m_HistStore.get();
 
-    view->m_xl = get32(0);
-    view->m_yl = get32(1);
-    view->m_xerr = get32(2);
-    view->m_yerr = get32(3);
+    m_view->m_xl = get32(0);
+    m_view->m_yl = get32(1);
+    m_view->m_xerr = get32(2);
+    m_view->m_yerr = get32(3);
 
-    view->m_xg = get32(4);
-    view->m_yg = get32(5);
-    view->m_zg = get32(6);
-    view->m_rg = get32(7);
+    m_view->m_xg = get32(4);
+    m_view->m_yg = get32(5);
+    m_view->m_zg = get32(6);
+    m_view->m_rg = get32(7);
 
-    m_iphi = view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
+    m_iphi = m_view->m_iphi = reinterpret_cast<int16_t*>(get16(0));
 
-    view->m_charge = reinterpret_cast<int32_t*>(get32(8));
-    view->m_xsize = reinterpret_cast<int16_t*>(get16(2));
-    view->m_ysize = reinterpret_cast<int16_t*>(get16(3));
-    view->m_detInd = get16(1);
+    m_view->m_charge = reinterpret_cast<int32_t*>(get32(8));
+    m_view->m_xsize = reinterpret_cast<int16_t*>(get16(2));
+    m_view->m_ysize = reinterpret_cast<int16_t*>(get16(3));
+    m_view->m_detInd = get16(1);
 
-    m_hitsLayerStart = view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
+    m_hitsLayerStart = m_view->m_hitsLayerStart = reinterpret_cast<uint32_t*>(get32(n32));
   }
-    m_view.reset(view.release());
 }
 
 #ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
