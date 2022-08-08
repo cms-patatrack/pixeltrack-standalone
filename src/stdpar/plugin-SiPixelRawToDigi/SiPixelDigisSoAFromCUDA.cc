@@ -6,7 +6,6 @@
 #include "Framework/EDProducer.h"
 #include "Framework/PluginFactory.h"
 #include "CUDACore/ScopedContext.h"
-#include "CUDACore/host_unique_ptr.h"
 
 class SiPixelDigisSoAFromCUDA : public edm::EDProducerExternalWork {
 public:
@@ -22,19 +21,13 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
   edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
 
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  cms::cuda::host::unique_ptr<uint32_t[]> pdigi_;
-  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArr_;
-  cms::cuda::host::unique_ptr<uint16_t[]> adc_;
-  cms::cuda::host::unique_ptr<int32_t[]> clus_;
-#else
-  uint32_t const* pdigi_ = nullptr;
-  uint32_t const* rawIdArr_ = nullptr;
-  uint16_t const* adc_ = nullptr;
-  int32_t const* clus_ = nullptr;
-#endif
+  //See comments in constructor body
+  uint32_t const* pdigi_ {nullptr};
+  uint32_t const* rawIdArr_ {nullptr};
+  uint16_t const* adc_ {nullptr};
+  int32_t const* clus_ {nullptr};
 
-  size_t nDigis_;
+  size_t nDigis_ {0};
 };
 
 SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)
@@ -50,21 +43,12 @@ void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
   const auto& gpuDigis = ctx.get(iEvent, digiGetToken_);
 
   nDigis_ = gpuDigis.nDigis();
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  pdigi_ = gpuDigis.pdigiToHostAsync(ctx.stream());
-  rawIdArr_ = gpuDigis.rawIdArrToHostAsync(ctx.stream());
-  adc_ = gpuDigis.adcToHostAsync(ctx.stream());
-  clus_ = gpuDigis.clusToHostAsync(ctx.stream());
-#else
-  gpuDigis.pdigiPrefetchAsync(cudaCpuDeviceId, ctx.stream());
-  gpuDigis.rawIdArrPrefetchAsync(cudaCpuDeviceId, ctx.stream());
-  gpuDigis.adcPrefetchAsync(cudaCpuDeviceId, ctx.stream());
-  gpuDigis.clusPrefetchAsync(cudaCpuDeviceId, ctx.stream());
+  // This memory is already owned by a unique pointer, therefore class members cannot be unique_ptr themselves
+  // *this must have a shorter lifetime than gpuDigis object retrieved from the context or we risk using dangling pointers
   pdigi_ = gpuDigis.pdigi();
   rawIdArr_ = gpuDigis.rawIdArr();
   adc_ = gpuDigis.adc();
   clus_ = gpuDigis.clus();
-#endif
 }
 
 void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -78,19 +62,11 @@ void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   //     host memory to be allocated without a CUDA stream
   // - What if a CPU algorithm would produce the same SoA? We can't
   //   use cudaMallocHost without a GPU...
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  iEvent.emplace(digiPutToken_, nDigis_, pdigi_.get(), rawIdArr_.get(), adc_.get(), clus_.get());
-  pdigi_.reset();
-  rawIdArr_.reset();
-  adc_.reset();
-  clus_.reset();
-#else
   iEvent.emplace(digiPutToken_, nDigis_, pdigi_, rawIdArr_, adc_, clus_);
   pdigi_ = nullptr;
   rawIdArr_ = nullptr;
   adc_ = nullptr;
   clus_ = nullptr;
-#endif
 }
 
 // define as framework plugin
