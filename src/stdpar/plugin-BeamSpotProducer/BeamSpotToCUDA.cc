@@ -1,13 +1,7 @@
 #include <fstream>
 
-#include <cuda_runtime.h>
-
 #include "CUDACore/Product.h"
 #include "CUDACore/ScopedContext.h"
-#include "CUDACore/copyAsync.h"
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-#include "CUDACore/host_noncached_unique_ptr.h"
-#endif
 #include "CUDADataFormats/BeamSpot.h"
 #include "DataFormats/BeamSpotPOD.h"
 #include "Framework/EventSetup.h"
@@ -24,37 +18,17 @@ public:
 
 private:
   edm::EDPutTokenT<cms::cuda::Product<BeamSpot>> bsPutToken_;
-
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-  cms::cuda::host::noncached::unique_ptr<BeamSpotPOD> bsHost;
-#endif
 };
 
-BeamSpotToCUDA::BeamSpotToCUDA(edm::ProductRegistry& reg)
-    : bsPutToken_(reg.produces<cms::cuda::Product<BeamSpot>>())
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-      ,
-      bsHost(cms::cuda::make_host_noncached_unique<BeamSpotPOD>(cudaHostAllocWriteCombined))
-#endif
-{
-}
+BeamSpotToCUDA::BeamSpotToCUDA(edm::ProductRegistry& reg) : bsPutToken_(reg.produces<cms::cuda::Product<BeamSpot>>()) {}
 
 void BeamSpotToCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-  *bsHost = iSetup.get<BeamSpotPOD>();
-#else
   auto const& bs = iSetup.get<BeamSpotPOD>();
-#endif
 
   cms::cuda::ScopedContextProduce ctx{iEvent.streamID()};
 
-  BeamSpot bsDevice(ctx.stream());
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-  cms::cuda::copyAsync(bsDevice.ptr(), bsHost, ctx.stream());
-#else
+  BeamSpot bsDevice{};
   *(bsDevice.data()) = bs;
-  bsDevice.memAdviseAndPrefetch(ctx.device(), ctx.stream());
-#endif  // CUDAUVM_DISABLE_MANAGED_BEAMSPOT
 
   ctx.emplace(iEvent, bsPutToken_, std::move(bsDevice));
 }
