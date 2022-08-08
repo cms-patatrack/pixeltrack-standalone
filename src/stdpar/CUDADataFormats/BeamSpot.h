@@ -8,7 +8,7 @@
 class BeamSpot {
 public:
   // default constructor, required by cms::cuda::Product<BeamSpot>
-  BeamSpot(){data_d_ = std::make_unique<BeamSpotPOD>()}
+  BeamSpot() { data_d_ = std::make_unique<BeamSpotPOD>(); }
 
   // movable, non-copiable
   BeamSpot(BeamSpot const&) = delete;
