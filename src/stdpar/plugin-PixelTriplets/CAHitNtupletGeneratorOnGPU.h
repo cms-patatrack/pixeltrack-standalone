@@ -1,6 +1,8 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
+#include <memory>
+
 #include <cuda_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
@@ -48,7 +50,7 @@ private:
 
   Params m_params;
 
-  Counters* m_counters = nullptr;
+  std::unique_ptr<Counters> m_counters{nullptr};
 };
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
