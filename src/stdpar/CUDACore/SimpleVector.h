@@ -71,7 +71,7 @@ namespace cms {
 
       template <class... Ts>
       int emplace_back(Ts &&...args) {
-        auto previousSize = &m_size.fetch_add(1);
+        auto previousSize = m_size.fetch_add(1);
         if (previousSize < m_capacity) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
           return previousSize;
