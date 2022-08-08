@@ -37,28 +37,14 @@ private:
   uint32_t nClusters;
   uint32_t nHits;
 
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  cms::cuda::host::unique_ptr<uint16_t[]> h_adc;
-#else
   uint16_t const* h_adc;
-#endif
-#ifdef CUDAUVM_MANAGED_TEMPORARY
   uint32_t const* h_clusInModule;
-#else
-  cms::cuda::host::unique_ptr<uint32_t[]> h_clusInModule;
-#endif
 
-#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-  cms::cuda::host::unique_ptr<float[]> h_localCoord;
-  cms::cuda::host::unique_ptr<float[]> h_globalCoord;
-  cms::cuda::host::unique_ptr<int32_t[]> h_charge;
-  cms::cuda::host::unique_ptr<int16_t[]> h_size;
-#else
   float const* h_localCoord;
   float const* h_globalCoord;
   int32_t const* h_charge;
   int16_t const* h_size;
-#endif
+
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
 
@@ -115,39 +101,17 @@ void HistoValidator::acquire(const edm::Event& iEvent,
 
   nDigis = digis.nDigis();
   nModules = digis.nModules();
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  h_adc = digis.adcToHostAsync(ctx.stream());
-#else
-  digis.adcPrefetchAsync(ctx.device(), ctx.stream());
   h_adc = digis.adc();
-#endif
 
   nClusters = clusters.nClusters();
-#ifdef CUDAUVM_MANAGED_TEMPORARY  // not so temporary after all, huh
-  cudaCheck(cudaMemPrefetchAsync(clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaCpuDeviceId, ctx.stream()));
   h_clusInModule = clusters.clusInModule();
-#else
-  h_clusInModule = cms::cuda::make_host_unique<uint32_t[]>(nModules, ctx.stream());
-  cudaCheck(cudaMemcpyAsync(
-      h_clusInModule.get(), clusters.clusInModule(), sizeof(uint32_t) * nModules, cudaMemcpyDefault, ctx.stream()));
-#endif
 
   nHits = hits.nHits();
-#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-  h_localCoord = hits.localCoordToHostAsync(ctx.stream());
-  h_globalCoord = hits.globalCoordToHostAsync(ctx.stream());
-  h_charge = hits.chargeToHostAsync(ctx.stream());
-  h_size = hits.sizeToHostAsync(ctx.stream());
-#else
-  hits.localCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
-  hits.globalCoordToHostPrefetchAsync(ctx.device(), ctx.stream());
-  hits.chargeToHostPrefetchAsync(ctx.device(), ctx.stream());
-  hits.sizeToHostPrefetchAsync(ctx.device(), ctx.stream());
+
   h_localCoord = hits.localCoord();
   h_globalCoord = hits.globalCoord();
   h_charge = hits.charge();
   h_size = hits.size();
-#endif
 }
 
 void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -156,17 +120,11 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     histos["digi_adc"].fill(h_adc[i]);
   }
   histos["module_n"].fill(nModules);
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  h_adc.reset();
-#endif
 
   histos["cluster_n"].fill(nClusters);
   for (uint32_t i = 0; i < nModules; ++i) {
     histos["cluster_per_module_n"].fill(h_clusInModule[i]);
   }
-#ifndef CUDAUVM_MANAGED_TEMPORARY
-  h_clusInModule.reset();
-#endif
 
   histos["hit_n"].fill(nHits);
   for (uint32_t i = 0; i < nHits; ++i) {
@@ -182,12 +140,6 @@ void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     histos["hit_sizex"].fill(h_size[i]);
     histos["hit_sizey"].fill(h_size[i + nHits]);
   }
-#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-  h_localCoord.reset();
-  h_globalCoord.reset();
-  h_charge.reset();
-  h_size.reset();
-#endif
 
   {
     auto const& tracks = iEvent.get(trackToken_);
