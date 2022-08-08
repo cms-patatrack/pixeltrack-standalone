@@ -9,7 +9,6 @@
 
 // CMSSW headers
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/device_unique_ptr.h"
 #include "plugin-SiPixelClusterizer/SiPixelRawToClusterGPUKernel.h"  // !
 #include "plugin-SiPixelClusterizer/gpuClusteringConstants.h"        // !
 
@@ -24,7 +23,7 @@ namespace pixelgpudetails {
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                                            cudaStream_t stream) const {
     auto nHits = clusters_d.nClusters();
-    TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), stream);
+    TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart());
 
     int threadsPerBlock = 128;
     int blocks = digis_d.nModules();  // active modules (with digis)
