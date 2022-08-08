@@ -11,7 +11,6 @@
 #include <type_traits>
 
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
 #include "CUDACore/radixSort.h"
 #include "CUDACore/requireDevices.h"
@@ -137,10 +136,10 @@ void go(bool useShared) {
 
     std::random_shuffle(v, v + N);
 
-    auto v_d = cms::cuda::make_device_unique<U[]>(N, nullptr);
-    auto ind_d = cms::cuda::make_device_unique<uint16_t[]>(N, nullptr);
-    auto ws_d = cms::cuda::make_device_unique<uint16_t[]>(N, nullptr);
-    auto off_d = cms::cuda::make_device_unique<uint32_t[]>(blocks + 1, nullptr);
+    auto v_d = std::make_unique<U[]>(N);
+    auto ind_d = std::make_unique<uint16_t[]>(N);
+    auto ws_d = std::make_unique<uint16_t[]>(N);
+    auto off_d = std::make_unique<uint32_t[]>(blocks + 1);
 
     cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(off_d.get(), offsets, 4 * (blocks + 1), cudaMemcpyHostToDevice));

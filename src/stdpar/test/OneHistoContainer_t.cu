@@ -6,7 +6,6 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/launch.h"
 #include "CUDACore/requireDevices.h"
 
@@ -108,7 +107,7 @@ void go() {
   constexpr int N = 12000;
   T v[N];
 
-  auto v_d = make_device_unique<T[]>(N, nullptr);
+  auto v_d = std::make_unique<T[]>(N);
   assert(v_d.get());
 
   using Hist = HistoContainer<T, NBINS, N, S>;
