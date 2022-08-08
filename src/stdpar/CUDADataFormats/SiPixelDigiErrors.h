@@ -2,15 +2,14 @@
 #define CUDADataFormats_SiPixelDigi_interface_SiPixelDigiErrors_h
 
 #include <memory>
-#include <vector>
 
+#include "CUDACore/SimpleVector.h"
 #include "DataFormats/PixelErrors.h"
 
 class SiPixelDigiErrorsCUDA {
 public:
   SiPixelDigiErrorsCUDA() = default;
-  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors)
-      : formatterErrors_h(std::move(errors)) {}
+  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors);
   ~SiPixelDigiErrorsCUDA() = default;
 
   SiPixelDigiErrorsCUDA(const SiPixelDigiErrorsCUDA&) = delete;
@@ -20,15 +19,15 @@ public:
 
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 
-  std::vector<PixelErrorCompact>* error() { return &errors; }
-  std::vector<PixelErrorCompact> const* error() const { return &errors; }
-  std::vector<PixelErrorCompact> const* c_error() const { return &errors; }
+  cms::cuda::SimpleVector<PixelErrorCompact>* error() { return errors_d.get(); }
+  cms::cuda::SimpleVector<PixelErrorCompact> const* error() const { return errors_d.get(); }
+  cms::cuda::SimpleVector<PixelErrorCompact> const* c_error() const { return errors_d.get(); }
 
 private:
-  std::vector<PixelErrorCompact> errors;
   size_t maxFedWords_;
-
   PixelFormatterErrors formatterErrors_h;
+  std::unique_ptr<cms::cuda::SimpleVector<PixelErrorCompact>> errors_d;
+  std::unique_ptr<PixelErrorCompact[]> data_d;
 };
 
 #endif
