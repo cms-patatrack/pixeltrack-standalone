@@ -151,9 +151,6 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   }  // end of for loop
 
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  wordFedAppender_->memAdvise();
-#endif
   gpuAlgo_.makeClustersAsync(isRun2_,
                              gpuMap,
                              gpuModulesToUnpack,
@@ -177,10 +174,6 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   if (includeErrors_) {
     ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
   }
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  wordFedAppender_->clearAdvise();
-  wordFedAppender_.reset();
-#endif
 }
 
 // define as framework plugin

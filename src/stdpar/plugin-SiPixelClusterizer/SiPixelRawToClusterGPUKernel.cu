@@ -25,9 +25,7 @@
 // CMSSW includes
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/currentDevice.h"
-#include "CUDACore/device_unique_ptr.h"
-#include "CUDACore/host_unique_ptr.h"
+#include "CUDACore/SimpleVector.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 // local includes
@@ -41,17 +39,10 @@ namespace pixelgpudetails {
   // number of words for all the FEDs
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
-    word_ = cms::cuda::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
-    fedId_ = cms::cuda::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, cudaHostAllocWriteCombined);
-  }
-#else
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender(cudaStream_t stream) {
-    word_ = cms::cuda::make_managed_unique<unsigned int[]>(MAX_FED_WORDS, stream);
-    fedId_ = cms::cuda::make_managed_unique<unsigned char[]>(MAX_FED_WORDS, stream);
+    word_ = std::make_unique<unsigned int[]>(MAX_FED_WORDS);
+    fedId_ = std::make_unique<unsigned char[]>(MAX_FED_WORDS);
   }
-#endif
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                         unsigned int wordCounterGPU,
@@ -60,24 +51,6 @@ namespace pixelgpudetails {
     std::memcpy(word_.get() + wordCounterGPU, src, sizeof(uint32_t) * length);
     std::memset(fedId_.get() + wordCounterGPU / 2, fedId - 1200, length / 2);
   }
-
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  void SiPixelRawToClusterGPUKernel::WordFedAppender::memAdvise() {
-#ifndef CUDAUVM_DISABLE_ADVISE
-    auto dev = cms::cuda::currentDevice();
-    cudaCheck(cudaMemAdvise(word_.get(), MAX_FED_WORDS * sizeof(unsigned int), cudaMemAdviseSetReadMostly, dev));
-    cudaCheck(cudaMemAdvise(fedId_.get(), MAX_FED_WORDS * sizeof(unsigned char), cudaMemAdviseSetReadMostly, dev));
-#endif
-  }
-
-  void SiPixelRawToClusterGPUKernel::WordFedAppender::clearAdvise() {
-#ifndef CUDAUVM_DISABLE_ADVISE
-    auto dev = cms::cuda::currentDevice();
-    cudaCheck(cudaMemAdvise(word_.get(), MAX_FED_WORDS * sizeof(unsigned int), cudaMemAdviseUnsetReadMostly, dev));
-    cudaCheck(cudaMemAdvise(fedId_.get(), MAX_FED_WORDS * sizeof(unsigned char), cudaMemAdviseUnsetReadMostly, dev));
-#endif
-  }
-#endif  // CUDAUVM_DISABLE_MANAGED_CLUSTERING
 
   ////////////////////
 
@@ -559,23 +532,16 @@ namespace pixelgpudetails {
                                                        bool debug,
                                                        cudaStream_t stream) {
     nDigis = wordCounter;
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-    const auto currentDevice = cms::cuda::currentDevice();
-#endif
 
 #ifdef GPU_DEBUG
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-    digis_d = SiPixelDigisCUDA(pixelgpudetails::MAX_FED_WORDS, stream);
+    digis_d = SiPixelDigisCUDA(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsCUDA(pixelgpudetails::MAX_FED_WORDS, std::move(errors), stream);
+      digiErrors_d = SiPixelDigiErrorsCUDA(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
     }
-    clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules, stream);
-
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-    nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
-#endif
+    clusters_d = SiPixelClustersCUDA(gpuClustering::MaxNumModules);
 
     if (wordCounter)  // protect in case of empty event....
     {
@@ -679,15 +645,6 @@ namespace pixelgpudetails {
       // MUST be ONE block
       fillHitsModuleStart<<<1, 1024, 0, stream>>>(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
     }  // end clusterizer scope
-
-    // transfers to host
-    if (includeErrors) {
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      digiErrors_d.copyErrorToHostAsync(stream);
-#else
-      digiErrors_d.prefetchAsync(cudaCpuDeviceId, stream);
-#endif
-    }
 
 #ifdef GPU_DEBUG
     cudaDeviceSynchronize();
