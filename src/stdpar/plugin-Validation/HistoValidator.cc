@@ -30,7 +30,7 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
   edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2D>> hitToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
-  edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
+  edm::EDGetTokenT<ZVertex> vertexToken_;
 
   uint32_t nDigis;
   uint32_t nModules;
@@ -88,7 +88,7 @@ HistoValidator::HistoValidator(edm::ProductRegistry& reg)
       clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       hitToken_(reg.consumes<cms::cuda::Product<TrackingRecHit2D>>()),
       trackToken_(reg.consumes<PixelTrack>()),
-      vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
+      vertexToken_(reg.consumes<ZVertex>()) {}
 
 void HistoValidator::acquire(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,

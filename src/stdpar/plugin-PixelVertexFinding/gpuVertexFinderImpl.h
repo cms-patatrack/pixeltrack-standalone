@@ -83,9 +83,9 @@ namespace gpuVertexFinder {
   }
 #endif
 
-  ZVertexHeterogeneous Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
+  ZVertex Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on GPU" << std::endl;
-    ZVertexHeterogeneous vertices{std::make_unique<ZVertexSoA>()};
+    ZVertex vertices{std::make_unique<ZVertexSoA>()};
 
     assert(tksoa);
     auto* soa = vertices.get();

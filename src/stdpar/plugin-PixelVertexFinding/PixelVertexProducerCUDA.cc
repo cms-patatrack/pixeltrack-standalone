@@ -23,7 +23,7 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<PixelTrack>> tokenGPUTrack_;
   edm::EDPutTokenT<ZVertexCUDAProduct> tokenGPUVertex_;
   edm::EDGetTokenT<PixelTrack> tokenCPUTrack_;
-  edm::EDPutTokenT<ZVertexHeterogeneous> tokenCPUVertex_;
+  edm::EDPutTokenT<ZVertex> tokenCPUVertex_;
 
   const gpuVertexFinder::Producer m_gpuAlgo;
 
@@ -49,7 +49,7 @@ PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
     tokenGPUVertex_ = reg.produces<ZVertexCUDAProduct>();
   } else {
     tokenCPUTrack_ = reg.consumes<PixelTrack>();
-    tokenCPUVertex_ = reg.produces<ZVertexHeterogeneous>();
+    tokenCPUVertex_ = reg.produces<ZVertex>();
   }
 }
 

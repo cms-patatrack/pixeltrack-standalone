@@ -41,7 +41,7 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
-  edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
+  edm::EDGetTokenT<ZVertex> vertexToken_;
 };
 
 CountValidator::CountValidator(edm::ProductRegistry& reg)
@@ -51,7 +51,7 @@ CountValidator::CountValidator(edm::ProductRegistry& reg)
       digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
       clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       trackToken_(reg.consumes<PixelTrack>()),
-      vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
+      vertexToken_(reg.consumes<ZVertex>()) {}
 
 void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance

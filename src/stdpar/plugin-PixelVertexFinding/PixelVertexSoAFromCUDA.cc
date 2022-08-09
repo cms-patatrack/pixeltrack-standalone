@@ -20,15 +20,14 @@ private:
                edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<ZVertexHeterogeneous>> tokenCUDA_;
-  edm::EDPutTokenT<ZVertexHeterogeneous> tokenSOA_;
+  edm::EDGetTokenT<cms::cuda::Product<ZVertex>> tokenCUDA_;
+  edm::EDPutTokenT<ZVertex> tokenSOA_;
 
   const ZVertexSoA* m_soa;
 };
 
 PixelVertexSoAFromCUDA::PixelVertexSoAFromCUDA(edm::ProductRegistry& reg)
-    : tokenCUDA_(reg.consumes<cms::cuda::Product<ZVertexHeterogeneous>>()),
-      tokenSOA_(reg.produces<ZVertexHeterogeneous>()) {}
+    : tokenCUDA_(reg.consumes<cms::cuda::Product<ZVertex>>()), tokenSOA_(reg.produces<ZVertex>()) {}
 
 void PixelVertexSoAFromCUDA::acquire(edm::Event const& iEvent,
                                      edm::EventSetup const& iSetup,
