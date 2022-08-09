@@ -3,9 +3,9 @@
 #include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 
-TrackingRecHit2DHeterogeneous::TrackingRecHit2DHeterogeneous(uint32_t nHits,
-                                                             pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                             uint32_t const* hitsModuleStart)
+TrackingRecHit2D::TrackingRecHit2D(uint32_t nHits,
+                                   pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                   uint32_t const* hitsModuleStart)
     : m_view{std::make_unique<TrackingRecHit2DSOAView>()}, m_nHits(nHits), m_hitsModuleStart(hitsModuleStart) {
   m_view->m_nHits = nHits;
   m_AverageGeometryStore = std::make_unique<TrackingRecHit2DSOAView::AverageGeometry>();

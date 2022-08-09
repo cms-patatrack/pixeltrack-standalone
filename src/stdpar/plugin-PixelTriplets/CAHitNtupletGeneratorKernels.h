@@ -12,17 +12,17 @@ namespace cAHitNtupletGenerator {
 
   // counters
   struct Counters {
-    unsigned long long nEvents {0};
-    unsigned long long nHits {0};
-    unsigned long long nCells {0};
-    unsigned long long nTuples {0};
-    unsigned long long nFitTracks {0};
-    unsigned long long nGoodTracks {0};
-    unsigned long long nUsedHits {0};
-    unsigned long long nDupHits {0};
-    unsigned long long nKilledCells {0};
-    unsigned long long nEmptyCells {0};
-    unsigned long long nZeroTrackCells {0};
+    unsigned long long nEvents{0};
+    unsigned long long nHits{0};
+    unsigned long long nCells{0};
+    unsigned long long nTuples{0};
+    unsigned long long nFitTracks{0};
+    unsigned long long nGoodTracks{0};
+    unsigned long long nUsedHits{0};
+    unsigned long long nDupHits{0};
+    unsigned long long nKilledCells{0};
+    unsigned long long nEmptyCells{0};
+    unsigned long long nZeroTrackCells{0};
   };
 
   using HitsView = TrackingRecHit2DSOAView;
@@ -137,7 +137,6 @@ namespace cAHitNtupletGenerator {
 
 class CAHitNtupletGeneratorKernels {
 public:
-
   using QualityCuts = cAHitNtupletGenerator::QualityCuts;
   using Params = cAHitNtupletGenerator::Params;
   using Counters = cAHitNtupletGenerator::Counters;
@@ -147,7 +146,7 @@ public:
 
   using HitsView = TrackingRecHit2DSOAView;
   using HitsOnGPU = TrackingRecHit2DSOAView;
-  using HitsOnCPU = TrackingRecHit2DHeterogeneous;
+  using HitsOnCPU = TrackingRecHit2D;
 
   using HitToTuple = CAConstants::HitToTuple;
   using TupleMultiplicity = CAConstants::TupleMultiplicity;

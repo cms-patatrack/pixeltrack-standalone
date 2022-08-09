@@ -22,7 +22,7 @@ namespace edm {
 class CAHitNtupletGeneratorOnGPU {
 public:
   using HitsOnGPU = TrackingRecHit2DSOAView;
-  using HitsOnCPU = TrackingRecHit2DCUDA;
+  using HitsOnCPU = TrackingRecHit2D;
   using hindex_type = TrackingRecHit2DSOAView::hindex_type;
 
   using Quality = pixelTrack::Quality;
@@ -39,7 +39,7 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrack makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrack makeTuplesAsync(TrackingRecHit2D const& hits_d, float bfield, cudaStream_t stream) const;
 
 private:
   void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream) const;

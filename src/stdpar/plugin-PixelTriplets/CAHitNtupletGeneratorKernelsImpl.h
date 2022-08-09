@@ -20,7 +20,7 @@
 #include "gpuPixelDoublets.h"
 
 using HitsOnGPU = TrackingRecHit2DSOAView;
-using HitsOnCPU = TrackingRecHit2DCUDA;
+using HitsOnCPU = TrackingRecHit2D;
 
 using HitToTuple = CAConstants::HitToTuple;
 using TupleMultiplicity = CAConstants::TupleMultiplicity;

@@ -17,13 +17,13 @@
 
 namespace pixelgpudetails {
 
-  TrackingRecHit2DCUDA PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigis const& digis_d,
-                                                           SiPixelClusters const& clusters_d,
-                                                           BeamSpot const& bs_d,
-                                                           pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                           cudaStream_t stream) const {
+  TrackingRecHit2D PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigis const& digis_d,
+                                                       SiPixelClusters const& clusters_d,
+                                                       BeamSpot const& bs_d,
+                                                       pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                                       cudaStream_t stream) const {
     auto nHits = clusters_d.nClusters();
-    TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart());
+    TrackingRecHit2D hits_d(nHits, cpeParams, clusters_d.clusModuleStart());
 
     int threadsPerBlock = 128;
     int blocks = digis_d.nModules();  // active modules (with digis)

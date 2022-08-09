@@ -3,22 +3,22 @@
 
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 
-class TrackingRecHit2DHeterogeneous {
+class TrackingRecHit2D {
 public:
   using Hist = TrackingRecHit2DSOAView::Hist;
 
-  TrackingRecHit2DHeterogeneous() = default;
+  TrackingRecHit2D() = default;
 
-  explicit TrackingRecHit2DHeterogeneous(uint32_t nHits,
-                                         pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                         uint32_t const* hitsModuleStart);
+  explicit TrackingRecHit2D(uint32_t nHits,
+                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                            uint32_t const* hitsModuleStart);
 
-  ~TrackingRecHit2DHeterogeneous() = default;
+  ~TrackingRecHit2D() = default;
 
-  TrackingRecHit2DHeterogeneous(const TrackingRecHit2DHeterogeneous&) = delete;
-  TrackingRecHit2DHeterogeneous& operator=(const TrackingRecHit2DHeterogeneous&) = delete;
-  TrackingRecHit2DHeterogeneous(TrackingRecHit2DHeterogeneous&&) = default;
-  TrackingRecHit2DHeterogeneous& operator=(TrackingRecHit2DHeterogeneous&&) = default;
+  TrackingRecHit2D(const TrackingRecHit2D&) = delete;
+  TrackingRecHit2D& operator=(const TrackingRecHit2D&) = delete;
+  TrackingRecHit2D(TrackingRecHit2D&&) = default;
+  TrackingRecHit2D& operator=(TrackingRecHit2D&&) = default;
 
   TrackingRecHit2DSOAView* view() { return m_view.get(); }
   TrackingRecHit2DSOAView const* view() const { return m_view.get(); }
@@ -53,14 +53,9 @@ private:
   uint32_t const* m_hitsModuleStart;  // needed for legacy, this is on GPU!
 
   // needed as kernel params...
-  Hist* m_hist {nullptr};
-  uint32_t* m_hitsLayerStart {nullptr};
-  int16_t* m_iphi {nullptr};
+  Hist* m_hist{nullptr};
+  uint32_t* m_hitsLayerStart{nullptr};
+  int16_t* m_iphi{nullptr};
 };
 
-using TrackingRecHit2DGPU = TrackingRecHit2DHeterogeneous;
-using TrackingRecHit2DCUDA = TrackingRecHit2DHeterogeneous;
-using TrackingRecHit2DCPU = TrackingRecHit2DHeterogeneous;
-using TrackingRecHit2DHost = TrackingRecHit2DHeterogeneous;
-
-#endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
+#endif  // CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2D_h

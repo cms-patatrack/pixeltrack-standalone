@@ -27,7 +27,7 @@ private:
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> token_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> tokenDigi_;
 
-  edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> tokenHit_;
+  edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2D>> tokenHit_;
 
   pixelgpudetails::PixelRecHitGPUKernel gpuAlgo_;
 };
@@ -36,7 +36,7 @@ SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
     : tBeamSpot(reg.consumes<cms::cuda::Product<BeamSpot>>()),
       token_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       tokenDigi_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
-      tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
+      tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2D>>()) {}
 
 void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   PixelCPEFast const& fcpe = es.get<PixelCPEFast>();
