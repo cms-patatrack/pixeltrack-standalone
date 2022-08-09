@@ -21,14 +21,14 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
   edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DGPU>> tokenHitGPU_;
-  edm::EDPutTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenTrackGPU_;
+  edm::EDPutTokenT<cms::cuda::Product<PixelTrack>> tokenTrackGPU_;
 
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
 };
 
 CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
     : tokenHitGPU_{reg.consumes<cms::cuda::Product<TrackingRecHit2DGPU>>()},
-      tokenTrackGPU_{reg.produces<cms::cuda::Product<PixelTrackHeterogeneous>>()},
+      tokenTrackGPU_{reg.produces<cms::cuda::Product<PixelTrack>>()},
       gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {

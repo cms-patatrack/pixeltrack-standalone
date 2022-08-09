@@ -39,7 +39,7 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrack makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
 
 private:
   void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream) const;

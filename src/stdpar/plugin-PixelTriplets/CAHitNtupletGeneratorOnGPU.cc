@@ -90,10 +90,10 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
   }
 }
 
-PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
-                                                                    float bfield,
-                                                                    cudaStream_t stream) const {
-  PixelTrackHeterogeneous tracks(std::make_unique<pixelTrack::TrackSoA>());
+PixelTrack CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
+                                                       float bfield,
+                                                       cudaStream_t stream) const {
+  PixelTrack tracks(std::make_unique<pixelTrack::TrackSoA>());
 
   auto* soa = tracks.get();
 

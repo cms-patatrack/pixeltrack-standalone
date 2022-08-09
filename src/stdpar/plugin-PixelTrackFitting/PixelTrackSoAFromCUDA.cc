@@ -19,20 +19,19 @@ private:
                edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, edm::EventSetup const& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenCUDA_;
-  edm::EDPutTokenT<PixelTrackHeterogeneous> tokenSOA_;
+  edm::EDGetTokenT<cms::cuda::Product<PixelTrack>> tokenCUDA_;
+  edm::EDPutTokenT<PixelTrack> tokenSOA_;
 
   const pixelTrack::TrackSoA* m_soa;
 };
 
 PixelTrackSoAFromCUDA::PixelTrackSoAFromCUDA(edm::ProductRegistry& reg)
-    : tokenCUDA_(reg.consumes<cms::cuda::Product<PixelTrackHeterogeneous>>()),
-      tokenSOA_(reg.produces<PixelTrackHeterogeneous>()) {}
+    : tokenCUDA_(reg.consumes<cms::cuda::Product<PixelTrack>>()), tokenSOA_(reg.produces<PixelTrack>()) {}
 
 void PixelTrackSoAFromCUDA::acquire(edm::Event const& iEvent,
                                     edm::EventSetup const& iSetup,
                                     edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  cms::cuda::Product<PixelTrackHeterogeneous> const& inputDataWrapped = iEvent.get(tokenCUDA_);
+  cms::cuda::Product<PixelTrack> const& inputDataWrapped = iEvent.get(tokenCUDA_);
   cms::cuda::ScopedContextAcquire ctx{inputDataWrapped, std::move(waitingTaskHolder)};
   auto const& inputData = ctx.get(inputDataWrapped);
 
