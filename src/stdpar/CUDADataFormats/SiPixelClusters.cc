@@ -2,7 +2,7 @@
 
 #include "CUDADataFormats/SiPixelClusters.h"
 
-SiPixelClustersCUDA::SiPixelClustersCUDA(size_t maxClusters)
+SiPixelClusters::SiPixelClusters(size_t maxClusters)
     : moduleStart_d{std::make_unique<uint32_t[]>(maxClusters + 1)},
       clusModuleStart_d{std::make_unique<uint32_t[]>(maxClusters + 1)},
       view_d{std::make_unique<DeviceConstView>()},

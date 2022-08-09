@@ -179,7 +179,7 @@ namespace pixelgpudetails {
                            bool debug,
                            cudaStream_t stream);
 
-    std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
+    std::pair<SiPixelDigisCUDA, SiPixelClusters> getResults() {
       digis_d.setNModulesDigis(clusters_d.moduleStart()[0], nDigis);
       clusters_d.setNClusters(clusters_d.clusModuleStart()[gpuClustering::MaxNumModules]);
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
@@ -192,7 +192,7 @@ namespace pixelgpudetails {
 
     // Data to be put in the event
     SiPixelDigisCUDA digis_d;
-    SiPixelClustersCUDA clusters_d;
+    SiPixelClusters clusters_d;
     SiPixelDigiErrorsCUDA digiErrors_d;
   };
 

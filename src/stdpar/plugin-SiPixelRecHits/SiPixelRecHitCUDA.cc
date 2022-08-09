@@ -24,7 +24,7 @@ private:
 
   // The mess with inputs will be cleaned up when migrating to the new framework
   edm::EDGetTokenT<cms::cuda::Product<BeamSpot>> tBeamSpot;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> token_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> token_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> tokenDigi_;
 
   edm::EDPutTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> tokenHit_;
@@ -34,7 +34,7 @@ private:
 
 SiPixelRecHitCUDA::SiPixelRecHitCUDA(edm::ProductRegistry& reg)
     : tBeamSpot(reg.consumes<cms::cuda::Product<BeamSpot>>()),
-      token_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
+      token_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       tokenDigi_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
       tokenHit_(reg.produces<cms::cuda::Product<TrackingRecHit2DCUDA>>()) {}
 

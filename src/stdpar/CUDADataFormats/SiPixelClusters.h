@@ -3,15 +3,15 @@
 
 #include <memory>
 
-class SiPixelClustersCUDA {
+class SiPixelClusters {
 public:
-  SiPixelClustersCUDA() = default;
-  explicit SiPixelClustersCUDA(size_t maxClusters);
+  SiPixelClusters() = default;
+  explicit SiPixelClusters(size_t maxClusters);
 
-  SiPixelClustersCUDA(const SiPixelClustersCUDA &) = delete;
-  SiPixelClustersCUDA &operator=(const SiPixelClustersCUDA &) = delete;
-  SiPixelClustersCUDA(SiPixelClustersCUDA &&) = default;
-  SiPixelClustersCUDA &operator=(SiPixelClustersCUDA &&) = default;
+  SiPixelClusters(const SiPixelClusters &) = delete;
+  SiPixelClusters &operator=(const SiPixelClusters &) = delete;
+  SiPixelClusters(SiPixelClusters &&) = default;
+  SiPixelClusters &operator=(SiPixelClusters &&) = default;
 
   void setNClusters(uint32_t nClusters) { nClusters_h = nClusters; }
 
@@ -41,7 +41,7 @@ public:
     __forceinline__ uint32_t moduleId(int i) const { return moduleId_[i]; }
     __forceinline__ uint32_t clusModuleStart(int i) const { return clusModuleStart_[i]; }
 
-    friend SiPixelClustersCUDA;
+    friend SiPixelClusters;
 
     //   private:
     uint32_t const *moduleStart_;
