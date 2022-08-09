@@ -3,8 +3,6 @@
 
 #include <cstdint>
 
-#include "CUDACore/cudaCompat.h"
-
 namespace cms {
   namespace cuda {
 

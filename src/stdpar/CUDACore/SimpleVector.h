@@ -7,8 +7,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "CUDACore/cudaCompat.h"
-
 namespace cms {
   namespace cuda {
 

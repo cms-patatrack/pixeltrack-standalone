@@ -7,8 +7,6 @@
 
 #include <Eigen/Core>
 
-#include "CUDACore/cudaCompat.h"
-
 namespace eigenSoA {
 
   constexpr bool isPowerOf2(int32_t v) { return v && !(v & (v - 1)); }

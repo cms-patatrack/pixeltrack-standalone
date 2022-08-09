@@ -5,8 +5,6 @@
 // Author: Felice Pantaleo, CERN
 //
 
-#include "CUDACore/cudaCompat.h"
-
 namespace cms {
   namespace cuda {
 
