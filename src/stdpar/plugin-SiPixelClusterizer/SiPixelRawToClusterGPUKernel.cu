@@ -539,7 +539,7 @@ namespace pixelgpudetails {
 
     digis_d = SiPixelDigisCUDA(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
-      digiErrors_d = SiPixelDigiErrorsCUDA(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
+      digiErrors_d = SiPixelDigiErrors(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
     }
     clusters_d = SiPixelClusters(gpuClustering::MaxNumModules);
 

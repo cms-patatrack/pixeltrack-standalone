@@ -4,7 +4,7 @@
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/SiPixelDigiErrors.h"
 
-SiPixelDigiErrorsCUDA::SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors)
+SiPixelDigiErrors::SiPixelDigiErrors(size_t maxFedWords, PixelFormatterErrors errors)
     : maxFedWords_{maxFedWords},
       formatterErrors_h{std::move(errors)},
       errors_d{std::make_unique<cms::cuda::SimpleVector<PixelErrorCompact>>()},

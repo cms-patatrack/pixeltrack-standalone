@@ -37,7 +37,7 @@ private:
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrorsCUDA>> digiErrorPutToken_;
+  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrors>> digiErrorPutToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelClusters>> clusterPutToken_;
 
   pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
@@ -57,7 +57,7 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
       includeErrors_(true),
       useQuality_(true) {
   if (includeErrors_) {
-    digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
+    digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrors>>();
   }
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();

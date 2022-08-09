@@ -6,16 +6,16 @@
 #include "CUDACore/SimpleVector.h"
 #include "DataFormats/PixelErrors.h"
 
-class SiPixelDigiErrorsCUDA {
+class SiPixelDigiErrors {
 public:
-  SiPixelDigiErrorsCUDA() = default;
-  explicit SiPixelDigiErrorsCUDA(size_t maxFedWords, PixelFormatterErrors errors);
-  ~SiPixelDigiErrorsCUDA() = default;
+  SiPixelDigiErrors() = default;
+  explicit SiPixelDigiErrors(size_t maxFedWords, PixelFormatterErrors errors);
+  ~SiPixelDigiErrors() = default;
 
-  SiPixelDigiErrorsCUDA(const SiPixelDigiErrorsCUDA&) = delete;
-  SiPixelDigiErrorsCUDA& operator=(const SiPixelDigiErrorsCUDA&) = delete;
-  SiPixelDigiErrorsCUDA(SiPixelDigiErrorsCUDA&&) = default;
-  SiPixelDigiErrorsCUDA& operator=(SiPixelDigiErrorsCUDA&&) = default;
+  SiPixelDigiErrors(const SiPixelDigiErrors&) = delete;
+  SiPixelDigiErrors& operator=(const SiPixelDigiErrors&) = delete;
+  SiPixelDigiErrors(SiPixelDigiErrors&&) = default;
+  SiPixelDigiErrors& operator=(SiPixelDigiErrors&&) = default;
 
   const PixelFormatterErrors& formatterErrors() const { return formatterErrors_h; }
 

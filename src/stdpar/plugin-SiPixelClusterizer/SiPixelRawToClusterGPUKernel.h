@@ -185,7 +185,7 @@ namespace pixelgpudetails {
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
     }
 
-    SiPixelDigiErrorsCUDA&& getErrors() { return std::move(digiErrors_d); }
+    SiPixelDigiErrors&& getErrors() { return std::move(digiErrors_d); }
 
   private:
     uint32_t nDigis = 0;
@@ -193,7 +193,7 @@ namespace pixelgpudetails {
     // Data to be put in the event
     SiPixelDigisCUDA digis_d;
     SiPixelClusters clusters_d;
-    SiPixelDigiErrorsCUDA digiErrors_d;
+    SiPixelDigiErrors digiErrors_d;
   };
 
   // see RecoLocalTracker/SiPixelClusterizer
