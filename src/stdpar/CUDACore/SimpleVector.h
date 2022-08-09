@@ -15,7 +15,7 @@ namespace cms {
       constexpr SimpleVector() = default;
 
       // ownership of m_data stays within the caller
-      constexpr void construct(size_t capacity, T *data) {
+      constexpr void construct(int32_t capacity, T *data) {
         m_size.store(0);
         m_capacity = capacity;
         m_data = data;
@@ -80,7 +80,7 @@ namespace cms {
       }
 
       // thread safe version of resize
-      int extend(size_t size = 1) {
+      int extend(int32_t size = 1) {
         auto previousSize = m_size.fetch_add(size);
         if (previousSize < m_capacity) {
           return previousSize;
@@ -90,7 +90,7 @@ namespace cms {
         }
       }
 
-      int shrink(size_t size = 1) {
+      int shrink(int32_t size = 1) {
         auto previousSize = m_size.fetch_sub(size);
         if (previousSize >= size) {
           return previousSize - size;
@@ -105,22 +105,22 @@ namespace cms {
       inline constexpr T &operator[](int i) { return m_data[i]; }
       inline constexpr const T &operator[](int i) const { return m_data[i]; }
       inline constexpr void reset() { resize(0); }
-      inline constexpr std::atomic_size_t::value_type size() const { return m_size.load(); }
-      inline constexpr size_t capacity() const { return m_capacity; }
+      inline constexpr std::atomic_int32_t::value_type size() const { return m_size.load(); }
+      inline constexpr int32_t capacity() const { return m_capacity; }
       inline constexpr T const *data() const { return m_data; }
-      inline constexpr void resize(size_t size) { m_size.store(size); }
+      inline constexpr void resize(int32_t size) { m_size.store(size); }
       inline constexpr void set_data(T *data) { m_data = data; }
 
     private:
-      std::atomic_size_t m_size;
-      size_t m_capacity;
+      int32_t m_capacity{0};
+      std::atomic_int32_t m_size{0};
 
-      T *m_data;
+      T *m_data{nullptr};
     };
 
     // ownership of m_data stays within the caller
     template <class T>
-    SimpleVector<T> make_SimpleVector(size_t capacity, T *data) {
+    SimpleVector<T> make_SimpleVector(int32_t capacity, T *data) {
       SimpleVector<T> ret;
       ret.construct(capacity, data);
       return ret;
@@ -128,7 +128,7 @@ namespace cms {
 
     // ownership of m_data stays within the caller
     template <class T>
-    SimpleVector<T> *make_SimpleVector(SimpleVector<T> *mem, size_t capacity, T *data) {
+    SimpleVector<T> *make_SimpleVector(SimpleVector<T> *mem, int32_t capacity, T *data) {
       auto ret = new (mem) SimpleVector<T>();
       ret->construct(capacity, data);
       return ret;
