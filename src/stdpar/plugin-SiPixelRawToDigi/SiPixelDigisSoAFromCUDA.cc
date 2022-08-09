@@ -18,21 +18,20 @@ private:
                edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiGetToken_;
   edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
 
   //See comments in constructor body
-  uint32_t const* pdigi_ {nullptr};
-  uint32_t const* rawIdArr_ {nullptr};
-  uint16_t const* adc_ {nullptr};
-  int32_t const* clus_ {nullptr};
+  uint32_t const* pdigi_{nullptr};
+  uint32_t const* rawIdArr_{nullptr};
+  uint16_t const* adc_{nullptr};
+  int32_t const* clus_{nullptr};
 
-  size_t nDigis_ {0};
+  size_t nDigis_{0};
 };
 
 SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)
-    : digiGetToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      digiPutToken_(reg.produces<SiPixelDigisSoA>()) {}
+    : digiGetToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()), digiPutToken_(reg.produces<SiPixelDigisSoA>()) {}
 
 void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,

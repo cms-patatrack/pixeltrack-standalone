@@ -38,7 +38,7 @@ private:
   edm::EDGetTokenT<TrackCount> trackCountToken_;
   edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
   edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
@@ -48,7 +48,7 @@ CountValidator::CountValidator(edm::ProductRegistry& reg)
     : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
       trackCountToken_(reg.consumes<TrackCount>()),
       vertexCountToken_(reg.consumes<VertexCount>()),
-      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
+      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
       clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       trackToken_(reg.consumes<PixelTrack>()),
       vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}

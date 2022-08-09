@@ -26,7 +26,7 @@ private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
   void endJob() override;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
   edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
   edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DCUDA>> hitToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
@@ -84,7 +84,7 @@ std::map<std::string, SimpleAtomicHisto> HistoValidator::histos = {
     {"vertex_pt2", SimpleAtomicHisto(100, 0, 4000)}};
 
 HistoValidator::HistoValidator(edm::ProductRegistry& reg)
-    : digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
+    : digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
       clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
       hitToken_(reg.consumes<cms::cuda::Product<TrackingRecHit2DCUDA>>()),
       trackToken_(reg.consumes<PixelTrack>()),

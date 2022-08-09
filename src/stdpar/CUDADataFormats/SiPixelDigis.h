@@ -3,15 +3,15 @@
 
 #include <memory>
 
-class SiPixelDigisCUDA {
+class SiPixelDigis {
 public:
-  SiPixelDigisCUDA() = default;
-  explicit SiPixelDigisCUDA(size_t maxFedWords);
+  SiPixelDigis() = default;
+  explicit SiPixelDigis(size_t maxFedWords);
 
-  SiPixelDigisCUDA(const SiPixelDigisCUDA &) = delete;
-  SiPixelDigisCUDA &operator=(const SiPixelDigisCUDA &) = delete;
-  SiPixelDigisCUDA(SiPixelDigisCUDA &&) = default;
-  SiPixelDigisCUDA &operator=(SiPixelDigisCUDA &&) = default;
+  SiPixelDigis(const SiPixelDigis &) = delete;
+  SiPixelDigis &operator=(const SiPixelDigis &) = delete;
+  SiPixelDigis(SiPixelDigis &&) = default;
+  SiPixelDigis &operator=(SiPixelDigis &&) = default;
 
   void setNModulesDigis(uint32_t nModules, uint32_t nDigis) {
     nModules_h = nModules;
@@ -55,7 +55,7 @@ public:
     __forceinline__ uint16_t moduleInd(int i) const { return moduleInd_[i]; }
     __forceinline__ int32_t clus(int i) const { return clus_[i]; }
 
-    friend class SiPixelDigisCUDA;
+    friend class SiPixelDigis;
 
     // private:
     uint16_t const *xx_;

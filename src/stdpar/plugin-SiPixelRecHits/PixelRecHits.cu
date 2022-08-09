@@ -17,7 +17,7 @@
 
 namespace pixelgpudetails {
 
-  TrackingRecHit2DCUDA PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigisCUDA const& digis_d,
+  TrackingRecHit2DCUDA PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigis const& digis_d,
                                                            SiPixelClusters const& clusters_d,
                                                            BeamSpot const& bs_d,
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,

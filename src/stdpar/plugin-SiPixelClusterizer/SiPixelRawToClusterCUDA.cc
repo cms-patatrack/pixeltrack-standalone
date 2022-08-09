@@ -36,7 +36,7 @@ private:
   cms::cuda::ContextState ctxState_;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
+  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigis>> digiPutToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrors>> digiErrorPutToken_;
   edm::EDPutTokenT<cms::cuda::Product<SiPixelClusters>> clusterPutToken_;
 
@@ -51,7 +51,7 @@ private:
 
 SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
     : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-      digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigisCUDA>>()),
+      digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigis>>()),
       clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClusters>>()),
       isRun2_(true),
       includeErrors_(true),

@@ -537,7 +537,7 @@ namespace pixelgpudetails {
     std::cout << "decoding " << wordCounter << " digis. Max is " << pixelgpudetails::MAX_FED_WORDS << std::endl;
 #endif
 
-    digis_d = SiPixelDigisCUDA(pixelgpudetails::MAX_FED_WORDS);
+    digis_d = SiPixelDigis(pixelgpudetails::MAX_FED_WORDS);
     if (includeErrors) {
       digiErrors_d = SiPixelDigiErrors(pixelgpudetails::MAX_FED_WORDS, std::move(errors));
     }

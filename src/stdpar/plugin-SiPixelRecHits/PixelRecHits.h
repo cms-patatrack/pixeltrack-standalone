@@ -22,7 +22,7 @@ namespace pixelgpudetails {
     PixelRecHitGPUKernel& operator=(const PixelRecHitGPUKernel&) = delete;
     PixelRecHitGPUKernel& operator=(PixelRecHitGPUKernel&&) = delete;
 
-    TrackingRecHit2DCUDA makeHitsAsync(SiPixelDigisCUDA const& digis_d,
+    TrackingRecHit2DCUDA makeHitsAsync(SiPixelDigis const& digis_d,
                                        SiPixelClusters const& clusters_d,
                                        BeamSpot const& bs_d,
                                        pixelCPEforGPU::ParamsOnGPU const* cpeParams,
