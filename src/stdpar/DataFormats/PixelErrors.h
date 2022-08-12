@@ -10,10 +10,10 @@
 // Better ideas for the placement of these?
 
 struct PixelErrorCompact {
-  uint32_t rawId {0};
-  uint32_t word {0};
-  uint8_t errorType {0};
-  uint8_t fedId {0};
+  uint32_t rawId;
+  uint32_t word;
+  uint8_t errorType;
+  uint8_t fedId;
 };
 
 using PixelFormatterErrors = std::map<uint32_t, std::vector<SiPixelRawDataError>>;
