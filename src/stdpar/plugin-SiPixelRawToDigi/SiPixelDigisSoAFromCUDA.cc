@@ -27,7 +27,7 @@ private:
   uint16_t const* adc_{nullptr};
   int32_t const* clus_{nullptr};
 
-  size_t nDigis_{0};
+  size_t nDigis_;
 };
 
 SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)

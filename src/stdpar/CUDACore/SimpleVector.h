@@ -112,10 +112,10 @@ namespace cms {
       inline constexpr void set_data(T *data) { m_data = data; }
 
     private:
-      int32_t m_capacity{0};
-      std::atomic_int32_t m_size{0};
+      int32_t m_capacity;
+      std::atomic_int32_t m_size;
 
-      T *m_data{nullptr};
+      T *m_data;
     };
 
     // ownership of m_data stays within the caller
