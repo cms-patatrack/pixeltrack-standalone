@@ -78,10 +78,10 @@ export CUDA_CUFLAGS
 export CUDA_DLINKFLAGS
 endif
 
-#Nvidia HPC sdk
+# NVIDIA HPC SDK
 NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.7
 ifeq ($(wildcard $(NVHPC_BASE)),)
-# HPC sdk not found
+# HPC SDK not found
 NVHPC_BASE :=
 else
 USER_NVHPCFLAGS :=
@@ -603,7 +603,7 @@ external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
 	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
-	cd $@ && git checkout 879b95ffce2da499c9cc6e12d4cfd5545effa701
+	cd $@ && git checkout 540397c4297719fcd76a704ee49b2318174782a4
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
