@@ -51,15 +51,10 @@ __global__ void testTSSoA(TS* pts, int n) {
 }
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-#include "CUDACore/requireDevices.h"
 #include "CUDACore/cudaCheck.h"
 #endif
 
 int main() {
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-  cms::cudatest::requireDevices();
-#endif
-
   TS ts;
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)

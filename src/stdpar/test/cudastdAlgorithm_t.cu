@@ -2,8 +2,6 @@
 #include <iostream>
 
 #include "CUDACore/cudastdAlgorithm.h"
-#include "CUDACore/requireDevices.h"
-#include "CUDACore/launch.h"
 
 __global__ void testBinaryFind() {
   int data[] = {1, 1, 2, 3, 3, 3, 3, 4, 4, 4, 5, 5, 6};
@@ -21,10 +19,9 @@ __global__ void testBinaryFind() {
   assert(data2 + 6 == cuda_std::binary_find(data2, data2 + 6, 5));
 }
 
-void wrapper() { cms::cuda::launch(testBinaryFind, {32, 64}); }
+void wrapper() { testBinaryFind<<<32, 64>>>(); }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   wrapper();
 }

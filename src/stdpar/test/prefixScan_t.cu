@@ -2,7 +2,6 @@
 
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/prefixScan.h"
-#include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
 
@@ -84,7 +83,6 @@ __global__ void verify(uint32_t const *v, uint32_t n) {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;

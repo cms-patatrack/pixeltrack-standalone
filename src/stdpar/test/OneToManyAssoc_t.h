@@ -9,8 +9,6 @@
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
-#include "CUDACore/currentDevice.h"
 #endif
 
 #include "CUDACore/HistoContainer.h"
@@ -96,28 +94,6 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-  cms::cudatest::requireDevices();
-  auto current_device = cms::cuda::currentDevice();
-#else
-  // make sure cuda emulation is working
-  std::cout << "cuda x's " << threadIdx.x << ' ' << blockIdx.x << ' ' << blockDim.x << ' ' << gridDim.x << std::endl;
-  std::cout << "cuda y's " << threadIdx.y << ' ' << blockIdx.y << ' ' << blockDim.y << ' ' << gridDim.y << std::endl;
-  std::cout << "cuda z's " << threadIdx.z << ' ' << blockIdx.z << ' ' << blockDim.z << ' ' << gridDim.z << std::endl;
-  assert(threadIdx.x == 0);
-  assert(threadIdx.y == 0);
-  assert(threadIdx.z == 0);
-  assert(blockIdx.x == 0);
-  assert(blockIdx.y == 0);
-  assert(blockIdx.z == 0);
-  assert(blockDim.x == 1);
-  assert(blockDim.y == 1);
-  assert(blockDim.z == 1);
-  assert(gridDim.x == 1);
-  assert(gridDim.y == 1);
-  assert(gridDim.z == 1);
-#endif
-
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;
   std::cout << "OneToManyAssoc (small) " << sizeof(SmallAssoc) << ' ' << SmallAssoc::nbins() << ' '
             << SmallAssoc::capacity() << std::endl;
@@ -176,7 +152,7 @@ int main() {
   auto v_d = tr.data();
 #endif
 
-  launchZero(a_d.get(), 0);
+  launchZero(a_d.get());
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
   auto nThreads = 256;
@@ -184,7 +160,7 @@ int main() {
 
   count<<<nBlocks, nThreads>>>(v_d.get(), a_d.get(), N);
 
-  launchFinalize(a_d.get(), 0);
+  launchFinalize(a_d.get());
   verify<<<1, 1>>>(a_d.get());
   fill<<<nBlocks, nThreads>>>(v_d.get(), a_d.get(), N);
 #else
@@ -276,8 +252,8 @@ int main() {
   auto m1_d = std::make_unique<Multiplicity>();
   auto m2_d = std::make_unique<Multiplicity>();
 #endif
-  launchZero(m1_d.get(), 0);
-  launchZero(m2_d.get(), 0);
+  launchZero(m1_d.get());
+  launchZero(m2_d.get());
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
   nBlocks = (4 * N + nThreads - 1) / nThreads;
@@ -285,8 +261,8 @@ int main() {
   countMultiLocal<<<nBlocks, nThreads>>>(v_d.get(), m2_d.get(), N);
   verifyMulti<<<1, Multiplicity::totbins()>>>(m1_d.get(), m2_d.get());
 
-  launchFinalize(m1_d.get(), 0);
-  launchFinalize(m2_d.get(), 0);
+  launchFinalize(m1_d.get());
+  launchFinalize(m2_d.get());
   verifyMulti<<<1, Multiplicity::totbins()>>>(m1_d.get(), m2_d.get());
 
   cudaCheck(cudaGetLastError());

@@ -6,7 +6,6 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
 
@@ -68,7 +67,7 @@ void go() {
 
     cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
 
-    fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256, 0);
+    fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256);
     cudaCheck(cudaMemcpy(&h, h_d.get(), sizeof(Hist), cudaMemcpyDeviceToHost));
     assert(0 == h.off[0]);
     assert(offsets[10] == h.size());
@@ -145,7 +144,6 @@ void go() {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   go<int16_t>();
   go<int8_t>();

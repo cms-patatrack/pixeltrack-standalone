@@ -11,9 +11,7 @@
 #include <type_traits>
 
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/launch.h"
 #include "CUDACore/radixSort.h"
-#include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
 
@@ -152,11 +150,9 @@ void go(bool useShared) {
     delta -= (std::chrono::high_resolution_clock::now() - start);
     constexpr int MaxSize = 256 * 32;
     if (useShared)
-      cms::cuda::launch(
-          radixSortMultiWrapper<U, NS>, {blocks, ntXBl, MaxSize * 2}, v_d.get(), ind_d.get(), off_d.get(), nullptr);
+      radixSortMultiWrapper<U, NS><<<blocks, ntXBl, MaxSize * 2>>>(v_d.get(), ind_d.get(), off_d.get(), nullptr);
     else
-      cms::cuda::launch(
-          radixSortMultiWrapper2<U, NS>, {blocks, ntXBl}, v_d.get(), ind_d.get(), off_d.get(), ws_d.get());
+      radixSortMultiWrapper2<U, NS><<<blocks, ntXBl>>>(v_d.get(), ind_d.get(), off_d.get(), ws_d.get());
 
     if (i == 0)
       std::cout << "done for " << offsets[blocks] << std::endl;
@@ -203,7 +199,6 @@ void go(bool useShared) {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   bool useShared = false;
 

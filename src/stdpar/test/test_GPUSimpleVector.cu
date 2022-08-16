@@ -8,7 +8,6 @@
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
 
 __global__ void vector_pushback(cms::cuda::SimpleVector<int> *foo) {
   auto index = threadIdx.x + blockIdx.x * blockDim.x;
@@ -23,7 +22,6 @@ __global__ void vector_emplace_back(cms::cuda::SimpleVector<int> *foo) {
 }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   auto maxN = 10000;
   cms::cuda::SimpleVector<int> *obj_ptr = nullptr;

@@ -11,8 +11,6 @@
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/requireDevices.h"
-#include "CUDACore/launch.h"
 #endif
 
 // dirty, but works
@@ -20,9 +18,6 @@
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 int main(void) {
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-  cms::cudatest::requireDevices();
-#endif
 
   using namespace gpuClustering;
 
@@ -254,7 +249,7 @@ int main(void) {
     std::cout << "CUDA countModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
               << " threads\n";
 
-    cms::cuda::launch(countModules, {blocksPerGrid, threadsPerBlock}, d_id.get(), d_moduleStart.get(), d_clus.get(), n);
+    countModules<<<blocksPerGrid, threadsPerBlock>>>(d_id.get(), d_moduleStart.get(), d_clus.get(), n);
 
     blocksPerGrid = MaxNumModules;  //nModules;
 
@@ -262,8 +257,7 @@ int main(void) {
               << " threads\n";
     cudaCheck(cudaMemset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)));
 
-    cms::cuda::launch(findClus,
-                      {blocksPerGrid, threadsPerBlock},
+    findClus<<<blocksPerGrid, threadsPerBlock>>>(
                       d_id.get(),
                       d_x.get(),
                       d_y.get(),
@@ -288,8 +282,7 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    cms::cuda::launch(clusterChargeCut,
-                      {blocksPerGrid, threadsPerBlock},
+    clusterChargeCut <<<blocksPerGrid, threadsPerBlock>>>(
                       d_id.get(),
                       d_adc.get(),
                       d_moduleStart.get(),
