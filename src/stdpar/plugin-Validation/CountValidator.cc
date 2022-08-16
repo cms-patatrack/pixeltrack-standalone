@@ -1,5 +1,3 @@
-#include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/PixelTrack.h"
 #include "CUDADataFormats/SiPixelClusters.h"
 #include "CUDADataFormats/SiPixelDigis.h"
@@ -38,8 +36,8 @@ private:
   edm::EDGetTokenT<TrackCount> trackCountToken_;
   edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
+  edm::EDGetTokenT<SiPixelDigis> digiToken_;
+  edm::EDGetTokenT<SiPixelClusters> clusterToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
   edm::EDGetTokenT<ZVertex> vertexToken_;
 };
@@ -48,8 +46,8 @@ CountValidator::CountValidator(edm::ProductRegistry& reg)
     : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
       trackCountToken_(reg.consumes<TrackCount>()),
       vertexCountToken_(reg.consumes<VertexCount>()),
-      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
-      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
+      digiToken_(reg.consumes<SiPixelDigis>()),
+      clusterToken_(reg.consumes<SiPixelClusters>()),
       trackToken_(reg.consumes<PixelTrack>()),
       vertexToken_(reg.consumes<ZVertex>()) {}
 
@@ -63,11 +61,9 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   ss << "Event " << iEvent.eventID() << " ";
 
   {
-    auto const& pdigis = iEvent.get(digiToken_);
-    cms::cuda::ScopedContextProduce ctx{pdigis};
     auto const& count = iEvent.get(digiClusterCountToken_);
-    auto const& digis = ctx.get(iEvent, digiToken_);
-    auto const& clusters = ctx.get(iEvent, clusterToken_);
+    auto const& digis = iEvent.get(digiToken_);
+    auto const& clusters = iEvent.get(clusterToken_);
 
     if (digis.nModules() != count.nModules()) {
       ss << "\n N(modules) is " << digis.nModules() << " expected " << count.nModules();

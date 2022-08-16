@@ -1,5 +1,3 @@
-#include "CUDACore/Product.h"
-#include "CUDACore/ScopedContext.h"
 #include "CUDADataFormats/PixelTrack.h"
 #include "CUDADataFormats/SiPixelClusters.h"
 #include "CUDADataFormats/SiPixelDigis.h"
@@ -15,35 +13,19 @@
 #include <map>
 #include <fstream>
 
-class HistoValidator : public edm::EDProducerExternalWork {
+class HistoValidator : public edm::EDProducer {
 public:
   explicit HistoValidator(edm::ProductRegistry& reg);
 
 private:
-  void acquire(const edm::Event& iEvent,
-               const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
   void endJob() override;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
-  edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2D>> hitToken_;
+  edm::EDGetTokenT<SiPixelDigis> digiToken_;
+  edm::EDGetTokenT<SiPixelClusters> clusterToken_;
+  edm::EDGetTokenT<TrackingRecHit2D> hitToken_;
   edm::EDGetTokenT<PixelTrack> trackToken_;
   edm::EDGetTokenT<ZVertex> vertexToken_;
-
-  uint32_t nDigis;
-  uint32_t nModules;
-  uint32_t nClusters;
-  uint32_t nHits;
-
-  uint16_t const* h_adc;
-  uint32_t const* h_clusInModule;
-
-  float const* h_localCoord;
-  float const* h_globalCoord;
-  int32_t const* h_charge;
-  int16_t const* h_size;
 
   static std::map<std::string, SimpleAtomicHisto> histos;
 };
@@ -84,37 +66,31 @@ std::map<std::string, SimpleAtomicHisto> HistoValidator::histos = {
     {"vertex_pt2", SimpleAtomicHisto(100, 0, 4000)}};
 
 HistoValidator::HistoValidator(edm::ProductRegistry& reg)
-    : digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
-      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
-      hitToken_(reg.consumes<cms::cuda::Product<TrackingRecHit2D>>()),
+    : digiToken_(reg.consumes<SiPixelDigis>()),
+      clusterToken_(reg.consumes<SiPixelClusters>()),
+      hitToken_(reg.consumes<TrackingRecHit2D>()),
       trackToken_(reg.consumes<PixelTrack>()),
       vertexToken_(reg.consumes<ZVertex>()) {}
 
-void HistoValidator::acquire(const edm::Event& iEvent,
-                             const edm::EventSetup& iSetup,
-                             edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  auto const& pdigis = iEvent.get(digiToken_);
-  cms::cuda::ScopedContextAcquire ctx{pdigis, std::move(waitingTaskHolder)};
-  auto const& digis = ctx.get(iEvent, digiToken_);
-  auto const& clusters = ctx.get(iEvent, clusterToken_);
-  auto const& hits = ctx.get(iEvent, hitToken_);
-
-  nDigis = digis.nDigis();
-  nModules = digis.nModules();
-  h_adc = digis.adc();
-
-  nClusters = clusters.nClusters();
-  h_clusInModule = clusters.clusInModule();
-
-  nHits = hits.nHits();
-
-  h_localCoord = hits.localCoord();
-  h_globalCoord = hits.globalCoord();
-  h_charge = hits.charge();
-  h_size = hits.size();
-}
-
 void HistoValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  auto const& digis = iEvent.get(digiToken_);
+  auto const& clusters = iEvent.get(clusterToken_);
+  auto const& hits = iEvent.get(hitToken_);
+
+  uint32_t nDigis = digis.nDigis();
+  uint32_t nModules = digis.nModules();
+  uint16_t const* h_adc = digis.adc();
+
+  uint32_t nClusters = clusters.nClusters();
+  uint32_t const* h_clusInModule = clusters.clusInModule();
+
+  uint32_t nHits = hits.nHits();
+
+  float const* h_localCoord = hits.localCoord();
+  float const* h_globalCoord = hits.globalCoord();
+  int32_t const* h_charge = hits.charge();
+  int16_t const* h_size = hits.size();
+
   histos["digi_n"].fill(nDigis);
   for (uint32_t i = 0; i < nDigis; ++i) {
     histos["digi_adc"].fill(h_adc[i]);
