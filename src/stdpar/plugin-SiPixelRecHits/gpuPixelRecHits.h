@@ -68,6 +68,7 @@ namespace gpuPixelRecHits {
       return;
 
 #ifdef GPU_DEBUG
+    // TODO: Does not compile with nvc++ 22.7
     if (threadIdx.x == 0) {
       auto k = clusters.moduleStart(1 + blockIdx.x);
       while (digis.moduleInd(k) == InvId)

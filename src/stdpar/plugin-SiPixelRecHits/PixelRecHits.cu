@@ -20,8 +20,7 @@ namespace pixelgpudetails {
   TrackingRecHit2D PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigis const& digis_d,
                                                        SiPixelClusters const& clusters_d,
                                                        BeamSpot const& bs_d,
-                                                       pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                                       cudaStream_t stream) const {
+                                                       pixelCPEforGPU::ParamsOnGPU const* cpeParams) const {
     auto nHits = clusters_d.nClusters();
     TrackingRecHit2D hits_d(nHits, cpeParams, clusters_d.clusModuleStart());
 
@@ -32,7 +31,7 @@ namespace pixelgpudetails {
     std::cout << "launching getHits kernel for " << blocks << " blocks" << std::endl;
 #endif
     if (blocks)  // protect from empty events
-      gpuPixelRecHits::getHits<<<blocks, threadsPerBlock, 0, stream>>>(
+      gpuPixelRecHits::getHits<<<blocks, threadsPerBlock, 0>>>(
           cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
     cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
@@ -53,7 +52,7 @@ namespace pixelgpudetails {
     }
 
     if (nHits) {
-      cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256, stream);
+      cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256);
       cudaCheck(cudaGetLastError());
     }
 
