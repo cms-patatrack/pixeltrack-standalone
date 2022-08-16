@@ -1,6 +1,7 @@
+#include <memory>
+
 #include "CAHitNtupletGeneratorKernelsImpl.h"
 
-template <>
 void CAHitNtupletGeneratorKernelsGPU::fillHitDetIndices(HitsView const *hv, TkSoA *tracks_d, cudaStream_t cudaStream) {
   auto blockSize = 128;
   auto numberOfBlocks = (HitContainer::capacity() + blockSize - 1) / blockSize;
@@ -14,7 +15,6 @@ void CAHitNtupletGeneratorKernelsGPU::fillHitDetIndices(HitsView const *hv, TkSo
 #endif
 }
 
-template <>
 void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *tracks_d, cudaStream_t cudaStream) {
   // these are pointer on GPU!
   auto *tuples_d = &tracks_d->hitIndices;
@@ -149,7 +149,6 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   // device_isOuterHitOfCell_.reset();
 }
 
-template <>
 void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStream_t stream) {
   auto nhits = hh.nHits();
 
@@ -163,13 +162,12 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
 #endif
 
   // in principle we can use "nhits" to heuristically dimension the workspace...
-  device_isOuterHitOfCell_ = Traits::template make_unique<GPUCACell::OuterHitOfCell[]>(std::max(1U, nhits), stream);
+  device_isOuterHitOfCell_ = std::make_unique<GPUCACell::OuterHitOfCell[]>(std::max(1U, nhits));
   assert(device_isOuterHitOfCell_.get());
 
-  cellStorage_ = Traits::template make_unique<unsigned char[]>(
+  cellStorage_ = std::make_unique<unsigned char[]>(
       CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
-          CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks),
-      stream);
+          CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks));
   device_theCellNeighborsContainer_ = (GPUCACell::CellNeighbors *)cellStorage_.get();
   device_theCellTracksContainer_ =
       (GPUCACell::CellTracks *)(cellStorage_.get() +
@@ -188,7 +186,7 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
     cudaCheck(cudaGetLastError());
   }
 
-  device_theCells_ = Traits::template make_unique<GPUCACell[]>(m_params.maxNumberOfDoublets_, stream);
+  device_theCells_ = std::make_unique<GPUCACell[]>(m_params.maxNumberOfDoublets_);
 
 #ifdef GPU_DEBUG
   cudaDeviceSynchronize();
@@ -232,7 +230,6 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
 #endif
 }
 
-template <>
 void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA *tracks_d, cudaStream_t cudaStream) {
   // these are pointer on GPU!
   auto const *tuples_d = &tracks_d->hitIndices;
@@ -300,7 +297,6 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
 #endif
 }
 
-template <>
 void CAHitNtupletGeneratorKernelsGPU::printCounters(Counters const *counters) {
   kernel_printCounters<<<1, 1>>>(counters);
 }

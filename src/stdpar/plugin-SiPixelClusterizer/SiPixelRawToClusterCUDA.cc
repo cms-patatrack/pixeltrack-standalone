@@ -1,7 +1,7 @@
 #include "CUDACore/Product.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
+#include "CUDADataFormats/SiPixelClusters.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/SiPixelDigiErrors.h"
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
 #include "CondFormats/SiPixelFedIds.h"
@@ -36,9 +36,9 @@ private:
   cms::cuda::ContextState ctxState_;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrorsCUDA>> digiErrorPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterPutToken_;
+  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigis>> digiPutToken_;
+  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrors>> digiErrorPutToken_;
+  edm::EDPutTokenT<cms::cuda::Product<SiPixelClusters>> clusterPutToken_;
 
   pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
   std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -51,13 +51,13 @@ private:
 
 SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
     : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-      digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClustersCUDA>>()),
+      digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigis>>()),
+      clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClusters>>()),
       isRun2_(true),
       includeErrors_(true),
       useQuality_(true) {
   if (includeErrors_) {
-    digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
+    digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrors>>();
   }
 #ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
   wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
@@ -151,9 +151,6 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
 
   }  // end of for loop
 
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  wordFedAppender_->memAdvise();
-#endif
   gpuAlgo_.makeClustersAsync(isRun2_,
                              gpuMap,
                              gpuModulesToUnpack,
@@ -177,10 +174,6 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   if (includeErrors_) {
     ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
   }
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-  wordFedAppender_->clearAdvise();
-  wordFedAppender_.reset();
-#endif
 }
 
 // define as framework plugin

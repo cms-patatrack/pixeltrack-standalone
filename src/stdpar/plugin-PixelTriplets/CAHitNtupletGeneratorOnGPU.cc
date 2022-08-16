@@ -43,8 +43,7 @@ namespace {
 
 using namespace std;
 CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg)
-    : m_params(true,              // onGPU
-               3,                 // minHitsPerNtuplet,
+    : m_params(3,                 // minHitsPerNtuplet,
                458752,            // maxNumberOfDoublets
                false,             //useRiemannFit
                true,              // fit5as4,
@@ -62,7 +61,8 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
                0.0328407224959,   // hardCurvCut
                0.15000000596,     // dcaCutInnerTriplet
                0.25,              // dcaCutOuterTriplet
-               makeQualityCuts()) {
+               makeQualityCuts()),
+      m_counters{std::make_unique<Counters>()} {
 #ifdef DUMP_GPU_TK_TUPLES
   printf("TK: %s %s % %s %s %s %s %s %s %s %s %s %s %s %s %s\n",
          "tid",
@@ -81,45 +81,24 @@ CAHitNtupletGeneratorOnGPU::CAHitNtupletGeneratorOnGPU(edm::ProductRegistry& reg
          "h4",
          "h5");
 #endif
-
-  if (m_params.onGPU_) {
-#ifdef CUDAUVM_MANAGED_TEMPORARY
-    cudaCheck(cudaMallocManaged(&m_counters, sizeof(Counters)));
-#else
-    cudaCheck(cudaMalloc(&m_counters, sizeof(Counters)));
-#endif
-    cudaCheck(cudaMemset(m_counters, 0, sizeof(Counters)));
-  } else {
-    m_counters = new Counters();
-    memset(m_counters, 0, sizeof(Counters));
-  }
 }
 
 CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
-  if (m_params.onGPU_) {
-    if (m_params.doStats_) {
-      // crash on multi-gpu processes
-      CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
-    }
-    cudaFree(m_counters);
-  } else {
-    delete m_counters;
+  if (m_params.doStats_) {
+    // crash on multi-gpu processes
+    CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters.get());
   }
 }
 
-PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2DCUDA const& hits_d,
-                                                                    float bfield,
-                                                                    cudaStream_t stream) const {
-#ifdef CUDAUVM_DISABLE_MANAGED_TRACK
-  PixelTrackHeterogeneous tracks(cms::cuda::make_device_unique<pixelTrack::TrackSoA>(stream));
-#else
-  PixelTrackHeterogeneous tracks(cms::cuda::make_managed_unique<pixelTrack::TrackSoA>(stream));
-#endif
+PixelTrack CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2D const& hits_d,
+                                                       float bfield,
+                                                       cudaStream_t stream) const {
+  PixelTrack tracks(std::make_unique<pixelTrack::TrackSoA>());
 
   auto* soa = tracks.get();
 
   CAHitNtupletGeneratorKernelsGPU kernels(m_params);
-  kernels.counters_ = m_counters;
+  kernels.counters_ = m_counters.get();
 
   kernels.allocateOnGPU(stream);
 

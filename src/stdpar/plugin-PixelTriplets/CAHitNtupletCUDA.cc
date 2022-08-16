@@ -9,8 +9,8 @@
 #include "CUDACore/ScopedContext.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 class CAHitNtupletCUDA : public edm::EDProducer {
 public:
@@ -20,15 +20,15 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2DGPU>> tokenHitGPU_;
-  edm::EDPutTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenTrackGPU_;
+  edm::EDGetTokenT<cms::cuda::Product<TrackingRecHit2D>> tokenHitGPU_;
+  edm::EDPutTokenT<cms::cuda::Product<PixelTrack>> tokenTrackGPU_;
 
   CAHitNtupletGeneratorOnGPU gpuAlgo_;
 };
 
 CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
-    : tokenHitGPU_{reg.consumes<cms::cuda::Product<TrackingRecHit2DGPU>>()},
-      tokenTrackGPU_{reg.produces<cms::cuda::Product<PixelTrackHeterogeneous>>()},
+    : tokenHitGPU_{reg.consumes<cms::cuda::Product<TrackingRecHit2D>>()},
+      tokenTrackGPU_{reg.produces<cms::cuda::Product<PixelTrack>>()},
       gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {

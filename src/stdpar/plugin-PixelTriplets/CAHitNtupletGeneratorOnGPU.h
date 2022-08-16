@@ -1,11 +1,13 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
+#include <memory>
+
 #include <cuda_runtime.h>
 
 #include "CUDACore/SimpleVector.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "GPUCACell.h"
@@ -20,7 +22,7 @@ namespace edm {
 class CAHitNtupletGeneratorOnGPU {
 public:
   using HitsOnGPU = TrackingRecHit2DSOAView;
-  using HitsOnCPU = TrackingRecHit2DCUDA;
+  using HitsOnCPU = TrackingRecHit2D;
   using hindex_type = TrackingRecHit2DSOAView::hindex_type;
 
   using Quality = pixelTrack::Quality;
@@ -37,7 +39,7 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrack makeTuplesAsync(TrackingRecHit2D const& hits_d, float bfield, cudaStream_t stream) const;
 
 private:
   void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream) const;
@@ -48,7 +50,7 @@ private:
 
   Params m_params;
 
-  Counters* m_counters = nullptr;
+  std::unique_ptr<Counters> m_counters{nullptr};
 };
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h

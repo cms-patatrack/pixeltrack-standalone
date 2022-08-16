@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <random>
+#include <memory>
 #include <vector>
 
 #include "CUDACore/cudaCheck.h"
@@ -114,8 +115,8 @@ int main() {
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
   cms::cudatest::requireDevices();
 
-  auto onGPU_d = cms::cuda::make_device_unique<gpuVertexFinder::ZVertices[]>(1, nullptr);
-  auto ws_d = cms::cuda::make_device_unique<gpuVertexFinder::WorkSpace[]>(1, nullptr);
+  auto onGPU_d = std::make_unique<gpuVertexFinder::ZVertices[]>(1);
+  auto ws_d = std::make_unique<gpuVertexFinder::WorkSpace[]>(1);
 #else
   auto onGPU_d = std::make_unique<gpuVertexFinder::ZVertices>();
   auto ws_d = std::make_unique<gpuVertexFinder::WorkSpace>();

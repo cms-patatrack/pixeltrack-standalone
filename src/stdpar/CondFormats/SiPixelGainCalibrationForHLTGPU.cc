@@ -4,10 +4,6 @@
 
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/deviceCount.h"
-#include "CUDACore/ScopedSetDevice.h"
-#include "CUDACore/StreamCache.h"
 
 SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
                                                                  std::vector<DecodingStructure> const& gainData)
@@ -16,5 +12,3 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
   gainForHLT_->v_pedestals = gainData_.get();
   std::copy(gainData.cbegin(), gainData.cend(), gainData_.get());
 }
-
-SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() {}

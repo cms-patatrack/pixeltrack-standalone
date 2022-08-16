@@ -2,18 +2,13 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <algorithm>
+#include <memory>
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/SiPixelDigiErrors.h"
+#include "CUDADataFormats/SiPixelClusters.h"
 #include "CUDADataFormats/gpuClusteringConstants.h"
-#include "CUDACore/SimpleVector.h"
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-#include "CUDACore/host_noncached_unique_ptr.h"
-#include "CUDACore/host_unique_ptr.h"
-#endif
-#include "CUDACore/managed_unique_ptr.h"
 #include "DataFormats/PixelErrors.h"
 
 struct SiPixelFedCablingMapGPU;
@@ -150,31 +145,17 @@ namespace pixelgpudetails {
   public:
     class WordFedAppender {
     public:
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      WordFedAppender();
-#else
       WordFedAppender(cudaStream_t stream);
-#endif
       ~WordFedAppender() = default;
 
       void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
-
-#ifndef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      void memAdvise();
-      void clearAdvise();
-#endif
 
       const unsigned int* word() const { return word_.get(); }
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      cms::cuda::host::noncached::unique_ptr<unsigned int[]> word_;
-      cms::cuda::host::noncached::unique_ptr<unsigned char[]> fedId_;
-#else
-      cms::cuda::managed::unique_ptr<unsigned int[]> word_;
-      cms::cuda::managed::unique_ptr<unsigned char[]> fedId_;
-#endif
+      std::unique_ptr<unsigned int[]> word_;
+      std::unique_ptr<unsigned char[]> fedId_;
     };
 
     SiPixelRawToClusterGPUKernel() = default;
@@ -198,36 +179,21 @@ namespace pixelgpudetails {
                            bool debug,
                            cudaStream_t stream);
 
-    std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-      digis_d.setNModulesDigis(nModules_Clusters_h[0], nDigis);
-      clusters_d.setNClusters(nModules_Clusters_h[1]);
-      // need to explicitly deallocate while the associated CUDA
-      // stream is still alive
-      //
-      // technically the statement above is not true anymore now that
-      // the CUDA streams are cached within the cms::cuda::StreamCache, but it is
-      // still better to release as early as possible
-      nModules_Clusters_h.reset();
-#else
+    std::pair<SiPixelDigis, SiPixelClusters> getResults() {
       digis_d.setNModulesDigis(clusters_d.moduleStart()[0], nDigis);
       clusters_d.setNClusters(clusters_d.clusModuleStart()[gpuClustering::MaxNumModules]);
-#endif
       return std::make_pair(std::move(digis_d), std::move(clusters_d));
     }
 
-    SiPixelDigiErrorsCUDA&& getErrors() { return std::move(digiErrors_d); }
+    SiPixelDigiErrors&& getErrors() { return std::move(digiErrors_d); }
 
   private:
     uint32_t nDigis = 0;
 
     // Data to be put in the event
-#ifdef CUDAUVM_DISABLE_MANAGED_CLUSTERING
-    cms::cuda::host::unique_ptr<uint32_t[]> nModules_Clusters_h;
-#endif
-    SiPixelDigisCUDA digis_d;
-    SiPixelClustersCUDA clusters_d;
-    SiPixelDigiErrorsCUDA digiErrors_d;
+    SiPixelDigis digis_d;
+    SiPixelClusters clusters_d;
+    SiPixelDigiErrors digiErrors_d;
   };
 
   // see RecoLocalTracker/SiPixelClusterizer

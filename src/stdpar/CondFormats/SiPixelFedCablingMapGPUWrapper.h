@@ -1,17 +1,15 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 #define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 
-#include "CUDACore/ESProduct.h"
+#include <memory>
+
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-#include <set>
-#include <memory>
 
 class SiPixelFedCablingMapGPUWrapper {
 public:
   explicit SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const& cablingMap,
                                           std::vector<unsigned char> const& modToUnp);
-  ~SiPixelFedCablingMapGPUWrapper();
 
   bool hasQuality() const { return hasQuality_; }
 

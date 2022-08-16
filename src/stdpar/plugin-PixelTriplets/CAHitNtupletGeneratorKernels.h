@@ -1,7 +1,9 @@
 #ifndef RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h
 
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
+#include <memory>
+
+#include "CUDADataFormats/PixelTrack.h"
 #include "GPUCACell.h"
 
 // #define DUMP_GPU_TK_TUPLES
@@ -10,17 +12,17 @@ namespace cAHitNtupletGenerator {
 
   // counters
   struct Counters {
-    unsigned long long nEvents;
-    unsigned long long nHits;
-    unsigned long long nCells;
-    unsigned long long nTuples;
-    unsigned long long nFitTracks;
-    unsigned long long nGoodTracks;
-    unsigned long long nUsedHits;
-    unsigned long long nDupHits;
-    unsigned long long nKilledCells;
-    unsigned long long nEmptyCells;
-    unsigned long long nZeroTrackCells;
+    unsigned long long nEvents{0};
+    unsigned long long nHits{0};
+    unsigned long long nCells{0};
+    unsigned long long nTuples{0};
+    unsigned long long nFitTracks{0};
+    unsigned long long nGoodTracks{0};
+    unsigned long long nUsedHits{0};
+    unsigned long long nDupHits{0};
+    unsigned long long nKilledCells{0};
+    unsigned long long nEmptyCells{0};
+    unsigned long long nZeroTrackCells{0};
   };
 
   using HitsView = TrackingRecHit2DSOAView;
@@ -51,8 +53,7 @@ namespace cAHitNtupletGenerator {
 
   // params
   struct Params {
-    Params(bool onGPU,
-           uint32_t minHitsPerNtuplet,
+    Params(uint32_t minHitsPerNtuplet,
            uint32_t maxNumberOfDoublets,
            bool useRiemannFit,
            bool fit5as4,
@@ -71,8 +72,7 @@ namespace cAHitNtupletGenerator {
            float dcaCutInnerTriplet,
            float dcaCutOuterTriplet,
            QualityCuts const& cuts)
-        : onGPU_(onGPU),
-          minHitsPerNtuplet_(minHitsPerNtuplet),
+        : minHitsPerNtuplet_(minHitsPerNtuplet),
           maxNumberOfDoublets_(maxNumberOfDoublets),
           useRiemannFit_(useRiemannFit),
           fit5as4_(fit5as4),
@@ -92,7 +92,6 @@ namespace cAHitNtupletGenerator {
           dcaCutOuterTriplet_(dcaCutOuterTriplet),
           cuts_(cuts) {}
 
-    const bool onGPU_;
     const uint32_t minHitsPerNtuplet_;
     const uint32_t maxNumberOfDoublets_;
     const bool useRiemannFit_;
@@ -136,21 +135,18 @@ namespace cAHitNtupletGenerator {
 
 }  // namespace cAHitNtupletGenerator
 
-template <typename TTraits, typename InputTraits>
 class CAHitNtupletGeneratorKernels {
 public:
-  using Traits = TTraits;
-
   using QualityCuts = cAHitNtupletGenerator::QualityCuts;
   using Params = cAHitNtupletGenerator::Params;
   using Counters = cAHitNtupletGenerator::Counters;
 
   template <typename T>
-  using unique_ptr = typename Traits::template unique_ptr<T>;
+  using unique_ptr = std::unique_ptr<T>;
 
   using HitsView = TrackingRecHit2DSOAView;
   using HitsOnGPU = TrackingRecHit2DSOAView;
-  using HitsOnCPU = TrackingRecHit2DHeterogeneous<InputTraits>;
+  using HitsOnCPU = TrackingRecHit2D;
 
   using HitToTuple = CAConstants::HitToTuple;
   using TupleMultiplicity = CAConstants::TupleMultiplicity;
@@ -201,19 +197,6 @@ private:
   Params const& m_params;
 };
 
-#ifdef CUDAUVM_DISABLE_MANAGED_RECHIT
-using GPUInputTraits = cms::cudacompat::GPUTraits;
-#else
-using GPUInputTraits = cms::cudacompat::ManagedTraits;
-#endif
-#if (!defined CUDAUVM_DISABLE_MANAGED_TRACK) && defined CUDUVM_MANAGED_TEMPORARY
-using GPUTempTraits = cms::cudacompat::ManagedTraits;
-#else
-using GPUTempTraits = cms::cudacompat::GPUTraits;
-#endif
-
-using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels<GPUTempTraits, GPUInputTraits>;
-using CAHitNtupletGeneratorKernelsCPU =
-    CAHitNtupletGeneratorKernels<cms::cudacompat::CPUTraits, cms::cudacompat::CPUTraits>;
+using CAHitNtupletGeneratorKernelsGPU = CAHitNtupletGeneratorKernels;
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorKernels_h

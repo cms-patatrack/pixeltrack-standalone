@@ -1,5 +1,4 @@
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
-#include "CUDACore/copyAsync.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDACore/cudaCheck.h"
 
 namespace testTrackingRecHit2D {
@@ -45,7 +44,7 @@ int main() {
   // inner scope to deallocate memory before destroying the stream
   {
     auto nHits = 200;
-    TrackingRecHit2DCUDA tkhit(nHits, nullptr, nullptr, stream);
+    TrackingRecHit2D tkhit(nHits, nullptr, nullptr);
 
     testTrackingRecHit2D::runKernels(tkhit.view());
   }

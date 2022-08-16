@@ -10,8 +10,6 @@
 #include <vector>
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/launch.h"
@@ -38,14 +36,14 @@ int main(void) {
   auto h_clus = std::make_unique<int[]>(numElements);
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-  auto d_id = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_x = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_y = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_adc = cms::cuda::make_device_unique<uint16_t[]>(numElements, nullptr);
-  auto d_clus = cms::cuda::make_device_unique<int[]>(numElements, nullptr);
-  auto d_moduleStart = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules + 1, nullptr);
-  auto d_clusInModule = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
-  auto d_moduleId = cms::cuda::make_device_unique<uint32_t[]>(MaxNumModules, nullptr);
+  auto d_id = std::make_unique<uint16_t[]>(numElements);
+  auto d_x = std::make_unique<uint16_t[]>(numElements);
+  auto d_y = std::make_unique<uint16_t[]>(numElements);
+  auto d_adc = std::make_unique<uint16_t[]>(numElements);
+  auto d_clus = std::make_unique<int[]>(numElements);
+  auto d_moduleStart = std::make_unique<uint32_t[]>(MaxNumModules + 1);
+  auto d_clusInModule = std::make_unique<uint32_t[]>(MaxNumModules);
+  auto d_moduleId = std::make_unique<uint32_t[]>(MaxNumModules);
 #else
 
   auto h_moduleStart = std::make_unique<uint32_t[]>(MaxNumModules + 1);

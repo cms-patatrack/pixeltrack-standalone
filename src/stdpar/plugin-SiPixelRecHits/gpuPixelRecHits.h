@@ -5,8 +5,8 @@
 #include <cstdio>
 #include <limits>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/BeamSpot.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "DataFormats/approx_atan2.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"
@@ -15,9 +15,9 @@ namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisCUDA::DeviceConstView const* __restrict__ pdigis,
+                          SiPixelDigis::DeviceConstView const* __restrict__ pdigis,
                           int numElements,
-                          SiPixelClustersCUDA::DeviceConstView const* __restrict__ pclusters,
+                          SiPixelClusters::DeviceConstView const* __restrict__ pclusters,
                           TrackingRecHit2DSOAView* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)

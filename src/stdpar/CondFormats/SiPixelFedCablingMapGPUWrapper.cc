@@ -3,10 +3,7 @@
 #include <vector>
 
 // CMSSW includes
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/deviceCount.h"
-#include "CUDACore/ScopedSetDevice.h"
-#include "CUDACore/StreamCache.h"
+#include "CondFormats/SiPixelFedCablingMapGPU.h"
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
 
 SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const& cablingMap,
@@ -16,5 +13,3 @@ SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCabling
       modToUnpDefault_{std::make_unique<unsigned char[]>(modToUnp.size())} {
   std::copy(modToUnp.cbegin(), modToUnp.cend(), modToUnpDefault_.get());
 }
-
-SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() {}

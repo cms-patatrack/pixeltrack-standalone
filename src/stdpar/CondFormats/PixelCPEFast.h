@@ -1,11 +1,8 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
 #define RecoLocalTracker_SiPixelRecHits_PixelCPEFast_h
 
-#include <utility>
 #include <memory>
 
-#include "CUDACore/ESProduct.h"
-#include "CUDACore/HostAllocator.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 class PixelCPEFast {

@@ -8,7 +8,7 @@
 
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"

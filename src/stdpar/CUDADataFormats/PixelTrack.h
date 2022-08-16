@@ -1,10 +1,10 @@
-#ifndef CUDADataFormatsTrackTrackHeterogeneous_H
-#define CUDADataFormatsTrackTrackHeterogeneous_H
+#ifndef CUDADataFormatsTrackTrack_H
+#define CUDADataFormatsTrackTrack_H
+
+#include <memory>
 
 #include "CUDADataFormats/TrajectoryStateSoA.h"
 #include "CUDACore/HistoContainer.h"
-
-#include "CUDADataFormats/HeterogeneousSoA.h"
 
 namespace trackQuality {
   enum Quality : uint8_t { bad = 0, dup, loose, strict, tight, highPurity };
@@ -69,10 +69,6 @@ namespace pixelTrack {
 
 }  // namespace pixelTrack
 
-#ifdef CUDAUVM_DISABLE_MANAGED_TRACK
-using PixelTrackHeterogeneous = HeterogeneousSoA<pixelTrack::TrackSoA>;
-#else
-using PixelTrackHeterogeneous = ManagedSoA<pixelTrack::TrackSoA>;
-#endif
+using PixelTrack = std::unique_ptr<pixelTrack::TrackSoA>;
 
 #endif  // CUDADataFormatsTrackTrackSoA_H

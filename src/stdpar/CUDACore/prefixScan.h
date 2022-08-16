@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-#include "CUDACore/cudaCompat.h"
 #include "CUDACore/cuda_assert.h"
 
 #if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)

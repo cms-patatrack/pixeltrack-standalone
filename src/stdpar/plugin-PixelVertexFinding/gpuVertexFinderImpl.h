@@ -83,22 +83,14 @@ namespace gpuVertexFinder {
   }
 #endif
 
-  ZVertexHeterogeneous Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
+  ZVertex Producer::makeAsync(cudaStream_t stream, TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on GPU" << std::endl;
-#ifdef CUDAUVM_DISABLE_MANAGED_VERTEX
-    ZVertexHeterogeneous vertices(cms::cuda::make_device_unique<ZVertexSoA>(stream));
-#else
-    ZVertexHeterogeneous vertices(cms::cuda::make_managed_unique<ZVertexSoA>(stream));
-#endif  // CUDAUVM_DISABLE_MANAGED_VERTEX
+    ZVertex vertices{std::make_unique<ZVertexSoA>()};
 
     assert(tksoa);
     auto* soa = vertices.get();
     assert(soa);
-#if defined CUDAUVM_DISABLE_MANAGED_VERTEX || (!defined CUDAUVM_MANAGED_TEMPORARY)
-    auto ws_d = cms::cuda::make_device_unique<WorkSpace>(stream);
-#else
-    auto ws_d = cms::cuda::make_managed_unique<WorkSpace>(stream);
-#endif  // CUDAUVM_DISABLE_MANAGED_VERTEX
+    auto ws_d = std::make_unique<WorkSpace>();
 
     init<<<1, 1, 0, stream>>>(soa, ws_d.get());
     auto blockSize = 128;

@@ -114,16 +114,6 @@ int main(int argc, char** argv) {
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
 #endif
 
-#ifdef CUDAUVM_DISABLE_ADVISE
-  std::cout << "cudaMemAdvise() calls are disabled" << std::endl;
-#endif
-#ifdef CUDAUVM_DISABLE_PREFETCH
-  std::cout << "cudaMemPrefetchAsync() calls are disabled" << std::endl;
-#endif
-#ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
-  std::cout << "Managed memory is disabled in BeamSpotToCUDA" << std::endl;
-#endif
-
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;

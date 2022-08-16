@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <limits>
@@ -7,7 +8,6 @@
 #include <memory>
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/requireDevices.h"
 #include "CUDACore/currentDevice.h"
@@ -165,11 +165,11 @@ int main() {
   std::cout << "filled with " << n << " elements " << double(ave) / n << ' ' << imax << ' ' << nz << std::endl;
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-  auto v_d = cms::cuda::make_device_unique<std::array<uint16_t, 4>[]>(N, nullptr);
+  auto v_d = std::make_unique<std::array<uint16_t, 4>[]>(N);
   assert(v_d.get());
-  auto a_d = cms::cuda::make_device_unique<Assoc[]>(1, nullptr);
-  auto sa_d = cms::cuda::make_device_unique<SmallAssoc[]>(1, nullptr);
-  cudaCheck(cudaMemcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>), cudaMemcpyHostToDevice));
+  auto a_d = std::make_unique<Assoc[]>(1);
+  auto sa_d = std::make_unique<SmallAssoc[]>(1);
+  std::memcpy(v_d.get(), tr.data(), N * sizeof(std::array<uint16_t, 4>));
 #else
   auto a_d = std::make_unique<Assoc>();
   auto sa_d = std::make_unique<SmallAssoc>();
@@ -270,8 +270,8 @@ int main() {
 
   // here verify use of block local counters
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-  auto m1_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
-  auto m2_d = cms::cuda::make_device_unique<Multiplicity[]>(1, nullptr);
+  auto m1_d = std::make_unique<Multiplicity[]>(1);
+  auto m2_d = std::make_unique<Multiplicity[]>(1);
 #else
   auto m1_d = std::make_unique<Multiplicity>();
   auto m2_d = std::make_unique<Multiplicity>();

@@ -5,10 +5,10 @@
 
 #include <cuda_runtime.h>
 
-#include "CUDADataFormats/BeamSpotCUDA.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CUDADataFormats/BeamSpot.h"
+#include "CUDADataFormats/SiPixelClusters.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/TrackingRecHit2D.h"
 
 namespace pixelgpudetails {
 
@@ -22,11 +22,11 @@ namespace pixelgpudetails {
     PixelRecHitGPUKernel& operator=(const PixelRecHitGPUKernel&) = delete;
     PixelRecHitGPUKernel& operator=(PixelRecHitGPUKernel&&) = delete;
 
-    TrackingRecHit2DCUDA makeHitsAsync(SiPixelDigisCUDA const& digis_d,
-                                       SiPixelClustersCUDA const& clusters_d,
-                                       BeamSpotCUDA const& bs_d,
-                                       pixelCPEforGPU::ParamsOnGPU const* cpeParams,
-                                       cudaStream_t stream) const;
+    TrackingRecHit2D makeHitsAsync(SiPixelDigis const& digis_d,
+                                   SiPixelClusters const& clusters_d,
+                                   BeamSpot const& bs_d,
+                                   pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                   cudaStream_t stream) const;
   };
 }  // namespace pixelgpudetails
 

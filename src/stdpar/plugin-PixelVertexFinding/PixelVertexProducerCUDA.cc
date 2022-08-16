@@ -20,10 +20,10 @@ private:
 
   bool m_OnGPU;
 
-  edm::EDGetTokenT<cms::cuda::Product<PixelTrackHeterogeneous>> tokenGPUTrack_;
+  edm::EDGetTokenT<cms::cuda::Product<PixelTrack>> tokenGPUTrack_;
   edm::EDPutTokenT<ZVertexCUDAProduct> tokenGPUVertex_;
-  edm::EDGetTokenT<PixelTrackHeterogeneous> tokenCPUTrack_;
-  edm::EDPutTokenT<ZVertexHeterogeneous> tokenCPUVertex_;
+  edm::EDGetTokenT<PixelTrack> tokenCPUTrack_;
+  edm::EDPutTokenT<ZVertex> tokenCPUVertex_;
 
   const gpuVertexFinder::Producer m_gpuAlgo;
 
@@ -45,23 +45,23 @@ PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
       m_ptMin(0.5)  // 0.5 GeV
 {
   if (m_OnGPU) {
-    tokenGPUTrack_ = reg.consumes<cms::cuda::Product<PixelTrackHeterogeneous>>();
+    tokenGPUTrack_ = reg.consumes<cms::cuda::Product<PixelTrack>>();
     tokenGPUVertex_ = reg.produces<ZVertexCUDAProduct>();
   } else {
-    tokenCPUTrack_ = reg.consumes<PixelTrackHeterogeneous>();
-    tokenCPUVertex_ = reg.produces<ZVertexHeterogeneous>();
+    tokenCPUTrack_ = reg.consumes<PixelTrack>();
+    tokenCPUVertex_ = reg.produces<ZVertex>();
   }
 }
 
 void PixelVertexProducerCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-    auto const& ptracks = iEvent.get(tokenGPUTrack_);
+  auto const& ptracks = iEvent.get(tokenGPUTrack_);
 
-    cms::cuda::ScopedContextProduce ctx{ptracks};
-    auto const* tracks = ctx.get(ptracks).get();
+  cms::cuda::ScopedContextProduce ctx{ptracks};
+  auto const* tracks = ctx.get(ptracks).get();
 
-    assert(tracks);
+  assert(tracks);
 
-    ctx.emplace(iEvent, tokenGPUVertex_, m_gpuAlgo.makeAsync(ctx.stream(), tracks, m_ptMin));
+  ctx.emplace(iEvent, tokenGPUVertex_, m_gpuAlgo.makeAsync(ctx.stream(), tracks, m_ptMin));
 }
 
 DEFINE_FWK_MODULE(PixelVertexProducerCUDA);

@@ -6,7 +6,6 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cudaCheck.h"
-#include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
@@ -18,7 +17,7 @@ void go() {
 
   constexpr int N = 12000;
   T v[N];
-  auto v_d = make_device_unique<T[]>(N, nullptr);
+  auto v_d = std::make_unique<T[]>(N);
 
   cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
 
@@ -32,9 +31,9 @@ void go() {
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
   Hist h;
-  auto h_d = make_device_unique<Hist[]>(1, nullptr);
+  auto h_d = std::make_unique<Hist[]>(1);
 
-  auto off_d = make_device_unique<uint32_t[]>(nParts + 1, nullptr);
+  auto off_d = std::make_unique<uint32_t[]>(nParts + 1);
 
   for (int it = 0; it < 5; ++it) {
     offsets[0] = 0;

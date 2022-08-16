@@ -1,9 +1,9 @@
 #include "CUDACore/Product.h"
 #include "CUDACore/ScopedContext.h"
-#include "CUDADataFormats/PixelTrackHeterogeneous.h"
-#include "CUDADataFormats/SiPixelClustersCUDA.h"
-#include "CUDADataFormats/SiPixelDigisCUDA.h"
-#include "CUDADataFormats/ZVertexHeterogeneous.h"
+#include "CUDADataFormats/PixelTrack.h"
+#include "CUDADataFormats/SiPixelClusters.h"
+#include "CUDADataFormats/SiPixelDigis.h"
+#include "CUDADataFormats/ZVertex.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
 #include "DataFormats/VertexCount.h"
@@ -38,20 +38,20 @@ private:
   edm::EDGetTokenT<TrackCount> trackCountToken_;
   edm::EDGetTokenT<VertexCount> vertexCountToken_;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiToken_;
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterToken_;
-  edm::EDGetTokenT<PixelTrackHeterogeneous> trackToken_;
-  edm::EDGetTokenT<ZVertexHeterogeneous> vertexToken_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigis>> digiToken_;
+  edm::EDGetTokenT<cms::cuda::Product<SiPixelClusters>> clusterToken_;
+  edm::EDGetTokenT<PixelTrack> trackToken_;
+  edm::EDGetTokenT<ZVertex> vertexToken_;
 };
 
 CountValidator::CountValidator(edm::ProductRegistry& reg)
     : digiClusterCountToken_(reg.consumes<DigiClusterCount>()),
       trackCountToken_(reg.consumes<TrackCount>()),
       vertexCountToken_(reg.consumes<VertexCount>()),
-      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClustersCUDA>>()),
-      trackToken_(reg.consumes<PixelTrackHeterogeneous>()),
-      vertexToken_(reg.consumes<ZVertexHeterogeneous>()) {}
+      digiToken_(reg.consumes<cms::cuda::Product<SiPixelDigis>>()),
+      clusterToken_(reg.consumes<cms::cuda::Product<SiPixelClusters>>()),
+      trackToken_(reg.consumes<PixelTrack>()),
+      vertexToken_(reg.consumes<ZVertex>()) {}
 
 void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   constexpr float trackTolerance = 0.012f;  // in 200 runs of 1k events all events are withing this tolerance

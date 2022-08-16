@@ -3,11 +3,6 @@
 #include <memory>
 #include <cstddef>
 
-#include "Geometry/phase1PixelTopology.h"
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/deviceCount.h"
-#include "CUDACore/ScopedSetDevice.h"
-#include "CUDACore/StreamCache.h"
 #include "CondFormats/PixelCPEFast.h"
 
 //-----------------------------------------------------------------------------
