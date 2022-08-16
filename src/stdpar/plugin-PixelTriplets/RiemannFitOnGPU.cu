@@ -6,8 +6,7 @@
 
 void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                          uint32_t nhits,
-                                         uint32_t maxNumberOfTuples,
-                                         cudaStream_t stream) {
+                                         uint32_t maxNumberOfTuples) {
   assert(tuples_d);
 
   auto blockSize = 64;
@@ -26,11 +25,11 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
 
   for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
     // triplets
-    kernelFastFit<3><<<numberOfBlocks, blockSize, 0, stream>>>(
+    kernelFastFit<3><<<numberOfBlocks, blockSize, 0>>>(
         tuples_d, tupleMultiplicity_d, 3, hv, hitsGPU_.get(), hits_geGPU_.get(), fast_fit_resultsGPU_.get(), offset);
     cudaCheck(cudaGetLastError());
 
-    kernelCircleFit<3><<<numberOfBlocks, blockSize, 0, stream>>>(tupleMultiplicity_d,
+    kernelCircleFit<3><<<numberOfBlocks, blockSize, 0>>>(tupleMultiplicity_d,
                                                                  3,
                                                                  bField_,
                                                                  hitsGPU_.get(),
@@ -40,7 +39,7 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                                                  offset);
     cudaCheck(cudaGetLastError());
 
-    kernelLineFit<3><<<numberOfBlocks, blockSize, 0, stream>>>(tupleMultiplicity_d,
+    kernelLineFit<3><<<numberOfBlocks, blockSize, 0>>>(tupleMultiplicity_d,
                                                                3,
                                                                bField_,
                                                                outputSoa_d,
@@ -52,11 +51,11 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
     cudaCheck(cudaGetLastError());
 
     // quads
-    kernelFastFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(
+    kernelFastFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(
         tuples_d, tupleMultiplicity_d, 4, hv, hitsGPU_.get(), hits_geGPU_.get(), fast_fit_resultsGPU_.get(), offset);
     cudaCheck(cudaGetLastError());
 
-    kernelCircleFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+    kernelCircleFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                      4,
                                                                      bField_,
                                                                      hitsGPU_.get(),
@@ -66,7 +65,7 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                                                      offset);
     cudaCheck(cudaGetLastError());
 
-    kernelLineFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+    kernelLineFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                    4,
                                                                    bField_,
                                                                    outputSoa_d,
@@ -79,11 +78,11 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
 
     if (fit5as4_) {
       // penta
-      kernelFastFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(
+      kernelFastFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(
           tuples_d, tupleMultiplicity_d, 5, hv, hitsGPU_.get(), hits_geGPU_.get(), fast_fit_resultsGPU_.get(), offset);
       cudaCheck(cudaGetLastError());
 
-      kernelCircleFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+      kernelCircleFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                        5,
                                                                        bField_,
                                                                        hitsGPU_.get(),
@@ -93,7 +92,7 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                                                        offset);
       cudaCheck(cudaGetLastError());
 
-      kernelLineFit<4><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+      kernelLineFit<4><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                      5,
                                                                      bField_,
                                                                      outputSoa_d,
@@ -105,11 +104,11 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
       cudaCheck(cudaGetLastError());
     } else {
       // penta all 5
-      kernelFastFit<5><<<numberOfBlocks / 4, blockSize, 0, stream>>>(
+      kernelFastFit<5><<<numberOfBlocks / 4, blockSize, 0>>>(
           tuples_d, tupleMultiplicity_d, 5, hv, hitsGPU_.get(), hits_geGPU_.get(), fast_fit_resultsGPU_.get(), offset);
       cudaCheck(cudaGetLastError());
 
-      kernelCircleFit<5><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+      kernelCircleFit<5><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                        5,
                                                                        bField_,
                                                                        hitsGPU_.get(),
@@ -119,7 +118,7 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                                                        offset);
       cudaCheck(cudaGetLastError());
 
-      kernelLineFit<5><<<numberOfBlocks / 4, blockSize, 0, stream>>>(tupleMultiplicity_d,
+      kernelLineFit<5><<<numberOfBlocks / 4, blockSize, 0>>>(tupleMultiplicity_d,
                                                                      5,
                                                                      bField_,
                                                                      outputSoa_d,
@@ -136,6 +135,5 @@ void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
 #else
 void HelixFitOnGPU::launchRiemannKernels(HitsView const *hv,
                                          uint32_t nhits,
-                                         uint32_t maxNumberOfTuples,
-                                         cudaStream_t stream) {}
+                                         uint32_t maxNumberOfTuples) {}
 #endif
