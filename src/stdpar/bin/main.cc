@@ -22,7 +22,7 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name
-        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
+        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--validation] "
            "[--histogram] [--empty]\n\n"
         << "Options\n"
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
@@ -31,7 +31,6 @@ namespace {
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
            "(default -1 for disabled; conflicts with --maxEvents)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
         << " --histogram         Produce histograms at the end (implies --transfer)\n"
         << " --empty             Ignore all producers (for testing only)\n"
@@ -47,7 +46,6 @@ int main(int argc, char** argv) {
   int maxEvents = -1;
   int runForMinutes = -1;
   std::filesystem::path datadir;
-  bool transfer = false;
   bool validation = false;
   bool histogram = false;
   bool empty = false;
@@ -70,13 +68,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--data") {
       ++i;
       datadir = *i;
-    } else if (*i == "--transfer") {
-      transfer = true;
     } else if (*i == "--validation") {
-      transfer = true;
       validation = true;
     } else if (*i == "--histogram") {
-      transfer = true;
       histogram = true;
     } else if (*i == "--empty") {
       empty = true;
@@ -124,14 +118,6 @@ int main(int argc, char** argv) {
                  "SiPixelFedCablingMapGPUWrapperESProducer",
                  "SiPixelGainCalibrationForHLTGPUESProducer",
                  "PixelCPEFastESProducer"};
-    if (transfer) {
-      auto capos = std::find(edmodules.begin(), edmodules.end(), "CAHitNtupletCUDA");
-      assert(capos != edmodules.end());
-      edmodules.insert(capos + 1, "PixelTrackSoAFromCUDA");
-      auto vertpos = std::find(edmodules.begin(), edmodules.end(), "PixelVertexProducerCUDA");
-      assert(vertpos != edmodules.end());
-      edmodules.insert(vertpos + 1, "PixelVertexSoAFromCUDA");
-    }
     if (validation) {
       edmodules.emplace_back("CountValidator");
     }
