@@ -5,7 +5,6 @@
 #include <random>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/cudaCheck.h"
 
 using namespace cms::cuda;
 
@@ -15,24 +14,19 @@ void go() {
   std::uniform_int_distribution<T> rgen(std::numeric_limits<T>::min(), std::numeric_limits<T>::max());
 
   constexpr int N = 12000;
-  T v[N];
-  auto v_d = std::make_unique<T[]>(N);
-
-  cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
+  auto v = std::make_unique<T[]>(N);
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
-  uint32_t offsets[nParts + 1];
 
   using Hist = HistoContainer<T, 128, N, 8 * sizeof(T), uint32_t, nParts>;
   std::cout << "HistoContainer " << (int)(offsetof(Hist, off)) << ' ' << Hist::nbins() << ' ' << Hist::totbins() << ' '
             << Hist::capacity() << ' ' << offsetof(Hist, bins) - offsetof(Hist, off) << ' '
             << (std::numeric_limits<T>::max() - std::numeric_limits<T>::min()) / Hist::nbins() << std::endl;
 
-  Hist h;
-  auto h_d = std::make_unique<Hist[]>(1);
+  auto h = std::make_unique<Hist[]>(1);
 
-  auto off_d = std::make_unique<uint32_t[]>(nParts + 1);
+  auto offsets = std::make_unique<uint32_t[]>(nParts + 1);
 
   for (int it = 0; it < 5; ++it) {
     offsets[0] = 0;
@@ -55,8 +49,6 @@ void go() {
       offsets[10] = 3297 + offsets[9];
     }
 
-    cudaCheck(cudaMemcpy(off_d.get(), offsets, 4 * (nParts + 1), cudaMemcpyHostToDevice));
-
     for (long long j = 0; j < N; j++)
       v[j] = rgen(eng);
 
@@ -65,12 +57,9 @@ void go() {
         v[j] = sizeof(T) == 1 ? 22 : 3456;
     }
 
-    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
-
-    fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256);
-    cudaCheck(cudaMemcpy(&h, h_d.get(), sizeof(Hist), cudaMemcpyDeviceToHost));
-    assert(0 == h.off[0]);
-    assert(offsets[10] == h.size());
+    fillManyFromVector(h.get(), nParts, v.get(), offsets.get(), offsets[10], 256);
+    assert(0 == h[0].off[0]);
+    assert(offsets[10] == h[0].size());
 
     auto verify = [&](uint32_t i, uint32_t k, uint32_t t1, uint32_t t2) {
       assert(t1 < N);
@@ -88,16 +77,16 @@ void go() {
       auto off = Hist::histOff(j);
       for (uint32_t i = 0; i < Hist::nbins(); ++i) {
         auto ii = i + off;
-        if (0 == h.size(ii))
+        if (0 == h[0].size(ii))
           continue;
-        auto k = *h.begin(ii);
+        auto k = *h[0].begin(ii);
         if (j % 2)
-          k = *(h.begin(ii) + (h.end(ii) - h.begin(ii)) / 2);
-        auto bk = h.bin(v[k]);
+          k = *(h[0].begin(ii) + (h[0].end(ii) - h[0].begin(ii)) / 2);
+        auto bk = h[0].bin(v[k]);
         assert(bk == i);
         assert(k < offsets[j + 1]);
-        auto kl = h.bin(v[k] - window);
-        auto kh = h.bin(v[k] + window);
+        auto kl = h[0].bin(v[k] - window);
+        auto kh = h[0].bin(v[k] + window);
         assert(kl != i);
         assert(kh != i);
         // std::cout << kl << ' ' << kh << std::endl;
@@ -110,8 +99,8 @@ void go() {
         incr(khh);
         for (auto kk = kl; kk != khh; incr(kk)) {
           if (kk != kl && kk != kh)
-            nm += h.size(kk + off);
-          for (auto p = h.begin(kk + off); p < h.end(kk + off); ++p) {
+            nm += h[0].size(kk + off);
+          for (auto p = h[0].begin(kk + off); p < h[0].end(kk + off); ++p) {
             if (std::min(std::abs(T(v[*p] - me)), std::abs(T(me - v[*p]))) > window) {
             } else {
               ++tot;
@@ -122,10 +111,10 @@ void go() {
             continue;
           }
           if (l)
-            for (auto p = h.begin(kk + off); p < h.end(kk + off); ++p)
+            for (auto p = h[0].begin(kk + off); p < h[0].end(kk + off); ++p)
               verify(i, k, k, (*p));
           else
-            for (auto p = h.begin(kk + off); p < h.end(kk + off); ++p)
+            for (auto p = h[0].begin(kk + off); p < h[0].end(kk + off); ++p)
               verify(i, k, (*p), k);
         }
         if (!(tot >= nm)) {
