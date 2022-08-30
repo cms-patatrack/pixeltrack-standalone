@@ -36,7 +36,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelVertexSoAFromAlpaka::PixelVertexSoAFromAlpaka(edm::ProductRegistry& reg)
       : tokenDevice_(reg.consumes<cms::alpakatools::Product<Queue, ZVertexAlpaka>>()),
         tokenHost_(reg.produces<ZVertexHost>()),
-        soa_(cms::alpakatools::make_host_buffer<ZVertexSoA>()) {}
+        soa_(cms::alpakatools::make_host_buffer<ZVertexSoA, Platform>()) {}
 
   void PixelVertexSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                          edm::EventSetup const& iSetup,

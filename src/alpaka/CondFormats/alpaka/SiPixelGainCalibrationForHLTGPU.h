@@ -15,7 +15,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     using DecodingStructure = SiPixelGainForHLTonGPU::DecodingStructure;
 
     SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU gain, std::vector<DecodingStructure> gainData)
-        : gainForHLTonHost_{cms::alpakatools::make_host_buffer<SiPixelGainForHLTonGPU>()},
+        : gainForHLTonHost_{cms::alpakatools::make_host_buffer<SiPixelGainForHLTonGPU, Platform>()},
           gainData_(gainData),
           numDecodingStructures_(gainData.size()) {
       *gainForHLTonHost_ = gain;

@@ -35,8 +35,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 
     SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
-        : word_{cms::alpakatools::make_host_buffer<unsigned int[]>(MAX_FED_WORDS)},
-          fedId_{cms::alpakatools::make_host_buffer<unsigned char[]>(MAX_FED_WORDS)} {}
+        : word_{cms::alpakatools::make_host_buffer<unsigned int[], Platform>(MAX_FED_WORDS)},
+          fedId_{cms::alpakatools::make_host_buffer<unsigned char[], Platform>(MAX_FED_WORDS)} {}
 
     void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                           unsigned int wordCounterGPU,

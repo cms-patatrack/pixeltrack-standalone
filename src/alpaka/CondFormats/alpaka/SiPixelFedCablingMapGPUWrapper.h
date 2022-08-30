@@ -17,7 +17,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     explicit SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU cablingMap, std::vector<unsigned char> modToUnp)
         : modToUnpDefault_(modToUnp.size()),
-          cablingMapHost_{cms::alpakatools::make_host_buffer<SiPixelFedCablingMapGPU>()},
+          cablingMapHost_{cms::alpakatools::make_host_buffer<SiPixelFedCablingMapGPU, Platform>()},
           hasQuality_{true} {
       std::memcpy(cablingMapHost_.data(), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
       std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault_.begin());

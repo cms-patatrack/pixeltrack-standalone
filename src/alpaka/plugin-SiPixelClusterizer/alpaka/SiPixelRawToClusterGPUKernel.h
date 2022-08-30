@@ -169,7 +169,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         cms::alpakatools::host_buffer<unsigned char[]> fedId_;
       };
 
-      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{cms::alpakatools::make_host_buffer<uint32_t[]>(2u)} {}
+      SiPixelRawToClusterGPUKernel() : nModules_Clusters_h{cms::alpakatools::make_host_buffer<uint32_t[], Platform>(2u)} {}
 
       ~SiPixelRawToClusterGPUKernel() = default;
 
