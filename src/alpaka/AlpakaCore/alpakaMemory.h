@@ -96,6 +96,26 @@ namespace cms::alpakatools {
     return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{std::extent_v<T>});
   }
 
+  // non-cached, pinned, scalar and 1-dimensional host buffers
+  // the memory is pinned according to the device associated to the platform
+
+  template <typename T, typename TPlatform>
+  std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer() {
+    return alpaka::allocMappedBuf<TPlatform, T, Idx>(host, Scalar{});
+  }
+
+  template <typename T, typename TPlatform>
+  std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
+  make_host_buffer(Extent extent) {
+    return alpaka::allocMappedBuf<TPlatform, std::remove_extent_t<T>, Idx>(host, Vec1D{extent});
+  }
+
+  template <typename T, typename TPlatform>
+  std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
+  make_host_buffer() {
+    return alpaka::allocMappedBuf<TPlatform, std::remove_extent_t<T>, Idx>(host, Vec1D{std::extent_v<T>});
+  }
+
   // potentially cached, pinned, scalar and 1-dimensional host buffers, associated to a work queue
   // the memory is pinned according to the device associated to the queue
 
