@@ -16,7 +16,7 @@ namespace cms {
 
       // ownership of m_data stays within the caller
       constexpr void construct(int32_t capacity, T *data) {
-        m_size.store(0);
+        m_size = 0;
         m_capacity = capacity;
         m_data = data;
       }
@@ -57,45 +57,49 @@ namespace cms {
 
       // thread-safe version of the vector, when used in a CUDA kernel
       int push_back(const T &element) {
-        auto previousSize = m_size.fetch_add(1);
+        std::atomic_ref<int32_t> s(m_size);
+        auto previousSize = s++;
         if (previousSize < m_capacity) {
           m_data[previousSize] = element;
           return previousSize;
         } else {
-          m_size -= 1;
+          --s;
           return -1;
         }
       }
 
       template <class... Ts>
       int emplace_back(Ts &&...args) {
-        auto previousSize = m_size.fetch_add(1);
+        std::atomic_ref<int32_t> s(m_size);
+        auto previousSize = s++;
         if (previousSize < m_capacity) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
           return previousSize;
         } else {
-          m_size -= 1;
+          --s;
           return -1;
         }
       }
 
       // thread safe version of resize
       int extend(int32_t size = 1) {
-        auto previousSize = m_size.fetch_add(size);
+        std::atomic_ref<int32_t> s(m_size);
+        auto previousSize = s.fetch_add(size);
         if (previousSize < m_capacity) {
           return previousSize;
         } else {
-          m_size -= size;
+          s -= size;
           return -1;
         }
       }
 
       int shrink(int32_t size = 1) {
-        auto previousSize = m_size.fetch_sub(size);
+        std::atomic_ref<int32_t> s(m_size);
+        auto previousSize = s.fetch_sub(size);
         if (previousSize >= size) {
           return previousSize - size;
         } else {
-          m_size += size;
+          s += size;
           return -1;
         }
       }
@@ -105,15 +109,15 @@ namespace cms {
       inline constexpr T &operator[](int i) { return m_data[i]; }
       inline constexpr const T &operator[](int i) const { return m_data[i]; }
       inline constexpr void reset() { resize(0); }
-      inline constexpr std::atomic_int32_t::value_type size() const { return m_size.load(); }
+      inline constexpr int32_t size() const { return m_size; }
       inline constexpr int32_t capacity() const { return m_capacity; }
       inline constexpr T const *data() const { return m_data; }
-      inline constexpr void resize(int32_t size) { m_size.store(size); }
+      inline constexpr void resize(int32_t size) { m_size = size; }
       inline constexpr void set_data(T *data) { m_data = data; }
 
     private:
       int32_t m_capacity;
-      std::atomic_int32_t m_size;
+      int32_t m_size;
 
       T *m_data;
     };

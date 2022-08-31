@@ -12,7 +12,6 @@
 #include "CUDACore/AtomicPairCounter.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
-#include "CUDACore/cudastdAlgorithm.h"
 #include "CUDACore/prefixScan.h"
 
 namespace cms {
@@ -25,7 +24,7 @@ namespace cms {
                                     uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
@@ -41,7 +40,7 @@ namespace cms {
                                    uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
@@ -51,36 +50,23 @@ namespace cms {
     }
 
     template <typename Histo>
-    inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
-                                                          cudaStream_t stream
-#ifndef __NVCOMPILER
-                                                          = cudaStreamDefault
-#endif
-    ) {
+    inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h) {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
-#ifdef __NVCOMPILER
-      cudaCheck(cudaMemsetAsync(poff, 0, size, stream));
-#else
       ::memset(poff, 0, size);
-#endif
     }
 
     template <typename Histo>
-    inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
-                                                              cudaStream_t stream
-#ifndef __NVCOMPILER
-                                                              = cudaStreamDefault
-#endif
-    ) {
+    inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h) {
 #ifdef __NVCOMPILER
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks, stream>>>(
+      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks>>>(
           poff, poff, Histo::totbins(), ppsws);
+      cudaDeviceSynchronize();
       cudaCheck(cudaGetLastError());
 #else
       h->finalize();
@@ -93,19 +79,15 @@ namespace cms {
                                                                   T const *__restrict__ v,
                                                                   uint32_t const *__restrict__ offsets,
                                                                   uint32_t totSize,
-                                                                  int nthreads,
-                                                                  cudaStream_t stream
-#ifndef __NVCOMPILER
-                                                                  = cudaStreamDefault
-#endif
-    ) {
-      launchZero(h, stream);
+                                                                  int nthreads) {
+      launchZero(h);
 #ifdef __NVCOMPILER
       auto nblocks = (totSize + nthreads - 1) / nthreads;
-      countFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
+      countFromVector<<<nblocks, nthreads, 0>>>(h, nh, v, offsets);
       cudaCheck(cudaGetLastError());
-      launchFinalize(h, stream);
-      fillFromVector<<<nblocks, nthreads, 0, stream>>>(h, nh, v, offsets);
+      launchFinalize(h);
+      fillFromVector<<<nblocks, nthreads, 0>>>(h, nh, v, offsets);
+      cudaDeviceSynchronize();
       cudaCheck(cudaGetLastError());
 #else
       countFromVector(h, nh, v, offsets);

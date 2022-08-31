@@ -1,12 +1,10 @@
-#include <cuda_runtime.h>
+#include <memory>
 
-#include "CUDACore/Product.h"
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
-#include "CUDACore/ScopedContext.h"
 
 #include "gpuVertexFinder.h"
 
@@ -18,12 +16,8 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  bool m_OnGPU;
-
-  edm::EDGetTokenT<cms::cuda::Product<PixelTrack>> tokenGPUTrack_;
-  edm::EDPutTokenT<ZVertexCUDAProduct> tokenGPUVertex_;
-  edm::EDGetTokenT<PixelTrack> tokenCPUTrack_;
-  edm::EDPutTokenT<ZVertex> tokenCPUVertex_;
+  edm::EDGetTokenT<PixelTrack> tokenTrack_;
+  edm::EDPutTokenT<ZVertex> tokenVertex_;
 
   const gpuVertexFinder::Producer m_gpuAlgo;
 
@@ -32,7 +26,8 @@ private:
 };
 
 PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
-    : m_OnGPU(true),
+    : tokenTrack_{reg.consumes<PixelTrack>()},
+      tokenVertex_{reg.produces<ZVertex>()},
       m_gpuAlgo(true,   // oneKernel
                 true,   // useDensity
                 false,  // useDBSCAN
@@ -43,25 +38,17 @@ PixelVertexProducerCUDA::PixelVertexProducerCUDA(edm::ProductRegistry& reg)
                 9       // chi2max
                 ),
       m_ptMin(0.5)  // 0.5 GeV
-{
-  if (m_OnGPU) {
-    tokenGPUTrack_ = reg.consumes<cms::cuda::Product<PixelTrack>>();
-    tokenGPUVertex_ = reg.produces<ZVertexCUDAProduct>();
-  } else {
-    tokenCPUTrack_ = reg.consumes<PixelTrack>();
-    tokenCPUVertex_ = reg.produces<ZVertex>();
-  }
-}
+      {}
 
 void PixelVertexProducerCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  auto const& ptracks = iEvent.get(tokenGPUTrack_);
-
-  cms::cuda::ScopedContextProduce ctx{ptracks};
-  auto const* tracks = ctx.get(ptracks).get();
+  auto const* tracks = iEvent.get(tokenTrack_).get();
 
   assert(tracks);
-
-  ctx.emplace(iEvent, tokenGPUVertex_, m_gpuAlgo.makeAsync(ctx.stream(), tracks, m_ptMin));
+  //move unique_ptr into local variable
+  auto vertices{m_gpuAlgo.makeAsync(tracks, m_ptMin)};
+  cudaDeviceSynchronize(); //wait for the device to finish kernels
+  //We now move the unique_ptr into the event
+  iEvent.emplace(tokenVertex_, std::move(vertices));
 }
 
 DEFINE_FWK_MODULE(PixelVertexProducerCUDA);

@@ -5,9 +5,6 @@
 #include <limits>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/launch.h"
-#include "CUDACore/requireDevices.h"
 
 using namespace cms::cuda;
 
@@ -105,10 +102,9 @@ void go() {
   std::uniform_int_distribution<T> rgen(rmin, rmax);
 
   constexpr int N = 12000;
-  T v[N];
 
-  auto v_d = std::make_unique<T[]>(N);
-  assert(v_d.get());
+  auto v = std::make_unique<T[]>(N);
+  assert(v.get());
 
   using Hist = HistoContainer<T, NBINS, N, S>;
   std::cout << "HistoContainer " << Hist::nbits() << ' ' << Hist::nbins() << ' ' << Hist::capacity() << ' '
@@ -122,16 +118,12 @@ void go() {
       for (long long j = N / 2; j < N / 2 + N / 4; j++)
         v[j] = 4;
 
-    assert(v_d.get());
-    assert(v);
-    cudaCheck(cudaMemcpy(v_d.get(), v, N * sizeof(T), cudaMemcpyHostToDevice));
-    assert(v_d.get());
-    launch(mykernel<T, NBINS, S, DELTA>, {1, 256}, v_d.get(), N);
+    assert(v.get());
+    mykernel<T, NBINS, S, DELTA><<<1, 256>>>(v.get(), N);
   }
 }
 
 int main() {
-  cms::cudatest::requireDevices();
 
   go<int16_t>();
   go<uint8_t, 128, 8, 4>();

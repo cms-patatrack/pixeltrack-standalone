@@ -160,15 +160,15 @@ public:
 
   TupleMultiplicity const* tupleMultiplicity() const { return device_tupleMultiplicity_.get(); }
 
-  void launchKernels(HitsOnCPU const& hh, TkSoA* tuples_d, cudaStream_t cudaStream);
+  void launchKernels(HitsOnCPU const& hh, TkSoA* tuples_d);
 
-  void classifyTuples(HitsOnCPU const& hh, TkSoA* tuples_d, cudaStream_t cudaStream);
+  void classifyTuples(HitsOnCPU const& hh, TkSoA* tuples_d);
 
-  void fillHitDetIndices(HitsView const* hv, TkSoA* tuples_d, cudaStream_t cudaStream);
+  void fillHitDetIndices(HitsView const* hv, TkSoA* tuples_d);
 
-  void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream);
-  void allocateOnGPU(cudaStream_t stream);
-  void cleanup(cudaStream_t cudaStream);
+  void buildDoublets(HitsOnCPU const& hh);
+  void allocateOnGPU();
+  void cleanup();
 
   static void printCounters(Counters const* counters);
   Counters* counters_ = nullptr;

@@ -145,7 +145,7 @@ namespace pixelgpudetails {
   public:
     class WordFedAppender {
     public:
-      WordFedAppender(cudaStream_t stream);
+      WordFedAppender();
       ~WordFedAppender() = default;
 
       void initializeWordFed(int fedId, unsigned int wordCounterGPU, const uint32_t* src, unsigned int length);
@@ -176,8 +176,7 @@ namespace pixelgpudetails {
                            const uint32_t fedCounter,
                            bool useQualityInfo,
                            bool includeErrors,
-                           bool debug,
-                           cudaStream_t stream);
+                           bool debug);
 
     std::pair<SiPixelDigis, SiPixelClusters> getResults() {
       digis_d.setNModulesDigis(clusters_d.moduleStart()[0], nDigis);

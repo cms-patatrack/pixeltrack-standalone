@@ -2,6 +2,8 @@
 #define HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 
 #include <cstdint>
+#include <numeric>
+#include <execution>
 
 #include "CUDACore/cuda_assert.h"
 
@@ -41,15 +43,15 @@ namespace cms {
 
     // limited to 32*32 elements....
     template <typename VT, typename T>
-    __host__ __device__ __forceinline__ void blockPrefixScan(VT const* ci,
-                                                             VT* co,
-                                                             uint32_t size,
-                                                             T* ws
-#ifndef __CUDA_ARCH__
-                                                             = nullptr
+    __forceinline__ void blockPrefixScan(VT const* ci,
+                                         VT* co,
+                                         uint32_t size,
+                                         T* ws
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
+                                         = nullptr
 #endif
     ) {
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
@@ -78,22 +80,21 @@ namespace cms {
       __syncthreads();
 #else
       co[0] = ci[0];
-      for (uint32_t i = 1; i < size; ++i)
-        co[i] = ci[i] + co[i - 1];
+      std::inclusive_scan(std::execution::par, ci, ci + size, co);
 #endif
     }
 
     // same as above, may remove
     // limited to 32*32 elements....
     template <typename T>
-    __host__ __device__ __forceinline__ void blockPrefixScan(T* c,
-                                                             uint32_t size,
-                                                             T* ws
-#ifndef __CUDA_ARCH__
-                                                             = nullptr
+    __forceinline__ void blockPrefixScan(T* c,
+                                         uint32_t size,
+                                         T* ws
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
+                                         = nullptr
 #endif
     ) {
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
       assert(ws);
       assert(size <= 1024);
       assert(0 == blockDim.x % 32);
@@ -121,12 +122,11 @@ namespace cms {
       }
       __syncthreads();
 #else
-      for (uint32_t i = 1; i < size; ++i)
-        c[i] += c[i - 1];
+      std::inclusive_scan(std::execution::par, c, c + size, c);
 #endif
     }
 
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
     // see https://stackoverflow.com/questions/40021086/can-i-obtain-the-amount-of-allocated-dynamic-shared-memory-from-within-a-kernel/40021087#40021087
     __device__ __forceinline__ unsigned dynamic_smem_size() {
       unsigned ret;
@@ -141,7 +141,7 @@ namespace cms {
       volatile T const* ci = ici;
       volatile T* co = ico;
       __shared__ T ws[32];
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER)
       assert(sizeof(T) * gridDim.x <= dynamic_smem_size());  // size of psum below
 #endif
       assert(blockDim.x * gridDim.x >= size);

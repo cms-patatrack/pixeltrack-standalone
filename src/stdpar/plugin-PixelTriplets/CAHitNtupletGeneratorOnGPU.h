@@ -39,14 +39,14 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrack makeTuplesAsync(TrackingRecHit2D const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrack makeTuplesAsync(TrackingRecHit2D const& hits_d, float bfield) const;
 
 private:
-  void buildDoublets(HitsOnCPU const& hh, cudaStream_t stream) const;
+  void buildDoublets(HitsOnCPU const& hh) const;
 
-  void hitNtuplets(HitsOnCPU const& hh, const edm::EventSetup& es, bool useRiemannFit, cudaStream_t cudaStream);
+  void hitNtuplets(HitsOnCPU const& hh, const edm::EventSetup& es, bool useRiemannFit);
 
-  void launchKernels(HitsOnCPU const& hh, bool useRiemannFit, cudaStream_t cudaStream) const;
+  void launchKernels(HitsOnCPU const& hh, bool useRiemannFit) const;
 
   Params m_params;
 
