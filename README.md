@@ -411,6 +411,15 @@ The `stdpar` program is cloned from `cudauvm` and currently intended
 to experiment the use of NVIDIA's implementation of
 `std::execution::par` with `nvc++` and in conjunction with direct CUDA code.
 
+`stdpar` implementation requires a c++20 implementation of the c++ standard library (atomic_ref, ranges).
+It has only been tested with the GCC 11.2.0 implementation, `libstdc++`.
+
+As it is work-in-progress and contains CUDA Kernels, it currently only supports `nvc++`. Other compilers will 
+eventually be supported once Kernels have been ported to their `stdpar` equivalent.
+
+`stdpar` implementation only supports a single GPU. A multi-gpus implementation would require either multiple processes
+or using vendor-specific APIs.
+
 ## Code structure
 
 The project is split into several programs, one (or more) for each
