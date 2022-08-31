@@ -12,7 +12,6 @@
 #include "CUDACore/AtomicPairCounter.h"
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/cuda_assert.h"
-#include "CUDACore/cudastdAlgorithm.h"
 #include "CUDACore/prefixScan.h"
 
 namespace cms {
@@ -25,7 +24,7 @@ namespace cms {
                                     uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
@@ -41,7 +40,7 @@ namespace cms {
                                    uint32_t const *__restrict__ offsets) {
       int first = blockDim.x * blockIdx.x + threadIdx.x;
       for (int i = first, nt = offsets[nh]; i < nt; i += gridDim.x * blockDim.x) {
-        auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
+        auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
         assert(ih >= 0);
