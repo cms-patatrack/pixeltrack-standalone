@@ -4,7 +4,7 @@ BasedOnStyle:  Google
 ColumnLimit:     120
 #didn't we want to change this?
 NamespaceIndentation: All
-SortIncludes:    false
+SortIncludes:    Never
 IndentWidth:     2
 AccessModifierOffset: -2
 PenaltyBreakComment: 30
@@ -16,4 +16,3 @@ BinPackParameters: false
 AlwaysBreakTemplateDeclarations: Yes
 ReflowComments: false
 BinPackArguments: false
-BinPackParameters: false
