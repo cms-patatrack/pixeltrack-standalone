@@ -132,8 +132,7 @@ void testFit() {
   Rfit::VectorNd<N> rad = (hits.block(0, 0, 2, N).colwise().norm());
   Rfit::Matrix2Nd<N> hits_cov = Rfit::Matrix2Nd<N>::Zero();
   Rfit::loadCovariance2D(hits_ge, hits_cov);
-  circle_fit_results =
-      Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
+  circle_fit_results = Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
   // LINE_FIT CPU
   line_fit_results = Rfit::Line_fit(hits, hits_ge, circle_fit_results, fast_fit_results, B, true);
   Rfit::par_uvrtopak(circle_fit_results, B, true);

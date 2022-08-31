@@ -23,14 +23,12 @@ __global__ void vector_emplace_back(cms::cuda::SimpleVector<int> *foo) {
 }
 
 int main() {
-
   auto maxN = 10000;
 
   auto obj_unique_ptr = std::make_unique<cms::cuda::SimpleVector<int>>();
   auto data_unique_ptr = std::make_unique<int[]>(maxN);
   auto obj_ptr = obj_unique_ptr.get();
   auto data_ptr = data_unique_ptr.get();
-
 
   auto v = cms::cuda::make_SimpleVector(obj_ptr, maxN, data_ptr);
 

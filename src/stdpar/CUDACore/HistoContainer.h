@@ -64,8 +64,7 @@ namespace cms {
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
-      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks>>>(
-          poff, poff, Histo::totbins(), ppsws);
+      multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks>>>(poff, poff, Histo::totbins(), ppsws);
       cudaDeviceSynchronize();
       cudaCheck(cudaGetLastError());
 #else
@@ -224,9 +223,7 @@ namespace cms {
         return c.m;
       }
 
-      __device__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) {
-        off[apc.get().m] = apc.get().n;
-      }
+      __device__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) { off[apc.get().m] = apc.get().n; }
 
       __device__ __forceinline__ void bulkFinalizeFill(AtomicPairCounter const &apc) {
         auto m = apc.get().m;

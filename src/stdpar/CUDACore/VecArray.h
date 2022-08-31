@@ -29,7 +29,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      constexpr int emplace_back_unsafe(Ts &&... args) {
+      constexpr int emplace_back_unsafe(Ts &&...args) {
         auto previousSize = m_size;
         m_size++;
         if (previousSize < maxSize) {
@@ -62,7 +62,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      int emplace_back(Ts &&... args) {
+      int emplace_back(Ts &&...args) {
         std::atomic_ref<int> s(m_size);
         auto previousSize = s++;
         if (previousSize < maxSize) {

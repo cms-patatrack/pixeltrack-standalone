@@ -83,7 +83,6 @@ __global__ void verify(uint32_t const *v, uint32_t n) {
 }
 
 int main() {
-
   std::cout << "warp level" << std::endl;
   // std::cout << "warp 32" << std::endl;
   testWarpPrefixScan<int><<<1, 32>>>(32);

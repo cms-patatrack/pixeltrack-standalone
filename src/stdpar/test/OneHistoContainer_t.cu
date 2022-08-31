@@ -124,7 +124,6 @@ void go() {
 }
 
 int main() {
-
   go<int16_t>();
   go<uint8_t, 128, 8, 4>();
   go<uint16_t, 313 / 2, 9, 4>();

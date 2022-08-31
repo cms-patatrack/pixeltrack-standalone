@@ -56,8 +56,6 @@ SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
 }
 
 void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-
-
   auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
     throw std::runtime_error("UseQuality of the module (" + std::to_string(useQuality_) +
@@ -150,7 +148,7 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
                              includeErrors_,
                              false);  // debug
 
-  cudaDeviceSynchronize(); // we now have to wait...
+  cudaDeviceSynchronize();  // we now have to wait...
 
   auto tmp = gpuAlgo_.getResults();
   iEvent.emplace(digiPutToken_, std::move(tmp.first));

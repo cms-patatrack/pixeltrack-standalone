@@ -551,22 +551,21 @@ namespace pixelgpudetails {
       assert(0 == wordCounter % 2);
 
       // Launch rawToDigi kernel
-      RawToDigi_kernel<<<blocks, threadsPerBlock, 0>>>(
-          cablingMap,
-          modToUnp,
-          wordCounter,
-          wordFed.word(),
-          wordFed.fedId(),
-          digis_d.xx(),
-          digis_d.yy(),
-          digis_d.adc(),
-          digis_d.pdigi(),
-          digis_d.rawIdArr(),
-          digis_d.moduleInd(),
-          digiErrors_d.error(),  // returns nullptr if default-constructed
-          useQualityInfo,
-          includeErrors,
-          debug);
+      RawToDigi_kernel<<<blocks, threadsPerBlock, 0>>>(cablingMap,
+                                                       modToUnp,
+                                                       wordCounter,
+                                                       wordFed.word(),
+                                                       wordFed.fedId(),
+                                                       digis_d.xx(),
+                                                       digis_d.yy(),
+                                                       digis_d.adc(),
+                                                       digis_d.pdigi(),
+                                                       digis_d.rawIdArr(),
+                                                       digis_d.moduleInd(),
+                                                       digiErrors_d.error(),  // returns nullptr if default-constructed
+                                                       useQualityInfo,
+                                                       includeErrors,
+                                                       debug);
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();
@@ -583,15 +582,15 @@ namespace pixelgpudetails {
           (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
 
       gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0>>>(isRun2,
-                                                                        digis_d.moduleInd(),
-                                                                        digis_d.c_xx(),
-                                                                        digis_d.c_yy(),
-                                                                        digis_d.adc(),
-                                                                        gains,
-                                                                        wordCounter,
-                                                                        clusters_d.moduleStart(),
-                                                                        clusters_d.clusInModule(),
-                                                                        clusters_d.clusModuleStart());
+                                                                digis_d.moduleInd(),
+                                                                digis_d.c_xx(),
+                                                                digis_d.c_yy(),
+                                                                digis_d.adc(),
+                                                                gains,
+                                                                wordCounter,
+                                                                clusters_d.moduleStart(),
+                                                                clusters_d.clusInModule(),
+                                                                clusters_d.clusModuleStart());
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();
@@ -613,13 +612,13 @@ namespace pixelgpudetails {
       std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
 #endif
       findClus<<<blocks, threadsPerBlock, 0>>>(digis_d.c_moduleInd(),
-                                                       digis_d.c_xx(),
-                                                       digis_d.c_yy(),
-                                                       clusters_d.c_moduleStart(),
-                                                       clusters_d.clusInModule(),
-                                                       clusters_d.moduleId(),
-                                                       digis_d.clus(),
-                                                       wordCounter);
+                                               digis_d.c_xx(),
+                                               digis_d.c_yy(),
+                                               clusters_d.c_moduleStart(),
+                                               clusters_d.clusInModule(),
+                                               clusters_d.moduleId(),
+                                               digis_d.clus(),
+                                               wordCounter);
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();
@@ -628,12 +627,12 @@ namespace pixelgpudetails {
 
       // apply charge cut
       clusterChargeCut<<<blocks, threadsPerBlock, 0>>>(digis_d.moduleInd(),
-                                                               digis_d.c_adc(),
-                                                               clusters_d.c_moduleStart(),
-                                                               clusters_d.clusInModule(),
-                                                               clusters_d.c_moduleId(),
-                                                               digis_d.clus(),
-                                                               wordCounter);
+                                                       digis_d.c_adc(),
+                                                       clusters_d.c_moduleStart(),
+                                                       clusters_d.clusInModule(),
+                                                       clusters_d.c_moduleId(),
+                                                       digis_d.clus(),
+                                                       wordCounter);
       cudaCheck(cudaGetLastError());
 
       // count the module start indices already here (instead of

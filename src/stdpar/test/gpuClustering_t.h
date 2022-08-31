@@ -17,7 +17,6 @@
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
 
 int main(void) {
-
   using namespace gpuClustering;
 
   int numElements = 256 * 2000;
@@ -236,14 +235,7 @@ int main(void) {
     std::memset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
 
     findClus<<<blocksPerGrid, threadsPerBlock>>>(
-                      h_id.get(),
-                      h_x.get(),
-                      h_y.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      h_clus.get(),
-                      n);
+        h_id.get(), h_x.get(), h_y.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
     cudaDeviceSynchronize();
     nModules = d_moduleStart[0];
 
@@ -260,14 +252,8 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    clusterChargeCut <<<blocksPerGrid, threadsPerBlock>>>(
-                      h_id.get(),
-                      h_adc.get(),
-                      d_moduleStart.get(),
-                      d_clusInModule.get(),
-                      d_moduleId.get(),
-                      h_clus.get(),
-                      n);
+    clusterChargeCut<<<blocksPerGrid, threadsPerBlock>>>(
+        h_id.get(), h_adc.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
 
     cudaDeviceSynchronize();
 
