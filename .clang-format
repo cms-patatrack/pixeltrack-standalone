@@ -4,7 +4,7 @@ BasedOnStyle:  Google
 ColumnLimit:     120
 #didn't we want to change this?
 NamespaceIndentation: All
-SortIncludes:    Never
+SortIncludes:    false
 IndentWidth:     2
 AccessModifierOffset: -2
 PenaltyBreakComment: 30
