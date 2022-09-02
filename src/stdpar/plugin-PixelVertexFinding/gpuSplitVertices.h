@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuSplitVertices_h
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 
@@ -50,11 +51,12 @@ namespace gpuVertexFinder {
       __shared__ uint32_t nq;  // number of track for this vertex
       nq = 0;
       __syncthreads();
+      std::atomic_ref<uint32_t> nq_atomic{nq};
 
       // copy to local
       for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
         if (iv[k] == int(kv)) {
-          auto old = atomicInc(&nq, MAXTK);
+          auto old = nq_atomic.fetch_add(MAXTK);
           zz[old] = zt[k] - zv[kv];
           newV[old] = zz[old] < 0 ? 0 : 1;
           ww[old] = 1.f / ezt2[k];
@@ -81,8 +83,10 @@ namespace gpuVertexFinder {
         __syncthreads();
         for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
           auto i = newV[k];
-          atomicAdd(&znew[i], zz[k] * ww[k]);
-          atomicAdd(&wnew[i], ww[k]);
+          std::atomic_ref<float> znew_atomic{znew[i]};
+          znew_atomic.fetch_add(zz[k] * ww[k]);
+          std::atomic_ref<float> wnew_atomic{wnew[i]};
+          wnew_atomic.fetch_add(ww[k]);
         }
         __syncthreads();
         if (0 == threadIdx.x) {
@@ -119,8 +123,10 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       __shared__ uint32_t igv;
-      if (0 == threadIdx.x)
-        igv = atomicAdd(&ws.nvIntermediate, 1);
+      if (0 == threadIdx.x){
+        std::atomic_ref<uint32_t> ws_intermediate_atomic{ws.nvIntermediate};
+          igv = ws_intermediate_atomic++;
+      }
       __syncthreads();
       for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
         if (1 == newV[k])
