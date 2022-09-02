@@ -199,7 +199,6 @@ void go(bool useShared) {
 }
 
 int main() {
-
   bool useShared = false;
 
   std::cout << "using Global memory" << std::endl;

@@ -63,7 +63,6 @@ __global__ void testBasicSoA(float* p) {
 #endif
 
 int main() {
-
   float p[1024];
 
   std::uniform_real_distribution<float> rgen(0.01, 0.99);

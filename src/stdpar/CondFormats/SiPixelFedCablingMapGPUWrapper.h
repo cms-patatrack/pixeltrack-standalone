@@ -5,7 +5,6 @@
 
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
-
 class SiPixelFedCablingMapGPUWrapper {
 public:
   explicit SiPixelFedCablingMapGPUWrapper(SiPixelFedCablingMapGPU const& cablingMap,

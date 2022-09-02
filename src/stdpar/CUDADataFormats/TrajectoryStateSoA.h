@@ -18,8 +18,7 @@ struct TrajectoryStateSoA {
   eigenSoA::MatrixSoA<Vector15f, S> covariance;
 
   template <typename V3, typename M3, typename V2, typename M2>
-  inline void copyFromCircle(
-      V3 const& cp, M3 const& ccov, V2 const& lp, M2 const& lcov, float b, int32_t i) {
+  inline void copyFromCircle(V3 const& cp, M3 const& ccov, V2 const& lp, M2 const& lcov, float b, int32_t i) {
     state(i) << cp.template cast<float>(), lp.template cast<float>();
     state(i)(2) *= b;
     auto cov = covariance(i);

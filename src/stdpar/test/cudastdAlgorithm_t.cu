@@ -20,7 +20,4 @@ __global__ void testBinaryFind() {
 
 void wrapper() { testBinaryFind<<<32, 64>>>(); }
 
-int main() {
-
-  wrapper();
-}
+int main() { wrapper(); }

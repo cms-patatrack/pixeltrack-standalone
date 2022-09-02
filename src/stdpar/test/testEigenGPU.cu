@@ -241,7 +241,7 @@ void testFit() {
 #else
 #ifndef DISABLE_RFIT
   Rfit::Fast_fit(hits, fast_fit_results);
-  #endif
+#endif
 #endif
   std::cout << "Fitted values (FastFit, [X0, Y0, R, tan(theta)]):\n" << fast_fit_results << std::endl;
 
@@ -299,8 +299,7 @@ void testFit() {
 
   Rfit::Matrix2Nd<N> hits_cov = Rfit::Matrix2Nd<N>::Zero();
   Rfit::loadCovariance2D(hits_ge, hits_cov);
-  circle_fit_results =
-      Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
+  circle_fit_results = Rfit::Circle_fit(hits.block(0, 0, 2, N), hits_cov, fast_fit_results, rad, B, true);
 
   // CIRCLE_FIT GPU
   kernelCircleFit<N><<<Ntracks / 64, 64>>>(hitsGPU, hits_geGPU, fast_fit_resultsGPU, B, circle_fit_resultsGPU);
@@ -335,7 +334,6 @@ void testFit() {
 }
 
 int main(int argc, char* argv[]) {
-
   testFit<4>();
   testFit<3>();
   testFit<5>();

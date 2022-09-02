@@ -90,8 +90,7 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
   }
 }
 
-PixelTrack CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2D const& hits_d,
-                                                       float bfield) const {
+PixelTrack CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecHit2D const& hits_d, float bfield) const {
   PixelTrack tracks(std::make_unique<pixelTrack::TrackSoA>());
 
   auto* soa = tracks.get();

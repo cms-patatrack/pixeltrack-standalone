@@ -16,4 +16,3 @@ BinPackParameters: false
 AlwaysBreakTemplateDeclarations: Yes
 ReflowComments: false
 BinPackArguments: false
-BinPackParameters: false

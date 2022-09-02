@@ -6,8 +6,7 @@ void CAHitNtupletGeneratorKernelsGPU::fillHitDetIndices(HitsView const *hv, TkSo
   auto blockSize = 128;
   auto numberOfBlocks = (HitContainer::capacity() + blockSize - 1) / blockSize;
 
-  kernel_fillHitDetIndices<<<numberOfBlocks, blockSize, 0>>>(
-      &tracks_d->hitIndices, hv, &tracks_d->detIndices);
+  kernel_fillHitDetIndices<<<numberOfBlocks, blockSize, 0>>>(&tracks_d->hitIndices, hv, &tracks_d->detIndices);
   cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
   cudaDeviceSynchronize();
@@ -45,20 +44,19 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   dim3 blks(1, numberOfBlocks, 1);
   dim3 thrs(stride, blockSize, 1);
 
-  kernel_connect<<<blks, thrs, 0>>>(
-      device_hitTuple_apc_,
-      device_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
-      hh.view(),
-      device_theCells_.get(),
-      device_nCells_,
-      device_theCellNeighbors_.get(),
-      device_isOuterHitOfCell_.get(),
-      m_params.hardCurvCut_,
-      m_params.ptmin_,
-      m_params.CAThetaCutBarrel_,
-      m_params.CAThetaCutForward_,
-      m_params.dcaCutInnerTriplet_,
-      m_params.dcaCutOuterTriplet_);
+  kernel_connect<<<blks, thrs, 0>>>(device_hitTuple_apc_,
+                                    device_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
+                                    hh.view(),
+                                    device_theCells_.get(),
+                                    device_nCells_,
+                                    device_theCellNeighbors_.get(),
+                                    device_isOuterHitOfCell_.get(),
+                                    m_params.hardCurvCut_,
+                                    m_params.ptmin_,
+                                    m_params.CAThetaCutBarrel_,
+                                    m_params.CAThetaCutForward_,
+                                    m_params.dcaCutInnerTriplet_,
+                                    m_params.dcaCutOuterTriplet_);
   cudaCheck(cudaGetLastError());
 
   if (nhits > 1 && m_params.earlyFishbone_) {
@@ -76,13 +74,13 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   blockSize = 64;
   numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
   kernel_find_ntuplets<<<numberOfBlocks, blockSize, 0>>>(hh.view(),
-                                                                     device_theCells_.get(),
-                                                                     device_nCells_,
-                                                                     device_theCellTracks_.get(),
-                                                                     tuples_d,
-                                                                     device_hitTuple_apc_,
-                                                                     quality_d,
-                                                                     m_params.minHitsPerNtuplet_);
+                                                         device_theCells_.get(),
+                                                         device_nCells_,
+                                                         device_theCellTracks_.get(),
+                                                         tuples_d,
+                                                         device_hitTuple_apc_,
+                                                         quality_d,
+                                                         m_params.minHitsPerNtuplet_);
   cudaCheck(cudaGetLastError());
 
   if (m_params.doStats_)
@@ -106,11 +104,9 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   blockSize = 128;
   numberOfBlocks = (3 * CAConstants::maxTuples() / 4 + blockSize - 1) / blockSize;
-  kernel_countMultiplicity<<<numberOfBlocks, blockSize, 0>>>(
-      tuples_d, quality_d, device_tupleMultiplicity_.get());
+  kernel_countMultiplicity<<<numberOfBlocks, blockSize, 0>>>(tuples_d, quality_d, device_tupleMultiplicity_.get());
   cms::cuda::launchFinalize(device_tupleMultiplicity_.get());
-  kernel_fillMultiplicity<<<numberOfBlocks, blockSize, 0>>>(
-      tuples_d, quality_d, device_tupleMultiplicity_.get());
+  kernel_fillMultiplicity<<<numberOfBlocks, blockSize, 0>>>(tuples_d, quality_d, device_tupleMultiplicity_.get());
   cudaCheck(cudaGetLastError());
 
   if (nhits > 1 && m_params.lateFishbone_) {
@@ -128,16 +124,16 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   if (m_params.doStats_) {
     numberOfBlocks = (std::max(nhits, m_params.maxNumberOfDoublets_) + blockSize - 1) / blockSize;
     kernel_checkOverflows<<<numberOfBlocks, blockSize, 0>>>(tuples_d,
-                                                                        device_tupleMultiplicity_.get(),
-                                                                        device_hitTuple_apc_,
-                                                                        device_theCells_.get(),
-                                                                        device_nCells_,
-                                                                        device_theCellNeighbors_.get(),
-                                                                        device_theCellTracks_.get(),
-                                                                        device_isOuterHitOfCell_.get(),
-                                                                        nhits,
-                                                                        m_params.maxNumberOfDoublets_,
-                                                                        counters_);
+                                                            device_tupleMultiplicity_.get(),
+                                                            device_hitTuple_apc_,
+                                                            device_theCells_.get(),
+                                                            device_nCells_,
+                                                            device_theCellNeighbors_.get(),
+                                                            device_theCellTracks_.get(),
+                                                            device_isOuterHitOfCell_.get(),
+                                                            nhits,
+                                                            m_params.maxNumberOfDoublets_,
+                                                            counters_);
     cudaCheck(cudaGetLastError());
   }
 #ifdef GPU_DEBUG
@@ -165,9 +161,9 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh) {
   device_isOuterHitOfCell_ = std::make_unique<GPUCACell::OuterHitOfCell[]>(std::max(1U, nhits));
   assert(device_isOuterHitOfCell_.get());
 
-  cellStorage_ = std::make_unique<unsigned char[]>(
-      CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
-          CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks));
+  cellStorage_ =
+      std::make_unique<unsigned char[]>(CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellNeighbors) +
+                                        CAConstants::maxNumOfActiveDoublets() * sizeof(GPUCACell::CellTracks));
   device_theCellNeighborsContainer_ = (GPUCACell::CellNeighbors *)cellStorage_.get();
   device_theCellTracksContainer_ =
       (GPUCACell::CellTracks *)(cellStorage_.get() +
@@ -178,11 +174,11 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh) {
     // at least one block!
     int blocks = (std::max(1U, nhits) + threadsPerBlock - 1) / threadsPerBlock;
     gpuPixelDoublets::initDoublets<<<blocks, threadsPerBlock, 0>>>(device_isOuterHitOfCell_.get(),
-                                                                           nhits,
-                                                                           device_theCellNeighbors_.get(),
-                                                                           device_theCellNeighborsContainer_,
-                                                                           device_theCellTracks_.get(),
-                                                                           device_theCellTracksContainer_);
+                                                                   nhits,
+                                                                   device_theCellNeighbors_.get(),
+                                                                   device_theCellNeighborsContainer_,
+                                                                   device_theCellTracks_.get(),
+                                                                   device_theCellTracksContainer_);
     cudaCheck(cudaGetLastError());
   }
 
@@ -211,17 +207,17 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh) {
   dim3 blks(1, blocks, 1);
   dim3 thrs(stride, threadsPerBlock, 1);
   gpuPixelDoublets::getDoubletsFromHisto<<<blks, thrs, 0>>>(device_theCells_.get(),
-                                                                    device_nCells_,
-                                                                    device_theCellNeighbors_.get(),
-                                                                    device_theCellTracks_.get(),
-                                                                    hh.view(),
-                                                                    device_isOuterHitOfCell_.get(),
-                                                                    nActualPairs,
-                                                                    m_params.idealConditions_,
-                                                                    m_params.doClusterCut_,
-                                                                    m_params.doZ0Cut_,
-                                                                    m_params.doPtCut_,
-                                                                    m_params.maxNumberOfDoublets_);
+                                                            device_nCells_,
+                                                            device_theCellNeighbors_.get(),
+                                                            device_theCellTracks_.get(),
+                                                            hh.view(),
+                                                            device_isOuterHitOfCell_.get(),
+                                                            nActualPairs,
+                                                            m_params.idealConditions_,
+                                                            m_params.doClusterCut_,
+                                                            m_params.doZ0Cut_,
+                                                            m_params.doPtCut_,
+                                                            m_params.maxNumberOfDoublets_);
   cudaCheck(cudaGetLastError());
 
 #ifdef GPU_DEBUG
@@ -245,8 +241,7 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
   if (m_params.lateFishbone_) {
     // apply fishbone cleaning to good tracks
     numberOfBlocks = (3 * m_params.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-    kernel_fishboneCleaner<<<numberOfBlocks, blockSize, 0>>>(
-        device_theCells_.get(), device_nCells_, quality_d);
+    kernel_fishboneCleaner<<<numberOfBlocks, blockSize, 0>>>(device_theCells_.get(), device_nCells_, quality_d);
     cudaCheck(cudaGetLastError());
   }
 
@@ -259,8 +254,7 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
   if (m_params.minHitsPerNtuplet_ < 4 || m_params.doStats_) {
     // fill hit->track "map"
     numberOfBlocks = (3 * CAConstants::maxNumberOfQuadruplets() / 4 + blockSize - 1) / blockSize;
-    kernel_countHitInTracks<<<numberOfBlocks, blockSize, 0>>>(
-        tuples_d, quality_d, device_hitToTuple_.get());
+    kernel_countHitInTracks<<<numberOfBlocks, blockSize, 0>>>(tuples_d, quality_d, device_hitToTuple_.get());
     cudaCheck(cudaGetLastError());
     cms::cuda::launchFinalize(device_hitToTuple_.get());
     cudaCheck(cudaGetLastError());

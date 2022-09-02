@@ -215,7 +215,6 @@ void testEigenvalues() {
 }
 
 int main(int argc, char *argv[]) {
-
   testEigenvalues();
   testInverse3x3();
   testInverse4x4();

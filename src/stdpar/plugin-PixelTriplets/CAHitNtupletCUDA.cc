@@ -25,9 +25,7 @@ private:
 };
 
 CAHitNtupletCUDA::CAHitNtupletCUDA(edm::ProductRegistry& reg)
-    : tokenHitGPU_{reg.consumes<TrackingRecHit2D>()},
-      tokenTrackGPU_{reg.produces<PixelTrack>()},
-      gpuAlgo_(reg) {}
+    : tokenHitGPU_{reg.consumes<TrackingRecHit2D>()}, tokenTrackGPU_{reg.produces<PixelTrack>()}, gpuAlgo_(reg) {}
 
 void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   auto bf = 0.0114256972711507;  // 1/fieldInGeV

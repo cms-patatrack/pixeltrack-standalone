@@ -133,7 +133,6 @@ void go() {
 }
 
 int main() {
-
   go<int16_t>();
   go<int8_t>();
 
