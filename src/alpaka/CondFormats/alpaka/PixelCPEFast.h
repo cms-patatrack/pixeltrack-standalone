@@ -13,9 +13,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class PixelCPEFast {
   public:
     PixelCPEFast(std::string const &path)
-        : m_commonParamsGPU(cms::alpakatools::make_host_buffer<pixelCPEforGPU::CommonParams>()),
-          m_layerGeometry(cms::alpakatools::make_host_buffer<pixelCPEforGPU::LayerGeometry>()),
-          m_averageGeometry(cms::alpakatools::make_host_buffer<pixelCPEforGPU::AverageGeometry>())
+        : m_commonParamsGPU(cms::alpakatools::make_host_buffer<pixelCPEforGPU::CommonParams, Platform>()),
+          m_layerGeometry(cms::alpakatools::make_host_buffer<pixelCPEforGPU::LayerGeometry, Platform>()),
+          m_averageGeometry(cms::alpakatools::make_host_buffer<pixelCPEforGPU::AverageGeometry, Platform>())
 
     {
       std::ifstream in(path, std::ios::binary);

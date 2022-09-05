@@ -34,7 +34,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   PixelTrackSoAFromAlpaka::PixelTrackSoAFromAlpaka(edm::ProductRegistry& reg)
       : tokenDevice_(reg.consumes<cms::alpakatools::Product<Queue, PixelTrackAlpaka>>()),
         tokenHost_(reg.produces<PixelTrackHost>()),
-        soa_{cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA>()} {}
+        soa_{cms::alpakatools::make_host_buffer<pixelTrack::TrackSoA, Platform>()} {}
 
   void PixelTrackSoAFromAlpaka::acquire(edm::Event const& iEvent,
                                         edm::EventSetup const& iSetup,

@@ -26,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   BeamSpotToAlpaka::BeamSpotToAlpaka(edm::ProductRegistry& reg)
       : bsPutToken_{reg.produces<cms::alpakatools::Product<Queue, BeamSpotAlpaka>>()},
-        bsHost_{cms::alpakatools::make_host_buffer<BeamSpotPOD>()} {}
+        bsHost_{cms::alpakatools::make_host_buffer<BeamSpotPOD, Platform>()} {}
 
   void BeamSpotToAlpaka::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
     *bsHost_ = iSetup.get<BeamSpotPOD>();
