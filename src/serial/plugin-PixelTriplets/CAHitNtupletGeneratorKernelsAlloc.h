@@ -20,6 +20,6 @@ void CAHitNtupletGeneratorKernelsCPU::allocateOnGPU(cudaStream_t stream) {
   device_nCells_ = (uint32_t*)(device_storage_.get() + 2);
 
   *device_nCells_ = 0;
-  cms::cuda::launchZero(device_tupleMultiplicity_.get(), stream);
-  cms::cuda::launchZero(device_hitToTuple_.get(), stream);  // we may wish to keep it in the edm...
+  cms::cuda::launchZero(device_tupleMultiplicity_.get());
+  cms::cuda::launchZero(device_hitToTuple_.get());  // we may wish to keep it in the edm...
 }

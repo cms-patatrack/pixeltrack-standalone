@@ -156,7 +156,7 @@ int main() {
   auto sa_d = std::make_unique<SmallAssoc>();
   auto v_d = tr.data();
 
-  launchZero(a_d.get(), 0);
+  launchZero(a_d.get());
 
   count(v_d, a_d.get(), N);
   launchFinalize(a_d.get());
@@ -217,8 +217,8 @@ int main() {
   // here verify use of block local counters
   auto m1_d = std::make_unique<Multiplicity>();
   auto m2_d = std::make_unique<Multiplicity>();
-  launchZero(m1_d.get(), 0);
-  launchZero(m2_d.get(), 0);
+  launchZero(m1_d.get());
+  launchZero(m2_d.get());
 
   countMulti(v_d, m1_d.get(), N);
   countMultiLocal(v_d, m2_d.get(), N);

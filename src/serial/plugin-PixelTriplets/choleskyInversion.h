@@ -155,7 +155,7 @@ namespace math {
     }
 
     template <typename M1, typename M2>
-    inline __attribute__((always_inline)) constexpr void invert66(M1 const& src, M2& dst) {
+    inline  constexpr void invert66(M1 const& src, M2& dst) {
       using F = decltype(src(0, 0));
       auto luc0 = F(1.0) / src(0, 0);
       auto luc1 = src(1, 0);

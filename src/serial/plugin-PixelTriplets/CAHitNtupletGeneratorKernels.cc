@@ -79,7 +79,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   assert(tuples_d && quality_d);
 
   // zero tuples
-  cms::cuda::launchZero(tuples_d, cudaStream);
+  cms::cuda::launchZero(tuples_d);
 
   auto nhits = hh.nHits();
   assert(nhits <= pixelGPUConstants::maxNumberOfHits);
@@ -127,7 +127,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   kernel_earlyDuplicateRemover(device_theCells_.get(), device_nCells_, tuples_d, quality_d);
 
   kernel_countMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.get());
-  cms::cuda::launchFinalize(device_tupleMultiplicity_.get(), cudaStream);
+  cms::cuda::launchFinalize(device_tupleMultiplicity_.get());
   kernel_fillMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.get());
 
   if (nhits > 1 && m_params.lateFishbone_) {
@@ -168,7 +168,7 @@ void CAHitNtupletGeneratorKernelsCPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
 
   // fill hit->track "map"
   kernel_countHitInTracks(tuples_d, quality_d, device_hitToTuple_.get());
-  cms::cuda::launchFinalize(device_hitToTuple_.get(), cudaStream);
+  cms::cuda::launchFinalize(device_hitToTuple_.get());
   kernel_fillHitInTracks(tuples_d, quality_d, device_hitToTuple_.get());
 
   // remove duplicates (tracks that share a hit)
