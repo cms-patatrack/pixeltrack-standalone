@@ -32,7 +32,7 @@ __global__ void testTSSoA(TS* pts, int n) {
 
   int first = 0;
 
-  for (int i = first; i < n; i += blockDim.x * gridDim.x) {
+  for (int i = first; i < n; i += 1) {
     ts.copyFromDense(par0, cov0, i);
     Vector5d par1;
     Matrix5d cov1;

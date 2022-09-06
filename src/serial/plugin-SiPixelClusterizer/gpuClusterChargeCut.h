@@ -25,7 +25,7 @@ namespace gpuClustering {
 
     uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
-    for (auto module = firstModule; module < endModule; module += gridDim.x) {
+    for (auto module = firstModule; module < endModule; module += 1) {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
       assert(thisModuleId < MaxNumModules);
@@ -46,7 +46,7 @@ namespace gpuClustering {
 
       if (nclus > MaxNumClustersPerModules) {
         // remove excess  FIXME find a way to cut charge first....
-        for (auto i = first; i < numElements; i += blockDim.x) {
+        for (auto i = first; i < numElements; i++) {
           if (id[i] == InvId)
             continue;  // not valid
           if (id[i] != thisModuleId)
@@ -66,12 +66,12 @@ namespace gpuClustering {
 #endif
 
       assert(nclus <= MaxNumClustersPerModules);
-      for (uint32_t i = 0; i < nclus; i += blockDim.x) {
+      for (uint32_t i = 0; i < nclus; i++) {
         charge[i] = 0;
       }
       __syncthreads();
 
-      for (auto i = first; i < numElements; i += blockDim.x) {
+      for (auto i = first; i < numElements; i++) {
         if (id[i] == InvId)
           continue;  // not valid
         if (id[i] != thisModuleId)
@@ -81,7 +81,7 @@ namespace gpuClustering {
       __syncthreads();
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
-      for (uint32_t i = 0; i < nclus; i += blockDim.x) {
+      for (uint32_t i = 0; i < nclus; i++) {
         newclusId[i] = ok[i] = charge[i] > chargeCut ? 1 : 0;
       }
 
@@ -100,14 +100,14 @@ namespace gpuClustering {
       __syncthreads();
 
       // mark bad cluster again
-      for (uint32_t i = 0; i < nclus; i += blockDim.x) {
+      for (uint32_t i = 0; i < nclus; i++) {
         if (0 == ok[i])
           newclusId[i] = InvId + 1;
       }
       __syncthreads();
 
       // reassign id
-      for (auto i = first; i < numElements; i += blockDim.x) {
+      for (auto i = first; i < numElements; i++) {
         if (id[i] == InvId)
           continue;  // not valid
         if (id[i] != thisModuleId)

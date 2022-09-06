@@ -50,7 +50,7 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
 #endif
 
   for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+       local_idx++) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
       break;
@@ -133,7 +133,7 @@ __global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ t
   // look in bin for this hit multiplicity
   auto local_start = 0;
   for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+       local_idx++) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
       break;

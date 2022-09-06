@@ -30,17 +30,17 @@ namespace gpuVertexFinder {
       return;
 
     // fill indexing
-    for (uint32_t i = 0; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       data.idv[ws.itrk[i]] = iv[i];
     }
 
     // can be done asynchronoisly at the end of previous event
-    for (uint32_t i = 0; i < nvFinal; i += blockDim.x) {
+    for (uint32_t i = 0; i < nvFinal; i++) {
       ptv2[i] = 0;
     }
     __syncthreads();
 
-    for (uint32_t i = 0; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990)
         continue;
       atomicAdd(&ptv2[iv[i]], ptt2[i]);

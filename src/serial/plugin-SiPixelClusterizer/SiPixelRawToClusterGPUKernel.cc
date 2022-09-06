@@ -359,7 +359,7 @@ namespace pixelgpudetails {
     //if (threadIdx.x==0) printf("Event: %u blockIdx.x: %u start: %u end: %u\n", eventno, blockIdx.x, begin, end);
 
     int32_t first = 0;
-    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
+    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += 1) {
       auto gIndex = iloop;
       xx[gIndex] = 0;
       yy[gIndex] = 0;
@@ -467,12 +467,12 @@ namespace pixelgpudetails {
 
   __global__ void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == gridDim.x);
+    assert(1 == 1);
 
     int first = 0;
 
     // limit to MaxHitsInModule;
-    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i++) {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
     }
 
@@ -480,7 +480,7 @@ namespace pixelgpudetails {
     cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
     cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
 
-    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       moduleStart[i] += moduleStart[1024];
     }
     __syncthreads();
@@ -493,7 +493,7 @@ namespace pixelgpudetails {
     assert(moduleStart[1025] >= moduleStart[1024]);
     assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       if (0 != i)
         assert(moduleStart[i] >= moduleStart[i - i]);
       // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
@@ -505,7 +505,7 @@ namespace pixelgpudetails {
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       if (moduleStart[i] > MAX_HITS)
         moduleStart[i] = MAX_HITS;
     }

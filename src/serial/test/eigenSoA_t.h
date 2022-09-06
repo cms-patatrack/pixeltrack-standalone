@@ -31,7 +31,7 @@ __global__ void testBasicSoA(float* p) {
 
   // a silly game...
   int n = 64;
-  for (int i = first; i < n; i += blockDim.x * gridDim.x) {
+  for (int i = first; i < n; i += 1) {
     m[i].setZero();
     m[i](0, 0) = p[i];
     m[i](1, 1) = p[i + 64];
@@ -39,11 +39,11 @@ __global__ void testBasicSoA(float* p) {
   }
   __syncthreads();  // not needed
 
-  for (int i = first; i < n; i += blockDim.x * gridDim.x)
+  for (int i = first; i < n; i += 1)
     m[i] = m[i].inverse().eval();
   __syncthreads();
 
-  for (int i = first; i < n; i += blockDim.x * gridDim.x) {
+  for (int i = first; i < n; i += 1) {
     p[i] = m[63 - i](0, 0);
     p[i + 64] = m[63 - i](1, 1);
     p[i + 64 * 2] = m[63 - i](2, 2);

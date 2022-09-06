@@ -37,7 +37,7 @@ namespace gpuPixelRecHits {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
       for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
-           il += blockDim.x) {
+           il++) {
         agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
         agc.ladderX[il] = ag.ladderX[il] - bs->x;
         agc.ladderY[il] = ag.ladderY[il] - bs->y;
@@ -63,7 +63,7 @@ namespace gpuPixelRecHits {
 
     uint32_t firstModule = 0;
     auto endModule = clusters.moduleStart(0);
-    for (auto module = firstModule; module < endModule; module += gridDim.x) {
+    for (auto module = firstModule; module < endModule; module += 1) {
       auto me = clusters.moduleId(module);
       int nclus = clusters.clusInModule(me);
 
@@ -97,7 +97,7 @@ namespace gpuPixelRecHits {
         assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
         // init
-        for (int ic = 0; ic < nClusInIter; ic += blockDim.x) {
+        for (int ic = 0; ic < nClusInIter; ic++) {
           clusParams.minRow[ic] = std::numeric_limits<uint32_t>::max();
           clusParams.maxRow[ic] = 0;
           clusParams.minCol[ic] = std::numeric_limits<uint32_t>::max();
@@ -115,7 +115,7 @@ namespace gpuPixelRecHits {
 
         // one thead per "digi"
 
-        for (int i = first; i < numElements; i += blockDim.x) {
+        for (int i = first; i < numElements; i++) {
           auto id = digis.moduleInd(i);
           if (id == InvId)
             continue;  // not valid
@@ -140,7 +140,7 @@ namespace gpuPixelRecHits {
         // pixmx is not available in the binary dumps
         //auto pixmx = cpeParams->detParams(me).pixmx;
         auto pixmx = std::numeric_limits<uint16_t>::max();
-        for (int i = first; i < numElements; i += blockDim.x) {
+        for (int i = first; i < numElements; i++) {
           auto id = digis.moduleInd(i);
           if (id == InvId)
             continue;  // not valid
@@ -172,7 +172,7 @@ namespace gpuPixelRecHits {
 
         first = clusters.clusModuleStart(me) + startClus;
 
-        for (int ic = 0; ic < nClusInIter; ic += blockDim.x) {
+        for (int ic = 0; ic < nClusInIter; ic++) {
           auto h = first + ic;  // output index in global memory
 
           // this cannot happen anymore

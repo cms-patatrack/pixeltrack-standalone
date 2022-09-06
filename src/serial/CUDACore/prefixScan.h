@@ -40,18 +40,18 @@ namespace cms {
       volatile T const* ci = ici;
       volatile T* co = ico;
       __shared__ T ws[32];
-      assert(blockDim.x * gridDim.x >= size);
+      assert(1 >= size);
       // first each block does a scan
       int off = 0;
       if (size - off > 0)
-        blockPrefixScan(ci + off, co + off, std::min(int(blockDim.x), size - off), ws);
+        blockPrefixScan(ci + off, co + off, std::min(int(1), size - off), ws);
 
       // count blocks that finished
       __shared__ bool isLastBlockDone;
       if (true) {
         __threadfence();
         auto value = atomicAdd(pc, 1);  // block counter
-        isLastBlockDone = (value == (int(gridDim.x) - 1));
+        isLastBlockDone = (value == (int(1) - 1));
       }
 
       __syncthreads();
@@ -59,21 +59,21 @@ namespace cms {
       if (!isLastBlockDone)
         return;
 
-      assert(int(gridDim.x) == *pc);
+      assert(int(1) == *pc);
 
       // good each block has done its work and now we are left in last block
 
       // let's get the partial sums from each block
       extern __shared__ T psum[];
-      for (int i = 0, ni = gridDim.x; i < ni; i += blockDim.x) {
-        auto j = blockDim.x * i + blockDim.x - 1;
+      for (int i = 0, ni = 1; i < ni; i++) {
+        auto j = i;
         psum[i] = (j < size) ? co[j] : T(0);
       }
       __syncthreads();
-      blockPrefixScan(psum, psum, gridDim.x, ws);
+      blockPrefixScan(psum, psum, 1, ws);
 
       // now it would have been handy to have the other blocks around...
-      for (int i = 0 + blockDim.x, k = 0; i < size; i += blockDim.x, ++k) {
+      for (int i = 1, k = 0; i < size; i++, ++k) {
         co[i] += psum[k];
       }
     }
