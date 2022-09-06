@@ -48,12 +48,7 @@ namespace cms {
     }
 
     template <typename Histo>
-    inline __attribute__((always_inline)) void launchZero(Histo *__restrict__ h,
-                                                          cudaStream_t stream
-#ifndef __CUDACC__
-                                                          = cudaStreamDefault
-#endif
-    ) {
+    inline void launchZero(Histo *__restrict__ h) {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
@@ -61,28 +56,18 @@ namespace cms {
     }
 
     template <typename Histo>
-    inline __attribute__((always_inline)) void launchFinalize(Histo *__restrict__ h,
-                                                              cudaStream_t stream
-#ifndef __CUDACC__
-                                                              = cudaStreamDefault
-#endif
-    ) {
+    inline void launchFinalize(Histo *__restrict__ h) {
       h->finalize();
     }
 
     template <typename Histo, typename T>
-    inline __attribute__((always_inline)) void fillManyFromVector(Histo *__restrict__ h,
-                                                                  uint32_t nh,
-                                                                  T const *__restrict__ v,
-                                                                  uint32_t const *__restrict__ offsets,
-                                                                  uint32_t totSize,
-                                                                  int nthreads,
-                                                                  cudaStream_t stream
-#ifndef __CUDACC__
-                                                                  = cudaStreamDefault
-#endif
-    ) {
-      launchZero(h, stream);
+    inline void fillManyFromVector(Histo *__restrict__ h,
+                                   uint32_t nh,
+                                   T const *__restrict__ v,
+                                   uint32_t const *__restrict__ offsets,
+                                   uint32_t totSize,
+                                   int nthreads) {
+      launchZero(h);
       countFromVector(h, nh, v, offsets);
       h->finalize();
       fillFromVector(h, nh, v, offsets);

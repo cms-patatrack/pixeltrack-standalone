@@ -12,9 +12,9 @@
 #include <cstring>
 
 // make sure function are inlined to avoid multiple definition
-#define __global__ inline __attribute__((always_inline))
+#define __global__ inline
 
-#define __forceinline__ inline __attribute__((always_inline))
+#define __forceinline__ inline
 
 #define __host__
 #define __device__
@@ -91,8 +91,6 @@ namespace cms {
 
 // make the cudacompat implementation available in the global namespace
 using namespace cms::cudacompat;
-
-
 
 #endif  // __CUDACC__
 
