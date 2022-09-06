@@ -40,7 +40,7 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
   assert(tupleMultiplicity);
 
   // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
+  auto local_start = 0;
 
 #ifdef BROKENLINE_DEBUG
   if (0 == local_start) {
@@ -131,7 +131,7 @@ __global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ t
   // same as above...
 
   // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
+  auto local_start = 0;
   for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
        local_idx += gridDim.x * blockDim.x) {
     auto tuple_idx = local_idx + offset;

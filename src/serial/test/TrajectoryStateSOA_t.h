@@ -30,7 +30,7 @@ __global__ void testTSSoA(TS* pts, int n) {
 
   TS& ts = *pts;
 
-  int first = threadIdx.x + blockIdx.x * blockDim.x;
+  int first = 0;
 
   for (int i = first; i < n; i += blockDim.x * gridDim.x) {
     ts.copyFromDense(par0, cov0, i);

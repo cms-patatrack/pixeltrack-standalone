@@ -75,7 +75,7 @@ namespace gpuPixelDoublets {
     __syncthreads();
 
     // x runs faster
-    auto idy = blockIdx.y * blockDim.y + threadIdx.y;
+    auto idy = 0 * blockDim.y + threadIdx.y;
     auto first = threadIdx.x;
     auto stride = blockDim.x;
 

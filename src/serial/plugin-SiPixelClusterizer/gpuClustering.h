@@ -20,7 +20,7 @@ namespace gpuClustering {
                                uint32_t* __restrict__ moduleStart,
                                int32_t* __restrict__ clusterId,
                                int numElements) {
-    int first = blockDim.x * blockIdx.x + threadIdx.x;
+    int first = 0;
     for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
       clusterId[i] = i;
       if (InvId == id[i])
@@ -49,7 +49,7 @@ namespace gpuClustering {
                int numElements) {
     __shared__ int msize;
 
-    auto firstModule = blockIdx.x;
+    uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
     for (auto module = firstModule; module < endModule; module += gridDim.x) {
       auto firstPixel = moduleStart[1 + module];
@@ -59,7 +59,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
         if (threadIdx.x == 0)
-          printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx.x);
+          printf("start clusterizer for module %d in block %d\n", thisModuleId, 0);
 #endif
 
       auto first = firstPixel + threadIdx.x;

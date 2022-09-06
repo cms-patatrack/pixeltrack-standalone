@@ -30,7 +30,7 @@ namespace gpuCalibPixel {
                              uint32_t* __restrict__ nClustersInModule,  // just to zero them
                              uint32_t* __restrict__ clusModuleStart     // just to zero first
   ) {
-    int first = blockDim.x * blockIdx.x + threadIdx.x;
+    int first = 0;
 
     // zero for next kernels...
     if (0 == first)

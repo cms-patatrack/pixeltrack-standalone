@@ -23,7 +23,7 @@ namespace gpuClustering {
     __shared__ uint8_t ok[MaxNumClustersPerModules];
     __shared__ uint16_t newclusId[MaxNumClustersPerModules];
 
-    auto firstModule = blockIdx.x;
+    uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
     for (auto module = firstModule; module < endModule; module += gridDim.x) {
       auto firstPixel = moduleStart[1 + module];
@@ -38,7 +38,7 @@ namespace gpuClustering {
       if (threadIdx.x == 0 && nclus > MaxNumClustersPerModules)
         printf("Warning too many clusters in module %d in block %d: %d > %d\n",
                thisModuleId,
-               blockIdx.x,
+               0,
                nclus,
                MaxNumClustersPerModules);
 
@@ -62,7 +62,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
         if (threadIdx.x == 0)
-          printf("start cluster charge cut for module %d in block %d\n", thisModuleId, blockIdx.x);
+          printf("start cluster charge cut for module %d in block %d\n", thisModuleId, 0);
 #endif
 
       assert(nclus <= MaxNumClustersPerModules);

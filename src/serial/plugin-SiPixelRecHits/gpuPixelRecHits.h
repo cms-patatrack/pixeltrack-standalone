@@ -33,7 +33,7 @@ namespace gpuPixelRecHits {
     auto const& clusters = *pclusters;
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
-    if (0 == blockIdx.x) {
+    if (0 == 0) {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
       for (int il = threadIdx.x, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
@@ -61,7 +61,7 @@ namespace gpuPixelRecHits {
     // as usual one block per module
     __shared__ ClusParams clusParams;
 
-    auto firstModule = blockIdx.x;
+    uint32_t firstModule = 0;
     auto endModule = clusters.moduleStart(0);
     for (auto module = firstModule; module < endModule; module += gridDim.x) {
       auto me = clusters.moduleId(module);

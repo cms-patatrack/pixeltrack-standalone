@@ -36,7 +36,7 @@ __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
                                       uint32_t nHits,
                                       uint32_t maxNumberOfDoublets,
                                       CAHitNtupletGeneratorKernelsCPU::Counters *counters) {
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
 
   auto &c = *counters;
   // counters once per event
@@ -104,7 +104,7 @@ __global__ void kernel_checkOverflows(HitContainer const *foundNtuplets,
 __global__ void kernel_fishboneCleaner(GPUCACell const *cells, uint32_t const *__restrict__ nCells, Quality *quality) {
   constexpr auto bad = trackQuality::bad;
 
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
     auto const &thisCell = cells[idx];
     if (thisCell.theDoubletId >= 0)
@@ -124,7 +124,7 @@ __global__ void kernel_earlyDuplicateRemover(GPUCACell const *cells,
   // constexpr auto loose = trackQuality::loose;
 
   assert(nCells);
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
     auto const &thisCell = cells[idx];
 
@@ -158,7 +158,7 @@ __global__ void kernel_fastDuplicateRemover(GPUCACell const *__restrict__ cells,
 
   assert(nCells);
 
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
     auto const &thisCell = cells[idx];
     if (thisCell.tracks().size() < 2)
@@ -203,7 +203,7 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
                                float dcaCutOuterTriplet) {
   auto const &hh = *hhp;
 
-  auto firstCellIndex = threadIdx.y + blockIdx.y * blockDim.y;
+  auto firstCellIndex = threadIdx.y + 0 * blockDim.y;
   auto first = threadIdx.x;
   auto stride = blockDim.x;
 
@@ -272,7 +272,7 @@ __global__ void kernel_find_ntuplets(GPUCACell::Hits const *__restrict__ hhp,
   // recursive: not obvious to widen
   auto const &hh = *hhp;
 
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
     auto const &thisCell = cells[idx];
     if (thisCell.theDoubletId < 0)
@@ -295,7 +295,7 @@ __global__ void kernel_mark_used(GPUCACell::Hits const *__restrict__ hhp,
                                  GPUCACell *__restrict__ cells,
                                  uint32_t const *nCells) {
   // auto const &hh = *hhp;
-  auto first = threadIdx.x + blockIdx.x * blockDim.x;
+  uint32_t first = 0;
   for (int idx = first, nt = (*nCells); idx < nt; idx += gridDim.x * blockDim.x) {
     auto &thisCell = cells[idx];
     if (!thisCell.tracks().empty())
@@ -306,7 +306,7 @@ __global__ void kernel_mark_used(GPUCACell::Hits const *__restrict__ hhp,
 __global__ void kernel_countMultiplicity(HitContainer const *__restrict__ foundNtuplets,
                                          Quality const *__restrict__ quality,
                                          CAConstants::TupleMultiplicity *tupleMultiplicity) {
-  auto first = blockIdx.x * blockDim.x + threadIdx.x;
+  auto first = 0;
   for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
     auto nhits = foundNtuplets->size(it);
     if (nhits < 3)
@@ -324,7 +324,7 @@ __global__ void kernel_countMultiplicity(HitContainer const *__restrict__ foundN
 __global__ void kernel_fillMultiplicity(HitContainer const *__restrict__ foundNtuplets,
                                         Quality const *__restrict__ quality,
                                         CAConstants::TupleMultiplicity *tupleMultiplicity) {
-  auto first = blockIdx.x * blockDim.x + threadIdx.x;
+  auto first = 0;
   for (int it = first, nt = foundNtuplets->nbins(); it < nt; it += gridDim.x * blockDim.x) {
     auto nhits = foundNtuplets->size(it);
     if (nhits < 3)
@@ -343,7 +343,7 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
                                       TkSoA const *__restrict__ tracks,
                                       CAHitNtupletGeneratorKernelsCPU::QualityCuts cuts,
                                       Quality *__restrict__ quality) {
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int it = first, nt = tuples->nbins(); it < nt; it += gridDim.x * blockDim.x) {
     auto nhits = tuples->size(it);
     if (nhits == 0)
@@ -410,7 +410,7 @@ __global__ void kernel_classifyTracks(HitContainer const *__restrict__ tuples,
 __global__ void kernel_doStatsForTracks(HitContainer const *__restrict__ tuples,
                                         Quality const *__restrict__ quality,
                                         CAHitNtupletGeneratorKernelsCPU::Counters *counters) {
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int idx = first, ntot = tuples->nbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     if (tuples->size(idx) == 0)
       break;  //guard
@@ -423,7 +423,7 @@ __global__ void kernel_doStatsForTracks(HitContainer const *__restrict__ tuples,
 __global__ void kernel_countHitInTracks(HitContainer const *__restrict__ tuples,
                                         Quality const *__restrict__ quality,
                                         CAHitNtupletGeneratorKernelsCPU::HitToTuple *hitToTuple) {
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int idx = first, ntot = tuples->nbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     if (tuples->size(idx) == 0)
       break;  // guard
@@ -437,7 +437,7 @@ __global__ void kernel_countHitInTracks(HitContainer const *__restrict__ tuples,
 __global__ void kernel_fillHitInTracks(HitContainer const *__restrict__ tuples,
                                        Quality const *__restrict__ quality,
                                        CAHitNtupletGeneratorKernelsCPU::HitToTuple *hitToTuple) {
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int idx = first, ntot = tuples->nbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     if (tuples->size(idx) == 0)
       break;  // guard
@@ -451,7 +451,7 @@ __global__ void kernel_fillHitInTracks(HitContainer const *__restrict__ tuples,
 __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples,
                                          TrackingRecHit2DSOAView const *__restrict__ hhp,
                                          HitContainer *__restrict__ hitDetIndices) {
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   // copy offsets
   for (int idx = first, ntot = tuples->totbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     hitDetIndices->off[idx] = tuples->off[idx];
@@ -468,7 +468,7 @@ __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples
 __global__ void kernel_doStatsForHitInTracks(CAHitNtupletGeneratorKernelsCPU::HitToTuple const *__restrict__ hitToTuple,
                                              CAHitNtupletGeneratorKernelsCPU::Counters *counters) {
   auto &c = *counters;
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int idx = first, ntot = hitToTuple->nbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     if (hitToTuple->size(idx) == 0)
       continue;  // SHALL NOT BE break
@@ -494,7 +494,7 @@ __global__ void kernel_tripletCleaner(TrackingRecHit2DSOAView const *__restrict_
   //  auto const & hh = *hhp;
   // auto l1end = hh.hitsLayerStart_d[1];
 
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int idx = first, ntot = hitToTuple.nbins(); idx < ntot; idx += gridDim.x * blockDim.x) {
     if (hitToTuple.size(idx) < 2)
       continue;
@@ -544,7 +544,7 @@ __global__ void kernel_print_found_ntuplets(TrackingRecHit2DSOAView const *__res
                                             int iev) {
   auto const &foundNtuplets = *ptuples;
   auto const &tracks = *ptracks;
-  int first = blockDim.x * blockIdx.x + threadIdx.x;
+  int first = 0;
   for (int i = first, np = std::min(maxPrint, foundNtuplets.nbins()); i < np; i += blockDim.x * gridDim.x) {
     auto nh = foundNtuplets.size(i);
     if (nh < 3)

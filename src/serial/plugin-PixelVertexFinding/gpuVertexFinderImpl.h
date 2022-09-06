@@ -14,7 +14,7 @@ namespace gpuVertexFinder {
     auto const& fit = tracks.stateAtBS;
     auto const* quality = tracks.qualityData();
 
-    auto first = blockIdx.x * blockDim.x + threadIdx.x;
+    auto first = 0;
     for (int idx = first, nt = TkSoA::stride(); idx < nt; idx += gridDim.x * blockDim.x) {
       auto nHits = tracks.nHits(idx);
       if (nHits == 0)

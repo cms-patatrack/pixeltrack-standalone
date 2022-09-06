@@ -25,7 +25,7 @@ __global__ void testBasicSoA(float* p) {
 
   __shared__ eigenSoA::MatrixSoA<M3, 64> m;
 
-  int first = threadIdx.x + blockIdx.x * blockDim.x;
+  int first = 0;
   if (0 == first)
     printf("before %f\n", p[0]);
 

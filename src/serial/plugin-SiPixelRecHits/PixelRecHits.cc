@@ -17,7 +17,7 @@ namespace {
                                     uint32_t* hitsLayerStart) {
     assert(0 == hitsModuleStart[0]);
 
-    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int begin = 0;
     constexpr int end = 11;
     for (int i = begin; i < end; i += blockDim.x * gridDim.x) {
       hitsLayerStart[i] = hitsModuleStart[cpeParams->layerGeometry().layerStart[i]];
