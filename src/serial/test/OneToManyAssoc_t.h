@@ -89,20 +89,6 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 }
 
 int main() {
-  // make sure cuda emulation is working
-  std::cout << "cuda x's " << 0 << ' ' << 0 << ' ' << 1 << ' ' << 1 << std::endl;
-  std::cout << "cuda y's " << 0 << ' ' << 0 << ' ' << 1 << ' ' << 1 << std::endl;
-  std::cout << "cuda z's " << threadIdx.z << ' ' << blockIdx.z << ' ' << blockDim.z << ' ' << gridDim.z << std::endl;
-  assert(true);
-  assert(true);
-  assert(threadIdx.z == 0);
-  assert(blockIdx.z == 0);
-  assert(1 == 1);
-  assert(1 == 1);
-  assert(blockDim.z == 1);
-  assert(1 == 1);
-  assert(1 == 1);
-  assert(gridDim.z == 1);
 
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;
   std::cout << "OneToManyAssoc (small) " << sizeof(SmallAssoc) << ' ' << SmallAssoc::nbins() << ' '

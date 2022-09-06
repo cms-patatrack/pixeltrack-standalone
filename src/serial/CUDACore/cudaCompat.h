@@ -25,16 +25,6 @@ constexpr cudaStream_t cudaStreamDefault = nullptr;
 
 namespace cms {
   namespace cudacompat {
-    struct dim3 {
-      uint32_t x, y, z;
-    };
-
-    const dim3 threadIdx = {0, 0, 0};
-    const dim3 blockDim = {1, 1, 1};
-
-    // 1-dimensional grid
-    const dim3 blockIdx = {0, 0, 0};
-    const dim3 gridDim = {1, 1, 1};
 
     template <typename T1, typename T2>
     T1 atomicCAS(T1* address, T1 compare, T2 val) {
