@@ -35,7 +35,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      constexpr int emplace_back_unsafe(Ts &&... args) {
+      constexpr int emplace_back_unsafe(Ts &&...args) {
         auto previousSize = m_size;
         m_size++;
         if (previousSize < m_capacity) {
@@ -47,9 +47,9 @@ namespace cms {
         }
       }
 
-      __device__ inline T &back() { return m_data[m_size - 1]; }
+      inline T &back() { return m_data[m_size - 1]; }
 
-      __device__ inline const T &back() const {
+      inline const T &back() const {
         if (m_size > 0) {
           return m_data[m_size - 1];
         } else
@@ -57,7 +57,7 @@ namespace cms {
       }
 
       // thread-safe version of the vector, when used in a CUDA kernel
-      __device__ int push_back(const T &element) {
+      int push_back(const T &element) {
         auto previousSize = atomicAdd(&m_size, 1);
         if (previousSize < m_capacity) {
           m_data[previousSize] = element;
@@ -69,7 +69,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      __device__ int emplace_back(Ts &&... args) {
+      int emplace_back(Ts &&...args) {
         auto previousSize = atomicAdd(&m_size, 1);
         if (previousSize < m_capacity) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
@@ -81,7 +81,7 @@ namespace cms {
       }
 
       // thread safe version of resize
-      __device__ int extend(int size = 1) {
+      int extend(int size = 1) {
         auto previousSize = atomicAdd(&m_size, size);
         if (previousSize < m_capacity) {
           return previousSize;
@@ -91,7 +91,7 @@ namespace cms {
         }
       }
 
-      __device__ int shrink(int size = 1) {
+      int shrink(int size = 1) {
         auto previousSize = atomicSub(&m_size, size);
         if (previousSize >= size) {
           return previousSize - size;

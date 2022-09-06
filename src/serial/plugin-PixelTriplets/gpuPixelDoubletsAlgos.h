@@ -22,7 +22,7 @@ namespace gpuPixelDoublets {
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
 
-  __device__ __forceinline__ void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
+    void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
                                                     uint32_t nPairs,
                                                     GPUCACell* cells,
                                                     uint32_t* nCells,
@@ -63,8 +63,8 @@ namespace gpuPixelDoublets {
     // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
     const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
     assert(nPairs <= nPairsMax);
-    __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
-    __shared__ uint32_t ntot;
+     uint32_t innerLayerCumulativeSize[nPairsMax];
+     uint32_t ntot;
     if (true && true) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
       for (uint32_t i = 1; i < nPairs; ++i) {

@@ -15,7 +15,7 @@ namespace cms {
       AtomicPairCounter() {}
       AtomicPairCounter(c_type i) { counter.ac = i; }
 
-      __device__ __host__ AtomicPairCounter& operator=(c_type i) {
+      AtomicPairCounter& operator=(c_type i) {
         counter.ac = i;
         return *this;
       }
@@ -32,10 +32,10 @@ namespace cms {
 
       static constexpr c_type incr = 1UL << 32;
 
-      __device__ __host__ Counters get() const { return counter.counters; }
+      Counters get() const { return counter.counters; }
 
       // increment n by 1 and m by i.  return previous value
-      __host__ __device__ __forceinline__ Counters add(uint32_t i) {
+      inline Counters add(uint32_t i) {
         c_type c = i;
         c += incr;
         Atomic2 ret;

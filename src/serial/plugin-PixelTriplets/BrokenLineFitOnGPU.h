@@ -22,7 +22,7 @@ using OutputSoA = pixelTrack::TrackSoA;
 // #define BL_DUMP_HITS
 
 template <int N>
-__global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
+ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
                                 CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                                 HitsOnGPU const *__restrict__ hhp,
                                 double *__restrict__ phits,
@@ -66,7 +66,7 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
     Rfit::Map6xNf<N> hits_ge(phits_ge + local_idx);
 
 #ifdef BL_DUMP_HITS
-    __shared__ int done;
+     int done;
     done = 0;
     __syncthreads();
     bool dump = (foundNtuplets->size(tkid) == 5 && 0 == atomicAdd(&done, 1));
@@ -115,7 +115,7 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
 }
 
 template <int N>
-__global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
                             double B,
                             OutputSoA *results,
                             double *__restrict__ phits,

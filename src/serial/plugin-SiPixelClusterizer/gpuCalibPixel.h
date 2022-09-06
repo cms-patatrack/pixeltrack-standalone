@@ -19,7 +19,7 @@ namespace gpuCalibPixel {
   constexpr float VCaltoElectronOffset = -60;      // L2-4: -60 +- 130
   constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
-  __global__ void calibDigis(bool isRun2,
+   void calibDigis(bool isRun2,
                              uint16_t* id,
                              uint16_t const* __restrict__ x,
                              uint16_t const* __restrict__ y,

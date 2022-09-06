@@ -11,7 +11,7 @@ namespace cms {
 
     // limited to 32*32 elements....
     template <typename VT, typename T>
-    __host__ __device__ __forceinline__ void blockPrefixScan(VT const* ci,
+       void blockPrefixScan(VT const* ci,
                                                              VT* co,
                                                              uint32_t size,
                                                              T* ws
@@ -25,7 +25,7 @@ namespace cms {
     // same as above, may remove
     // limited to 32*32 elements....
     template <typename T>
-    __host__ __device__ __forceinline__ void blockPrefixScan(T* c,
+       void blockPrefixScan(T* c,
                                                              uint32_t size,
                                                              T* ws
                                                              = nullptr
@@ -36,10 +36,10 @@ namespace cms {
 
     // in principle not limited....
     template <typename T>
-    __global__ void multiBlockPrefixScan(T const* ici, T* ico, int32_t size, int32_t* pc) {
+    void multiBlockPrefixScan(T const* ici, T* ico, int32_t size, int32_t* pc) {
       volatile T const* ci = ici;
       volatile T* co = ico;
-      __shared__ T ws[32];
+      T ws[32];
       assert(1 >= size);
       // first each block does a scan
       int off = 0;
@@ -47,7 +47,7 @@ namespace cms {
         blockPrefixScan(ci + off, co + off, std::min(int(1), size - off), ws);
 
       // count blocks that finished
-      __shared__ bool isLastBlockDone;
+      bool isLastBlockDone;
       if (true) {
         __threadfence();
         auto value = atomicAdd(pc, 1);  // block counter
@@ -64,7 +64,7 @@ namespace cms {
       // good each block has done its work and now we are left in last block
 
       // let's get the partial sums from each block
-      extern __shared__ T psum[];
+      extern T psum[];
       for (int i = 0, ni = 1; i < ni; i++) {
         auto j = i;
         psum[i] = (j < size) ? co[j] : T(0);

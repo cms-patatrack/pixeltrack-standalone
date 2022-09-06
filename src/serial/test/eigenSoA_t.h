@@ -13,7 +13,7 @@ struct MySoA {
 
 using V = MySoA<128>;
 
-__global__ void testBasicSoA(float* p) {
+ void testBasicSoA(float* p) {
   using namespace eigenSoA;
 
   assert(!isPowerOf2(0));
@@ -23,7 +23,7 @@ __global__ void testBasicSoA(float* p) {
 
   using M3 = Eigen::Matrix<float, 3, 3>;
 
-  __shared__ eigenSoA::MatrixSoA<M3, 64> m;
+   eigenSoA::MatrixSoA<M3, 64> m;
 
   int first = 0;
   if (0 == first)

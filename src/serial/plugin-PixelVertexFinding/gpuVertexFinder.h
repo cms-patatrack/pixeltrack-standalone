@@ -26,13 +26,13 @@ namespace gpuVertexFinder {
 
     uint32_t nvIntermediate;  // the number of vertices after splitting pruning etc.
 
-    __host__ __device__ void init() {
+    void init() {
       ntrks = 0;
       nvIntermediate = 0;
     }
   };
 
-  __global__ void init(ZVertexSoA* pdata, WorkSpace* pws) {
+  inline void init(ZVertexSoA* pdata, WorkSpace* pws) {
     pdata->init();
     pws->init();
   }

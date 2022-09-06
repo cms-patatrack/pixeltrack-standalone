@@ -39,10 +39,10 @@ public:
   public:
     // DeviceConstView() = default;
 
-    __device__ __forceinline__ uint32_t moduleStart(int i) const { return __ldg(moduleStart_ + i); }
-    __device__ __forceinline__ uint32_t clusInModule(int i) const { return __ldg(clusInModule_ + i); }
-    __device__ __forceinline__ uint32_t moduleId(int i) const { return __ldg(moduleId_ + i); }
-    __device__ __forceinline__ uint32_t clusModuleStart(int i) const { return __ldg(clusModuleStart_ + i); }
+     inline  uint32_t moduleStart(int i) const { return __ldg(moduleStart_ + i); }
+     inline  uint32_t clusInModule(int i) const { return __ldg(clusInModule_ + i); }
+     inline  uint32_t moduleId(int i) const { return __ldg(moduleId_ + i); }
+     inline  uint32_t clusModuleStart(int i) const { return __ldg(clusModuleStart_ + i); }
 
     friend SiPixelClustersSoA;
 

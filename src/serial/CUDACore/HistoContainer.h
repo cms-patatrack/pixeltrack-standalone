@@ -16,10 +16,10 @@ namespace cms {
   namespace cuda {
 
     template <typename Histo, typename T>
-    __global__ void countFromVector(Histo *__restrict__ h,
-                                    uint32_t nh,
-                                    T const *__restrict__ v,
-                                    uint32_t const *__restrict__ offsets) {
+    void countFromVector(Histo *__restrict__ h,
+                         uint32_t nh,
+                         T const *__restrict__ v,
+                         uint32_t const *__restrict__ offsets) {
       int first = 0;
       for (int i = first, nt = offsets[nh]; i < nt; i++) {
         auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
@@ -32,10 +32,10 @@ namespace cms {
     }
 
     template <typename Histo, typename T>
-    __global__ void fillFromVector(Histo *__restrict__ h,
-                                   uint32_t nh,
-                                   T const *__restrict__ v,
-                                   uint32_t const *__restrict__ offsets) {
+    void fillFromVector(Histo *__restrict__ h,
+                        uint32_t nh,
+                        T const *__restrict__ v,
+                        uint32_t const *__restrict__ offsets) {
       int first = 0;
       for (int i = first, nt = offsets[nh]; i < nt; i++) {
         auto off = cuda_std::upper_bound(offsets, offsets + nh + 1, i);
@@ -74,13 +74,13 @@ namespace cms {
     }
 
     template <typename Assoc>
-    __global__ void finalizeBulk(AtomicPairCounter const *apc, Assoc *__restrict__ assoc) {
+    void finalizeBulk(AtomicPairCounter const *apc, Assoc *__restrict__ assoc) {
       assoc->bulkFinalizeFill(*apc);
     }
 
     // iteratate over N bins left and right of the one containing "v"
     template <typename Hist, typename V, typename Func>
-    __host__ __device__ __forceinline__ void forEachInBins(Hist const &hist, V value, int n, Func func) {
+    inline void forEachInBins(Hist const &hist, V value, int n, Func func) {
       int bs = Hist::bin(value);
       int be = std::min(int(Hist::nbins() - 1), bs + n);
       bs = std::max(0, bs - n);
@@ -92,7 +92,7 @@ namespace cms {
 
     // iteratate over bins containing all values in window wmin, wmax
     template <typename Hist, typename V, typename Func>
-    __host__ __device__ __forceinline__ void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
+    inline void forEachInWindow(Hist const &hist, V wmin, V wmax, Func const &func) {
       auto bs = Hist::bin(wmin);
       auto be = Hist::bin(wmax);
       assert(be >= bs);
@@ -145,41 +145,41 @@ namespace cms {
         return (t >> shift) & mask;
       }
 
-      __host__ __device__ void zero() {
+      void zero() {
         for (auto &i : off)
           i = 0;
       }
 
-      __host__ __device__ __forceinline__ void add(CountersOnly const &co) {
+      inline void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
           auto &a = (std::atomic<Counter> &)(off[i]);
           a += co.off[i];
         }
       }
 
-      static __host__ __device__ __forceinline__ uint32_t atomicIncrement(Counter &x) {
+      static inline uint32_t atomicIncrement(Counter &x) {
         auto &a = (std::atomic<Counter> &)(x);
         return a++;
       }
 
-      static __host__ __device__ __forceinline__ uint32_t atomicDecrement(Counter &x) {
+      static inline uint32_t atomicDecrement(Counter &x) {
         auto &a = (std::atomic<Counter> &)(x);
         return a--;
       }
 
-      __host__ __device__ __forceinline__ void countDirect(T b) {
+      inline void countDirect(T b) {
         assert(b < nbins());
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fillDirect(T b, index_type j) {
+      inline void fillDirect(T b, index_type j) {
         assert(b < nbins());
         auto w = atomicDecrement(off[b]);
         assert(w > 0);
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ int32_t bulkFill(AtomicPairCounter &apc, index_type const *v, uint32_t n) {
+      inline int32_t bulkFill(AtomicPairCounter &apc, index_type const *v, uint32_t n) {
         auto c = apc.add(n);
         if (c.m >= nbins())
           return -int32_t(c.m);
@@ -189,30 +189,28 @@ namespace cms {
         return c.m;
       }
 
-      __host__ __device__ __forceinline__ void bulkFinalize(AtomicPairCounter const &apc) {
-        off[apc.get().m] = apc.get().n;
-      }
+      inline void bulkFinalize(AtomicPairCounter const &apc) { off[apc.get().m] = apc.get().n; }
 
-      __host__ __device__ __forceinline__ void bulkFinalizeFill(AtomicPairCounter const &apc) {
+      inline void bulkFinalizeFill(AtomicPairCounter const &apc) {
         auto m = apc.get().m;
         auto n = apc.get().n;
         if (m >= nbins()) {  // overflow!
           off[nbins()] = uint32_t(off[nbins() - 1]);
           return;
         }
-        auto first =  m;
+        auto first = m;
         for (auto i = first; i < totbins(); i++) {
           off[i] = n;
         }
       }
 
-      __host__ __device__ __forceinline__ void count(T t) {
+      inline void count(T t) {
         uint32_t b = bin(t);
         assert(b < nbins());
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fill(T t, index_type j) {
+      inline void fill(T t, index_type j) {
         uint32_t b = bin(t);
         assert(b < nbins());
         auto w = atomicDecrement(off[b]);
@@ -220,7 +218,7 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ void count(T t, uint32_t nh) {
+      inline void count(T t, uint32_t nh) {
         uint32_t b = bin(t);
         assert(b < nbins());
         b += histOff(nh);
@@ -228,7 +226,7 @@ namespace cms {
         atomicIncrement(off[b]);
       }
 
-      __host__ __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
+      inline void fill(T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
         assert(b < nbins());
         b += histOff(nh);
@@ -238,7 +236,7 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      __host__ __device__ __forceinline__ void finalize(Counter *ws = nullptr) {
+      inline void finalize(Counter *ws = nullptr) {
         assert(off[totbins() - 1] == 0);
         blockPrefixScan(off, totbins(), ws);
         assert(off[totbins() - 1] == off[totbins() - 2]);

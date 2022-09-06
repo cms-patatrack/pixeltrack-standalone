@@ -18,10 +18,10 @@ using SmallAssoc = cms::cuda::OneToManyAssoc<uint16_t, 128, MaxAssocs>;
 using Multiplicity = cms::cuda::OneToManyAssoc<uint16_t, 8, MaxTk>;
 using TK = std::array<uint16_t, 4>;
 
-__global__ void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
+ void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < n; i++) {
-    __shared__ Multiplicity::CountersOnly local;
+     Multiplicity::CountersOnly local;
     if (true)
       local.zero();
     __syncthreads();
@@ -32,19 +32,19 @@ __global__ void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restr
   }
 }
 
-__global__ void countMulti(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
+ void countMulti(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < n; i++)
     assoc->countDirect(2 + i % 4);
 }
 
-__global__ void verifyMulti(Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) {
+ void verifyMulti(Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) {
   uint32_t first = 0;
   for (auto i = first; i < Multiplicity::totbins(); i++)
     assert(m1->off[i] == m2->off[i]);
 }
 
-__global__ void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+ void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < 4 * n; i++) {
     auto k = i / 4;
@@ -57,7 +57,7 @@ __global__ void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int3
   }
 }
 
-__global__ void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+ void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < 4 * n; i++) {
     auto k = i / 4;
@@ -70,10 +70,10 @@ __global__ void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32
   }
 }
 
-__global__ void verify(Assoc* __restrict__ assoc) { assert(assoc->size() < Assoc::capacity()); }
+ void verify(Assoc* __restrict__ assoc) { assert(assoc->size() < Assoc::capacity()); }
 
 template <typename Assoc>
-__global__ void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+ void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int k = first; k < n; k++) {
     auto m = tk[k][3] < MaxElem ? 4 : 3;
@@ -82,7 +82,7 @@ __global__ void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Asso
 }
 
 template <typename Assoc>
-__global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) {
+ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) {
   if (apc->get().m >= Assoc::nbins())
     printf("Overflow %d %d\n", apc->get().m, Assoc::nbins());
   assert(assoc->size() < Assoc::capacity());

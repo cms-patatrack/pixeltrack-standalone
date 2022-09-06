@@ -12,7 +12,7 @@
 #include "gpuPixelRecHits.h"
 
 namespace {
-  __global__ void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
+   void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
                                     pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                     uint32_t* hitsLayerStart) {
     assert(0 == hitsModuleStart[0]);

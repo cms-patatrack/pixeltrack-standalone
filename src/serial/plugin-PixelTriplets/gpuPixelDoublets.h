@@ -61,7 +61,7 @@ namespace gpuPixelDoublets {
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
 
-  __global__ void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
+   void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                int nHits,
                                CellNeighborsVector* cellNeighbors,
                                CellNeighbors* cellNeighborsContainer,
@@ -87,7 +87,7 @@ namespace gpuPixelDoublets {
   constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y
   constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
 
-  __global__
+  
 #ifdef __CUDACC__
   __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
 #endif

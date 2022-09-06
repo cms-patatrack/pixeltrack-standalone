@@ -3,7 +3,7 @@
 using Vector5d = Eigen::Matrix<double, 5, 1>;
 using Matrix5d = Eigen::Matrix<double, 5, 5>;
 
-__host__ __device__ Matrix5d loadCov(Vector5d const& e) {
+  Matrix5d loadCov(Vector5d const& e) {
   Matrix5d cov;
   for (int i = 0; i < 5; ++i)
     cov(i, i) = e(i) * e(i);
@@ -19,7 +19,7 @@ __host__ __device__ Matrix5d loadCov(Vector5d const& e) {
 
 using TS = TrajectoryStateSoA<128>;
 
-__global__ void testTSSoA(TS* pts, int n) {
+ void testTSSoA(TS* pts, int n) {
   assert(n <= 128);
 
   Vector5d par0;

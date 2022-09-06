@@ -14,7 +14,7 @@ namespace gpuVertexFinder {
 
   // this algo does not really scale as it works in a single block...
   // enough for <10K tracks we have
-  __global__ void clusterTracksIterative(ZVertices* pdata,
+   void clusterTracksIterative(ZVertices* pdata,
                                          WorkSpace* pws,
                                          int minT,      // min number of neighbours to be "core"
                                          float eps,     // max absolute distance to cluster
@@ -45,8 +45,8 @@ namespace gpuVertexFinder {
     assert(zt);
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-    __shared__ Hist hist;
-    __shared__ typename Hist::Counter hws[32];
+     Hist hist;
+     typename Hist::Counter hws[32];
     for (uint32_t j = 0; j < Hist::totbins(); j++) {
       hist.off[j] = 0;
     }
@@ -100,7 +100,7 @@ namespace gpuVertexFinder {
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
 
-    __shared__ int nloops;
+     int nloops;
     nloops = 0;
 
     __syncthreads();
@@ -168,7 +168,7 @@ namespace gpuVertexFinder {
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
 
-    __shared__ unsigned int foundClusters;
+     unsigned int foundClusters;
     foundClusters = 0;
     __syncthreads();
 

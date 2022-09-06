@@ -12,7 +12,7 @@
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
+   inline  void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
     auto& __restrict__ data = *pdata;
@@ -42,12 +42,12 @@ namespace gpuVertexFinder {
       assert(nn[kv] < MAXTK);
       if (nn[kv] >= MAXTK)
         continue;                      // too bad FIXME
-      __shared__ uint32_t it[MAXTK];   // track index
-      __shared__ float zz[MAXTK];      // z pos
-      __shared__ uint8_t newV[MAXTK];  // 0 or 1
-      __shared__ float ww[MAXTK];      // z weight
+       uint32_t it[MAXTK];   // track index
+       float zz[MAXTK];      // z pos
+       uint8_t newV[MAXTK];  // 0 or 1
+       float ww[MAXTK];      // z weight
 
-      __shared__ uint32_t nq;  // number of track for this vertex
+       uint32_t nq;  // number of track for this vertex
       nq = 0;
       __syncthreads();
 
@@ -62,7 +62,7 @@ namespace gpuVertexFinder {
         }
       }
 
-      __shared__ float znew[2], wnew[2];  // the new vertices
+       float znew[2], wnew[2];  // the new vertices
 
       __syncthreads();
       assert(int(nq) == nn[kv] + 1);
@@ -118,7 +118,7 @@ namespace gpuVertexFinder {
         continue;
 
       // get a new global vertex
-      __shared__ uint32_t igv;
+       uint32_t igv;
       if (true)
         igv = atomicAdd(&ws.nvIntermediate, 1);
       __syncthreads();
@@ -130,7 +130,7 @@ namespace gpuVertexFinder {
     }  // loop on vertices
   }
 
-  __global__ void splitVerticesKernel(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
+   void splitVerticesKernel(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
     splitVertices(pdata, pws, maxChi2);
   }
 

@@ -13,7 +13,7 @@
 
 namespace gpuPixelRecHits {
 
-  __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
+   void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
                           SiPixelDigisSoA::DeviceConstView const* __restrict__ pdigis,
                           int numElements,
@@ -59,7 +59,7 @@ namespace gpuPixelRecHits {
     using ClusParams = pixelCPEforGPU::ClusParams;
 
     // as usual one block per module
-    __shared__ ClusParams clusParams;
+     ClusParams clusParams;
 
     uint32_t firstModule = 0;
     auto endModule = clusters.moduleStart(0);
