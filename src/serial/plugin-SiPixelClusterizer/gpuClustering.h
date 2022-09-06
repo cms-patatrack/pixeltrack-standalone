@@ -135,12 +135,7 @@ namespace gpuClustering {
         hist.fill(y[i], i - firstPixel);
       }
 
-#ifdef __CUDA_ARCH__
-      // assume that we can cover the whole module with up to 16 blockDim.x-wide iterations
-      constexpr int maxiter = 16;
-#else
       auto maxiter = hist.size();
-#endif
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
       assert((hist.size() / blockDim.x) <= maxiter);

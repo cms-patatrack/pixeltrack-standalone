@@ -39,12 +39,8 @@ namespace cms {
         c_type c = i;
         c += incr;
         Atomic2 ret;
-#ifdef __CUDA_ARCH__
-        ret.ac = atomicAdd(&counter.ac, c);
-#else
         ret.ac = counter.ac;
         counter.ac += c;
-#endif
         return ret.counters;
       }
 
