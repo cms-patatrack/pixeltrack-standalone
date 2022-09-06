@@ -23,7 +23,7 @@ namespace gpuVertexFinder {
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
-    if (verbose && 0 == threadIdx.x)
+    if (verbose && true)
       printf("params %d %f %f %f\n", minT, eps, errmax, chi2max);
 
     auto er2mx = errmax * errmax;
@@ -47,18 +47,18 @@ namespace gpuVertexFinder {
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     __shared__ Hist hist;
     __shared__ typename Hist::Counter hws[32];
-    for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
+    for (uint32_t j = 0; j < Hist::totbins(); j += blockDim.x) {
       hist.off[j] = 0;
     }
     __syncthreads();
 
-    if (verbose && 0 == threadIdx.x)
+    if (verbose && true)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
 
     assert(nt <= hist.capacity());
 
     // fill hist  (bin shall be wider than "eps")
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       assert(i < ZVertices::MAXTRACKS);
       int iz = int(zt[i] * 10.);  // valid if eps<=0.1
       // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
@@ -71,19 +71,19 @@ namespace gpuVertexFinder {
       nn[i] = 0;
     }
     __syncthreads();
-    if (threadIdx.x < 32)
-      hws[threadIdx.x] = 0;  // used by prefix scan...
+    if (0 < 32)
+      hws[0] = 0;  // used by prefix scan...
     __syncthreads();
     hist.finalize(hws);
     __syncthreads();
     assert(hist.size() == nt);
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       hist.fill(izt[i], uint16_t(i));
     }
     __syncthreads();
 
     // count neighbours
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (ezt2[i] > er2mx)
         continue;
       auto loop = [&](uint32_t j) {
@@ -102,7 +102,7 @@ namespace gpuVertexFinder {
     __syncthreads();
 
     // find NN with smaller z...
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (nn[i] < minT)
         continue;  // DBSCAN core rule
       float mz = zt[i];
@@ -125,7 +125,7 @@ namespace gpuVertexFinder {
 
 #ifdef GPU_DEBUG
     //  mini verification
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (iv[i] != int(i))
         assert(iv[iv[i]] != int(i));
     }
@@ -133,7 +133,7 @@ namespace gpuVertexFinder {
 #endif
 
     // consolidate graph (percolate index of seed)
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       auto m = iv[i];
       while (m != iv[m])
         m = iv[m];
@@ -144,7 +144,7 @@ namespace gpuVertexFinder {
 
 #ifdef GPU_DEBUG
     //  mini verification
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (iv[i] != int(i))
         assert(iv[iv[i]] != int(i));
     }
@@ -153,7 +153,7 @@ namespace gpuVertexFinder {
 
 #ifdef GPU_DEBUG
     // and verify that we did not spit any cluster...
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (nn[i] < minT)
         continue;  // DBSCAN core rule
       assert(zt[iv[i]] <= zt[i]);
@@ -178,7 +178,7 @@ namespace gpuVertexFinder {
 #endif
 
     // collect edges (assign to closest cluster of closest point??? here to closest point)
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       //    if (nn[i]==0 || nn[i]>=minT) continue;    // DBSCAN edge rule
       if (nn[i] >= minT)
         continue;  // DBSCAN edge rule
@@ -203,7 +203,7 @@ namespace gpuVertexFinder {
 
     // find the number of different clusters, identified by a tracks with clus[i] == i;
     // mark these tracks with a negative id.
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (iv[i] == int(i)) {
         if (nn[i] >= minT) {
           auto old = atomicInc(&foundClusters, 0xffffffff);
@@ -218,7 +218,7 @@ namespace gpuVertexFinder {
     assert(foundClusters < ZVertices::MAXVTX);
 
     // propagate the negative id to all the tracks in the cluster.
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       if (iv[i] >= 0) {
         // mark each track in a cluster with the same id as the first one
         iv[i] = iv[iv[i]];
@@ -227,13 +227,13 @@ namespace gpuVertexFinder {
     __syncthreads();
 
     // adjust the cluster id to be a positive value starting from 0
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i += blockDim.x) {
       iv[i] = -iv[i] - 1;
     }
 
     nvIntermediate = nvFinal = foundClusters;
 
-    if (verbose && 0 == threadIdx.x)
+    if (verbose && true)
       printf("found %d proto vertices\n", foundClusters);
   }
 

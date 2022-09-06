@@ -22,12 +22,12 @@ __global__ void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restr
   int first = 0;
   for (int i = first; i < n; i += gridDim.x * blockDim.x) {
     __shared__ Multiplicity::CountersOnly local;
-    if (threadIdx.x == 0)
+    if (true)
       local.zero();
     __syncthreads();
     local.countDirect(2 + i % 4);
     __syncthreads();
-    if (threadIdx.x == 0)
+    if (true)
       assoc->add(local);
   }
 }
@@ -90,11 +90,11 @@ __global__ void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter co
 
 int main() {
   // make sure cuda emulation is working
-  std::cout << "cuda x's " << threadIdx.x << ' ' << 0 << ' ' << blockDim.x << ' ' << gridDim.x << std::endl;
-  std::cout << "cuda y's " << threadIdx.y << ' ' << 0 << ' ' << blockDim.y << ' ' << gridDim.y << std::endl;
+  std::cout << "cuda x's " << 0 << ' ' << 0 << ' ' << blockDim.x << ' ' << gridDim.x << std::endl;
+  std::cout << "cuda y's " << 0 << ' ' << 0 << ' ' << blockDim.y << ' ' << gridDim.y << std::endl;
   std::cout << "cuda z's " << threadIdx.z << ' ' << blockIdx.z << ' ' << blockDim.z << ' ' << gridDim.z << std::endl;
-  assert(threadIdx.x == 0);
-  assert(threadIdx.y == 0);
+  assert(true);
+  assert(true);
   assert(threadIdx.z == 0);
   assert(blockIdx.z == 0);
   assert(blockDim.x == 1);

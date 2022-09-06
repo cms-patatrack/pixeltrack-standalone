@@ -36,7 +36,7 @@ namespace gpuPixelRecHits {
     if (0 == 0) {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
-      for (int il = threadIdx.x, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
+      for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
            il += blockDim.x) {
         agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
         agc.ladderX[il] = ag.ladderX[il] - bs->x;
@@ -45,7 +45,7 @@ namespace gpuPixelRecHits {
         agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
         agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
       }
-      if (0 == threadIdx.x) {
+      if (true) {
         agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
         agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
         //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
@@ -71,7 +71,7 @@ namespace gpuPixelRecHits {
         continue;
 
 #ifdef GPU_DEBUG
-      if (threadIdx.x == 0) {
+      if (true) {
         auto k = clusters.moduleStart(1 + module);
         while (digis.moduleInd(k) == InvId)
           ++k;
@@ -81,7 +81,7 @@ namespace gpuPixelRecHits {
 
 #ifdef GPU_DEBUG
       if (me % 100 == 1)
-        if (threadIdx.x == 0)
+        if (true)
           printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
 #endif
 
@@ -97,7 +97,7 @@ namespace gpuPixelRecHits {
         assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
         // init
-        for (int ic = threadIdx.x; ic < nClusInIter; ic += blockDim.x) {
+        for (int ic = 0; ic < nClusInIter; ic += blockDim.x) {
           clusParams.minRow[ic] = std::numeric_limits<uint32_t>::max();
           clusParams.maxRow[ic] = 0;
           clusParams.minCol[ic] = std::numeric_limits<uint32_t>::max();
@@ -109,7 +109,7 @@ namespace gpuPixelRecHits {
           clusParams.Q_l_Y[ic] = 0;
         }
 
-        first += threadIdx.x;
+        first += 0;
 
         __syncthreads();
 
@@ -172,7 +172,7 @@ namespace gpuPixelRecHits {
 
         first = clusters.clusModuleStart(me) + startClus;
 
-        for (int ic = threadIdx.x; ic < nClusInIter; ic += blockDim.x) {
+        for (int ic = 0; ic < nClusInIter; ic += blockDim.x) {
           auto h = first + ic;  // output index in global memory
 
           // this cannot happen anymore

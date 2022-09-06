@@ -469,7 +469,7 @@ namespace pixelgpudetails {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
     assert(1 == gridDim.x);
 
-    int first = threadIdx.x;
+    int first = 0;
 
     // limit to MaxHitsInModule;
     for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {

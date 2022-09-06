@@ -203,8 +203,8 @@ __global__ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
                                float dcaCutOuterTriplet) {
   auto const &hh = *hhp;
 
-  auto firstCellIndex = threadIdx.y + 0 * blockDim.y;
-  auto first = threadIdx.x;
+  auto firstCellIndex = 0 + 0 * blockDim.y;
+  uint32_t first = 0;
   auto stride = blockDim.x;
 
   if (0 == (firstCellIndex + first)) {

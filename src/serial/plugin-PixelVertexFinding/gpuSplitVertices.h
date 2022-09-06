@@ -52,7 +52,7 @@ namespace gpuVertexFinder {
       __syncthreads();
 
       // copy to local
-      for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
+      for (uint32_t k = 0; k < nt; k += blockDim.x) {
         if (iv[k] == int(kv)) {
           auto old = atomicInc(&nq, MAXTK);
           zz[old] = zt[k] - zv[kv];
@@ -72,25 +72,25 @@ namespace gpuVertexFinder {
       bool more = true;
       while (__syncthreads_or(more)) {
         more = false;
-        if (0 == threadIdx.x) {
+        if (true) {
           znew[0] = 0;
           znew[1] = 0;
           wnew[0] = 0;
           wnew[1] = 0;
         }
         __syncthreads();
-        for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+        for (uint32_t k = 0; k < nq; k += blockDim.x) {
           auto i = newV[k];
           atomicAdd(&znew[i], zz[k] * ww[k]);
           atomicAdd(&wnew[i], ww[k]);
         }
         __syncthreads();
-        if (0 == threadIdx.x) {
+        if (true) {
           znew[0] /= wnew[0];
           znew[1] /= wnew[1];
         }
         __syncthreads();
-        for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+        for (uint32_t k = 0; k < nq; k += blockDim.x) {
           auto d0 = fabs(zz[k] - znew[0]);
           auto d1 = fabs(zz[k] - znew[1]);
           auto newer = d0 < d1 ? 0 : 1;
@@ -111,7 +111,7 @@ namespace gpuVertexFinder {
 
       auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-      if (verbose && 0 == threadIdx.x)
+      if (verbose && true)
         printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
 
       if (chi2Dist < 4)
@@ -119,10 +119,10 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       __shared__ uint32_t igv;
-      if (0 == threadIdx.x)
+      if (true)
         igv = atomicAdd(&ws.nvIntermediate, 1);
       __syncthreads();
-      for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+      for (uint32_t k = 0; k < nq; k += blockDim.x) {
         if (1 == newV[k])
           iv[it[k]] = igv;
       }

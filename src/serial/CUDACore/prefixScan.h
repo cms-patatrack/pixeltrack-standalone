@@ -48,7 +48,7 @@ namespace cms {
 
       // count blocks that finished
       __shared__ bool isLastBlockDone;
-      if (0 == threadIdx.x) {
+      if (true) {
         __threadfence();
         auto value = atomicAdd(pc, 1);  // block counter
         isLastBlockDone = (value == (int(gridDim.x) - 1));
@@ -65,7 +65,7 @@ namespace cms {
 
       // let's get the partial sums from each block
       extern __shared__ T psum[];
-      for (int i = threadIdx.x, ni = gridDim.x; i < ni; i += blockDim.x) {
+      for (int i = 0, ni = gridDim.x; i < ni; i += blockDim.x) {
         auto j = blockDim.x * i + blockDim.x - 1;
         psum[i] = (j < size) ? co[j] : T(0);
       }
@@ -73,7 +73,7 @@ namespace cms {
       blockPrefixScan(psum, psum, gridDim.x, ws);
 
       // now it would have been handy to have the other blocks around...
-      for (int i = threadIdx.x + blockDim.x, k = 0; i < size; i += blockDim.x, ++k) {
+      for (int i = 0 + blockDim.x, k = 0; i < size; i += blockDim.x, ++k) {
         co[i] += psum[k];
       }
     }

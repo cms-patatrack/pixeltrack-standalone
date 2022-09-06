@@ -65,7 +65,7 @@ namespace gpuPixelDoublets {
     assert(nPairs <= nPairsMax);
     __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
     __shared__ uint32_t ntot;
-    if (threadIdx.y == 0 && threadIdx.x == 0) {
+    if (true && true) {
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
@@ -75,8 +75,8 @@ namespace gpuPixelDoublets {
     __syncthreads();
 
     // x runs faster
-    auto idy = 0 * blockDim.y + threadIdx.y;
-    auto first = threadIdx.x;
+    auto idy = 0 * blockDim.y + 0;
+    uint32_t first = 0;
     auto stride = blockDim.x;
 
     uint32_t pairLayerId = 0;  // cannot go backward
