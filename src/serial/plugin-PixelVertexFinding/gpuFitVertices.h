@@ -12,9 +12,9 @@
 
 namespace gpuVertexFinder {
 
-    void fitVertices(ZVertices* pdata,
-                                              WorkSpace* pws,
-                                              float chi2Max  // for outlier rejection
+  void fitVertices(ZVertices* pdata,
+                   WorkSpace* pws,
+                   float chi2Max  // for outlier rejection
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -47,11 +47,9 @@ namespace gpuVertexFinder {
     }
 
     // only for test
-     int noise;
+    int noise;
     if (verbose && true)
       noise = 0;
-
-    __syncthreads();
 
     // compute cluster location
     for (uint32_t i = 0; i < nt; i++) {
@@ -67,14 +65,12 @@ namespace gpuVertexFinder {
       atomicAdd(&wv[iv[i]], w);
     }
 
-    __syncthreads();
     // reuse nn
     for (uint32_t i = 0; i < foundClusters; i++) {
       assert(wv[i] > 0.f);
       zv[i] /= wv[i];
       nn[i] = -1;  // ndof
     }
-    __syncthreads();
 
     // compute chi2
     for (uint32_t i = 0; i < nt; i++) {
@@ -90,7 +86,7 @@ namespace gpuVertexFinder {
       atomicAdd(&chi2[iv[i]], c2);
       atomicAdd(&nn[iv[i]], 1);
     }
-    __syncthreads();
+
     for (uint32_t i = 0; i < foundClusters; i++)
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
@@ -101,9 +97,9 @@ namespace gpuVertexFinder {
       printf("and %d noise\n", noise);
   }
 
-   void fitVerticesKernel(ZVertices* pdata,
-                                    WorkSpace* pws,
-                                    float chi2Max  // for outlier rejection
+  void fitVerticesKernel(ZVertices* pdata,
+                         WorkSpace* pws,
+                         float chi2Max  // for outlier rejection
   ) {
     fitVertices(pdata, pws, chi2Max);
   }

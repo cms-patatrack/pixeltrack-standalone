@@ -13,13 +13,13 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
-   uint32_t gMaxHit = 0;
+  uint32_t gMaxHit = 0;
 #endif
 
-   void countModules(uint16_t const* __restrict__ id,
-                               uint32_t* __restrict__ moduleStart,
-                               int32_t* __restrict__ clusterId,
-                               int numElements) {
+  void countModules(uint16_t const* __restrict__ id,
+                    uint32_t* __restrict__ moduleStart,
+                    int32_t* __restrict__ clusterId,
+                    int numElements) {
     int first = 0;
     for (int i = first; i < numElements; i++) {
       clusterId[i] = i;
@@ -36,18 +36,16 @@ namespace gpuClustering {
     }
   }
 
-  
-      //  __launch_bounds__(256,4)
-      void
-      findClus(uint16_t const* __restrict__ id,           // module id of each pixel
-               uint16_t const* __restrict__ x,            // local coordinates of each pixel
-               uint16_t const* __restrict__ y,            //
-               uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
-               uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
-               uint32_t* __restrict__ moduleId,           // output: module id of each module
-               int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
-               int numElements) {
-     int msize;
+  //  __launch_bounds__(256,4)
+  void findClus(uint16_t const* __restrict__ id,           // module id of each pixel
+                uint16_t const* __restrict__ x,            // local coordinates of each pixel
+                uint16_t const* __restrict__ y,            //
+                uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
+                uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
+                uint32_t* __restrict__ moduleId,           // output: module id of each module
+                int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
+                int numElements) {
+    int msize;
 
     uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
@@ -66,7 +64,6 @@ namespace gpuClustering {
 
       // find the index of the first pixel not belonging to this module (or invalid)
       msize = numElements;
-      __syncthreads();
 
       // skip threads not associated to an existing pixel
       for (int i = first; i < numElements; i++) {
@@ -82,12 +79,11 @@ namespace gpuClustering {
       constexpr uint32_t maxPixInModule = 4000;
       constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
       using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
-       Hist hist;
-       typename Hist::Counter ws[32];
+      Hist hist;
+      typename Hist::Counter ws[32];
       for (uint32_t j = 0; j < Hist::totbins(); j++) {
         hist.off[j] = 0;
       }
-      __syncthreads();
 
       assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
 
@@ -99,13 +95,12 @@ namespace gpuClustering {
         }
       }
 
-      __syncthreads();
       assert(msize - firstPixel <= maxPixInModule);
 
 #ifdef GPU_DEBUG
-       uint32_t totGood;
+      uint32_t totGood;
       totGood = 0;
-      __syncthreads();
+
 #endif
 
       // fill histo
@@ -117,12 +112,12 @@ namespace gpuClustering {
         atomicAdd(&totGood, 1);
 #endif
       }
-      __syncthreads();
+
       if (0 < 32)
         ws[0] = 0;  // used by prefix scan...
-      __syncthreads();
+
       hist.finalize(ws);
-      __syncthreads();
+
 #ifdef GPU_DEBUG
       assert(hist.size() == totGood);
       if (thisModuleId % 100 == 1)
@@ -145,27 +140,27 @@ namespace gpuClustering {
       for (uint32_t k = 0; k < maxiter; ++k)
         nnn[k] = 0;
 
-      __syncthreads();  // for hit filling!
+        // for hit filling!
 
 #ifdef GPU_DEBUG
       // look for anomalous high occupancy
-       uint32_t n40, n60;
+      uint32_t n40, n60;
       n40 = n60 = 0;
-      __syncthreads();
+
       for (uint32_t j = 0; j < Hist::nbins(); j++) {
         if (hist.size(j) > 60)
           atomicAdd(&n60, 1);
         if (hist.size(j) > 40)
           atomicAdd(&n40, 1);
       }
-      __syncthreads();
+
       if (true) {
         if (n60 > 0)
           printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
         else if (n40 > 0)
           printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
       }
-      __syncthreads();
+
 #endif
 
       // fill NN
@@ -198,7 +193,7 @@ namespace gpuClustering {
       // pixel in the cluster ( clus[i] == i ).
       bool more = true;
       int nloops = 0;
-      while (__syncthreads_or(more)) {
+      while (more) {
         if (1 == nloops % 2) {
           for (uint32_t j = 0, k = 0U; j < hist.size(); j++, ++k) {
             auto p = hist.begin() + j;
@@ -231,21 +226,20 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
       {
-         int n0;
+        int n0;
         if (true)
           n0 = nloops;
-        __syncthreads();
+
         auto ok = n0 == nloops;
-        assert(__syncthreads_and(ok));
+        assert(ok);
         if (thisModuleId % 100 == 1)
           if (true)
             printf("# loops %d\n", nloops);
       }
 #endif
 
-       unsigned int foundClusters;
+      unsigned int foundClusters;
       foundClusters = 0;
-      __syncthreads();
 
       // find the number of different clusters, identified by a pixels with clus[i] == i;
       // mark these pixels with a negative id.
@@ -257,7 +251,6 @@ namespace gpuClustering {
           clusterId[i] = -(old + 1);
         }
       }
-      __syncthreads();
 
       // propagate the negative id to all the pixels in the cluster.
       for (int i = first; i < msize; i++) {
@@ -268,7 +261,6 @@ namespace gpuClustering {
           clusterId[i] = clusterId[clusterId[i]];
         }
       }
-      __syncthreads();
 
       // adjust the cluster id to be a positive value starting from 0
       for (int i = first; i < msize; i++) {
@@ -278,7 +270,6 @@ namespace gpuClustering {
         }
         clusterId[i] = -clusterId[i] - 1;
       }
-      __syncthreads();
 
       if (true) {
         nClustersInModule[thisModuleId] = foundClusters;

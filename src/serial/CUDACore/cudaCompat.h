@@ -61,10 +61,6 @@ namespace cms {
       return ret;
     }
 
-    inline void __syncthreads() {}
-    inline void __threadfence() {}
-    inline bool __syncthreads_or(bool x) { return x; }
-    inline bool __syncthreads_and(bool x) { return x; }
   }  // namespace cudacompat
 }  // namespace cms
 

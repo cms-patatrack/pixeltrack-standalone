@@ -24,9 +24,9 @@ using TK = std::array<uint16_t, 4>;
      Multiplicity::CountersOnly local;
     if (true)
       local.zero();
-    __syncthreads();
+    
     local.countDirect(2 + i % 4);
-    __syncthreads();
+    
     if (true)
       assoc->add(local);
   }

@@ -11,17 +11,16 @@
 
 namespace gpuClustering {
 
-   void clusterChargeCut(
-      uint16_t* __restrict__ id,                 // module id of each pixel (modified if bad cluster)
-      uint16_t const* __restrict__ adc,          //  charge of each pixel
-      uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
-      uint32_t* __restrict__ nClustersInModule,  // modified: number of clusters found in each module
-      uint32_t const* __restrict__ moduleId,     // module id of each module
-      int32_t* __restrict__ clusterId,           // modified: cluster id of each pixel
-      uint32_t numElements) {
-     int32_t charge[MaxNumClustersPerModules];
-     uint8_t ok[MaxNumClustersPerModules];
-     uint16_t newclusId[MaxNumClustersPerModules];
+  void clusterChargeCut(uint16_t* __restrict__ id,                 // module id of each pixel (modified if bad cluster)
+                        uint16_t const* __restrict__ adc,          //  charge of each pixel
+                        uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
+                        uint32_t* __restrict__ nClustersInModule,  // modified: number of clusters found in each module
+                        uint32_t const* __restrict__ moduleId,     // module id of each module
+                        int32_t* __restrict__ clusterId,           // modified: cluster id of each pixel
+                        uint32_t numElements) {
+    int32_t charge[MaxNumClustersPerModules];
+    uint8_t ok[MaxNumClustersPerModules];
+    uint16_t newclusId[MaxNumClustersPerModules];
 
     uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
@@ -69,7 +68,6 @@ namespace gpuClustering {
       for (uint32_t i = 0; i < nclus; i++) {
         charge[i] = 0;
       }
-      __syncthreads();
 
       for (auto i = first; i < numElements; i++) {
         if (id[i] == InvId)
@@ -78,17 +76,14 @@ namespace gpuClustering {
           break;  // end of module
         atomicAdd(&charge[clusterId[i]], adc[i]);
       }
-      __syncthreads();
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)
       for (uint32_t i = 0; i < nclus; i++) {
         newclusId[i] = ok[i] = charge[i] > chargeCut ? 1 : 0;
       }
 
-      __syncthreads();
-
       // renumber
-       uint16_t ws[32];
+      uint16_t ws[32];
       cms::cuda::blockPrefixScan(newclusId, nclus, ws);
 
       assert(nclus >= newclusId[nclus - 1]);
@@ -97,14 +92,12 @@ namespace gpuClustering {
         continue;
 
       nClustersInModule[thisModuleId] = newclusId[nclus - 1];
-      __syncthreads();
 
       // mark bad cluster again
       for (uint32_t i = 0; i < nclus; i++) {
         if (0 == ok[i])
           newclusId[i] = InvId + 1;
       }
-      __syncthreads();
 
       // reassign id
       for (auto i = first; i < numElements; i++) {

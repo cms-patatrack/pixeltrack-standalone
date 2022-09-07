@@ -37,11 +37,11 @@ using V = MySoA<128>;
     m[i](1, 1) = p[i + 64];
     m[i](2, 2) = p[i + 64 * 2];
   }
-  __syncthreads();  // not needed
+    // not needed
 
   for (int i = first; i < n; i += 1)
     m[i] = m[i].inverse().eval();
-  __syncthreads();
+  
 
   for (int i = first; i < n; i += 1) {
     p[i] = m[63 - i](0, 0);

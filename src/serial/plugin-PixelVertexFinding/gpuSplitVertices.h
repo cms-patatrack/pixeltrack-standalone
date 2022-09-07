@@ -12,7 +12,7 @@
 
 namespace gpuVertexFinder {
 
-   inline  void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
+  inline void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
     auto& __restrict__ data = *pdata;
@@ -41,15 +41,14 @@ namespace gpuVertexFinder {
       constexpr int MAXTK = 512;
       assert(nn[kv] < MAXTK);
       if (nn[kv] >= MAXTK)
-        continue;                      // too bad FIXME
-       uint32_t it[MAXTK];   // track index
-       float zz[MAXTK];      // z pos
-       uint8_t newV[MAXTK];  // 0 or 1
-       float ww[MAXTK];      // z weight
+        continue;           // too bad FIXME
+      uint32_t it[MAXTK];   // track index
+      float zz[MAXTK];      // z pos
+      uint8_t newV[MAXTK];  // 0 or 1
+      float ww[MAXTK];      // z weight
 
-       uint32_t nq;  // number of track for this vertex
+      uint32_t nq;  // number of track for this vertex
       nq = 0;
-      __syncthreads();
 
       // copy to local
       for (uint32_t k = 0; k < nt; k++) {
@@ -62,15 +61,14 @@ namespace gpuVertexFinder {
         }
       }
 
-       float znew[2], wnew[2];  // the new vertices
+      float znew[2], wnew[2];  // the new vertices
 
-      __syncthreads();
       assert(int(nq) == nn[kv] + 1);
 
       int maxiter = 20;
       // kt-min....
       bool more = true;
-      while (__syncthreads_or(more)) {
+      while (more) {
         more = false;
         if (true) {
           znew[0] = 0;
@@ -78,18 +76,18 @@ namespace gpuVertexFinder {
           wnew[0] = 0;
           wnew[1] = 0;
         }
-        __syncthreads();
+
         for (uint32_t k = 0; k < nq; k++) {
           auto i = newV[k];
           atomicAdd(&znew[i], zz[k] * ww[k]);
           atomicAdd(&wnew[i], ww[k]);
         }
-        __syncthreads();
+
         if (true) {
           znew[0] /= wnew[0];
           znew[1] /= wnew[1];
         }
-        __syncthreads();
+
         for (uint32_t k = 0; k < nq; k++) {
           auto d0 = fabs(zz[k] - znew[0]);
           auto d1 = fabs(zz[k] - znew[1]);
@@ -118,10 +116,10 @@ namespace gpuVertexFinder {
         continue;
 
       // get a new global vertex
-       uint32_t igv;
+      uint32_t igv;
       if (true)
         igv = atomicAdd(&ws.nvIntermediate, 1);
-      __syncthreads();
+
       for (uint32_t k = 0; k < nq; k++) {
         if (1 == newV[k])
           iv[it[k]] = igv;
@@ -130,9 +128,7 @@ namespace gpuVertexFinder {
     }  // loop on vertices
   }
 
-   void splitVerticesKernel(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
-    splitVertices(pdata, pws, maxChi2);
-  }
+  void splitVerticesKernel(ZVertices* pdata, WorkSpace* pws, float maxChi2) { splitVertices(pdata, pws, maxChi2); }
 
 }  // namespace gpuVertexFinder
 

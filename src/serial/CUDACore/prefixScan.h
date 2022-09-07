@@ -11,12 +11,7 @@ namespace cms {
 
     // limited to 32*32 elements....
     template <typename VT, typename T>
-       void blockPrefixScan(VT const* ci,
-                                                             VT* co,
-                                                             uint32_t size,
-                                                             T* ws
-                                                             = nullptr
-    ) {
+    void blockPrefixScan(VT const* ci, VT* co, uint32_t size, T* ws = nullptr) {
       co[0] = ci[0];
       for (uint32_t i = 1; i < size; ++i)
         co[i] = ci[i] + co[i - 1];
@@ -25,11 +20,7 @@ namespace cms {
     // same as above, may remove
     // limited to 32*32 elements....
     template <typename T>
-       void blockPrefixScan(T* c,
-                                                             uint32_t size,
-                                                             T* ws
-                                                             = nullptr
-    ) {
+    void blockPrefixScan(T* c, uint32_t size, T* ws = nullptr) {
       for (uint32_t i = 1; i < size; ++i)
         c[i] += c[i - 1];
     }
@@ -49,12 +40,9 @@ namespace cms {
       // count blocks that finished
       bool isLastBlockDone;
       if (true) {
-        __threadfence();
         auto value = atomicAdd(pc, 1);  // block counter
         isLastBlockDone = (value == (int(1) - 1));
       }
-
-      __syncthreads();
 
       if (!isLastBlockDone)
         return;
@@ -69,7 +57,7 @@ namespace cms {
         auto j = i;
         psum[i] = (j < size) ? co[j] : T(0);
       }
-      __syncthreads();
+
       blockPrefixScan(psum, psum, 1, ws);
 
       // now it would have been handy to have the other blocks around...

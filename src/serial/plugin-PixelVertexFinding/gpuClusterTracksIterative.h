@@ -14,12 +14,12 @@ namespace gpuVertexFinder {
 
   // this algo does not really scale as it works in a single block...
   // enough for <10K tracks we have
-   void clusterTracksIterative(ZVertices* pdata,
-                                         WorkSpace* pws,
-                                         int minT,      // min number of neighbours to be "core"
-                                         float eps,     // max absolute distance to cluster
-                                         float errmax,  // max error to be "seed"
-                                         float chi2max  // max normalized distance to cluster
+  void clusterTracksIterative(ZVertices* pdata,
+                              WorkSpace* pws,
+                              int minT,      // min number of neighbours to be "core"
+                              float eps,     // max absolute distance to cluster
+                              float errmax,  // max error to be "seed"
+                              float chi2max  // max normalized distance to cluster
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -45,12 +45,11 @@ namespace gpuVertexFinder {
     assert(zt);
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
-     Hist hist;
-     typename Hist::Counter hws[32];
+    Hist hist;
+    typename Hist::Counter hws[32];
     for (uint32_t j = 0; j < Hist::totbins(); j++) {
       hist.off[j] = 0;
     }
-    __syncthreads();
 
     if (verbose && true)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
@@ -70,17 +69,16 @@ namespace gpuVertexFinder {
       iv[i] = i;
       nn[i] = 0;
     }
-    __syncthreads();
+
     if (0 < 32)
       hws[0] = 0;  // used by prefix scan...
-    __syncthreads();
+
     hist.finalize(hws);
-    __syncthreads();
+
     assert(hist.size() == nt);
     for (uint32_t i = 0; i < nt; i++) {
       hist.fill(izt[i], uint16_t(i));
     }
-    __syncthreads();
 
     // count neighbours
     for (uint32_t i = 0; i < nt; i++) {
@@ -100,14 +98,12 @@ namespace gpuVertexFinder {
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
 
-     int nloops;
+    int nloops;
     nloops = 0;
-
-    __syncthreads();
 
     // cluster seeds only
     bool more = true;
-    while (__syncthreads_or(more)) {
+    while (more) {
       if (1 == nloops % 2) {
         for (uint32_t i = 0; i < nt; i++) {
           auto m = iv[i];
@@ -168,9 +164,8 @@ namespace gpuVertexFinder {
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
 
-     unsigned int foundClusters;
+    unsigned int foundClusters;
     foundClusters = 0;
-    __syncthreads();
 
     // find the number of different clusters, identified by a tracks with clus[i] == i;
     // mark these tracks with a negative id.
@@ -184,7 +179,6 @@ namespace gpuVertexFinder {
         }
       }
     }
-    __syncthreads();
 
     assert(foundClusters < ZVertices::MAXVTX);
 
@@ -195,7 +189,6 @@ namespace gpuVertexFinder {
         iv[i] = iv[iv[i]];
       }
     }
-    __syncthreads();
 
     // adjust the cluster id to be a positive value starting from 0
     for (uint32_t i = 0; i < nt; i++) {

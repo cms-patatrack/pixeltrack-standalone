@@ -54,7 +54,6 @@ namespace gpuVertexFinder {
     for (uint32_t j = 0; j < Hist::totbins(); j++) {
       hist.off[j] = 0;
     }
-    __syncthreads();
 
     if (verbose && true)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
@@ -74,17 +73,16 @@ namespace gpuVertexFinder {
       iv[i] = i;
       nn[i] = 0;
     }
-    __syncthreads();
+
     if (0 < 32)
       hws[0] = 0;  // used by prefix scan...
-    __syncthreads();
+
     hist.finalize(hws);
-    __syncthreads();
+
     assert(hist.size() == nt);
     for (uint32_t i = 0; i < nt; i++) {
       hist.fill(izt[i], uint16_t(i));
     }
-    __syncthreads();
 
     // count neighbours
     for (uint32_t i = 0; i < nt; i++) {
@@ -103,8 +101,6 @@ namespace gpuVertexFinder {
 
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
-
-    __syncthreads();
 
     // find closest above me .... (we ignore the possibility of two j at same distance from i)
     for (uint32_t i = 0; i < nt; i++) {
@@ -125,15 +121,13 @@ namespace gpuVertexFinder {
       cms::cuda::forEachInBins(hist, izt[i], 1, loop);
     }
 
-    __syncthreads();
-
 #ifdef GPU_DEBUG
     //  mini verification
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] != int(i))
         assert(iv[iv[i]] != int(i));
     }
-    __syncthreads();
+
 #endif
 
     // consolidate graph (percolate index of seed)
@@ -145,7 +139,7 @@ namespace gpuVertexFinder {
     }
 
 #ifdef GPU_DEBUG
-    __syncthreads();
+
     //  mini verification
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] != int(i))
@@ -176,12 +170,11 @@ namespace gpuVertexFinder {
       assert(iv[i] == iv[minJ]);
       assert(nn[i] <= nn[iv[i]]);
     }
-    __syncthreads();
+
 #endif
 
     unsigned int foundClusters;
     foundClusters = 0;
-    __syncthreads();
 
     // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
     // mark these tracks with a negative id.
@@ -195,7 +188,6 @@ namespace gpuVertexFinder {
         }
       }
     }
-    __syncthreads();
 
     assert(foundClusters < ZVertices::MAXVTX);
 
@@ -206,7 +198,6 @@ namespace gpuVertexFinder {
         iv[i] = iv[iv[i]];
       }
     }
-    __syncthreads();
 
     // adjust the cluster id to be a positive value starting from 0
     for (uint32_t i = 0; i < nt; i++) {

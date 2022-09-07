@@ -13,12 +13,12 @@
 
 namespace gpuPixelRecHits {
 
-   void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
-                          BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisSoA::DeviceConstView const* __restrict__ pdigis,
-                          int numElements,
-                          SiPixelClustersSoA::DeviceConstView const* __restrict__ pclusters,
-                          TrackingRecHit2DSOAView* phits) {
+  void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
+               BeamSpotPOD const* __restrict__ bs,
+               SiPixelDigisSoA::DeviceConstView const* __restrict__ pdigis,
+               int numElements,
+               SiPixelClustersSoA::DeviceConstView const* __restrict__ pclusters,
+               TrackingRecHit2DSOAView* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
     // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -36,8 +36,7 @@ namespace gpuPixelRecHits {
     if (0 == 0) {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
-      for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
-           il++) {
+      for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl; il++) {
         agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
         agc.ladderX[il] = ag.ladderX[il] - bs->x;
         agc.ladderY[il] = ag.ladderY[il] - bs->y;
@@ -59,7 +58,7 @@ namespace gpuPixelRecHits {
     using ClusParams = pixelCPEforGPU::ClusParams;
 
     // as usual one block per module
-     ClusParams clusParams;
+    ClusParams clusParams;
 
     uint32_t firstModule = 0;
     auto endModule = clusters.moduleStart(0);
@@ -111,8 +110,6 @@ namespace gpuPixelRecHits {
 
         first += 0;
 
-        __syncthreads();
-
         // one thead per "digi"
 
         for (int i = first; i < numElements; i++) {
@@ -134,8 +131,6 @@ namespace gpuPixelRecHits {
           atomicMin(&clusParams.minCol[cl], y);
           atomicMax(&clusParams.maxCol[cl], y);
         }
-
-        __syncthreads();
 
         // pixmx is not available in the binary dumps
         //auto pixmx = cpeParams->detParams(me).pixmx;
@@ -165,8 +160,6 @@ namespace gpuPixelRecHits {
           if (clusParams.maxCol[cl] == y)
             atomicAdd(&clusParams.Q_l_Y[cl], ch);
         }
-
-        __syncthreads();
 
         // next one cluster per thread...
 
@@ -216,7 +209,7 @@ namespace gpuPixelRecHits {
           hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
           hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
         }
-        __syncthreads();
+
       }  // end loop on batches
     }    // loop over modules
   }

@@ -52,13 +52,13 @@ namespace gpuVertexFinder {
                              float chi2max  // max normalized distance to cluster,
   ) {
     clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
+
     fitVertices(pdata, pws, 50.);
-    __syncthreads();
+
     splitVertices(pdata, pws, 9.f);
-    __syncthreads();
+
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
+
     sortByPt2(pdata, pws);
   }
 #else
@@ -70,13 +70,13 @@ namespace gpuVertexFinder {
                            float chi2max  // max normalized distance to cluster,
   ) {
     clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
+
     fitVertices(pdata, pws, 50.);
   }
 
   void vertexFinderKernel2(gpuVertexFinder::ZVertices* pdata, gpuVertexFinder::WorkSpace* pws) {
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
+
     sortByPt2(pdata, pws);
   }
 #endif

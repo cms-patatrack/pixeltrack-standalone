@@ -12,7 +12,7 @@
 
 namespace gpuVertexFinder {
 
-   inline  void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
+  inline void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
     auto& __restrict__ data = *pdata;
     auto& __restrict__ ws = *pws;
     auto nt = ws.ntrks;
@@ -38,14 +38,12 @@ namespace gpuVertexFinder {
     for (uint32_t i = 0; i < nvFinal; i++) {
       ptv2[i] = 0;
     }
-    __syncthreads();
 
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990)
         continue;
       atomicAdd(&ptv2[iv[i]], ptt2[i]);
     }
-    __syncthreads();
 
     if (1 == nvFinal) {
       if (true)
@@ -57,7 +55,7 @@ namespace gpuVertexFinder {
     std::sort(sortInd, sortInd + nvFinal, [&](auto i, auto j) { return ptv2[i] < ptv2[j]; });
   }
 
-   void sortByPt2Kernel(ZVertices* pdata, WorkSpace* pws) { sortByPt2(pdata, pws); }
+  void sortByPt2Kernel(ZVertices* pdata, WorkSpace* pws) { sortByPt2(pdata, pws); }
 
 }  // namespace gpuVertexFinder
 
