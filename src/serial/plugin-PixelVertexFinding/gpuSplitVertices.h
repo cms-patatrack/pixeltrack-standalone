@@ -70,12 +70,11 @@ namespace gpuVertexFinder {
       bool more = true;
       while (more) {
         more = false;
-        if (true) {
-          znew[0] = 0;
-          znew[1] = 0;
-          wnew[0] = 0;
-          wnew[1] = 0;
-        }
+
+        znew[0] = 0;
+        znew[1] = 0;
+        wnew[0] = 0;
+        wnew[1] = 0;
 
         for (uint32_t k = 0; k < nq; k++) {
           auto i = newV[k];
@@ -83,10 +82,8 @@ namespace gpuVertexFinder {
           atomicAdd(&wnew[i], ww[k]);
         }
 
-        if (true) {
-          znew[0] /= wnew[0];
-          znew[1] /= wnew[1];
-        }
+        znew[0] /= wnew[0];
+        znew[1] /= wnew[1];
 
         for (uint32_t k = 0; k < nq; k++) {
           auto d0 = fabs(zz[k] - znew[0]);
@@ -117,8 +114,7 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       uint32_t igv;
-      if (true)
-        igv = atomicAdd(&ws.nvIntermediate, 1);
+      igv = atomicAdd(&ws.nvIntermediate, 1);
 
       for (uint32_t k = 0; k < nq; k++) {
         if (1 == newV[k])

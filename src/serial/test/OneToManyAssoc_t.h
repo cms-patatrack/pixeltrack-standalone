@@ -18,33 +18,31 @@ using SmallAssoc = cms::cuda::OneToManyAssoc<uint16_t, 128, MaxAssocs>;
 using Multiplicity = cms::cuda::OneToManyAssoc<uint16_t, 8, MaxTk>;
 using TK = std::array<uint16_t, 4>;
 
- void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
+void countMultiLocal(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < n; i++) {
-     Multiplicity::CountersOnly local;
-    if (true)
-      local.zero();
-    
+    Multiplicity::CountersOnly local;
+    local.zero();
+
     local.countDirect(2 + i % 4);
-    
-    if (true)
-      assoc->add(local);
+
+    assoc->add(local);
   }
 }
 
- void countMulti(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
+void countMulti(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < n; i++)
     assoc->countDirect(2 + i % 4);
 }
 
- void verifyMulti(Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) {
+void verifyMulti(Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) {
   uint32_t first = 0;
   for (auto i = first; i < Multiplicity::totbins(); i++)
     assert(m1->off[i] == m2->off[i]);
 }
 
- void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < 4 * n; i++) {
     auto k = i / 4;
@@ -57,7 +55,7 @@ using TK = std::array<uint16_t, 4>;
   }
 }
 
- void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int i = first; i < 4 * n; i++) {
     auto k = i / 4;
@@ -70,10 +68,10 @@ using TK = std::array<uint16_t, 4>;
   }
 }
 
- void verify(Assoc* __restrict__ assoc) { assert(assoc->size() < Assoc::capacity()); }
+void verify(Assoc* __restrict__ assoc) { assert(assoc->size() < Assoc::capacity()); }
 
 template <typename Assoc>
- void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
+void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   int first = 0;
   for (int k = first; k < n; k++) {
     auto m = tk[k][3] < MaxElem ? 4 : 3;
@@ -82,14 +80,13 @@ template <typename Assoc>
 }
 
 template <typename Assoc>
- void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) {
+void verifyBulk(Assoc const* __restrict__ assoc, AtomicPairCounter const* apc) {
   if (apc->get().m >= Assoc::nbins())
     printf("Overflow %d %d\n", apc->get().m, Assoc::nbins());
   assert(assoc->size() < Assoc::capacity());
 }
 
 int main() {
-
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;
   std::cout << "OneToManyAssoc (small) " << sizeof(SmallAssoc) << ' ' << SmallAssoc::nbins() << ' '
             << SmallAssoc::capacity() << std::endl;

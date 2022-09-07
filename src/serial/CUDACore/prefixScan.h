@@ -39,10 +39,9 @@ namespace cms {
 
       // count blocks that finished
       bool isLastBlockDone;
-      if (true) {
-        auto value = atomicAdd(pc, 1);  // block counter
-        isLastBlockDone = (value == (int(1) - 1));
-      }
+
+      auto value = atomicAdd(pc, 1);  // block counter
+      isLastBlockDone = (value == 0);
 
       if (!isLastBlockDone)
         return;

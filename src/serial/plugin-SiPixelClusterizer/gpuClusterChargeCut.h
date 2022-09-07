@@ -60,8 +60,7 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
-        if (true)
-          printf("start cluster charge cut for module %d in block %d\n", thisModuleId, 0);
+        printf("start cluster charge cut for module %d in block %d\n", thisModuleId, 0);
 #endif
 
       assert(nclus <= MaxNumClustersPerModules);

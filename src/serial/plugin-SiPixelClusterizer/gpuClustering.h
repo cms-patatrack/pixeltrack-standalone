@@ -56,8 +56,7 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
-        if (true)
-          printf("start clusterizer for module %d in block %d\n", thisModuleId, 0);
+        printf("start clusterizer for module %d in block %d\n", thisModuleId, 0);
 #endif
 
       auto first = firstPixel + 0;
@@ -88,11 +87,10 @@ namespace gpuClustering {
       assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
 
       // limit to maxPixInModule  (FIXME if recurrent (and not limited to simulation with low threshold) one will need to implement something cleverer)
-      if (true) {
-        if (msize - firstPixel > maxPixInModule) {
-          printf("too many pixels in module %d: %d > %d\n", thisModuleId, msize - firstPixel, maxPixInModule);
-          msize = maxPixInModule + firstPixel;
-        }
+
+      if (msize - firstPixel > maxPixInModule) {
+        printf("too many pixels in module %d: %d > %d\n", thisModuleId, msize - firstPixel, maxPixInModule);
+        msize = maxPixInModule + firstPixel;
       }
 
       assert(msize - firstPixel <= maxPixInModule);
@@ -121,8 +119,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
       assert(hist.size() == totGood);
       if (thisModuleId % 100 == 1)
-        if (true)
-          printf("histo size %d\n", hist.size());
+        printf("histo size %d\n", hist.size());
 #endif
       for (int i = first; i < msize; i++) {
         if (id[i] == InvId)  // skip invalid pixels
@@ -154,12 +151,10 @@ namespace gpuClustering {
           atomicAdd(&n40, 1);
       }
 
-      if (true) {
-        if (n60 > 0)
-          printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
-        else if (n40 > 0)
-          printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
-      }
+      if (n60 > 0)
+        printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
+      else if (n40 > 0)
+        printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
 
 #endif
 
@@ -227,14 +222,12 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
       {
         int n0;
-        if (true)
-          n0 = nloops;
+        n0 = nloops;
 
         auto ok = n0 == nloops;
         assert(ok);
         if (thisModuleId % 100 == 1)
-          if (true)
-            printf("# loops %d\n", nloops);
+          printf("# loops %d\n", nloops);
       }
 #endif
 
@@ -271,21 +264,20 @@ namespace gpuClustering {
         clusterId[i] = -clusterId[i] - 1;
       }
 
-      if (true) {
-        nClustersInModule[thisModuleId] = foundClusters;
-        moduleId[module] = thisModuleId;
+      nClustersInModule[thisModuleId] = foundClusters;
+      moduleId[module] = thisModuleId;
 #ifdef GPU_DEBUG
-        if (foundClusters > gMaxHit) {
-          gMaxHit = foundClusters;
-          if (foundClusters > 8)
-            printf("max hit %d in %d\n", foundClusters, thisModuleId);
-        }
-#endif
-#ifdef GPU_DEBUG
-        if (thisModuleId % 100 == 1)
-          printf("%d clusters in module %d\n", foundClusters, thisModuleId);
-#endif
+      if (foundClusters > gMaxHit) {
+        gMaxHit = foundClusters;
+        if (foundClusters > 8)
+          printf("max hit %d in %d\n", foundClusters, thisModuleId);
       }
+#endif
+#ifdef GPU_DEBUG
+      if (thisModuleId % 100 == 1)
+        printf("%d clusters in module %d\n", foundClusters, thisModuleId);
+#endif
+
     }  // module loop
   }
 

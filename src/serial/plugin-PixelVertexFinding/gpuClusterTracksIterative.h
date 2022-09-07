@@ -140,8 +140,7 @@ namespace gpuVertexFinder {
             loop(*p);
         }  // for i
       }
-      if (true)
-        ++nloops;
+      ++nloops;
     }  // while
 
     // collect edges (assign to closest cluster of closest point??? here to closest point)

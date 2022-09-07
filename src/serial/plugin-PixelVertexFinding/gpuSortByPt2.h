@@ -46,8 +46,7 @@ namespace gpuVertexFinder {
     }
 
     if (1 == nvFinal) {
-      if (true)
-        sortInd[0] = 0;
+      sortInd[0] = 0;
       return;
     }
     for (uint16_t i = 0; i < nvFinal; ++i)

@@ -44,11 +44,9 @@ namespace gpuPixelRecHits {
         agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
         agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
       }
-      if (true) {
-        agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
-        agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
-        //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
-      }
+      agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
+      agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
+      //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
     }
 
     // to be moved in common namespace...
@@ -70,18 +68,15 @@ namespace gpuPixelRecHits {
         continue;
 
 #ifdef GPU_DEBUG
-      if (true) {
-        auto k = clusters.moduleStart(1 + module);
-        while (digis.moduleInd(k) == InvId)
-          ++k;
-        assert(digis.moduleInd(k) == me);
-      }
+      auto k = clusters.moduleStart(1 + module);
+      while (digis.moduleInd(k) == InvId)
+        ++k;
+      assert(digis.moduleInd(k) == me);
 #endif
 
 #ifdef GPU_DEBUG
       if (me % 100 == 1)
-        if (true)
-          printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
+        printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
 #endif
 
       for (int startClus = 0, endClus = nclus; startClus < endClus; startClus += MaxHitsInIter) {
