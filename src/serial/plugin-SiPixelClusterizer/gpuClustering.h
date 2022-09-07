@@ -220,11 +220,6 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
       {
-        int n0;
-        n0 = nloops;
-
-        auto ok = n0 == nloops;
-        assert(ok);
         if (thisModuleId % 100 == 1)
           printf("# loops %d\n", nloops);
       }
