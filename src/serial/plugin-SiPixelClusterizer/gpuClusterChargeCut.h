@@ -82,8 +82,8 @@ namespace gpuClustering {
       }
 
       // renumber
-      uint16_t ws[32];
-      cms::cuda::blockPrefixScan(newclusId, nclus, ws);
+
+      cms::cuda::blockPrefixScan(newclusId, nclus);
 
       assert(nclus >= newclusId[nclus - 1]);
 

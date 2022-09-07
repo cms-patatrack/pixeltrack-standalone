@@ -79,7 +79,7 @@ namespace gpuClustering {
       constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
       using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
       Hist hist;
-      typename Hist::Counter ws[32];
+
       for (uint32_t j = 0; j < Hist::totbins(); j++) {
         hist.off[j] = 0;
       }
@@ -111,9 +111,7 @@ namespace gpuClustering {
 #endif
       }
 
-      ws[0] = 0;  // used by prefix scan...
-
-      hist.finalize(ws);
+      hist.finalize();
 
 #ifdef GPU_DEBUG
       assert(hist.size() == totGood);

@@ -10,8 +10,8 @@ namespace cms {
   namespace cuda {
 
     // limited to 32*32 elements....
-    template <typename VT, typename T>
-    void blockPrefixScan(VT const* ci, VT* co, uint32_t size, T* ws = nullptr) {
+    template <typename VT>
+    void blockPrefixScan(VT const* ci, VT* co, uint32_t size) {
       co[0] = ci[0];
       for (uint32_t i = 1; i < size; ++i)
         co[i] = ci[i] + co[i - 1];
@@ -20,7 +20,7 @@ namespace cms {
     // same as above, may remove
     // limited to 32*32 elements....
     template <typename T>
-    void blockPrefixScan(T* c, uint32_t size, T* ws = nullptr) {
+    void blockPrefixScan(T* c, uint32_t size) {
       for (uint32_t i = 1; i < size; ++i)
         c[i] += c[i - 1];
     }

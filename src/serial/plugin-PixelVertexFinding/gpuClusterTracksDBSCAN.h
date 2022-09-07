@@ -46,7 +46,7 @@ namespace gpuVertexFinder {
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     Hist hist;
-    typename Hist::Counter hws[32];
+
     for (uint32_t j = 0; j < Hist::totbins(); j++) {
       hist.off[j] = 0;
     }
@@ -70,9 +70,7 @@ namespace gpuVertexFinder {
       nn[i] = 0;
     }
 
-    hws[0] = 0;  // used by prefix scan...
-
-    hist.finalize(hws);
+    hist.finalize();
 
     assert(hist.size() == nt);
     for (uint32_t i = 0; i < nt; i++) {

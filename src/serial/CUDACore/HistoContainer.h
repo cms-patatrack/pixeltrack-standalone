@@ -235,9 +235,9 @@ namespace cms {
         bins[w - 1] = j;
       }
 
-      inline void finalize(Counter *ws = nullptr) {
+      inline void finalize() {
         assert(off[totbins() - 1] == 0);
-        blockPrefixScan(off, totbins(), ws);
+        blockPrefixScan(off, totbins());
         assert(off[totbins() - 1] == off[totbins() - 2]);
       }
 
