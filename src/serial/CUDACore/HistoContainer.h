@@ -65,8 +65,7 @@ namespace cms {
                                    uint32_t nh,
                                    T const *__restrict__ v,
                                    uint32_t const *__restrict__ offsets,
-                                   uint32_t totSize,
-                                   int nthreads) {
+                                   uint32_t totSize) {
       launchZero(h);
       countFromVector(h, nh, v, offsets);
       h->finalize();
