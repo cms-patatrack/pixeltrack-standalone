@@ -197,7 +197,7 @@ namespace gpuPixelDoublets {
         auto const* __restrict__ e = hist.end(kk + hoff);
         p += first;
         for (; p < e; p += stride) {
-          auto oi = __ldg(p);
+          auto oi = *(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
           auto mo = hh.detectorIndex(oi);

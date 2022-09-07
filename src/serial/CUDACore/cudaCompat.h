@@ -65,10 +65,6 @@ namespace cms {
     inline void __threadfence() {}
     inline bool __syncthreads_or(bool x) { return x; }
     inline bool __syncthreads_and(bool x) { return x; }
-    template <typename T>
-    inline T __ldg(T const* x) {
-      return *x;
-    }
   }  // namespace cudacompat
 }  // namespace cms
 

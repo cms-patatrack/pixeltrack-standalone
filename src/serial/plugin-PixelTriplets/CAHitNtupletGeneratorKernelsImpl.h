@@ -231,7 +231,7 @@ void kernel_connect(cms::cuda::AtomicPairCounter *apc1,
     auto isBarrel = thisCell.get_inner_detIndex(hh) < last_barrel_detIndex;
 
     for (int j = first; j < numberOfPossibleNeighbors; j += stride) {
-      auto otherCell = __ldg(vi + j);
+      auto otherCell = vi[j];
       auto &oc = cells[otherCell];
       // if (cells[otherCell].theDoubletId < 0 ||
       //    cells[otherCell].theUsed>1 )
