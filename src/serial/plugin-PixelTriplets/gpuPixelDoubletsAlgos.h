@@ -65,16 +65,15 @@ namespace gpuPixelDoublets {
     assert(nPairs <= nPairsMax);
     uint32_t innerLayerCumulativeSize[nPairsMax];
     uint32_t ntot;
-    if (true && true) {
-      innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
-      for (uint32_t i = 1; i < nPairs; ++i) {
-        innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-      }
-      ntot = innerLayerCumulativeSize[nPairs - 1];
+
+    innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
+    for (uint32_t i = 1; i < nPairs; ++i) {
+      innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
     }
+    ntot = innerLayerCumulativeSize[nPairs - 1];
 
     // x runs faster
-    auto idy = 0 * 1 + 0;
+    auto idy = 0;
     uint32_t first = 0;
     auto stride = 1;
 

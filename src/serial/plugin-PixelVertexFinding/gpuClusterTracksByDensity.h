@@ -27,7 +27,7 @@ namespace gpuVertexFinder {
     using namespace gpuVertexFinder;
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
-    if (verbose && true)
+    if (verbose)
       printf("params %d %f %f %f\n", minT, eps, errmax, chi2max);
 
     auto er2mx = errmax * errmax;
@@ -55,7 +55,7 @@ namespace gpuVertexFinder {
       hist.off[j] = 0;
     }
 
-    if (verbose && true)
+    if (verbose)
       printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
 
     assert(nt <= hist.capacity());
@@ -74,8 +74,7 @@ namespace gpuVertexFinder {
       nn[i] = 0;
     }
 
-    if (0 < 32)
-      hws[0] = 0;  // used by prefix scan...
+    hws[0] = 0;  // used by prefix scan...
 
     hist.finalize(hws);
 
@@ -173,8 +172,7 @@ namespace gpuVertexFinder {
 
 #endif
 
-    unsigned int foundClusters;
-    foundClusters = 0;
+    unsigned int foundClusters = 0;
 
     // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
     // mark these tracks with a negative id.
@@ -206,7 +204,7 @@ namespace gpuVertexFinder {
 
     nvIntermediate = nvFinal = foundClusters;
 
-    if (verbose && true)
+    if (verbose)
       printf("found %d proto vertices\n", foundClusters);
   }
 

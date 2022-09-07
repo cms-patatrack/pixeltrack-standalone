@@ -33,21 +33,20 @@ namespace gpuPixelRecHits {
     auto const& clusters = *pclusters;
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
-    if (0 == 0) {
-      auto& agc = hits.averageGeometry();
-      auto const& ag = cpeParams->averageGeometry();
-      for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl; il++) {
-        agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
-        agc.ladderX[il] = ag.ladderX[il] - bs->x;
-        agc.ladderY[il] = ag.ladderY[il] - bs->y;
-        agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
-        agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
-        agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
-      }
-      agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
-      agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
-      //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
+
+    auto& agc = hits.averageGeometry();
+    auto const& ag = cpeParams->averageGeometry();
+    for (int il = 0, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl; il++) {
+      agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
+      agc.ladderX[il] = ag.ladderX[il] - bs->x;
+      agc.ladderY[il] = ag.ladderY[il] - bs->y;
+      agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
+      agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
+      agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
     }
+    agc.endCapZ[0] = ag.endCapZ[0] - bs->z;
+    agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
+    //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
 
     // to be moved in common namespace...
     constexpr uint16_t InvId = 9999;  // must be > MaxNumModules
@@ -102,8 +101,6 @@ namespace gpuPixelRecHits {
           clusParams.Q_f_Y[ic] = 0;
           clusParams.Q_l_Y[ic] = 0;
         }
-
-        first += 0;
 
         // one thead per "digi"
 

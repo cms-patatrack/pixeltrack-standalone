@@ -106,7 +106,7 @@ namespace gpuVertexFinder {
 
       auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-      if (verbose && true)
+      if (verbose)
         printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
 
       if (chi2Dist < 4)

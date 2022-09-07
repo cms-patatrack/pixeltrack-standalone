@@ -48,7 +48,7 @@ namespace gpuVertexFinder {
 
     // only for test
     int noise;
-    if (verbose && true)
+    if (verbose)
       noise = 0;
 
     // compute cluster location
@@ -91,9 +91,9 @@ namespace gpuVertexFinder {
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
 
-    if (verbose && true)
+    if (verbose)
       printf("found %d proto clusters ", foundClusters);
-    if (verbose && true)
+    if (verbose)
       printf("and %d noise\n", noise);
   }
 

@@ -463,7 +463,6 @@ namespace pixelgpudetails {
 
   void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == 1);
 
     int first = 0;
 

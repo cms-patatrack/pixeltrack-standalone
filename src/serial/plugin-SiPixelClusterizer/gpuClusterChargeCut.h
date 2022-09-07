@@ -34,14 +34,14 @@ namespace gpuClustering {
       if (nclus == 0)
         continue;
 
-      if (true && nclus > MaxNumClustersPerModules)
+      if (nclus > MaxNumClustersPerModules)
         printf("Warning too many clusters in module %d in block %d: %d > %d\n",
                thisModuleId,
                0,
                nclus,
                MaxNumClustersPerModules);
 
-      auto first = firstPixel + 0;
+      auto first = firstPixel;
 
       if (nclus > MaxNumClustersPerModules) {
         // remove excess  FIXME find a way to cut charge first....

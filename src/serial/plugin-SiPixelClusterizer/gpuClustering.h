@@ -59,7 +59,7 @@ namespace gpuClustering {
         printf("start clusterizer for module %d in block %d\n", thisModuleId, 0);
 #endif
 
-      auto first = firstPixel + 0;
+      auto first = firstPixel;
 
       // find the index of the first pixel not belonging to this module (or invalid)
       msize = numElements;
@@ -111,8 +111,7 @@ namespace gpuClustering {
 #endif
       }
 
-      if (0 < 32)
-        ws[0] = 0;  // used by prefix scan...
+      ws[0] = 0;  // used by prefix scan...
 
       hist.finalize(ws);
 
@@ -231,8 +230,7 @@ namespace gpuClustering {
       }
 #endif
 
-      unsigned int foundClusters;
-      foundClusters = 0;
+      unsigned int foundClusters = 0;
 
       // find the number of different clusters, identified by a pixels with clus[i] == i;
       // mark these pixels with a negative id.
