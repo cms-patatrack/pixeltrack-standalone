@@ -11,30 +11,13 @@
 #include <cstdint>
 #include <cstring>
 
-// make sure function are inlined to avoid multiple definition
-#define __global__ inline __attribute__((always_inline))
 
-#define __forceinline__ inline __attribute__((always_inline))
-
-#define __host__
-#define __device__
-#define __shared__
 
 using cudaStream_t = void*;
 constexpr cudaStream_t cudaStreamDefault = nullptr;
 
 namespace cms {
   namespace cudacompat {
-    struct dim3 {
-      uint32_t x, y, z;
-    };
-
-    const dim3 threadIdx = {0, 0, 0};
-    const dim3 blockDim = {1, 1, 1};
-
-    // 1-dimensional grid
-    const dim3 blockIdx = {0, 0, 0};
-    const dim3 gridDim = {1, 1, 1};
 
     template <typename T1, typename T2>
     T1 atomicCAS(T1* address, T1 compare, T2 val) {
@@ -78,21 +61,11 @@ namespace cms {
       return ret;
     }
 
-    inline void __syncthreads() {}
-    inline void __threadfence() {}
-    inline bool __syncthreads_or(bool x) { return x; }
-    inline bool __syncthreads_and(bool x) { return x; }
-    template <typename T>
-    inline T __ldg(T const* x) {
-      return *x;
-    }
   }  // namespace cudacompat
 }  // namespace cms
 
 // make the cudacompat implementation available in the global namespace
 using namespace cms::cudacompat;
-
-
 
 #endif  // __CUDACC__
 

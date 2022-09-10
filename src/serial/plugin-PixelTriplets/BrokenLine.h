@@ -43,8 +43,7 @@ namespace BrokenLine {
     
     \return the variance of the planar angle ((theta_0)^2 /3).
   */
-  __host__ __device__ inline double MultScatt(
-      const double& length, const double B, const double R, int Layer, double slope) {
+  inline double MultScatt(const double& length, const double B, const double R, int Layer, double slope) {
     // limit R to 20GeV...
     auto pt2 = std::min(20., B * R);
     pt2 *= pt2;
@@ -66,7 +65,7 @@ namespace BrokenLine {
     
     \return 2D rotation matrix.
   */
-  __host__ __device__ inline Rfit::Matrix2d RotationMatrix(double slope) {
+  inline Rfit::Matrix2d RotationMatrix(double slope) {
     Rfit::Matrix2d Rot;
     Rot(0, 0) = 1. / sqrt(1. + Rfit::sqr(slope));
     Rot(0, 1) = slope * Rot(0, 0);
@@ -83,10 +82,7 @@ namespace BrokenLine {
     \param y0 y coordinate of the translation vector.
     \param jacobian passed by reference in order to save stack.
   */
-  __host__ __device__ inline void TranslateKarimaki(karimaki_circle_fit& circle,
-                                                    double x0,
-                                                    double y0,
-                                                    Rfit::Matrix3d& jacobian) {
+  inline void TranslateKarimaki(karimaki_circle_fit& circle, double x0, double y0, Rfit::Matrix3d& jacobian) {
     double A, U, BB, C, DO, DP, uu, xi, v, mu, lambda, zeta;
     DP = x0 * cos(circle.par(0)) + y0 * sin(circle.par(0));
     DO = x0 * sin(circle.par(0)) - y0 * cos(circle.par(0)) + circle.par(1);
@@ -121,10 +117,10 @@ namespace BrokenLine {
     \param results PreparedBrokenLineData to be filled (see description of PreparedBrokenLineData).
   */
   template <typename M3xN, typename V4, int N>
-  __host__ __device__ inline void prepareBrokenLineData(const M3xN& hits,
-                                                        const V4& fast_fit,
-                                                        const double B,
-                                                        PreparedBrokenLineData<N>& results) {
+  inline void prepareBrokenLineData(const M3xN& hits,
+                                    const V4& fast_fit,
+                                    const double B,
+                                    PreparedBrokenLineData<N>& results) {
     constexpr auto n = N;
     u_int i;
     Rfit::Vector2d d;
@@ -175,9 +171,9 @@ namespace BrokenLine {
     \return the n-by-n matrix of the linear system
   */
   template <int N>
-  __host__ __device__ inline Rfit::MatrixNd<N> MatrixC_u(const Rfit::VectorNd<N>& w,
-                                                         const Rfit::VectorNd<N>& S,
-                                                         const Rfit::VectorNd<N>& VarBeta) {
+  inline Rfit::MatrixNd<N> MatrixC_u(const Rfit::VectorNd<N>& w,
+                                     const Rfit::VectorNd<N>& S,
+                                     const Rfit::VectorNd<N>& VarBeta) {
     constexpr u_int n = N;
     u_int i;
 
@@ -217,7 +213,7 @@ namespace BrokenLine {
   */
 
   template <typename M3xN, typename V4>
-  __host__ __device__ inline void BL_Fast_fit(const M3xN& hits, V4& result) {
+  inline void BL_Fast_fit(const M3xN& hits, V4& result) {
     constexpr uint32_t N = M3xN::ColsAtCompileTime;
     constexpr auto n = N;  // get the number of hits
 
@@ -258,12 +254,12 @@ namespace BrokenLine {
     The step 3 is the correction of the fast pre-fitted parameters for the innermost part of the track. It is first done in a comfortable coordinate system (the one in which the first hit is the origin) and then the parameters and their covariance matrix are transformed to the original coordinate system.
   */
   template <typename M3xN, typename M6xN, typename V4, int N>
-  __host__ __device__ inline void BL_Circle_fit(const M3xN& hits,
-                                                const M6xN& hits_ge,
-                                                const V4& fast_fit,
-                                                const double B,
-                                                PreparedBrokenLineData<N>& data,
-                                                karimaki_circle_fit& circle_results) {
+  inline void BL_Circle_fit(const M3xN& hits,
+                            const M6xN& hits_ge,
+                            const V4& fast_fit,
+                            const double B,
+                            PreparedBrokenLineData<N>& data,
+                            karimaki_circle_fit& circle_results) {
     constexpr u_int n = N;
     u_int i;
 
@@ -403,11 +399,11 @@ namespace BrokenLine {
     The step 3 is the correction of the fast pre-fitted parameters for the innermost part of the track. It is first done in a comfortable coordinate system (the one in which the first hit is the origin) and then the parameters and their covariance matrix are transformed to the original coordinate system.
   */
   template <typename V4, typename M6xN, int N>
-  __host__ __device__ inline void BL_Line_fit(const M6xN& hits_ge,
-                                              const V4& fast_fit,
-                                              const double B,
-                                              const PreparedBrokenLineData<N>& data,
-                                              Rfit::line_fit& line_results) {
+  inline void BL_Line_fit(const M6xN& hits_ge,
+                          const V4& fast_fit,
+                          const double B,
+                          const PreparedBrokenLineData<N>& data,
+                          Rfit::line_fit& line_results) {
     constexpr u_int n = N;
     u_int i;
 

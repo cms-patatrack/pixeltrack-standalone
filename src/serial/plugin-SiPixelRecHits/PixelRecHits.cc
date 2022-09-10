@@ -12,14 +12,14 @@
 #include "gpuPixelRecHits.h"
 
 namespace {
-  __global__ void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
+   void setHitsLayerStart(uint32_t const* __restrict__ hitsModuleStart,
                                     pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                     uint32_t* hitsLayerStart) {
     assert(0 == hitsModuleStart[0]);
 
-    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int begin = 0;
     constexpr int end = 11;
-    for (int i = begin; i < end; i += blockDim.x * gridDim.x) {
+    for (int i = begin; i < end; i += 1) {
       hitsLayerStart[i] = hitsModuleStart[cpeParams->layerGeometry().layerStart[i]];
 #ifdef GPU_DEBUG
       printf("LayerStart %d %d: %d\n", i, cpeParams->layerGeometry().layerStart[i], hitsLayerStart[i]);
@@ -46,7 +46,7 @@ namespace pixelgpudetails {
     }
 
     if (nHits) {
-      cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits, 256);
+      cms::cuda::fillManyFromVector(hits_d.phiBinner(), 10, hits_d.iphi(), hits_d.hitsLayerStart(), nHits);
     }
 
     return hits_d;

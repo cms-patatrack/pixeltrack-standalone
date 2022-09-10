@@ -7,15 +7,12 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
-#ifdef __CUDA_ARCH__
-#include "CUDACore/radixSort.h"
-#endif
 
 #include "gpuVertexFinder.h"
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
+  inline void sortByPt2(ZVertices* pdata, WorkSpace* pws) {
     auto& __restrict__ data = *pdata;
     auto& __restrict__ ws = *pws;
     auto nt = ws.ntrks;
@@ -33,40 +30,31 @@ namespace gpuVertexFinder {
       return;
 
     // fill indexing
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       data.idv[ws.itrk[i]] = iv[i];
     }
 
     // can be done asynchronoisly at the end of previous event
-    for (auto i = threadIdx.x; i < nvFinal; i += blockDim.x) {
+    for (uint32_t i = 0; i < nvFinal; i++) {
       ptv2[i] = 0;
     }
-    __syncthreads();
 
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990)
         continue;
       atomicAdd(&ptv2[iv[i]], ptt2[i]);
     }
-    __syncthreads();
 
     if (1 == nvFinal) {
-      if (threadIdx.x == 0)
-        sortInd[0] = 0;
+      sortInd[0] = 0;
       return;
     }
-#ifdef __CUDA_ARCH__
-    __shared__ uint16_t sws[1024];
-    // sort using only 16 bits
-    radixSort<float, 2>(ptv2, sortInd, sws, nvFinal);
-#else
     for (uint16_t i = 0; i < nvFinal; ++i)
       sortInd[i] = i;
     std::sort(sortInd, sortInd + nvFinal, [&](auto i, auto j) { return ptv2[i] < ptv2[j]; });
-#endif
   }
 
-  __global__ void sortByPt2Kernel(ZVertices* pdata, WorkSpace* pws) { sortByPt2(pdata, pws); }
+  void sortByPt2Kernel(ZVertices* pdata, WorkSpace* pws) { sortByPt2(pdata, pws); }
 
 }  // namespace gpuVertexFinder
 

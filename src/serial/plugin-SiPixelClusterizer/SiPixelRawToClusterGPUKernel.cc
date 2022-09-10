@@ -48,20 +48,18 @@ namespace pixelgpudetails {
 
   ////////////////////
 
-  __device__ uint32_t getLink(uint32_t ww) {
-    return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
-  }
+  uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
-  __device__ uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
+  uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
-  __device__ uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
 
-  __device__ bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
-  __device__ pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
-                                                uint8_t fed,
-                                                uint32_t link,
-                                                uint32_t roc) {
+  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
+                                     uint8_t fed,
+                                     uint32_t link,
+                                     uint32_t roc) {
     uint32_t index = fed * MAX_LINK * MAX_ROC + (link - 1) * MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = {
         cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index]};
@@ -71,7 +69,7 @@ namespace pixelgpudetails {
   //reference http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/dd/d31/FrameConversion_8cc_source.html
   //http://cmslxr.fnal.gov/source/CondFormats/SiPixelObjects/src/PixelROC.cc?v=CMSSW_9_2_0#0071
   // Convert local pixel to pixelgpudetails::global pixel
-  __device__ pixelgpudetails::Pixel frameConversion(
+  pixelgpudetails::Pixel frameConversion(
       bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
     int slopeRow = 0, slopeCol = 0;
     int rowOffset = 0, colOffset = 0;
@@ -139,7 +137,7 @@ namespace pixelgpudetails {
     return global;
   }
 
-  __device__ uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     uint8_t errorType = 0;
 
     // debug = true;
@@ -177,7 +175,7 @@ namespace pixelgpudetails {
     return errorType;
   }
 
-  __device__ bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
+  bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
     uint32_t numRowsInRoc = 80;
     uint32_t numColsInRoc = 52;
 
@@ -185,9 +183,9 @@ namespace pixelgpudetails {
     return ((rocRow < numRowsInRoc) & (rocCol < numColsInRoc));
   }
 
-  __device__ bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
-  __device__ uint8_t checkROC(
+  uint8_t checkROC(
       uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
@@ -263,11 +261,11 @@ namespace pixelgpudetails {
     return errorFound ? errorType : 0;
   }
 
-  __device__ uint32_t getErrRawID(uint8_t fedId,
-                                  uint32_t errWord,
-                                  uint32_t errorType,
-                                  const SiPixelFedCablingMapGPU *cablingMap,
-                                  bool debug = false) {
+  uint32_t getErrRawID(uint8_t fedId,
+                       uint32_t errWord,
+                       uint32_t errorType,
+                       const SiPixelFedCablingMapGPU *cablingMap,
+                       bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -341,25 +339,23 @@ namespace pixelgpudetails {
   }
 
   // Kernel to perform Raw to Digi conversion
-  __global__ void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
-                                   const unsigned char *modToUnp,
-                                   const uint32_t wordCounter,
-                                   const uint32_t *word,
-                                   const uint8_t *fedIds,
-                                   uint16_t *xx,
-                                   uint16_t *yy,
-                                   uint16_t *adc,
-                                   uint32_t *pdigi,
-                                   uint32_t *rawIdArr,
-                                   uint16_t *moduleId,
-                                   cms::cuda::SimpleVector<PixelErrorCompact> *err,
-                                   bool useQualityInfo,
-                                   bool includeErrors,
-                                   bool debug) {
-    //if (threadIdx.x==0) printf("Event: %u blockIdx.x: %u start: %u end: %u\n", eventno, blockIdx.x, begin, end);
-
-    int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
+  void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
+                        const unsigned char *modToUnp,
+                        const uint32_t wordCounter,
+                        const uint32_t *word,
+                        const uint8_t *fedIds,
+                        uint16_t *xx,
+                        uint16_t *yy,
+                        uint16_t *adc,
+                        uint32_t *pdigi,
+                        uint32_t *rawIdArr,
+                        uint16_t *moduleId,
+                        cms::cuda::SimpleVector<PixelErrorCompact> *err,
+                        bool useQualityInfo,
+                        bool includeErrors,
+                        bool debug) {
+    int32_t first = 0;
+    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += 1) {
       auto gIndex = iloop;
       xx[gIndex] = 0;
       yy[gIndex] = 0;
@@ -465,26 +461,23 @@ namespace pixelgpudetails {
 
   }  // end of Raw to Digi kernel
 
-  __global__ void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
+  void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == gridDim.x);
-    assert(0 == blockIdx.x);
 
-    int first = threadIdx.x;
+    int first = 0;
 
     // limit to MaxHitsInModule;
-    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i++) {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
     }
 
-    __shared__ uint32_t ws[32];
-    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    uint32_t ws[32];
+    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024);
+    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024);
 
-    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       moduleStart[i] += moduleStart[1024];
     }
-    __syncthreads();
 
 #ifdef GPU_DEBUG
     assert(0 == moduleStart[0]);
@@ -494,7 +487,7 @@ namespace pixelgpudetails {
     assert(moduleStart[1025] >= moduleStart[1024]);
     assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       if (0 != i)
         assert(moduleStart[i] >= moduleStart[i - i]);
       // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
@@ -506,7 +499,7 @@ namespace pixelgpudetails {
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i++) {
       if (moduleStart[i] > MAX_HITS)
         moduleStart[i] = MAX_HITS;
     }

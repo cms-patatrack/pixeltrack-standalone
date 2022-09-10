@@ -7,15 +7,15 @@
 
 namespace gpuVertexFinder {
 
-  __global__ void loadTracks(TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) {
+  void loadTracks(TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) {
     assert(ptracks);
     assert(soa);
     auto const& tracks = *ptracks;
     auto const& fit = tracks.stateAtBS;
     auto const* quality = tracks.qualityData();
 
-    auto first = blockIdx.x * blockDim.x + threadIdx.x;
-    for (int idx = first, nt = TkSoA::stride(); idx < nt; idx += gridDim.x * blockDim.x) {
+    auto first = 0;
+    for (int idx = first, nt = TkSoA::stride(); idx < nt; idx++) {
       auto nHits = tracks.nHits(idx);
       if (nHits == 0)
         break;  // this is a guard: maybe we need to move to nTracks...
@@ -44,39 +44,39 @@ namespace gpuVertexFinder {
 
 // #define THREE_KERNELS
 #ifndef THREE_KERNELS
-  __global__ void vertexFinderOneKernel(gpuVertexFinder::ZVertices* pdata,
-                                        gpuVertexFinder::WorkSpace* pws,
-                                        int minT,      // min number of neighbours to be "seed"
-                                        float eps,     // max absolute distance to cluster
-                                        float errmax,  // max error to be "seed"
-                                        float chi2max  // max normalized distance to cluster,
+  void vertexFinderOneKernel(gpuVertexFinder::ZVertices* pdata,
+                             gpuVertexFinder::WorkSpace* pws,
+                             int minT,      // min number of neighbours to be "seed"
+                             float eps,     // max absolute distance to cluster
+                             float errmax,  // max error to be "seed"
+                             float chi2max  // max normalized distance to cluster,
   ) {
     clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
+
     fitVertices(pdata, pws, 50.);
-    __syncthreads();
+
     splitVertices(pdata, pws, 9.f);
-    __syncthreads();
+
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
+
     sortByPt2(pdata, pws);
   }
 #else
-  __global__ void vertexFinderKernel1(gpuVertexFinder::ZVertices* pdata,
-                                      gpuVertexFinder::WorkSpace* pws,
-                                      int minT,      // min number of neighbours to be "seed"
-                                      float eps,     // max absolute distance to cluster
-                                      float errmax,  // max error to be "seed"
-                                      float chi2max  // max normalized distance to cluster,
+  void vertexFinderKernel1(gpuVertexFinder::ZVertices* pdata,
+                           gpuVertexFinder::WorkSpace* pws,
+                           int minT,      // min number of neighbours to be "seed"
+                           float eps,     // max absolute distance to cluster
+                           float errmax,  // max error to be "seed"
+                           float chi2max  // max normalized distance to cluster,
   ) {
     clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
+
     fitVertices(pdata, pws, 50.);
   }
 
-  __global__ void vertexFinderKernel2(gpuVertexFinder::ZVertices* pdata, gpuVertexFinder::WorkSpace* pws) {
+  void vertexFinderKernel2(gpuVertexFinder::ZVertices* pdata, gpuVertexFinder::WorkSpace* pws) {
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
+
     sortByPt2(pdata, pws);
   }
 #endif

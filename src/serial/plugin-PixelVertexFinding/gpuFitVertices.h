@@ -12,9 +12,9 @@
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void fitVertices(ZVertices* pdata,
-                                              WorkSpace* pws,
-                                              float chi2Max  // for outlier rejection
+  void fitVertices(ZVertices* pdata,
+                   WorkSpace* pws,
+                   float chi2Max  // for outlier rejection
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -40,21 +40,19 @@ namespace gpuVertexFinder {
     auto foundClusters = nvFinal;
 
     // zero
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
+    for (uint32_t i = 0; i < foundClusters; i++) {
       zv[i] = 0;
       wv[i] = 0;
       chi2[i] = 0;
     }
 
     // only for test
-    __shared__ int noise;
-    if (verbose && 0 == threadIdx.x)
+    int noise;
+    if (verbose)
       noise = 0;
 
-    __syncthreads();
-
     // compute cluster location
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990) {
         if (verbose)
           atomicAdd(&noise, 1);
@@ -67,17 +65,15 @@ namespace gpuVertexFinder {
       atomicAdd(&wv[iv[i]], w);
     }
 
-    __syncthreads();
     // reuse nn
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
+    for (uint32_t i = 0; i < foundClusters; i++) {
       assert(wv[i] > 0.f);
       zv[i] /= wv[i];
       nn[i] = -1;  // ndof
     }
-    __syncthreads();
 
     // compute chi2
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990)
         continue;
 
@@ -90,20 +86,20 @@ namespace gpuVertexFinder {
       atomicAdd(&chi2[iv[i]], c2);
       atomicAdd(&nn[iv[i]], 1);
     }
-    __syncthreads();
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x)
+
+    for (uint32_t i = 0; i < foundClusters; i++)
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
 
-    if (verbose && 0 == threadIdx.x)
+    if (verbose)
       printf("found %d proto clusters ", foundClusters);
-    if (verbose && 0 == threadIdx.x)
+    if (verbose)
       printf("and %d noise\n", noise);
   }
 
-  __global__ void fitVerticesKernel(ZVertices* pdata,
-                                    WorkSpace* pws,
-                                    float chi2Max  // for outlier rejection
+  void fitVerticesKernel(ZVertices* pdata,
+                         WorkSpace* pws,
+                         float chi2Max  // for outlier rejection
   ) {
     fitVertices(pdata, pws, chi2Max);
   }

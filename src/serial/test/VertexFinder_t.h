@@ -79,7 +79,7 @@ struct ClusterGenerator {
 #define LOC_ONGPU(M) ((char*)(onGPU_d.get()) + offsetof(gpuVertexFinder::ZVertices, M))
 #define LOC_WS(M) ((char*)(ws_d.get()) + offsetof(gpuVertexFinder::WorkSpace, M))
 
-__global__ void print(gpuVertexFinder::ZVertices const* pdata, gpuVertexFinder::WorkSpace const* pws) {
+ void print(gpuVertexFinder::ZVertices const* pdata, gpuVertexFinder::WorkSpace const* pws) {
   auto const& __restrict__ data = *pdata;
   auto const& __restrict__ ws = *pws;
   printf("nt,nv %d %d,%d\n", ws.ntrks, data.nvFinal, ws.nvIntermediate);

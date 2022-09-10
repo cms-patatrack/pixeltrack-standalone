@@ -87,7 +87,7 @@ namespace pixelgpudetails {
     using PackedDigiType = uint32_t;
 
     // Constructor: pre-computes masks and shifts from field widths
-    __host__ __device__ inline constexpr Packing(unsigned int row_w,
+      inline constexpr Packing(unsigned int row_w,
                                                  unsigned int column_w,
                                                  unsigned int time_w,
                                                  unsigned int adc_w)
@@ -127,9 +127,9 @@ namespace pixelgpudetails {
     uint32_t max_adc;
   };
 
-  __host__ __device__ inline constexpr Packing packing() { return Packing(11, 11, 0, 10); }
+    inline constexpr Packing packing() { return Packing(11, 11, 0, 10); }
 
-  __host__ __device__ inline uint32_t pack(uint32_t row, uint32_t col, uint32_t adc) {
+    inline uint32_t pack(uint32_t row, uint32_t col, uint32_t adc) {
     constexpr Packing thePacking = packing();
     adc = std::min(adc, thePacking.max_adc);
 

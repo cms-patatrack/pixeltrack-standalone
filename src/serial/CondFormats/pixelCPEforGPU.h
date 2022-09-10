@@ -70,8 +70,8 @@ namespace pixelCPEforGPU {
     constexpr LayerGeometry const& __restrict__ layerGeometry() const { return *m_layerGeometry; }
     constexpr AverageGeometry const& __restrict__ averageGeometry() const { return *m_averageGeometry; }
 
-    __device__ uint8_t layer(uint16_t id) const {
-      return __ldg(m_layerGeometry->layer + id / phase1PixelTopology::maxModuleStride);
+     uint8_t layer(uint16_t id) const {
+      return m_layerGeometry->layer[id / phase1PixelTopology::maxModuleStride];
     };
   };
 

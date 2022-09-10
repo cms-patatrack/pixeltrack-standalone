@@ -52,11 +52,11 @@ public:
   public:
     // DeviceConstView() = default;
 
-    __device__ __forceinline__ uint16_t xx(int i) const { return __ldg(xx_ + i); }
-    __device__ __forceinline__ uint16_t yy(int i) const { return __ldg(yy_ + i); }
-    __device__ __forceinline__ uint16_t adc(int i) const { return __ldg(adc_ + i); }
-    __device__ __forceinline__ uint16_t moduleInd(int i) const { return __ldg(moduleInd_ + i); }
-    __device__ __forceinline__ int32_t clus(int i) const { return __ldg(clus_ + i); }
+     inline  uint16_t xx(int i) const { return xx_[i]; }
+     inline  uint16_t yy(int i) const { return yy_[i]; }
+     inline  uint16_t adc(int i) const { return adc_[i]; }
+     inline  uint16_t moduleInd(int i) const { return moduleInd_[i]; }
+     inline  int32_t clus(int i) const { return clus_[i]; }
 
     friend class SiPixelDigisSoA;
 

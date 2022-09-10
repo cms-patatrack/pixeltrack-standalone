@@ -19,7 +19,7 @@ namespace gpuCalibPixel {
   constexpr float VCaltoElectronOffset = -60;      // L2-4: -60 +- 130
   constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
-  __global__ void calibDigis(bool isRun2,
+   void calibDigis(bool isRun2,
                              uint16_t* id,
                              uint16_t const* __restrict__ x,
                              uint16_t const* __restrict__ y,
@@ -30,16 +30,16 @@ namespace gpuCalibPixel {
                              uint32_t* __restrict__ nClustersInModule,  // just to zero them
                              uint32_t* __restrict__ clusModuleStart     // just to zero first
   ) {
-    int first = blockDim.x * blockIdx.x + threadIdx.x;
+    int first = 0;
 
     // zero for next kernels...
     if (0 == first)
       clusModuleStart[0] = moduleStart[0] = 0;
-    for (int i = first; i < static_cast<int>(gpuClustering::MaxNumModules); i += gridDim.x * blockDim.x) {
+    for (int i = first; i < static_cast<int>(gpuClustering::MaxNumModules); i++) {
       nClustersInModule[i] = 0;
     }
 
-    for (int i = first; i < numElements; i += gridDim.x * blockDim.x) {
+    for (int i = first; i < numElements; i++) {
       if (InvId == id[i])
         continue;
 

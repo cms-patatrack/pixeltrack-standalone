@@ -20,7 +20,7 @@ struct ZVertexSoA {
   uint16_t sortInd[MAXVTX];  // sorted index (by pt2)  ascending
   uint32_t nvFinal;          // the number of vertices
 
-  __host__ __device__ void init() { nvFinal = 0; }
+    void init() { nvFinal = 0; }
 };
 
 #endif  // CUDADataFormatsVertexZVertexSoA.H

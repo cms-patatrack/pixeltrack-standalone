@@ -49,7 +49,7 @@ namespace cms {
       }
 
       // thread-safe version of the vector, when used in a CUDA kernel
-      __device__ int push_back(const T &element) {
+       int push_back(const T &element) {
         auto previousSize = atomicAdd(&m_size, 1);
         if (previousSize < maxSize) {
           m_data[previousSize] = element;
@@ -61,7 +61,7 @@ namespace cms {
       }
 
       template <class... Ts>
-      __device__ int emplace_back(Ts &&... args) {
+       int emplace_back(Ts &&... args) {
         auto previousSize = atomicAdd(&m_size, 1);
         if (previousSize < maxSize) {
           (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));

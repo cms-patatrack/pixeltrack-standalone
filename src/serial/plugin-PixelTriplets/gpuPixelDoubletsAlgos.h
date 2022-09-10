@@ -22,23 +22,23 @@ namespace gpuPixelDoublets {
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
 
-  __device__ __forceinline__ void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
-                                                    uint32_t nPairs,
-                                                    GPUCACell* cells,
-                                                    uint32_t* nCells,
-                                                    CellNeighborsVector* cellNeighbors,
-                                                    CellTracksVector* cellTracks,
-                                                    TrackingRecHit2DSOAView const& __restrict__ hh,
-                                                    GPUCACell::OuterHitOfCell* isOuterHitOfCell,
-                                                    int16_t const* __restrict__ phicuts,
-                                                    float const* __restrict__ minz,
-                                                    float const* __restrict__ maxz,
-                                                    float const* __restrict__ maxr,
-                                                    bool ideal_cond,
-                                                    bool doClusterCut,
-                                                    bool doZ0Cut,
-                                                    bool doPtCut,
-                                                    uint32_t maxNumOfDoublets) {
+  void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
+                         uint32_t nPairs,
+                         GPUCACell* cells,
+                         uint32_t* nCells,
+                         CellNeighborsVector* cellNeighbors,
+                         CellTracksVector* cellTracks,
+                         TrackingRecHit2DSOAView const& __restrict__ hh,
+                         GPUCACell::OuterHitOfCell* isOuterHitOfCell,
+                         int16_t const* __restrict__ phicuts,
+                         float const* __restrict__ minz,
+                         float const* __restrict__ maxz,
+                         float const* __restrict__ maxr,
+                         bool ideal_cond,
+                         bool doClusterCut,
+                         bool doZ0Cut,
+                         bool doPtCut,
+                         uint32_t maxNumOfDoublets) {
     // ysize cuts (z in the barrel)  times 8
     // these are used if doClusterCut is true
     constexpr int minYsizeB1 = 36;
@@ -63,24 +63,22 @@ namespace gpuPixelDoublets {
     // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
     const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
     assert(nPairs <= nPairsMax);
-    __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
-    __shared__ uint32_t ntot;
-    if (threadIdx.y == 0 && threadIdx.x == 0) {
-      innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
-      for (uint32_t i = 1; i < nPairs; ++i) {
-        innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
-      }
-      ntot = innerLayerCumulativeSize[nPairs - 1];
+    uint32_t innerLayerCumulativeSize[nPairsMax];
+    uint32_t ntot;
+
+    innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
+    for (uint32_t i = 1; i < nPairs; ++i) {
+      innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
     }
-    __syncthreads();
+    ntot = innerLayerCumulativeSize[nPairs - 1];
 
     // x runs faster
-    auto idy = blockIdx.y * blockDim.y + threadIdx.y;
-    auto first = threadIdx.x;
-    auto stride = blockDim.x;
+    auto idy = 0;
+    uint32_t first = 0;
+    auto stride = 1;
 
     uint32_t pairLayerId = 0;  // cannot go backward
-    for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
+    for (uint32_t j = idy; j < ntot; j += 1) {
       while (j >= innerLayerCumulativeSize[pairLayerId++])
         ;
       --pairLayerId;  // move to lower_bound ??
@@ -197,7 +195,7 @@ namespace gpuPixelDoublets {
         auto const* __restrict__ e = hist.end(kk + hoff);
         p += first;
         for (; p < e; p += stride) {
-          auto oi = __ldg(p);
+          auto oi = *(p);
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
           auto mo = hh.detectorIndex(oi);

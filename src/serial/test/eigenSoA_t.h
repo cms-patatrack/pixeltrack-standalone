@@ -13,7 +13,7 @@ struct MySoA {
 
 using V = MySoA<128>;
 
-__global__ void testBasicSoA(float* p) {
+ void testBasicSoA(float* p) {
   using namespace eigenSoA;
 
   assert(!isPowerOf2(0));
@@ -23,27 +23,27 @@ __global__ void testBasicSoA(float* p) {
 
   using M3 = Eigen::Matrix<float, 3, 3>;
 
-  __shared__ eigenSoA::MatrixSoA<M3, 64> m;
+   eigenSoA::MatrixSoA<M3, 64> m;
 
-  int first = threadIdx.x + blockIdx.x * blockDim.x;
+  int first = 0;
   if (0 == first)
     printf("before %f\n", p[0]);
 
   // a silly game...
   int n = 64;
-  for (int i = first; i < n; i += blockDim.x * gridDim.x) {
+  for (int i = first; i < n; i += 1) {
     m[i].setZero();
     m[i](0, 0) = p[i];
     m[i](1, 1) = p[i + 64];
     m[i](2, 2) = p[i + 64 * 2];
   }
-  __syncthreads();  // not needed
+    // not needed
 
-  for (int i = first; i < n; i += blockDim.x * gridDim.x)
+  for (int i = first; i < n; i += 1)
     m[i] = m[i].inverse().eval();
-  __syncthreads();
+  
 
-  for (int i = first; i < n; i += blockDim.x * gridDim.x) {
+  for (int i = first; i < n; i += 1) {
     p[i] = m[63 - i](0, 0);
     p[i + 64] = m[63 - i](1, 1);
     p[i + 64 * 2] = m[63 - i](2, 2);
