@@ -172,7 +172,7 @@ namespace cms {
 
       __device__ inline void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-          std::atomic_ref<Counter> off_atomic{off + i};
+          std::atomic_ref<Counter> off_atomic{off[i]};
           off_atomic.fetch_add(co.off[i]);
         }
       }
