@@ -8,6 +8,7 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
+#include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
@@ -64,10 +65,8 @@ namespace gpuVertexFinder {
       assert(iv[i] >= 0);
       assert(iv[i] < int(foundClusters));
       auto w = 1.f / ezt2[i];
-      std::atomic_ref<float> zv_atomic{zv[iv[i]]};
-      zv_atomic.fetch_add(zt[i] * w);
-      std::atomic_ref<float> wv_atomic{wv[iv[i]]};
-      wv_atomic.fetch_add(w);
+      cms::cuda::atomicAdd(&zv[iv[i]], zt[i] * w);
+      cms::cuda::atomicAdd(&wv[iv[i]], w);
     }
 
     __syncthreads();
@@ -90,8 +89,7 @@ namespace gpuVertexFinder {
         iv[i] = 9999;
         continue;
       }
-      std::atomic_ref<float> chi2_atomic{chi2[iv[i]]};
-      chi2_atomic.fetch_add(c2);
+      cms::cuda::atomicAdd(&chi2[iv[i]], c2);
       std::atomic_ref<int32_t> nn_atomic{nn[iv[i]]};
       ++nn_atomic;
     }

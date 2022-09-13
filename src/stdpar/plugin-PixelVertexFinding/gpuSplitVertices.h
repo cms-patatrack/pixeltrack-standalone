@@ -8,6 +8,7 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
+#include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
@@ -83,10 +84,8 @@ namespace gpuVertexFinder {
         __syncthreads();
         for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
           auto i = newV[k];
-          std::atomic_ref<float> znew_atomic{znew[i]};
-          znew_atomic.fetch_add(zz[k] * ww[k]);
-          std::atomic_ref<float> wnew_atomic{wnew[i]};
-          wnew_atomic.fetch_add(ww[k]);
+          cms::cuda::atomicAdd(&znew[i], zz[k] * ww[k]);
+          cms::cuda::atomicAdd(&wnew[i], ww[k]);
         }
         __syncthreads();
         if (0 == threadIdx.x) {

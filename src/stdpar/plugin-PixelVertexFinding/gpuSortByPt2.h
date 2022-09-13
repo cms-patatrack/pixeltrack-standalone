@@ -10,6 +10,7 @@
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
+#include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
@@ -41,8 +42,7 @@ namespace gpuVertexFinder {
     std::for_each(
         std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
           if (iv[i] <= 9990) {
-            std::atomic_ref<float> inc{ptv2[iv[i]]};
-            inc += ptt2[i];
+            cms::cuda::atomicAdd(&ptv2[iv[i]], ptt2[i]);
           }
         });
 
