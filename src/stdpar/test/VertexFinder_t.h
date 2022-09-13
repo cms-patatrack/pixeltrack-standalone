@@ -36,8 +36,6 @@ __global__ void vertexFinderOneKernel(gpuVertexFinder::ZVertices* pdata,
   splitVertices(pdata, pws, 9.f);
   __syncthreads();
   fitVertices(pdata, pws, 5000.);
-  __syncthreads();
-  sortByPt2(pdata, pws);
 }
 #endif
 #endif
@@ -165,6 +163,7 @@ int main() {
 
 #ifdef ONE_KERNEL
       vertexFinderOneKernel<<<1, 512 + 256>>>(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
+      sortByPt2(onGPU_d.get(), ws_d.get());
 #else
       CLUSTERIZE<<<1, 512 + 256>>>(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #endif
