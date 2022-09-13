@@ -26,7 +26,7 @@ namespace gpuVertexFinder {
 
     uint32_t nvIntermediate;  // the number of vertices after splitting pruning etc.
 
-    __host__ __device__ inline void init() {
+    inline void init() {
       ntrks = 0;
       nvIntermediate = 0;
     }
