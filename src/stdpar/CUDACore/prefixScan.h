@@ -156,7 +156,7 @@ namespace cms {
       if (0 == threadIdx.x) {
         __threadfence();
         std::atomic_ref<int32_t> pc_atomic{*pc};
-        ++pc_atomic;  // block counter
+        auto value = pc_atomic++;  // block counter
         isLastBlockDone = (value == (int(gridDim.x) - 1));
       }
 
