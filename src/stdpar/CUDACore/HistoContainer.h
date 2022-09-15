@@ -2,9 +2,7 @@
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
 #include <algorithm>
-#if !defined(__CUDA_ARCH__) && !defined(__NVCOMPILER)
 #include <atomic>
-#endif  // __CUDA_ARCH__
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -174,41 +172,21 @@ namespace cms {
 
       __device__ inline void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-#ifdef __NVCOMPILER
-          atomicAdd(off + i, co.off[i]);
-#else
-          auto &a = (std::atomic<Counter> &)(off[i]);
-          a += co.off[i];
-#endif
+          std::atomic_ref<Counter> off_atomic{off[i]};
+          off_atomic.fetch_add(co.off[i]);
         }
       }
 
-      static __device__ inline uint32_t atomicIncrement(Counter &x) {
-#ifdef __NVCOMPILER
-        return atomicAdd(&x, 1);
-#else
-        auto &a = (std::atomic<Counter> &)(x);
-        return a++;
-#endif
-      }
-
-      static __device__ inline uint32_t atomicDecrement(Counter &x) {
-#ifdef __NVCOMPILER
-        return atomicSub(&x, 1);
-#else
-        auto &a = (std::atomic<Counter> &)(x);
-        return a--;
-#endif
-      }
-
-      __device__ __forceinline__ void countDirect(T b) {
+      __forceinline__ void countDirect(T b) {
         assert(b < nbins());
-        atomicIncrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        ++off_atomic;
       }
 
-      __device__ __forceinline__ void fillDirect(T b, index_type j) {
+      __forceinline__ void fillDirect(T b, index_type j) {
         assert(b < nbins());
-        auto w = atomicDecrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        auto w = off_atomic--;
         assert(w > 0);
         bins[w - 1] = j;
       }
@@ -238,16 +216,18 @@ namespace cms {
         }
       }
 
-      __device__ __forceinline__ void count(T t) {
+      __forceinline__ void count(T t) {
         uint32_t b = bin(t);
         assert(b < nbins());
-        atomicIncrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        ++off_atomic;
       }
 
       __device__ __forceinline__ void fill(T t, index_type j) {
         uint32_t b = bin(t);
         assert(b < nbins());
-        auto w = atomicDecrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        auto w = off_atomic--;
         assert(w > 0);
         bins[w - 1] = j;
       }
@@ -257,7 +237,8 @@ namespace cms {
         assert(b < nbins());
         b += histOff(nh);
         assert(b < totbins());
-        atomicIncrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        ++off_atomic;
       }
 
       __device__ __forceinline__ void fill(T t, index_type j, uint32_t nh) {
@@ -265,7 +246,8 @@ namespace cms {
         assert(b < nbins());
         b += histOff(nh);
         assert(b < totbins());
-        auto w = atomicDecrement(off[b]);
+        std::atomic_ref<Counter> off_atomic{off[b]};
+        auto w = off_atomic--;
         assert(w > 0);
         bins[w - 1] = j;
       }

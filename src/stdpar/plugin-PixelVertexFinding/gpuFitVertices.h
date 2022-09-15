@@ -2,11 +2,13 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuFitVertices_h
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/cuda_assert.h"
+#include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
@@ -52,19 +54,19 @@ namespace gpuVertexFinder {
       noise = 0;
 
     __syncthreads();
-
+    std::atomic_ref<int> noise_atomic{noise};
     // compute cluster location
     for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
       if (iv[i] > 9990) {
         if (verbose)
-          atomicAdd(&noise, 1);
+          ++noise_atomic;
         continue;
       }
       assert(iv[i] >= 0);
       assert(iv[i] < int(foundClusters));
       auto w = 1.f / ezt2[i];
-      atomicAdd(&zv[iv[i]], zt[i] * w);
-      atomicAdd(&wv[iv[i]], w);
+      cms::cuda::atomicAdd(&zv[iv[i]], zt[i] * w);
+      cms::cuda::atomicAdd(&wv[iv[i]], w);
     }
 
     __syncthreads();
@@ -87,8 +89,9 @@ namespace gpuVertexFinder {
         iv[i] = 9999;
         continue;
       }
-      atomicAdd(&chi2[iv[i]], c2);
-      atomicAdd(&nn[iv[i]], 1);
+      cms::cuda::atomicAdd(&chi2[iv[i]], c2);
+      std::atomic_ref<int32_t> nn_atomic{nn[iv[i]]};
+      ++nn_atomic;
     }
     __syncthreads();
     for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x)

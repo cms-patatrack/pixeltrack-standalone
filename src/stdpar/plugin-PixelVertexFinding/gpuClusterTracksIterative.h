@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelVertexFinding_src_gpuClusterTracksIterative_h
 
 #include <algorithm>
+#include  <atomic>
 #include <cmath>
 #include <cstdint>
 
@@ -176,7 +177,8 @@ namespace gpuVertexFinder {
     for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
       if (iv[i] == int(i)) {
         if (nn[i] >= minT) {
-          auto old = atomicInc(&foundClusters, 0xffffffff);
+          std::atomic_ref<unsigned int> inc(foundClusters);
+          auto old = inc.fetch_add(0xffffffff);
           iv[i] = -(old + 1);
         } else {  // noise
           iv[i] = -9998;

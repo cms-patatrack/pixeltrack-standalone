@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 #define HeterogeneousCore_CUDAUtilities_interface_prefixScan_h
 
+#include <atomic>
 #include <cstdint>
 #include <numeric>
 #include <execution>
@@ -154,7 +155,8 @@ namespace cms {
       __shared__ bool isLastBlockDone;
       if (0 == threadIdx.x) {
         __threadfence();
-        auto value = atomicAdd(pc, 1);  // block counter
+        std::atomic_ref<int32_t> pc_atomic{*pc};
+        auto value = pc_atomic++;  // block counter
         isLastBlockDone = (value == (int(gridDim.x) - 1));
       }
 

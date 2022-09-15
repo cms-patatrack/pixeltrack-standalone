@@ -1,3 +1,4 @@
+#include <atomic>
 #include "CUDACore/cudaCheck.h"
 
 #include "gpuClusterTracksByDensity.h"
@@ -36,7 +37,8 @@ namespace gpuVertexFinder {
         continue;
 
       auto& data = *pws;
-      auto it = atomicAdd(&data.ntrks, 1);
+      std::atomic_ref<uint32_t> inc{data.ntrks};
+      auto it = inc++;
       data.itrk[it] = idx;
       data.zt[it] = tracks.zip(idx);
       data.ezt2[it] = fit.covariance(idx)(14);
@@ -60,8 +62,6 @@ namespace gpuVertexFinder {
     splitVertices(pdata, pws, 9.f);
     __syncthreads();
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
-    sortByPt2(pdata, pws);
   }
 #else
   __global__ void vertexFinderKernel1(gpuVertexFinder::ZVertices* pdata,
@@ -78,8 +78,6 @@ namespace gpuVertexFinder {
 
   __global__ void vertexFinderKernel2(gpuVertexFinder::ZVertices* pdata, gpuVertexFinder::WorkSpace* pws) {
     fitVertices(pdata, pws, 5000.);
-    __syncthreads();
-    sortByPt2(pdata, pws);
   }
 #endif
 
@@ -90,42 +88,49 @@ namespace gpuVertexFinder {
     assert(tksoa);
     auto* soa = vertices.get();
     assert(soa);
-    auto ws_d = std::make_unique<WorkSpace>();
+    auto ws = std::make_unique<WorkSpace>();
 
-    init<<<1, 1, 0>>>(soa, ws_d.get());
+    init<<<1, 1, 0>>>(soa, ws.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
-    loadTracks<<<numberOfBlocks, blockSize, 0>>>(tksoa, soa, ws_d.get(), ptMin);
+    loadTracks<<<numberOfBlocks, blockSize, 0>>>(tksoa, soa, ws.get(), ptMin);
     cudaCheck(cudaGetLastError());
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
-      vertexFinderOneKernel<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderOneKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
+      // moved the call out of cuda kernel as sortByPt2 is calling stdpar algorithms
+      cudaDeviceSynchronize();
+      sortByPt2(soa, ws.get());
 #else
-      vertexFinderKernel1<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+      vertexFinderKernel1<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       cudaCheck(cudaGetLastError());
       // one block per vertex...
-      splitVerticesKernel<<<1024, 128, 0>>>(soa, ws_d.get(), 9.f);
+      splitVerticesKernel<<<1024, 128, 0>>>(soa, ws.get(), 9.f);
       cudaCheck(cudaGetLastError());
-      vertexFinderKernel2<<<1, 1024 - 256, 0>>>(soa, ws_d.get());
+      vertexFinderKernel2<<<1, 1024 - 256, 0>>>(soa, ws.get());
+      // moved the call out of cuda kernel as sortByPt2 is calling stdpar algorithms
+      cudaDeviceSynchronize();
+      sortByPt2(soa, ws.get());
 #endif
     } else {  // five kernels
       if (useDensity_) {
-        clusterTracksByDensityKernel<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksByDensityKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       } else if (useDBSCAN_) {
-        clusterTracksDBSCAN<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksDBSCAN<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       } else if (useIterative_) {
-        clusterTracksIterative<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), minT, eps, errmax, chi2max);
+        clusterTracksIterative<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       }
       cudaCheck(cudaGetLastError());
-      fitVerticesKernel<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), 50.);
+      fitVerticesKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), 50.);
       cudaCheck(cudaGetLastError());
       // one block per vertex...
-      splitVerticesKernel<<<1024, 128, 0>>>(soa, ws_d.get(), 9.f);
+      splitVerticesKernel<<<1024, 128, 0>>>(soa, ws.get(), 9.f);
       cudaCheck(cudaGetLastError());
-      fitVerticesKernel<<<1, 1024 - 256, 0>>>(soa, ws_d.get(), 5000.);
+      fitVerticesKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), 5000.);
       cudaCheck(cudaGetLastError());
-      sortByPt2Kernel<<<1, 1024 - 256, 0>>>(soa, ws_d.get());
+
+      sortByPt2(soa, ws.get());
     }
     cudaCheck(cudaGetLastError());
 
