@@ -2,6 +2,7 @@
 #define HeterogeneousCore_CUDAUtilities_interface_HistoContainer_h
 
 #include <algorithm>
+#include <numeric>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
