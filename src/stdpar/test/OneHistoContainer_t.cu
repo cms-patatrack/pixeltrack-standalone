@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <ranges>
+#include <execution>
 #include <cassert>
 #include <iostream>
 #include <random>
@@ -9,58 +11,51 @@
 using namespace cms::cuda;
 
 template <typename T, int NBINS, int S, int DELTA>
-__global__ void mykernel(T const* __restrict__ v, uint32_t N) {
+void mykernel(T const* __restrict__ v, uint32_t N) {
   assert(v);
   assert(N == 12000);
 
-  if (threadIdx.x == 0)
-    printf("start kernel for %d data\n", N);
+  printf("start kernel for %d data\n", N);
 
   using Hist = HistoContainer<T, NBINS, 12000, S, uint16_t>;
+  std::unique_ptr<Hist> hist_ptr{std::make_unique<Hist>()};
+  Hist *hist = hist_ptr.get();
+  std::fill(std::execution::par, hist->off, hist->off + Hist::totbins(), 0);
 
-  __shared__ Hist hist;
-  __shared__ typename Hist::Counter ws[32];
+  auto iter_n{std::views::iota(0U, N)};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j){
+    hist->count(v[j]);
+  });
 
-  for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
-    hist.off[j] = 0;
-  }
-  __syncthreads();
+  assert(0 == hist->size());
 
-  for (auto j = threadIdx.x; j < N; j += blockDim.x)
-    hist.count(v[j]);
-  __syncthreads();
+  hist->finalize();
 
-  assert(0 == hist.size());
-  __syncthreads();
+  assert(N == hist->size());
 
-  hist.finalize(ws);
-  __syncthreads();
+  auto iter_nbins{std::views::iota(0U, Hist::nbins())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_nbins), std::ranges::cend(iter_nbins), [=](const auto j){
+    assert(hist->off[j] <= hist->off[j + 1]);
+  });
 
-  assert(N == hist.size());
-  for (auto j = threadIdx.x; j < Hist::nbins(); j += blockDim.x)
-    assert(hist.off[j] <= hist.off[j + 1]);
-  __syncthreads();
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j){
+    hist->fill(v[j], j);
+  });
 
-  if (threadIdx.x < 32)
-    ws[threadIdx.x] = 0;  // used by prefix scan...
-  __syncthreads();
+  assert(0 == hist->off[0]);
+  assert(N == hist->size());
 
-  for (auto j = threadIdx.x; j < N; j += blockDim.x)
-    hist.fill(v[j], j);
-  __syncthreads();
-  assert(0 == hist.off[0]);
-  assert(N == hist.size());
-
-  for (auto j = threadIdx.x; j < hist.size() - 1; j += blockDim.x) {
-    auto p = hist.begin() + j;
+  auto iter_hsize{std::views::iota(0U, hist->size() - 1)};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto j){
+    auto p = hist->begin() + j;
     assert((*p) < N);
     auto k1 = Hist::bin(v[*p]);
     auto k2 = Hist::bin(v[*(p + 1)]);
     assert(k2 >= k1);
-  }
+  });
 
-  for (auto i = threadIdx.x; i < hist.size(); i += blockDim.x) {
-    auto p = hist.begin() + i;
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto i){
+    auto p = hist->begin() + i;
     auto j = *p;
     auto b0 = Hist::bin(v[j]);
     int tot = 0;
@@ -68,8 +63,8 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
       assert(k >= 0 && k < N);
       ++tot;
     };
-    forEachInWindow(hist, v[j], v[j], ftest);
-    int rtot = hist.size(b0);
+    forEachInWindow(*hist, v[j], v[j], ftest);
+    int rtot = hist->size(b0);
     assert(tot == rtot);
     tot = 0;
     auto vm = int(v[j]) - DELTA;
@@ -80,12 +75,12 @@ __global__ void mykernel(T const* __restrict__ v, uint32_t N) {
     vp = std::min(vp, vmax);
     vp = std::max(vp, 0);
     assert(vp >= vm);
-    forEachInWindow(hist, vm, vp, ftest);
+    forEachInWindow(*hist, vm, vp, ftest);
     int bp = Hist::bin(vp);
     int bm = Hist::bin(vm);
-    rtot = hist.end(bp) - hist.begin(bm);
+    rtot = hist->end(bp) - hist->begin(bm);
     assert(tot == rtot);
-  }
+  });
 }
 
 template <typename T, int NBINS = 128, int S = 8 * sizeof(T), int DELTA = 1000>
@@ -119,7 +114,7 @@ void go() {
         v[j] = 4;
 
     assert(v.get());
-    mykernel<T, NBINS, S, DELTA><<<1, 256>>>(v.get(), N);
+    mykernel<T, NBINS, S, DELTA>(v.get(), N);
   }
 }
 
