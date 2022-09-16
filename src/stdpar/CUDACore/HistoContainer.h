@@ -243,6 +243,13 @@ namespace cms {
         assert(off[totbins() - 1] == off[totbins() - 2]);
       }
 
+      // Equivalent to finalize(), to be called withing device execution space as nested parallel algorithms are not supported
+      __forceinline__ void finalizeSeq() {
+        assert(off[totbins() - 1] == 0);
+        std::inclusive_scan(off, off + totbins(), off);
+        assert(off[totbins() - 1] == off[totbins() - 2]);
+      }
+
       constexpr auto size() const { return uint32_t(off[totbins() - 1]); }
       constexpr auto size(uint32_t b) const { return off[b + 1] - off[b]; }
 
