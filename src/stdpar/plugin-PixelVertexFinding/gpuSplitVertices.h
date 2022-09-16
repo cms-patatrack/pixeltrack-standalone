@@ -57,7 +57,8 @@ namespace gpuVertexFinder {
       // copy to local
       for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
         if (iv[k] == int(kv)) {
-          auto old = nq_atomic.fetch_add(MAXTK);
+          //TODO: Original implementation wraps around MAXTK
+          auto old = nq_atomic.fetch_add(1);
           zz[old] = zt[k] - zv[kv];
           newV[old] = zz[old] < 0 ? 0 : 1;
           ww[old] = 1.f / ezt2[k];

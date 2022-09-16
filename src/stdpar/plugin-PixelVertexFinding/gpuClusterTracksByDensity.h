@@ -175,7 +175,7 @@ namespace gpuVertexFinder {
       if (iv[i] == int(i)) {
         if (nn[i] >= minT) {
           std::atomic_ref<unsigned int> inc(*foundClusters);
-          auto old = inc.fetch_add(0xffffffff);
+          auto old = inc.fetch_add(1);
           iv[i] = -(old + 1);
         } else {  // noise
           iv[i] = -9998;
