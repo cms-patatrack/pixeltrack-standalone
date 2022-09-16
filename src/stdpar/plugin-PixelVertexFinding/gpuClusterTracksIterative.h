@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "CUDACore/HistoContainer.h"
+#include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
@@ -127,12 +128,12 @@ namespace gpuVertexFinder {
                 return;
               if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
                 return;
-              auto old = atomicMin(&iv[j], iv[i]);
+              auto old = cms::cuda::atomicMin(&iv[j], iv[i]);
               if (old != iv[i]) {
                 // end the loop only if no changes were applied
                 *more = true;
               }
-              atomicMin(&iv[i], old);
+              cms::cuda::atomicMin(&iv[i], old);
             }
           }
         });
