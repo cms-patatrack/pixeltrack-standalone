@@ -30,7 +30,7 @@ namespace cms::cuda {
   template<std::totally_ordered T, typename Tp=std::add_pointer_t<T>>
   T atomicMin(Tp address, T val) {
 #ifdef __NVCOMPILER
-    // We need to check if execution space is device or host, ::atomicAdd is undefined in host execution space 
+    // We need to check if execution space is device or host, ::atomicMin is undefined in host execution space 
     if target(nv::target::is_device) {
       return ::atomicMin(address, val);
     } else {
@@ -50,7 +50,7 @@ namespace cms::cuda {
   template<std::totally_ordered T, typename Tp=std::add_pointer_t<T>>
   T atomicInc(Tp address, T val) {
 #ifdef __NVCOMPILER
-    // We need to check if execution space is device or host, ::atomicAdd is undefined in host execution space 
+    // We need to check if execution space is device or host, ::atomicInc is undefined in host execution space 
     if target(nv::target::is_device) {
       return ::atomicInc(address, val);
     } else {
