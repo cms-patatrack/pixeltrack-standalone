@@ -46,6 +46,26 @@ namespace cms::cuda {
       return old;
 #endif
   }
+
+  template<std::totally_ordered T, typename Tp=std::add_pointer_t<T>>
+  T atomicInc(Tp address, T val) {
+#ifdef __NVCOMPILER
+    // We need to check if execution space is device or host, ::atomicAdd is undefined in host execution space 
+    if target(nv::target::is_device) {
+      return ::atomicInc(address, val);
+    } else {
+      std::atomic_ref<T> pa{*address};
+      T old{pa.load()};
+      while(!pa.compare_exchange_weak(old, ((old >= val) ? 0 : (old+1))));
+      return old;
+    }
+#else
+      std::atomic_ref<T> pa{*address};
+      T old{pa.load()};
+      while(!pa.compare_exchange_weak(old, ((old >= val) ? 0 : (old+1))));
+      return old;
+#endif
+  }
 }
 
 #endif
