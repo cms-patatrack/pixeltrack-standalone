@@ -54,17 +54,17 @@ namespace pixelgpudetails {
 
   ////////////////////
 
-  __device__ uint32_t getLink(uint32_t ww) {
+  uint32_t getLink(uint32_t ww) {
     return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
   }
 
-  __device__ uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
+  uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
-  __device__ uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
 
-  __device__ bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
-  __device__ pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
+  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
                                                 uint8_t fed,
                                                 uint32_t link,
                                                 uint32_t roc) {
@@ -77,7 +77,7 @@ namespace pixelgpudetails {
   //reference http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/dd/d31/FrameConversion_8cc_source.html
   //http://cmslxr.fnal.gov/source/CondFormats/SiPixelObjects/src/PixelROC.cc?v=CMSSW_9_2_0#0071
   // Convert local pixel to pixelgpudetails::global pixel
-  __device__ pixelgpudetails::Pixel frameConversion(
+  pixelgpudetails::Pixel frameConversion(
       bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
     int slopeRow = 0, slopeCol = 0;
     int rowOffset = 0, colOffset = 0;
@@ -145,7 +145,7 @@ namespace pixelgpudetails {
     return global;
   }
 
-  __device__ uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     uint8_t errorType = 0;
 
     // debug = true;
@@ -183,7 +183,7 @@ namespace pixelgpudetails {
     return errorType;
   }
 
-  __device__ bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
+  bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
     uint32_t numRowsInRoc = 80;
     uint32_t numColsInRoc = 52;
 
@@ -191,9 +191,9 @@ namespace pixelgpudetails {
     return ((rocRow < numRowsInRoc) & (rocCol < numColsInRoc));
   }
 
-  __device__ bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
-  __device__ uint8_t checkROC(
+  uint8_t checkROC(
       uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
@@ -269,7 +269,7 @@ namespace pixelgpudetails {
     return errorFound ? errorType : 0;
   }
 
-  __device__ uint32_t getErrRawID(uint8_t fedId,
+  uint32_t getErrRawID(uint8_t fedId,
                                   uint32_t errWord,
                                   uint32_t errorType,
                                   const SiPixelFedCablingMapGPU *cablingMap,
