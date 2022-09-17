@@ -581,7 +581,7 @@ namespace pixelgpudetails {
       int blocks =
           (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
 
-      gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0>>>(isRun2,
+      gpuCalibPixel::calibDigis(isRun2,
                                                                 digis_d.moduleInd(),
                                                                 digis_d.c_xx(),
                                                                 digis_d.c_yy(),
