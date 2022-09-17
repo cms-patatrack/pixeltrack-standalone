@@ -33,9 +33,7 @@ namespace gpuClustering {
           --j;
         if (j < 0 or id[j] != id[i]) {
           // boundary...
-          std::atomic_ref<uint32_t> inc{*moduleStart};
-          //TODO: wraps around MaxNumModules
-          auto loc = inc.fetch_add(1);
+          auto loc = cms::cuda::atomicInc(moduleStart, MaxNumModules);
           moduleStart[loc + 1] = i;
         }
       }
