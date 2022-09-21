@@ -7,24 +7,23 @@
 **/
 
 // C++ includes
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <execution>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <memory>
-
-// CUDA includes
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <numeric>
+#include <ranges>
 
 // CMSSW includes
 #include "CUDADataFormats/gpuClusteringConstants.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/SimpleVector.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
@@ -471,27 +470,26 @@ namespace pixelgpudetails {
 
   }  // end of Raw to Digi kernel
 
-  __global__ void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
+  void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == gridDim.x);
-    assert(0 == blockIdx.x);
 
-    int first = threadIdx.x;
+    uint32_t first = 0;
 
     // limit to MaxHitsInModule;
-    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
+    auto iter{std::views::iota(first, gpuClustering::MaxNumModules)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
-    }
+    });
 
-    __shared__ uint32_t ws[32];
-    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    std::inclusive_scan(std::execution::par, moduleStart + 1, moduleStart + 1025, moduleStart + 1);
+    std::inclusive_scan(std::execution::par, moduleStart + 1025, moduleStart + 1025 + gpuClustering::MaxNumModules - 1024, moduleStart + 1025);
 
-    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    auto iter_off{std::views::iota(first + 1025, gpuClustering::MaxNumModules + 1)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_off), std::ranges::cend(iter_off), [=](const auto i) {
       moduleStart[i] += moduleStart[1024];
-    }
-    __syncthreads();
+    });
 
+    auto iter_max_one{std::views::iota(first, gpuClustering::MaxNumModules + 1)};
 #ifdef GPU_DEBUG
     assert(0 == moduleStart[0]);
     auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart[0]);
@@ -500,22 +498,22 @@ namespace pixelgpudetails {
     assert(moduleStart[1025] >= moduleStart[1024]);
     assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
       if (0 != i)
         assert(moduleStart[i] >= moduleStart[i - i]);
       // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
       // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
       if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
         printf("moduleStart %d %d\n", i, moduleStart[i]);
-    }
+    });
 #endif
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
       if (moduleStart[i] > MAX_HITS)
         moduleStart[i] = MAX_HITS;
-    }
+    });
   }
 
   // Interface to outside
@@ -566,50 +564,24 @@ namespace pixelgpudetails {
                                                        useQualityInfo,
                                                        includeErrors,
                                                        debug);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
     }
     // End of Raw2Digi and passing data for clustering
 
     {
       // clusterizer ...
       using namespace gpuClustering;
-      int threadsPerBlock = 256;
-      int blocks =
-          (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
-
       gpuCalibPixel::calibDigis(isRun2,
-                                                                digis_d.moduleInd(),
-                                                                digis_d.c_xx(),
-                                                                digis_d.c_yy(),
-                                                                digis_d.adc(),
-                                                                gains,
-                                                                wordCounter,
-                                                                clusters_d.moduleStart(),
-                                                                clusters_d.clusInModule(),
-                                                                clusters_d.clusModuleStart());
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
-
-#ifdef GPU_DEBUG
-      std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of " << threadsPerBlock
-                << " threads\n";
-#endif
+                                digis_d.moduleInd(),
+                                digis_d.c_xx(),
+                                digis_d.c_yy(),
+                                digis_d.adc(),
+                                gains,
+                                wordCounter,
+                                clusters_d.moduleStart(),
+                                clusters_d.clusInModule(),
+                                clusters_d.clusModuleStart());
 
       countModules(digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
-      cudaCheck(cudaGetLastError());
-
-      threadsPerBlock = 256;
-      blocks = MaxNumModules;
-#ifdef GPU_DEBUG
-      std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
-#endif
       findClus(digis_d.c_moduleInd(),
                digis_d.c_xx(),
                digis_d.c_yy(),
@@ -618,34 +590,22 @@ namespace pixelgpudetails {
                clusters_d.moduleId(),
                digis_d.clus(),
                wordCounter);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
 
       // apply charge cut
       clusterChargeCut(digis_d.moduleInd(),
-                                                       digis_d.c_adc(),
-                                                       clusters_d.c_moduleStart(),
-                                                       clusters_d.clusInModule(),
-                                                       clusters_d.c_moduleId(),
-                                                       digis_d.clus(),
-                                                       wordCounter);
-      cudaCheck(cudaGetLastError());
+                       digis_d.c_adc(),
+                       clusters_d.c_moduleStart(),
+                       clusters_d.clusInModule(),
+                       clusters_d.c_moduleId(),
+                       digis_d.clus(),
+                       wordCounter);
 
       // count the module start indices already here (instead of
       // rechits) so that the number of clusters/hits can be made
       // available in the rechit producer without additional points of
       // synchronization/ExternalWork
 
-      // MUST be ONE block
-      fillHitsModuleStart<<<1, 1024, 0>>>(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
+      fillHitsModuleStart(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
     }  // end clusterizer scope
-
-#ifdef GPU_DEBUG
-    cudaDeviceSynchronize();
-    cudaCheck(cudaGetLastError());
-#endif
   }
 }  // namespace pixelgpudetails
