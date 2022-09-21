@@ -28,7 +28,7 @@ namespace gpuClustering {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
       assert(thisModuleId < MaxNumModules);
-      assert(thisModuleId == moduleId[blockIdx.x]);
+      assert(thisModuleId == moduleId[module]);
 
       auto nclus = nClustersInModule[thisModuleId];
       if (nclus == 0)
