@@ -346,7 +346,7 @@ namespace pixelgpudetails {
   }
 
   // Kernel to perform Raw to Digi conversion
-  __global__ void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
+  void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
                                    const unsigned char *modToUnp,
                                    const uint32_t wordCounter,
                                    const uint32_t *word,
@@ -361,10 +361,10 @@ namespace pixelgpudetails {
                                    bool useQualityInfo,
                                    bool includeErrors,
                                    bool debug) {
-    //if (threadIdx.x==0) printf("Event: %u blockIdx.x: %u start: %u end: %u\n", eventno, blockIdx.x, begin, end);
 
-    int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
+    uint32_t first = 0;
+    auto iter{std::views::iota(first, wordCounter)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto iloop) {
       auto gIndex = iloop;
       xx[gIndex] = 0;
       yy[gIndex] = 0;
@@ -381,7 +381,7 @@ namespace pixelgpudetails {
       uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
       if (ww == 0) {
         // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
-        continue;
+        return;
       }
 
       uint32_t link = getLink(ww);  // Extract link
@@ -393,7 +393,7 @@ namespace pixelgpudetails {
       if (includeErrors and skipROC) {
         uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
         err->push_back(PixelErrorCompact{rID, ww, errorType, fedId});
-        continue;
+        return;
       }
 
       uint32_t rawId = detId.RawId;
@@ -404,11 +404,11 @@ namespace pixelgpudetails {
       if (useQualityInfo) {
         skipROC = cablingMap->badRocs[index];
         if (skipROC)
-          continue;
+          return;
       }
       skipROC = modToUnp[index];
       if (skipROC)
-        continue;
+        return;
 
       uint32_t layer = 0;                   //, ladder =0;
       int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
@@ -439,7 +439,7 @@ namespace pixelgpudetails {
             err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
               printf("BPIX1  Error status: %i\n", error);
-            continue;
+            return;
           }
         }
       } else {
@@ -455,7 +455,7 @@ namespace pixelgpudetails {
           err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
             printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
-          continue;
+          return;
         }
       }
 
@@ -466,7 +466,7 @@ namespace pixelgpudetails {
       pdigi[gIndex] = pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
       moduleId[gIndex] = detId.moduleId;
       rawIdArr[gIndex] = rawId;
-    }  // end of loop (gIndex < end)
+    });  // end of loop (gIndex < end)
 
   }  // end of Raw to Digi kernel
 
@@ -542,28 +542,26 @@ namespace pixelgpudetails {
 
     if (wordCounter)  // protect in case of empty event....
     {
-      const int threadsPerBlock = 512;
-      const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
 
       // wordCounter is the total no of words in each event to be trasfered on device
       assert(0 == wordCounter % 2);
 
       // Launch rawToDigi kernel
-      RawToDigi_kernel<<<blocks, threadsPerBlock, 0>>>(cablingMap,
-                                                       modToUnp,
-                                                       wordCounter,
-                                                       wordFed.word(),
-                                                       wordFed.fedId(),
-                                                       digis_d.xx(),
-                                                       digis_d.yy(),
-                                                       digis_d.adc(),
-                                                       digis_d.pdigi(),
-                                                       digis_d.rawIdArr(),
-                                                       digis_d.moduleInd(),
-                                                       digiErrors_d.error(),  // returns nullptr if default-constructed
-                                                       useQualityInfo,
-                                                       includeErrors,
-                                                       debug);
+      RawToDigi_kernel(cablingMap,
+                       modToUnp,
+                       wordCounter,
+                       wordFed.word(),
+                       wordFed.fedId(),
+                       digis_d.xx(),
+                       digis_d.yy(),
+                       digis_d.adc(),
+                       digis_d.pdigi(),
+                       digis_d.rawIdArr(),
+                       digis_d.moduleInd(),
+                       digiErrors_d.error(),  // returns nullptr if default-constructed
+                       useQualityInfo,
+                       includeErrors,
+                       debug);
     }
     // End of Raw2Digi and passing data for clustering
 
