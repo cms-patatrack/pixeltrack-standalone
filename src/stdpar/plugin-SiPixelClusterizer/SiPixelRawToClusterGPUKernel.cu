@@ -625,7 +625,7 @@ namespace pixelgpudetails {
 #endif
 
       // apply charge cut
-      clusterChargeCut<<<blocks, threadsPerBlock, 0>>>(digis_d.moduleInd(),
+      clusterChargeCut(digis_d.moduleInd(),
                                                        digis_d.c_adc(),
                                                        clusters_d.c_moduleStart(),
                                                        clusters_d.clusInModule(),

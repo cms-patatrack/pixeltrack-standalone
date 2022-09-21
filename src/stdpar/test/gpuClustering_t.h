@@ -252,7 +252,7 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    clusterChargeCut<<<blocksPerGrid, threadsPerBlock>>>(
+    clusterChargeCut(
         h_id.get(), h_adc.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
 
     cudaDeviceSynchronize();
