@@ -260,7 +260,6 @@ namespace cms {
       constexpr index_type const *end(uint32_t b) const { return bins + off[b + 1]; }
 
       Counter off[totbins()];
-      int32_t psws;  // prefix-scan working space
       index_type bins[capacity()];
     };
 
