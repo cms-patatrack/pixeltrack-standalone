@@ -2,6 +2,7 @@
 #define HeterogeneousCore_CUDAUtilities_interface_portableAtomicOp_h
 
 #include <algorithm>
+#include <atomic>
 #include <concepts>
 #include <type_traits>
 
