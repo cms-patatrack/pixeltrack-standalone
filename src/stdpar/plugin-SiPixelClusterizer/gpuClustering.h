@@ -230,8 +230,7 @@ namespace gpuClustering {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
         if (clusterId[i] == i) {
-          std::atomic_ref<unsigned int> inc{foundClusters};
-          auto old = inc.fetch_add(1);
+          auto old = cms::cuda::atomicInc(&foundClusters, 0xffffffff);
           clusterId[i] = -(old + 1);
         }
       }
