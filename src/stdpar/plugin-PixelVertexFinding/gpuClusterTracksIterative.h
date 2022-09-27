@@ -19,11 +19,11 @@ namespace gpuVertexFinder {
   // this algo does not really scale as it works in a single block...
   // enough for <10K tracks we have
   void clusterTracksIterative(ZVertices* pdata,
-                                         WorkSpace* pws,
-                                         int minT,      // min number of neighbours to be "core"
-                                         float eps,     // max absolute distance to cluster
-                                         float errmax,  // max error to be "seed"
-                                         float chi2max  // max normalized distance to cluster
+                              WorkSpace* pws,
+                              int minT,      // min number of neighbours to be "core"
+                              float eps,     // max absolute distance to cluster
+                              float errmax,  // max error to be "seed"
+                              float chi2max  // max normalized distance to cluster
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -50,7 +50,7 @@ namespace gpuVertexFinder {
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     auto hist_ptr{std::make_unique<Hist>()};
-    Hist *hist{hist_ptr.get()};
+    Hist* hist{hist_ptr.get()};
     std::fill(std::execution::par, hist->off, hist->off + Hist::totbins(), 0);
 
     if (verbose)
@@ -100,7 +100,7 @@ namespace gpuVertexFinder {
 
     // cluster seeds only
     auto more_ptr{std::make_unique<bool>(true)};
-    bool *more = more_ptr.get();
+    bool* more = more_ptr.get();
     while (*more) {
       if (1 == nloops % 2) {
         std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
@@ -112,39 +112,40 @@ namespace gpuVertexFinder {
       } else {
         *more = false;
         auto iter_histsz{std::views::iota(0U, hist->size())};
-        std::for_each(std::execution::par, std::ranges::cbegin(iter_histsz), std::ranges::cend(iter_histsz), [=](const auto k) {
-          auto p = hist->begin() + k;
-          auto i = (*p);
-          auto be = std::min(Hist::bin(izt[i]) + 1, int(hist->nbins() - 1));
-          if (nn[i] >= minT){
-            ++p;
-            for (; p < hist->end(be); ++p) {
-              auto j = *p;
-              assert(i != j);
-              if (nn[j] < minT)
-                return;  // DBSCAN core rule
-              auto dist = std::abs(zt[i] - zt[j]);
-              if (dist > eps)
-                return;
-              if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
-                return;
-              auto old = cms::cuda::atomicMin(&iv[j], iv[i]);
-              if (old != iv[i]) {
-                // end the loop only if no changes were applied
-                *more = true;
+        std::for_each(
+            std::execution::par, std::ranges::cbegin(iter_histsz), std::ranges::cend(iter_histsz), [=](const auto k) {
+              auto p = hist->begin() + k;
+              auto i = (*p);
+              auto be = std::min(Hist::bin(izt[i]) + 1, int(hist->nbins() - 1));
+              if (nn[i] >= minT) {
+                ++p;
+                for (; p < hist->end(be); ++p) {
+                  auto j = *p;
+                  assert(i != j);
+                  if (nn[j] < minT)
+                    return;  // DBSCAN core rule
+                  auto dist = std::abs(zt[i] - zt[j]);
+                  if (dist > eps)
+                    return;
+                  if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
+                    return;
+                  auto old = cms::cuda::atomicMin(&iv[j], iv[i]);
+                  if (old != iv[i]) {
+                    // end the loop only if no changes were applied
+                    *more = true;
+                  }
+                  cms::cuda::atomicMin(&iv[i], old);
+                }
               }
-              cms::cuda::atomicMin(&iv[i], old);
-            }
-          }
-        });
+            });
       }
-        ++nloops;
+      ++nloops;
     }  // while
 
     // collect edges (assign to closest cluster of closest point??? here to closest point)
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-//    if (nn[i]==0 || nn[i]>=minT) continue;    // DBSCAN edge rule
-      if (nn[i] < minT){
+      //    if (nn[i]==0 || nn[i]>=minT) continue;    // DBSCAN edge rule
+      if (nn[i] < minT) {
         float mdist = eps;
         auto loop = [&](int j) {
           if (nn[j] < minT)

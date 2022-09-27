@@ -23,21 +23,21 @@ using TK = std::array<uint16_t, 4>;
 
 void countMulti(TK const* __restrict__ tk, Multiplicity* __restrict__ assoc, int32_t n) {
   auto iter{std::views::iota(0, n)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
     assoc->countDirect(2 + i % 4);
   });
 }
 
 void verifyMulti(Multiplicity* __restrict__ m1, Multiplicity* __restrict__ m2) {
   auto iter{std::views::iota(0U, Multiplicity::totbins())};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
     assert(m1->off[i] == m2->off[i]);
   });
 }
 
 void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   auto iter{std::views::iota(0, 4 * n)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
     auto k = i / 4;
     auto j = i - 4 * k;
     assert(j < 4);
@@ -50,7 +50,7 @@ void count(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
 
 void fill(TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   auto iter{std::views::iota(0, 4 * n)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
     auto k = i / 4;
     auto j = i - 4 * k;
     assert(j < 4);
@@ -66,7 +66,7 @@ void verify(Assoc* __restrict__ assoc) { assert(assoc->size() < Assoc::capacity(
 template <typename Assoc>
 void fillBulk(AtomicPairCounter* apc, TK const* __restrict__ tk, Assoc* __restrict__ assoc, int32_t n) {
   auto iter{std::views::iota(0, n)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto k){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto k) {
     auto m = tk[k][3] < MaxElem ? 4 : 3;
     assoc->bulkFill(*apc, &tk[k][0], m);
   });

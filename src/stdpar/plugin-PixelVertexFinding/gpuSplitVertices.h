@@ -122,9 +122,9 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       __shared__ uint32_t igv;
-      if (0 == threadIdx.x){
+      if (0 == threadIdx.x) {
         std::atomic_ref<uint32_t> ws_intermediate_atomic{ws.nvIntermediate};
-          igv = ws_intermediate_atomic++;
+        igv = ws_intermediate_atomic++;
       }
       __syncthreads();
       for (auto k = threadIdx.x; k < nq; k += blockDim.x) {

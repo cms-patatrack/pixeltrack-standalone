@@ -20,11 +20,11 @@ namespace gpuVertexFinder {
   // based on Rodrighez&Laio algo
   //
   __forceinline__ void clusterTracksByDensity(gpuVertexFinder::ZVertices* pdata,
-                                                         gpuVertexFinder::WorkSpace* pws,
-                                                         int minT,      // min number of neighbours to be "seed"
-                                                         float eps,     // max absolute distance to cluster
-                                                         float errmax,  // max error to be "seed"
-                                                         float chi2max  // max normalized distance to cluster
+                                              gpuVertexFinder::WorkSpace* pws,
+                                              int minT,      // min number of neighbours to be "seed"
+                                              float eps,     // max absolute distance to cluster
+                                              float errmax,  // max error to be "seed"
+                                              float chi2max  // max normalized distance to cluster
   ) {
     using namespace gpuVertexFinder;
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
@@ -52,7 +52,7 @@ namespace gpuVertexFinder {
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     auto hist_ptr{std::make_unique<Hist>()};
-    Hist *hist{hist_ptr.get()};
+    Hist* hist{hist_ptr.get()};
     std::fill(std::execution::par, hist->off, hist->off + Hist::totbins(), 0);
 
     if (verbose)
@@ -82,7 +82,7 @@ namespace gpuVertexFinder {
 
     // count neighbours
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-      if (ezt2[i] <= er2mx){
+      if (ezt2[i] <= er2mx) {
         auto loop = [&](uint32_t j) {
           if (i == j)
             return;

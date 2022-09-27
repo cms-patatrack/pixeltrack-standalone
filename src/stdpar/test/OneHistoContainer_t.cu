@@ -19,11 +19,11 @@ void mykernel(T const* __restrict__ v, uint32_t N) {
 
   using Hist = HistoContainer<T, NBINS, 12000, S, uint16_t>;
   std::unique_ptr<Hist> hist_ptr{std::make_unique<Hist>()};
-  Hist *hist = hist_ptr.get();
+  Hist* hist = hist_ptr.get();
   std::fill(std::execution::par, hist->off, hist->off + Hist::totbins(), 0);
 
   auto iter_n{std::views::iota(0U, N)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j) {
     hist->count(v[j]);
   });
 
@@ -34,11 +34,11 @@ void mykernel(T const* __restrict__ v, uint32_t N) {
   assert(N == hist->size());
 
   auto iter_nbins{std::views::iota(0U, Hist::nbins())};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter_nbins), std::ranges::cend(iter_nbins), [=](const auto j){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_nbins), std::ranges::cend(iter_nbins), [=](const auto j) {
     assert(hist->off[j] <= hist->off[j + 1]);
   });
 
-  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_n), std::ranges::cend(iter_n), [=](const auto j) {
     hist->fill(v[j], j);
   });
 
@@ -46,7 +46,7 @@ void mykernel(T const* __restrict__ v, uint32_t N) {
   assert(N == hist->size());
 
   auto iter_hsize{std::views::iota(0U, hist->size() - 1)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto j){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto j) {
     auto p = hist->begin() + j;
     assert((*p) < N);
     auto k1 = Hist::bin(v[*p]);
@@ -54,7 +54,7 @@ void mykernel(T const* __restrict__ v, uint32_t N) {
     assert(k2 >= k1);
   });
 
-  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto i){
+  std::for_each(std::execution::par, std::ranges::cbegin(iter_hsize), std::ranges::cend(iter_hsize), [=](const auto i) {
     auto p = hist->begin() + i;
     auto j = *p;
     auto b0 = Hist::bin(v[j]);

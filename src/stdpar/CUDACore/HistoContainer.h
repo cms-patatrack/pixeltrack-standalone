@@ -19,12 +19,12 @@ namespace cms {
 
     template <typename Histo, typename T>
     void countFromVector(Histo *__restrict__ h,
-                                    uint32_t nh,
-                                    T const *__restrict__ v,
-                                    uint32_t const *__restrict__ offsets) {
+                         uint32_t nh,
+                         T const *__restrict__ v,
+                         uint32_t const *__restrict__ offsets) {
       auto nt{offsets[nh]};
       auto iter_nt{std::views::iota(0U, nt)};
-      std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i){
+      std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
         auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
@@ -36,12 +36,12 @@ namespace cms {
 
     template <typename Histo, typename T>
     void fillFromVector(Histo *__restrict__ h,
-                                   uint32_t nh,
-                                   T const *__restrict__ v,
-                                   uint32_t const *__restrict__ offsets) {
+                        uint32_t nh,
+                        T const *__restrict__ v,
+                        uint32_t const *__restrict__ offsets) {
       auto nt{offsets[nh]};
       auto iter_nt{std::views::iota(0U, nt)};
-      std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i){
+      std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
         auto off = std::upper_bound(offsets, offsets + nh + 1, i);
         assert((*off) > 0);
         int32_t ih = off - offsets - 1;
@@ -196,7 +196,7 @@ namespace cms {
         }
         auto iter{std::views::iota(m, totbins())};
         auto off_ptr = off;
-        std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i){
+        std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
           off_ptr[i] = n;
         });
       }

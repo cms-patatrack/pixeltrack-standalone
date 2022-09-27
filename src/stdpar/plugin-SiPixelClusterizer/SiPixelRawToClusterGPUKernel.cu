@@ -602,8 +602,7 @@ namespace pixelgpudetails {
                 << " threads\n";
 #endif
 
-      countModules(
-          digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
+      countModules(digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
       cudaCheck(cudaGetLastError());
 
       threadsPerBlock = 256;
@@ -612,13 +611,13 @@ namespace pixelgpudetails {
       std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
 #endif
       findClus(digis_d.c_moduleInd(),
-                                               digis_d.c_xx(),
-                                               digis_d.c_yy(),
-                                               clusters_d.c_moduleStart(),
-                                               clusters_d.clusInModule(),
-                                               clusters_d.moduleId(),
-                                               digis_d.clus(),
-                                               wordCounter);
+               digis_d.c_xx(),
+               digis_d.c_yy(),
+               clusters_d.c_moduleStart(),
+               clusters_d.clusInModule(),
+               clusters_d.moduleId(),
+               digis_d.clus(),
+               wordCounter);
       cudaCheck(cudaGetLastError());
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();

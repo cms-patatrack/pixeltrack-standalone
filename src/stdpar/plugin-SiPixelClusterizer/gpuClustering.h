@@ -21,13 +21,13 @@ namespace gpuClustering {
 #endif
 
   void countModules(uint16_t const* __restrict__ id,
-                               uint32_t* __restrict__ moduleStart,
-                               int32_t* __restrict__ clusterId,
-                               int numElements) {
+                    uint32_t* __restrict__ moduleStart,
+                    int32_t* __restrict__ clusterId,
+                    int numElements) {
     auto iter{std::views::iota(0, numElements)};
     std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
       clusterId[i] = i;
-      if (InvId != id[i]){
+      if (InvId != id[i]) {
         auto j = i - 1;
         while (j >= 0 and id[j] == InvId)
           --j;
@@ -41,14 +41,13 @@ namespace gpuClustering {
   }
 
   void findClus(uint16_t const* __restrict__ id,           // module id of each pixel
-               uint16_t const* __restrict__ x,            // local coordinates of each pixel
-               uint16_t const* __restrict__ y,            //
-               uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
-               uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
-               uint32_t* __restrict__ moduleId,           // output: module id of each module
-               int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
-               int numElements) {
-
+                uint16_t const* __restrict__ x,            // local coordinates of each pixel
+                uint16_t const* __restrict__ y,            //
+                uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
+                uint32_t* __restrict__ nClustersInModule,  // output: number of clusters found in each module
+                uint32_t* __restrict__ moduleId,           // output: module id of each module
+                int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
+                int numElements) {
     uint32_t firstModule = 0;
     uint32_t endModule = moduleStart[0];
     auto iter{std::views::iota(firstModule, endModule)};
@@ -101,7 +100,7 @@ namespace gpuClustering {
       totGood = 0;
 #endif
 
-    // fill histo
+      // fill histo
       for (int i = first; i < msize; ++i) {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
@@ -122,7 +121,7 @@ namespace gpuClustering {
           continue;
         hist.fill(y[i], i - firstPixel);
       }
-  
+
       auto maxiter = hist.size();
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
@@ -138,11 +137,11 @@ namespace gpuClustering {
       uint32_t n40, n60;
       n40 = n60 = 0;
       for (auto j = 0; j < Hist::nbins(); ++j) {
-        if (hist.size(j) > 60){
+        if (hist.size(j) > 60) {
           std::atomic_ref<uint32_t> inc{n60};
           ++inc;
         }
-        if (hist.size(j) > 40){
+        if (hist.size(j) > 40) {
           std::atomic_ref<uint32_t> inc{n40};
           ++inc;
         }
@@ -186,7 +185,7 @@ namespace gpuClustering {
       int nloops = 0;
       while (more) {
         if (1 == nloops % 2) {
-          for (uint32_t j =0, k = 0U; j < hist.size(); ++j, ++k) {
+          for (uint32_t j = 0, k = 0U; j < hist.size(); ++j, ++k) {
             auto p = hist.begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];
@@ -218,7 +217,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
       {
         if (thisModuleId % 100 == 1)
-            printf("# loops %d\n", nloops);
+          printf("# loops %d\n", nloops);
       }
 #endif
 
@@ -267,7 +266,6 @@ namespace gpuClustering {
       if (thisModuleId % 100 == 1)
         printf("%d clusters in module %d\n", foundClusters, thisModuleId);
 #endif
-      
     });
   }
 

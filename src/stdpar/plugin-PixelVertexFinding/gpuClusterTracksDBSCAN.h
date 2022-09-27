@@ -17,11 +17,11 @@ namespace gpuVertexFinder {
   // this algo does not really scale as it works in a single block...
   // enough for <10K tracks we have
   void clusterTracksDBSCAN(ZVertices* pdata,
-                                      WorkSpace* pws,
-                                      int minT,      // min number of neighbours to be "core"
-                                      float eps,     // max absolute distance to cluster
-                                      float errmax,  // max error to be "seed"
-                                      float chi2max  // max normalized distance to cluster
+                           WorkSpace* pws,
+                           int minT,      // min number of neighbours to be "core"
+                           float eps,     // max absolute distance to cluster
+                           float errmax,  // max error to be "seed"
+                           float chi2max  // max normalized distance to cluster
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -48,7 +48,7 @@ namespace gpuVertexFinder {
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     auto hist_ptr{std::make_unique<Hist>()};
-    Hist *hist{hist_ptr.get()};
+    Hist* hist{hist_ptr.get()};
     std::fill(std::execution::par, hist->off, hist->off + Hist::totbins(), 0);
 
     if (verbose)
@@ -78,7 +78,7 @@ namespace gpuVertexFinder {
 
     // count neighbours
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-      if (ezt2[i] <= er2mx){
+      if (ezt2[i] <= er2mx) {
         auto loop = [&](uint32_t j) {
           if (i == j)
             return;
@@ -95,7 +95,7 @@ namespace gpuVertexFinder {
 
     // find NN with smaller z...
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-      if (nn[i] >= minT){
+      if (nn[i] >= minT) {
         float mz = zt[i];
         auto loop = [&](uint32_t j) {
           if (zt[j] >= mz)
@@ -140,7 +140,7 @@ namespace gpuVertexFinder {
 #ifdef GPU_DEBUG
     // and verify that we did not spit any cluster...
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-      if (nn[i] >= minT){
+      if (nn[i] >= minT) {
         assert(zt[iv[i]] <= zt[i]);
         auto loop = [&](uint32_t j) {
           if (nn[j] < minT)
@@ -165,7 +165,7 @@ namespace gpuVertexFinder {
     // collect edges (assign to closest cluster of closest point??? here to closest point)
     std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
       //    if (nn[i]==0 || nn[i]>=minT) continue;    // DBSCAN edge rule
-      if (nn[i] < minT){
+      if (nn[i] < minT) {
         float mdist = eps;
         auto loop = [&](uint32_t j) {
           if (nn[j] < minT)
