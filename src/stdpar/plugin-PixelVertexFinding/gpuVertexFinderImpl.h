@@ -55,8 +55,6 @@ namespace gpuVertexFinder {
                                         float errmax,  // max error to be "seed"
                                         float chi2max  // max normalized distance to cluster,
   ) {
-    clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
     fitVertices(pdata, pws, 50.);
     __syncthreads();
     splitVertices(pdata, pws, 9.f);
@@ -71,8 +69,6 @@ namespace gpuVertexFinder {
                                       float errmax,  // max error to be "seed"
                                       float chi2max  // max normalized distance to cluster,
   ) {
-    clusterTracksByDensity(pdata, pws, minT, eps, errmax, chi2max);
-    __syncthreads();
     fitVertices(pdata, pws, 50.);
   }
 
@@ -90,7 +86,7 @@ namespace gpuVertexFinder {
     assert(soa);
     auto ws = std::make_unique<WorkSpace>();
 
-    init<<<1, 1, 0>>>(soa, ws.get());
+    init(soa, ws.get());
     auto blockSize = 128;
     auto numberOfBlocks = (TkSoA::stride() + blockSize - 1) / blockSize;
     loadTracks<<<numberOfBlocks, blockSize, 0>>>(tksoa, soa, ws.get(), ptMin);
@@ -98,11 +94,13 @@ namespace gpuVertexFinder {
     if (oneKernel_) {
       // implemented only for density clustesrs
 #ifndef THREE_KERNELS
+      clusterTracksByDensity(soa, ws.get(), minT, eps, errmax, chi2max);
       vertexFinderOneKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       // moved the call out of cuda kernel as sortByPt2 is calling stdpar algorithms
       cudaDeviceSynchronize();
       sortByPt2(soa, ws.get());
 #else
+      clusterTracksByDensity(soa, ws.get(), minT, eps, errmax, chi2max);
       vertexFinderKernel1<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
       cudaCheck(cudaGetLastError());
       // one block per vertex...
@@ -115,11 +113,11 @@ namespace gpuVertexFinder {
 #endif
     } else {  // five kernels
       if (useDensity_) {
-        clusterTracksByDensityKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
+        clusterTracksByDensity(soa, ws.get(), minT, eps, errmax, chi2max);
       } else if (useDBSCAN_) {
-        clusterTracksDBSCAN<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
+        clusterTracksDBSCAN(soa, ws.get(), minT, eps, errmax, chi2max);
       } else if (useIterative_) {
-        clusterTracksIterative<<<1, 1024 - 256, 0>>>(soa, ws.get(), minT, eps, errmax, chi2max);
+        clusterTracksIterative(soa, ws.get(), minT, eps, errmax, chi2max);
       }
       cudaCheck(cudaGetLastError());
       fitVerticesKernel<<<1, 1024 - 256, 0>>>(soa, ws.get(), 50.);

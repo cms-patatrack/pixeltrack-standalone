@@ -57,7 +57,7 @@ namespace gpuVertexFinder {
       // copy to local
       for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
         if (iv[k] == int(kv)) {
-          auto old = nq_atomic.fetch_add(MAXTK);
+          auto old = cms::cuda::atomicInc(&nq, static_cast<uint32_t>(MAXTK));
           zz[old] = zt[k] - zv[kv];
           newV[old] = zz[old] < 0 ? 0 : 1;
           ww[old] = 1.f / ezt2[k];
@@ -122,9 +122,9 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       __shared__ uint32_t igv;
-      if (0 == threadIdx.x){
+      if (0 == threadIdx.x) {
         std::atomic_ref<uint32_t> ws_intermediate_atomic{ws.nvIntermediate};
-          igv = ws_intermediate_atomic++;
+        igv = ws_intermediate_atomic++;
       }
       __syncthreads();
       for (auto k = threadIdx.x; k < nq; k += blockDim.x) {

@@ -226,7 +226,7 @@ int main(void) {
     std::cout << "CUDA countModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
               << " threads\n";
 
-    countModules<<<blocksPerGrid, threadsPerBlock>>>(h_id.get(), d_moduleStart.get(), h_clus.get(), n);
+    countModules(h_id.get(), d_moduleStart.get(), h_clus.get(), n);
 
     blocksPerGrid = MaxNumModules;  //nModules;
 
@@ -234,7 +234,7 @@ int main(void) {
               << " threads\n";
     std::memset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
 
-    findClus<<<blocksPerGrid, threadsPerBlock>>>(
+    findClus(
         h_id.get(), h_x.get(), h_y.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
     cudaDeviceSynchronize();
     nModules = d_moduleStart[0];

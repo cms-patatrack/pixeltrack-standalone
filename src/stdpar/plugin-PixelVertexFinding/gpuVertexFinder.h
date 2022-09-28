@@ -32,7 +32,7 @@ namespace gpuVertexFinder {
     }
   };
 
-  __global__ inline void init(ZVertexSoA* pdata, WorkSpace* pws) {
+  inline void init(ZVertexSoA* pdata, WorkSpace* pws) {
     pdata->init();
     pws->init();
   }

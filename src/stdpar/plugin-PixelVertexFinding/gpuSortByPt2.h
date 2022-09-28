@@ -33,28 +33,25 @@ namespace gpuVertexFinder {
     // fill indexing
     int16_t* idv = data.idv;
     uint16_t* itrk = ws.itrk;
-    std::for_each(
-        std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-          idv[itrk[i]] = iv[i];
-        });
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
+      idv[itrk[i]] = iv[i];
+    });
 
     std::fill(std::execution::par, ptv2, ptv2 + nvFinal, 0);
-    std::for_each(
-        std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
-          if (iv[i] <= 9990) {
-            cms::cuda::atomicAdd(&ptv2[iv[i]], ptt2[i]);
-          }
-        });
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_nt), std::ranges::cend(iter_nt), [=](const auto i) {
+      if (iv[i] <= 9990) {
+        cms::cuda::atomicAdd(&ptv2[iv[i]], ptt2[i]);
+      }
+    });
 
     if (1 == nvFinal) {
       sortInd[0] = 0;
       return;
     }
     auto iter_nv{std::views::iota(static_cast<uint32_t>(0), nvFinal)};
-    std::for_each(
-        std::execution::par, std::ranges::cbegin(iter_nv), std::ranges::cend(iter_nv), [=](const auto i) {
-          sortInd[i] = i;
-        });
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_nv), std::ranges::cend(iter_nv), [=](const auto i) {
+      sortInd[i] = i;
+    });
     std::sort(std::execution::par, sortInd, sortInd + nvFinal, [=](const auto i, const auto j) -> bool {
       return ptv2[i] < ptv2[j];
     });

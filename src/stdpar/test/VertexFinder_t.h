@@ -14,7 +14,7 @@
 #define CLUSTERIZE gpuVertexFinder::clusterTracksIterative
 #else
 #include "plugin-PixelVertexFinding/gpuClusterTracksByDensity.h"
-#define CLUSTERIZE gpuVertexFinder::clusterTracksByDensityKernel
+#define CLUSTERIZE gpuVertexFinder::clusterTracksByDensity
 #endif
 #include "plugin-PixelVertexFinding/gpuFitVertices.h"
 #include "plugin-PixelVertexFinding/gpuSortByPt2.h"
@@ -124,7 +124,7 @@ int main() {
       gen(ev);
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-      gpuVertexFinder::init<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
+      gpuVertexFinder::init(onGPU_d.get(), ws_d.get());
 #else
       onGPU_d->init();
       ws_d->init();
@@ -165,7 +165,7 @@ int main() {
       vertexFinderOneKernel<<<1, 512 + 256>>>(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
       sortByPt2(onGPU_d.get(), ws_d.get());
 #else
-      CLUSTERIZE<<<1, 512 + 256>>>(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
+      CLUSTERIZE(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
 #endif
       print<<<1, 1, 0, 0>>>(onGPU_d.get(), ws_d.get());
 
