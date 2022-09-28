@@ -53,9 +53,7 @@ namespace pixelgpudetails {
 
   ////////////////////
 
-  uint32_t getLink(uint32_t ww) {
-    return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
-  }
+  uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
   uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
@@ -64,9 +62,9 @@ namespace pixelgpudetails {
   bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
   pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
-                                                uint8_t fed,
-                                                uint32_t link,
-                                                uint32_t roc) {
+                                     uint8_t fed,
+                                     uint32_t link,
+                                     uint32_t roc) {
     uint32_t index = fed * MAX_LINK * MAX_ROC + (link - 1) * MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = {
         cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index]};
@@ -269,10 +267,10 @@ namespace pixelgpudetails {
   }
 
   uint32_t getErrRawID(uint8_t fedId,
-                                  uint32_t errWord,
-                                  uint32_t errorType,
-                                  const SiPixelFedCablingMapGPU *cablingMap,
-                                  bool debug = false) {
+                       uint32_t errWord,
+                       uint32_t errorType,
+                       const SiPixelFedCablingMapGPU *cablingMap,
+                       bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -347,21 +345,20 @@ namespace pixelgpudetails {
 
   // Kernel to perform Raw to Digi conversion
   void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
-                                   const unsigned char *modToUnp,
-                                   const uint32_t wordCounter,
-                                   const uint32_t *word,
-                                   const uint8_t *fedIds,
-                                   uint16_t *xx,
-                                   uint16_t *yy,
-                                   uint16_t *adc,
-                                   uint32_t *pdigi,
-                                   uint32_t *rawIdArr,
-                                   uint16_t *moduleId,
-                                   cms::cuda::SimpleVector<PixelErrorCompact> *err,
-                                   bool useQualityInfo,
-                                   bool includeErrors,
-                                   bool debug) {
-
+                        const unsigned char *modToUnp,
+                        const uint32_t wordCounter,
+                        const uint32_t *word,
+                        const uint8_t *fedIds,
+                        uint16_t *xx,
+                        uint16_t *yy,
+                        uint16_t *adc,
+                        uint32_t *pdigi,
+                        uint32_t *rawIdArr,
+                        uint16_t *moduleId,
+                        cms::cuda::SimpleVector<PixelErrorCompact> *err,
+                        bool useQualityInfo,
+                        bool includeErrors,
+                        bool debug) {
     uint32_t first = 0;
     auto iter{std::views::iota(first, wordCounter)};
     std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto iloop) {
@@ -482,7 +479,10 @@ namespace pixelgpudetails {
     });
 
     std::inclusive_scan(std::execution::par, moduleStart + 1, moduleStart + 1025, moduleStart + 1);
-    std::inclusive_scan(std::execution::par, moduleStart + 1025, moduleStart + 1025 + gpuClustering::MaxNumModules - 1024, moduleStart + 1025);
+    std::inclusive_scan(std::execution::par,
+                        moduleStart + 1025,
+                        moduleStart + 1025 + gpuClustering::MaxNumModules - 1024,
+                        moduleStart + 1025);
 
     auto iter_off{std::views::iota(first + 1025, gpuClustering::MaxNumModules + 1)};
     std::for_each(std::execution::par, std::ranges::cbegin(iter_off), std::ranges::cend(iter_off), [=](const auto i) {
@@ -498,22 +498,24 @@ namespace pixelgpudetails {
     assert(moduleStart[1025] >= moduleStart[1024]);
     assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
-    std::for_each(std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
-      if (0 != i)
-        assert(moduleStart[i] >= moduleStart[i - i]);
-      // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
-      // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
-      if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
-        printf("moduleStart %d %d\n", i, moduleStart[i]);
-    });
+    std::for_each(
+        std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
+          if (0 != i)
+            assert(moduleStart[i] >= moduleStart[i - i]);
+          // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
+          // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
+          if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
+            printf("moduleStart %d %d\n", i, moduleStart[i]);
+        });
 #endif
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    std::for_each(std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
-      if (moduleStart[i] > MAX_HITS)
-        moduleStart[i] = MAX_HITS;
-    });
+    std::for_each(
+        std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
+          if (moduleStart[i] > MAX_HITS)
+            moduleStart[i] = MAX_HITS;
+        });
   }
 
   // Interface to outside
@@ -542,7 +544,6 @@ namespace pixelgpudetails {
 
     if (wordCounter)  // protect in case of empty event....
     {
-
       // wordCounter is the total no of words in each event to be trasfered on device
       assert(0 == wordCounter % 2);
 

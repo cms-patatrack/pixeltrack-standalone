@@ -12,19 +12,17 @@
 
 namespace gpuClustering {
 
-  void clusterChargeCut(
-      uint16_t* __restrict__ id,                 // module id of each pixel (modified if bad cluster)
-      uint16_t const* __restrict__ adc,          //  charge of each pixel
-      uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
-      uint32_t* __restrict__ nClustersInModule,  // modified: number of clusters found in each module
-      uint32_t const* __restrict__ moduleId,     // module id of each module
-      int32_t* __restrict__ clusterId,           // modified: cluster id of each pixel
-      uint32_t numElements) {
-
+  void clusterChargeCut(uint16_t* __restrict__ id,                 // module id of each pixel (modified if bad cluster)
+                        uint16_t const* __restrict__ adc,          //  charge of each pixel
+                        uint32_t const* __restrict__ moduleStart,  // index of the first pixel of each module
+                        uint32_t* __restrict__ nClustersInModule,  // modified: number of clusters found in each module
+                        uint32_t const* __restrict__ moduleId,     // module id of each module
+                        int32_t* __restrict__ clusterId,           // modified: cluster id of each pixel
+                        uint32_t numElements) {
     auto endmodules{moduleStart[0]};
     auto iter{std::views::iota(0U, endmodules)};
 
-    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto module){
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto module) {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
       assert(thisModuleId < MaxNumModules);
@@ -35,10 +33,7 @@ namespace gpuClustering {
         return;
 
       if (nclus > MaxNumClustersPerModules)
-        printf("Warning too many clusters in module %d: %d > %d\n",
-              thisModuleId,
-              nclus,
-              MaxNumClustersPerModules);
+        printf("Warning too many clusters in module %d: %d > %d\n", thisModuleId, nclus, MaxNumClustersPerModules);
 
       auto first = firstPixel;
 
@@ -57,10 +52,10 @@ namespace gpuClustering {
         nclus = MaxNumClustersPerModules;
       }
 
-  #ifdef GPU_DEBUG
+#ifdef GPU_DEBUG
       if (thisModuleId % 100 == 1)
-          printf("start clusterizer for module %d\n", thisModuleId);
-  #endif
+        printf("start clusterizer for module %d\n", thisModuleId);
+#endif
 
       int32_t charge[MaxNumClustersPerModules];
       uint8_t ok[MaxNumClustersPerModules];

@@ -231,12 +231,13 @@ int main(void) {
     countModules(h_id.get(), d_moduleStart.get(), h_clus.get(), n);
 
     std::cout << "CUDA findModules kernel launch with " << d_moduleStart[0] << " modules\n";
-    for(auto i = 1; i < d_moduleStart[0] + 1 ; ++i)
+    for (auto i = 1; i < d_moduleStart[0] + 1; ++i)
       assert(d_moduleStart[i] < numElements);
-    for(auto i =  d_moduleStart[0] + 1; i < MaxNumModules + 1 ; ++i)
+    for (auto i = d_moduleStart[0] + 1; i < MaxNumModules + 1; ++i)
       assert(d_moduleStart[i] == 0);
 
-    findClus(h_id.get(), h_x.get(), h_y.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
+    findClus(
+        h_id.get(), h_x.get(), h_y.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
     nModules = d_moduleStart[0];
 
     uint32_t *nclus{d_clusInModule.get()};
@@ -251,7 +252,8 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    clusterChargeCut(h_id.get(), h_adc.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
+    clusterChargeCut(
+        h_id.get(), h_adc.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
 
     std::cout << "found " << nModules << " Modules active" << std::endl;
 

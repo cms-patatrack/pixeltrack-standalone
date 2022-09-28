@@ -22,15 +22,15 @@ namespace gpuCalibPixel {
   constexpr float VCaltoElectronOffset_L1 = -670;  // L1:   -670 +- 220
 
   void calibDigis(bool isRun2,
-                             uint16_t* id,
-                             uint16_t const* __restrict__ x,
-                             uint16_t const* __restrict__ y,
-                             uint16_t* adc,
-                             SiPixelGainForHLTonGPU const* __restrict__ ped,
-                             int numElements,
-                             uint32_t* __restrict__ moduleStart,        // just to zero first
-                             uint32_t* __restrict__ nClustersInModule,  // just to zero them
-                             uint32_t* __restrict__ clusModuleStart     // just to zero first
+                  uint16_t* id,
+                  uint16_t const* __restrict__ x,
+                  uint16_t const* __restrict__ y,
+                  uint16_t* adc,
+                  SiPixelGainForHLTonGPU const* __restrict__ ped,
+                  int numElements,
+                  uint32_t* __restrict__ moduleStart,        // just to zero first
+                  uint32_t* __restrict__ nClustersInModule,  // just to zero them
+                  uint32_t* __restrict__ clusModuleStart     // just to zero first
   ) {
     int first = 0;
 
@@ -39,7 +39,7 @@ namespace gpuCalibPixel {
 
     auto iter{std::views::iota(first, numElements)};
     std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
-      if (InvId != id[i]){
+      if (InvId != id[i]) {
         float conversionFactor = (isRun2) ? (id[i] < 96 ? VCaltoElectronGain_L1 : VCaltoElectronGain) : 1.f;
         float offset = (isRun2) ? (id[i] < 96 ? VCaltoElectronOffset_L1 : VCaltoElectronOffset) : 0;
 
