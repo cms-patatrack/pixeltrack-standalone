@@ -206,7 +206,7 @@ int main(void) {
       }
     }
   };  // end lambda
-  for (auto kkk = 1; kkk < 5; ++kkk) {
+  for (auto kkk = 0; kkk < 5; ++kkk) {
     n = 0;
     ncl = 0;
     std::fill(h_id.get(), h_id.get() + numElements, 0);
