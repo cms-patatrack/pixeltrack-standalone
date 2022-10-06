@@ -218,6 +218,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void HistoValidator::endJob() {
 #if defined ALPAKA_ACC_CPU_B_SEQ_T_SEQ_SYNC_BACKEND
     std::ofstream out("histograms_alpaka_serial.txt");
+#elif defined ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_SYNC_BACKEND
+    std::ofstream out("histograms_alpaka_fibers.txt");
 #elif defined ALPAKA_ACC_CPU_B_TBB_T_SEQ_ASYNC_BACKEND
     std::ofstream out("histograms_alpaka_tbb.txt");
 #elif defined ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND

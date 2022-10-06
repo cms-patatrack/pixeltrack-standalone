@@ -12,6 +12,9 @@ namespace cms::alpakatools {
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
   extern template void initialise<alpaka_serial_sync::Platform>();
 #endif
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+  extern template void initialise<alpaka_fibers_sync::Platform>();
+#endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
   extern template void initialise<alpaka_tbb_async::Platform>();
 #endif

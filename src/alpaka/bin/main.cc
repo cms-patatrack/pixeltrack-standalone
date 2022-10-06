@@ -29,6 +29,9 @@ namespace {
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
         << "[--serial] "
 #endif
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+        << "[--fibers] "
+#endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
         << "[--tbb] "
 #endif
@@ -43,6 +46,9 @@ namespace {
         << "Options\n"
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
         << " --serial            Use CPU Serial backend\n"
+#endif
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+        << " --fibers            Use CPU Fibers backend\n"
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
         << " --tbb               Use CPU TBB backend\n"
@@ -140,6 +146,12 @@ int main(int argc, char** argv) {
       getOptionalArgument(args, i, weight);
       backends.insert_or_assign(Backend::SERIAL, weight);
 #endif
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+    } else if (*i == "--fibers") {
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::FIBERS, weight);
+#endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
     } else if (*i == "--tbb") {
       float weight = 1.;
@@ -206,6 +218,11 @@ int main(int argc, char** argv) {
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
   if (backends.find(Backend::SERIAL) != backends.end()) {
     cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
+  }
+#endif
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_FIBERS_PRESENT
+  if (backends.find(Backend::FIBERS) != backends.end()) {
+    cms::alpakatools::initialise<alpaka_fibers_sync::Platform>();
   }
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT

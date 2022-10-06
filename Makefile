@@ -154,8 +154,8 @@ export EIGEN_NVCXX_CXXFLAGS := -DEIGEN_USE_GPU -DEIGEN_UNROLLING_LIMIT=64
 export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
 
 BOOST_BASE := /usr
-# Minimum required version of Boost, e.g. 1.78.0
-BOOST_MIN_VERSION := 107800
+# Minimum required version of Boost, e.g. 1.79.0
+BOOST_MIN_VERSION := 107900
 # Check if an external version of Boost is present and recent enough
 ifeq ($(wildcard $(BOOST_BASE)/include/boost/version.hpp),)
 NEED_BOOST := true
@@ -167,7 +167,7 @@ BOOST_BASE := $(EXTERNAL_BASE)/boost
 endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -isystem $(BOOST_BASE)/include
-export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib -Wl,-rpath,$(BOOST_BASE)/lib -lboost_fiber -lboost_context -lboost_filesystem
 export BOOST_NVCC_CXXFLAGS :=
 
 BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
@@ -562,8 +562,8 @@ external_boost: $(BOOST_BASE)
 $(BOOST_BASE): CXXFLAGS:=
 $(BOOST_BASE):
 	$(eval BOOST_TMP := $(shell mktemp -d))
-	curl -L -s -S https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.bz2 | tar xj -C $(BOOST_TMP)
-	cd $(BOOST_TMP)/boost_1_78_0 && ./bootstrap.sh && ./b2 install --prefix=$@ --without-graph_parallel --without-mpi --without-python
+	curl -L -s -S https://boostorg.jfrog.io/artifactory/main/release/1.79.0/source/boost_1_79_0.tar.bz2 | tar xj -C $(BOOST_TMP)
+	cd $(BOOST_TMP)/boost_1_79_0 && ./bootstrap.sh && ./b2 install --prefix=$@ --without-graph_parallel --without-mpi --without-python
 	@rm -rf $(BOOST_TMP)
 	$(eval undefine BOOST_TMP)
 
