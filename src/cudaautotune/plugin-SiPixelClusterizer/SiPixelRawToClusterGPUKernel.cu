@@ -26,6 +26,7 @@
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
+#include "CUDACore/ExecutionConfiguration.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
 // local includes
@@ -35,6 +36,7 @@
 #include "gpuClustering.h"
 
 namespace pixelgpudetails {
+    cms::cuda::ExecutionConfiguration exec;
 
   // number of words for all the FEDs
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
@@ -547,7 +549,7 @@ namespace pixelgpudetails {
 
     if (wordCounter)  // protect in case of empty event....
     {
-      const int threadsPerBlock = 512;
+      int threadsPerBlock = exec.configFromFile("RawToDigi_kernel");
       const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
 
       assert(0 == wordCounter % 2);
@@ -592,7 +594,7 @@ namespace pixelgpudetails {
     {
       // clusterizer ...
       using namespace gpuClustering;
-      int threadsPerBlock = 256;
+      int threadsPerBlock = exec.configFromFile("calibDigis");
       int blocks =
           (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -617,6 +619,9 @@ namespace pixelgpudetails {
                 << " threads\n";
 #endif
 
+      threadsPerBlock = exec.configFromFile("countModules");// 256;
+      blocks =
+          (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
       countModules<<<blocks, threadsPerBlock, 0, stream>>>(
           digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
       cudaCheck(cudaGetLastError());
@@ -625,7 +630,7 @@ namespace pixelgpudetails {
       cudaCheck(cudaMemcpyAsync(
           &(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t), cudaMemcpyDefault, stream));
 
-      threadsPerBlock = 256;
+      threadsPerBlock = exec.configFromFile("findClus");
       blocks = MaxNumModules;
 #ifdef GPU_DEBUG
       std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
@@ -645,6 +650,7 @@ namespace pixelgpudetails {
 #endif
 
       // apply charge cut
+      threadsPerBlock = exec.configFromFile("clusterChargeCut");
       clusterChargeCut<<<blocks, threadsPerBlock, 0, stream>>>(digis_d.moduleInd(),
                                                                digis_d.c_adc(),
                                                                clusters_d.c_moduleStart(),

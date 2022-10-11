@@ -14,6 +14,7 @@
 #include "CUDACore/cuda_assert.h"
 #include "CUDACore/cudastdAlgorithm.h"
 #include "CUDACore/prefixScan.h"
+#include "CUDACore/ExecutionConfiguration.h"
 
 namespace cms {
   namespace cuda {
@@ -77,6 +78,7 @@ namespace cms {
 #ifdef __CUDACC__
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t *ppsws = (int32_t *)((char *)(h) + offsetof(Histo, psws));
+      cms::cuda::ExecutionConfiguration exec;
       auto nthreads = 1024;
       auto nblocks = (Histo::totbins() + nthreads - 1) / nthreads;
       multiBlockPrefixScan<<<nblocks, nthreads, sizeof(int32_t) * nblocks, stream>>>(

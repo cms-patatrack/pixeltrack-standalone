@@ -32,7 +32,6 @@ namespace {
 }  // namespace
 
 namespace pixelgpudetails {
-
   TrackingRecHit2DCUDA PixelRecHitGPUKernel::makeHitsAsync(SiPixelDigisCUDA const& digis_d,
                                                            SiPixelClustersCUDA const& clusters_d,
                                                            BeamSpotCUDA const& bs_d,
@@ -41,7 +40,8 @@ namespace pixelgpudetails {
     auto nHits = clusters_d.nClusters();
     TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), stream);
 
-    int threadsPerBlock = 128;
+    cms::cuda::ExecutionConfiguration exec;
+    int threadsPerBlock = exec.configFromFile("getHits");
     int blocks = digis_d.nModules();  // active modules (with digis)
 
 #ifdef GPU_DEBUG
