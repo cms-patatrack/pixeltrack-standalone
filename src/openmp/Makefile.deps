@@ -1,4 +1,4 @@
-serial_EXTERNAL_DEPENDS := TBB EIGEN BOOST BACKTRACE
+openmp_EXTERNAL_DEPENDS := TBB EIGEN BOOST BACKTRACE
 BeamSpotProducer_DEPENDS := Framework CUDACore CUDADataFormats
 CUDACore_DEPENDS := Framework
 CUDADataFormats_DEPENDS := CUDACore DataFormats
