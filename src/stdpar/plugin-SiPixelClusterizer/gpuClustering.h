@@ -50,7 +50,14 @@ namespace gpuClustering {
                 int numElements) {
     uint32_t firstModule = 0;
     uint32_t endModule = moduleStart[0];
+
+    constexpr uint32_t maxPixInModule = 4000;
+    constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
+    using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
+    auto histos{std::make_unique<Hist[]>(endModule)};
+    auto d_histos{histos.get()};
     auto iter{std::views::iota(firstModule, endModule)};
+
     std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto module) {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
@@ -76,13 +83,9 @@ namespace gpuClustering {
         }
       }
 
-      //init hist  (ymax=416 < 512 : 9bits)
-      constexpr uint32_t maxPixInModule = 4000;
-      constexpr auto nbins = phase1PixelTopology::numColsInModule + 2;  //2+2;
-      using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
-      Hist hist;
+      Hist* hist{d_histos + module};
       for (auto j = 0; j < Hist::totbins(); ++j) {
-        hist.off[j] = 0;
+        hist->off[j] = 0;
       }
 
       assert((msize == numElements) or ((msize < numElements) and (id[msize] != thisModuleId)));
@@ -104,28 +107,28 @@ namespace gpuClustering {
       for (int i = first; i < msize; ++i) {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
-        hist.count(y[i]);
+        hist->count(y[i]);
 #ifdef GPU_DEBUG
         std::atomic_ref<uint32_t> inc{totGood};
         ++inc;
 #endif
       }
-      hist.finalizeSeq();
+      hist->finalizeSeq();
 #ifdef GPU_DEBUG
-      assert(hist.size() == totGood);
+      assert(hist->size() == totGood);
       if (thisModuleId % 100 == 1)
-        printf("histo size %d\n", hist.size());
+        printf("histo size %d\n", hist->size());
 #endif
       for (int i = first; i < msize; ++i) {
         if (id[i] == InvId)  // skip invalid pixels
           continue;
-        hist.fill(y[i], i - firstPixel);
+        hist->fill(y[i], i - firstPixel);
       }
 
-      auto maxiter = hist.size();
+      auto maxiter = hist->size();
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
-      assert(hist.size() <= maxiter);
+      assert(hist->size() <= maxiter);
       // nearest neighbour
       uint16_t nn[maxiter][maxNeighbours];
       uint8_t nnn[maxiter];  // number of nn
@@ -137,11 +140,11 @@ namespace gpuClustering {
       uint32_t n40, n60;
       n40 = n60 = 0;
       for (auto j = 0; j < Hist::nbins(); ++j) {
-        if (hist.size(j) > 60) {
+        if (hist->size(j) > 60) {
           std::atomic_ref<uint32_t> inc{n60};
           ++inc;
         }
-        if (hist.size(j) > 40) {
+        if (hist->size(j) > 40) {
           std::atomic_ref<uint32_t> inc{n40};
           ++inc;
         }
@@ -154,14 +157,14 @@ namespace gpuClustering {
 #endif
 
       // fill NN
-      for (uint32_t j = 0, k = 0U; j < hist.size(); ++j, ++k) {
+      for (uint32_t j = 0, k = 0U; j < hist->size(); ++j, ++k) {
         assert(k < maxiter);
-        auto p = hist.begin() + j;
+        auto p = hist->begin() + j;
         auto i = *p + firstPixel;
         assert(id[i] != InvId);
         assert(id[i] == thisModuleId);  // same module
         int be = Hist::bin(y[i] + 1);
-        auto e = hist.end(be);
+        auto e = hist->end(be);
         ++p;
         assert(0 == nnn[k]);
         for (; p < e; ++p) {
@@ -185,8 +188,8 @@ namespace gpuClustering {
       int nloops = 0;
       while (more) {
         if (1 == nloops % 2) {
-          for (uint32_t j = 0, k = 0U; j < hist.size(); ++j, ++k) {
-            auto p = hist.begin() + j;
+          for (uint32_t j = 0, k = 0U; j < hist->size(); ++j, ++k) {
+            auto p = hist->begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];
             while (m != clusterId[m])
@@ -195,8 +198,8 @@ namespace gpuClustering {
           }
         } else {
           more = false;
-          for (uint32_t j = 0, k = 0U; j < hist.size(); ++j, ++k) {
-            auto p = hist.begin() + j;
+          for (uint32_t j = 0, k = 0U; j < hist->size(); ++j, ++k) {
+            auto p = hist->begin() + j;
             auto i = *p + firstPixel;
             for (int kk = 0; kk < nnn[k]; ++kk) {
               auto l = nn[k][kk];
