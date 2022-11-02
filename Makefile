@@ -327,7 +327,7 @@ ifeq ($(OPENMP_COMPILER), LLVM)
   export OPENMP_CXXFLAGS := -fopenmp-version=51 -foffload-lto -O2 -fPIC -std=c++17 -fopenmp $(OPENMP_TARGETS) -fopenmp-offload-mandatory $(OPENMP_EIGEN_CXXFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
   export OPENMP_LDFLAGS := $(LDFLAGS) -foffload-lto -O2 --gcc-toolchain=$(GCC_TOOLCHAIN)
 else ifeq ($(OPENMP_COMPILER), AMD)
-  echo "aompcc not supported"
+  $(error "aompcc not supported")
   # aompcc doesn't support C++ files with .cc suffix
   #export OPENMP_CXX := aompcc
 else ifeq ($(OPENMP_COMPILER), INTEL)
