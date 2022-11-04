@@ -309,6 +309,36 @@ export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
 endif
 endif
 
+
+# OpenMP target offload
+
+#OPENMP_COMPILER := LLVM
+#OPENMP_COMPILER := AMD
+#OPENMP_COMPILER := INTEL
+#OPENMP_COMPILER := NVIDIA
+
+export OPENMP_EIGEN_CXXFLAGS := "-DEIGEN_ASM_COMMENT(x)=" -DEIGEN_NO_CUDA -DEIGEN_DONT_VECTORIZE -DEIGEN_NO_CPUID
+ifeq ($(OPENMP_COMPILER), LLVM)
+  export OPENMP_CXX := clang++
+  # CUDA
+  export OPENMP_TARGETS := -fopenmp-targets=nvptx64-nvidia-cuda --cuda-path=$(CUDA_BASE)
+  # HIP
+  #export OPENMP_TARGETS := -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdhsa-amd-amdhsa  -march=gfx900
+  export OPENMP_CXXFLAGS := -fopenmp-version=51 -foffload-lto -O2 -fPIC -std=c++17 -fopenmp $(OPENMP_TARGETS) -fopenmp-offload-mandatory $(OPENMP_EIGEN_CXXFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
+  export OPENMP_LDFLAGS := $(LDFLAGS) -foffload-lto -O2 --gcc-toolchain=$(GCC_TOOLCHAIN)
+else ifeq ($(OPENMP_COMPILER), AMD)
+  $(error "aompcc not supported")
+  # aompcc doesn't support C++ files with .cc suffix
+  #export OPENMP_CXX := aompcc
+else ifeq ($(OPENMP_COMPILER), INTEL)
+  export OPENMP_CXX := icpx
+  export OPENMP_CXXFLAGS := -fiopenmp -fopenmp-targets=spir64 -std=c++17 -fPIC $(OPENMP_EIGEN_CXXFLAGS)
+else ifeq ($(OPENMP_COMPILER), NVIDIA)
+  export OPENMP_CXX := nvc++
+  export OPENMP_CXXFLAGS := -mp=gpu
+endif
+
+
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -324,15 +354,16 @@ TARGETS_CUDA :=
 TARGETS_ROCM :=
 TARGETS_SYCL :=
 TARGETS_NVHPC :=
+TARGETS_OPENMP :=
 define SPLIT_TARGETS_template
 ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
   TARGETS_$(1) += $(2)
 endif
 endef
-TOOLCHAINS := CUDA ROCM SYCL NVHPC
+TOOLCHAINS := CUDA ROCM SYCL NVHPC OPENMP
 $(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
 
-TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL) $(TARGETS_NVHPC),$(TARGETS_ALL))
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL) $(TARGETS_NVHPC) $(TARGETS_OPENMP),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
@@ -347,6 +378,9 @@ TARGETS += $(TARGETS_SYCL)
 endif
 ifdef NVHPC_BASE
 TARGETS += $(TARGETS_NVHPC)
+endif
+ifdef OPENMP_COMPILER
+TARGETS += $(TARGETS_OPENMP)
 endif
 # remove possible duplicates
 TARGETS := $(sort $(TARGETS))
