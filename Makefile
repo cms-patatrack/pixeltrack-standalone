@@ -312,7 +312,7 @@ endif
 
 # OpenMP target offload
 
-OPENMP_COMPILER := LLVM
+#OPENMP_COMPILER := LLVM
 #OPENMP_COMPILER := AMD
 #OPENMP_COMPILER := INTEL
 #OPENMP_COMPILER := NVIDIA
@@ -354,15 +354,16 @@ TARGETS_CUDA :=
 TARGETS_ROCM :=
 TARGETS_SYCL :=
 TARGETS_NVHPC :=
+TARGETS_OPENMP :=
 define SPLIT_TARGETS_template
 ifneq ($$(filter $(1),$$($(2)_EXTERNAL_DEPENDS)),)
   TARGETS_$(1) += $(2)
 endif
 endef
-TOOLCHAINS := CUDA ROCM SYCL NVHPC
+TOOLCHAINS := CUDA ROCM SYCL NVHPC OPENMP
 $(foreach toolchain,$(TOOLCHAINS),$(foreach target,$(TARGETS_ALL),$(eval $(call SPLIT_TARGETS_template,$(toolchain),$(target)))))
 
-TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL) $(TARGETS_NVHPC),$(TARGETS_ALL))
+TARGETS_GCC := $(filter-out $(TARGETS_CUDA) $(TARGETS_ROCM) $(TARGETS_SYCL) $(TARGETS_NVHPC) $(TARGETS_OPENMP),$(TARGETS_ALL))
 
 # Re-construct targets based on available compilers/toolchains
 TARGETS := $(TARGETS_GCC)
@@ -377,6 +378,9 @@ TARGETS += $(TARGETS_SYCL)
 endif
 ifdef NVHPC_BASE
 TARGETS += $(TARGETS_NVHPC)
+endif
+ifdef OPENMP_COMPILER
+TARGETS += $(TARGETS_OPENMP)
 endif
 # remove possible duplicates
 TARGETS := $(sort $(TARGETS))
