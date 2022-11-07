@@ -159,7 +159,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/bin/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/bin/%.cc
 # Tests
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cc
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(NVCXX) $(NVCXX_CXXFLAGS) $(NVHPC_TEST_CXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_NVCXX_CXXFLAGS)) -MMD$(@D)/$(notdir $<.d) -c $< -o $@
+	$(NVCXX) $(NVCXX_CXXFLAGS) $(NVHPC_TEST_NVCXXFLAGS) $(MY_CXXFLAGS) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_NVCXX_CXXFLAGS)) -MMD$(@D)/$(notdir $<.d) -c $< -o $@
 	@cp $(@D)/$*.cc.d $(@D)/$*.cc.d.tmp; \
 	  sed 's#\($(TARGET_NAME)/$*\)\.o[ :]*#\1.o \1.d : #g' < $(@D)/$*.cc.d.tmp > $(@D)/$*.cc.d; \
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
