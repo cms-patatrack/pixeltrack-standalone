@@ -10,8 +10,6 @@
 #include <vector>
 #include <cstring>
 
-#include "CUDACore/cudaCheck.h"
-
 // dirty, but works
 #include "plugin-SiPixelClusterizer/gpuClustering.h"
 #include "plugin-SiPixelClusterizer/gpuClusterChargeCut.h"
@@ -211,6 +209,11 @@ int main(void) {
   for (auto kkk = 0; kkk < 5; ++kkk) {
     n = 0;
     ncl = 0;
+    std::fill(h_id.get(), h_id.get() + numElements, 0);
+    std::fill(h_x.get(), h_x.get() + numElements, 0);
+    std::fill(h_y.get(), h_y.get() + numElements, 0);
+    std::fill(h_adc.get(), h_adc.get() + numElements, 0);
+    std::fill(h_clus.get(), h_clus.get() + numElements, 0);
     generateClusters(kkk);
 
     std::cout << "created " << n << " digis in " << ncl << " clusters" << std::endl;
@@ -218,29 +221,26 @@ int main(void) {
 
     uint32_t nModules = 0;
     // size_t size8 = n * sizeof(uint8_t);
-    d_moduleStart[0] = 0;
+    std::fill(d_clusInModule.get(), d_clusInModule.get() + MaxNumModules, 0);
+    std::fill(d_moduleStart.get(), d_moduleStart.get() + MaxNumModules + 1, 0);
+    std::fill(d_moduleId.get(), d_moduleId.get() + MaxNumModules, 0);
 
     // Launch CUDA Kernels
-    int threadsPerBlock = (kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256);
-    int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
-    std::cout << "CUDA countModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
-              << " threads\n";
+    std::cout << "CUDA countModules kernel launch\n";
 
     countModules(h_id.get(), d_moduleStart.get(), h_clus.get(), n);
 
-    blocksPerGrid = MaxNumModules;  //nModules;
-
-    std::cout << "CUDA findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
-              << " threads\n";
-    std::memset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
+    std::cout << "CUDA findModules kernel launch with " << d_moduleStart[0] << " modules\n";
+    for (auto i = 1; i < d_moduleStart[0] + 1; ++i)
+      assert(d_moduleStart[i] < numElements);
+    for (auto i = d_moduleStart[0] + 1; i < MaxNumModules + 1; ++i)
+      assert(d_moduleStart[i] == 0);
 
     findClus(
         h_id.get(), h_x.get(), h_y.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
-    cudaDeviceSynchronize();
     nModules = d_moduleStart[0];
 
-    uint32_t nclus[MaxNumModules], moduleId[nModules];
-    std::copy(d_clusInModule.get(), d_clusInModule.get() + MaxNumModules, nclus);
+    uint32_t *nclus{d_clusInModule.get()};
 
     std::cout << "before charge cut found " << std::accumulate(nclus, nclus + MaxNumModules, 0) << " clusters"
               << std::endl;
@@ -252,14 +252,10 @@ int main(void) {
     if (ncl != std::accumulate(nclus, nclus + MaxNumModules, 0))
       std::cout << "ERROR!!!!! wrong number of cluster found" << std::endl;
 
-    clusterChargeCut<<<blocksPerGrid, threadsPerBlock>>>(
+    clusterChargeCut(
         h_id.get(), h_adc.get(), d_moduleStart.get(), d_clusInModule.get(), d_moduleId.get(), h_clus.get(), n);
 
-    cudaDeviceSynchronize();
-
     std::cout << "found " << nModules << " Modules active" << std::endl;
-    std::copy(d_clusInModule.get(), d_clusInModule.get() + MaxNumModules, nclus);
-    std::copy(d_moduleId.get(), d_moduleId.get() + nModules, moduleId);
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {

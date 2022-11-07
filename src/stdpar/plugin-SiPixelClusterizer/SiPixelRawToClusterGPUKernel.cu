@@ -7,24 +7,23 @@
 **/
 
 // C++ includes
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <execution>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <memory>
-
-// CUDA includes
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <numeric>
+#include <ranges>
 
 // CMSSW includes
 #include "CUDADataFormats/gpuClusteringConstants.h"
-#include "CUDACore/cudaCheck.h"
 #include "CUDACore/SimpleVector.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
@@ -54,20 +53,18 @@ namespace pixelgpudetails {
 
   ////////////////////
 
-  __device__ uint32_t getLink(uint32_t ww) {
-    return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask);
-  }
+  uint32_t getLink(uint32_t ww) { return ((ww >> pixelgpudetails::LINK_shift) & pixelgpudetails::LINK_mask); }
 
-  __device__ uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
+  uint32_t getRoc(uint32_t ww) { return ((ww >> pixelgpudetails::ROC_shift) & pixelgpudetails::ROC_mask); }
 
-  __device__ uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
+  uint32_t getADC(uint32_t ww) { return ((ww >> pixelgpudetails::ADC_shift) & pixelgpudetails::ADC_mask); }
 
-  __device__ bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
+  bool isBarrel(uint32_t rawId) { return (1 == ((rawId >> 25) & 0x7)); }
 
-  __device__ pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
-                                                uint8_t fed,
-                                                uint32_t link,
-                                                uint32_t roc) {
+  pixelgpudetails::DetIdGPU getRawId(const SiPixelFedCablingMapGPU *cablingMap,
+                                     uint8_t fed,
+                                     uint32_t link,
+                                     uint32_t roc) {
     uint32_t index = fed * MAX_LINK * MAX_ROC + (link - 1) * MAX_ROC + roc;
     pixelgpudetails::DetIdGPU detId = {
         cablingMap->RawId[index], cablingMap->rocInDet[index], cablingMap->moduleId[index]};
@@ -77,7 +74,7 @@ namespace pixelgpudetails {
   //reference http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/dd/d31/FrameConversion_8cc_source.html
   //http://cmslxr.fnal.gov/source/CondFormats/SiPixelObjects/src/PixelROC.cc?v=CMSSW_9_2_0#0071
   // Convert local pixel to pixelgpudetails::global pixel
-  __device__ pixelgpudetails::Pixel frameConversion(
+  pixelgpudetails::Pixel frameConversion(
       bool bpix, int side, uint32_t layer, uint32_t rocIdInDetUnit, pixelgpudetails::Pixel local) {
     int slopeRow = 0, slopeCol = 0;
     int rowOffset = 0, colOffset = 0;
@@ -145,7 +142,7 @@ namespace pixelgpudetails {
     return global;
   }
 
-  __device__ uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     uint8_t errorType = 0;
 
     // debug = true;
@@ -183,7 +180,7 @@ namespace pixelgpudetails {
     return errorType;
   }
 
-  __device__ bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
+  bool rocRowColIsValid(uint32_t rocRow, uint32_t rocCol) {
     uint32_t numRowsInRoc = 80;
     uint32_t numColsInRoc = 52;
 
@@ -191,9 +188,9 @@ namespace pixelgpudetails {
     return ((rocRow < numRowsInRoc) & (rocCol < numColsInRoc));
   }
 
-  __device__ bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
+  bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
-  __device__ uint8_t checkROC(
+  uint8_t checkROC(
       uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
@@ -269,11 +266,11 @@ namespace pixelgpudetails {
     return errorFound ? errorType : 0;
   }
 
-  __device__ uint32_t getErrRawID(uint8_t fedId,
-                                  uint32_t errWord,
-                                  uint32_t errorType,
-                                  const SiPixelFedCablingMapGPU *cablingMap,
-                                  bool debug = false) {
+  uint32_t getErrRawID(uint8_t fedId,
+                       uint32_t errWord,
+                       uint32_t errorType,
+                       const SiPixelFedCablingMapGPU *cablingMap,
+                       bool debug = false) {
     uint32_t rID = 0xffffffff;
 
     switch (errorType) {
@@ -347,25 +344,24 @@ namespace pixelgpudetails {
   }
 
   // Kernel to perform Raw to Digi conversion
-  __global__ void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
-                                   const unsigned char *modToUnp,
-                                   const uint32_t wordCounter,
-                                   const uint32_t *word,
-                                   const uint8_t *fedIds,
-                                   uint16_t *xx,
-                                   uint16_t *yy,
-                                   uint16_t *adc,
-                                   uint32_t *pdigi,
-                                   uint32_t *rawIdArr,
-                                   uint16_t *moduleId,
-                                   cms::cuda::SimpleVector<PixelErrorCompact> *err,
-                                   bool useQualityInfo,
-                                   bool includeErrors,
-                                   bool debug) {
-    //if (threadIdx.x==0) printf("Event: %u blockIdx.x: %u start: %u end: %u\n", eventno, blockIdx.x, begin, end);
-
-    int32_t first = threadIdx.x + blockIdx.x * blockDim.x;
-    for (int32_t iloop = first, nend = wordCounter; iloop < nend; iloop += blockDim.x * gridDim.x) {
+  void RawToDigi_kernel(const SiPixelFedCablingMapGPU *cablingMap,
+                        const unsigned char *modToUnp,
+                        const uint32_t wordCounter,
+                        const uint32_t *word,
+                        const uint8_t *fedIds,
+                        uint16_t *xx,
+                        uint16_t *yy,
+                        uint16_t *adc,
+                        uint32_t *pdigi,
+                        uint32_t *rawIdArr,
+                        uint16_t *moduleId,
+                        cms::cuda::SimpleVector<PixelErrorCompact> *err,
+                        bool useQualityInfo,
+                        bool includeErrors,
+                        bool debug) {
+    uint32_t first = 0;
+    auto iter{std::views::iota(first, wordCounter)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto iloop) {
       auto gIndex = iloop;
       xx[gIndex] = 0;
       yy[gIndex] = 0;
@@ -382,7 +378,7 @@ namespace pixelgpudetails {
       uint32_t ww = word[gIndex];  // Array containing 32 bit raw data
       if (ww == 0) {
         // 0 is an indicator of a noise/dead channel, skip these pixels during clusterization
-        continue;
+        return;
       }
 
       uint32_t link = getLink(ww);  // Extract link
@@ -394,7 +390,7 @@ namespace pixelgpudetails {
       if (includeErrors and skipROC) {
         uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
         err->push_back(PixelErrorCompact{rID, ww, errorType, fedId});
-        continue;
+        return;
       }
 
       uint32_t rawId = detId.RawId;
@@ -405,11 +401,11 @@ namespace pixelgpudetails {
       if (useQualityInfo) {
         skipROC = cablingMap->badRocs[index];
         if (skipROC)
-          continue;
+          return;
       }
       skipROC = modToUnp[index];
       if (skipROC)
-        continue;
+        return;
 
       uint32_t layer = 0;                   //, ladder =0;
       int side = 0, panel = 0, module = 0;  //disk = 0, blade = 0
@@ -440,7 +436,7 @@ namespace pixelgpudetails {
             err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
               printf("BPIX1  Error status: %i\n", error);
-            continue;
+            return;
           }
         }
       } else {
@@ -456,7 +452,7 @@ namespace pixelgpudetails {
           err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
             printf("Error status: %i %d %d %d %d\n", error, dcol, pxid, fedId, roc);
-          continue;
+          return;
         }
       }
 
@@ -467,31 +463,33 @@ namespace pixelgpudetails {
       pdigi[gIndex] = pixelgpudetails::pack(globalPix.row, globalPix.col, adc[gIndex]);
       moduleId[gIndex] = detId.moduleId;
       rawIdArr[gIndex] = rawId;
-    }  // end of loop (gIndex < end)
+    });  // end of loop (gIndex < end)
 
   }  // end of Raw to Digi kernel
 
-  __global__ void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
+  void fillHitsModuleStart(uint32_t const *__restrict__ cluStart, uint32_t *__restrict__ moduleStart) {
     assert(gpuClustering::MaxNumModules < 2048);  // easy to extend at least till 32*1024
-    assert(1 == gridDim.x);
-    assert(0 == blockIdx.x);
 
-    int first = threadIdx.x;
+    uint32_t first = 0;
 
     // limit to MaxHitsInModule;
-    for (int i = first, iend = gpuClustering::MaxNumModules; i < iend; i += blockDim.x) {
+    auto iter{std::views::iota(first, gpuClustering::MaxNumModules)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
-    }
+    });
 
-    __shared__ uint32_t ws[32];
-    cms::cuda::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::cuda::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    std::inclusive_scan(std::execution::par, moduleStart + 1, moduleStart + 1025, moduleStart + 1);
+    std::inclusive_scan(std::execution::par,
+                        moduleStart + 1025,
+                        moduleStart + 1025 + gpuClustering::MaxNumModules - 1024,
+                        moduleStart + 1025);
 
-    for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
+    auto iter_off{std::views::iota(first + 1025, gpuClustering::MaxNumModules + 1)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_off), std::ranges::cend(iter_off), [=](const auto i) {
       moduleStart[i] += moduleStart[1024];
-    }
-    __syncthreads();
+    });
 
+    auto iter_max_one{std::views::iota(first, gpuClustering::MaxNumModules + 1)};
 #ifdef GPU_DEBUG
     assert(0 == moduleStart[0]);
     auto c0 = std::min(gpuClustering::maxHitsInModule(), cluStart[0]);
@@ -500,22 +498,24 @@ namespace pixelgpudetails {
     assert(moduleStart[1025] >= moduleStart[1024]);
     assert(moduleStart[gpuClustering::MaxNumModules] >= moduleStart[1025]);
 
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
-      if (0 != i)
-        assert(moduleStart[i] >= moduleStart[i - i]);
-      // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
-      // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
-      if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
-        printf("moduleStart %d %d\n", i, moduleStart[i]);
-    }
+    std::for_each(
+        std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
+          if (0 != i)
+            assert(moduleStart[i] >= moduleStart[i - i]);
+          // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
+          // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
+          if (i == 96 || i == 1184 || i == 1744 || i == gpuClustering::MaxNumModules)
+            printf("moduleStart %d %d\n", i, moduleStart[i]);
+        });
 #endif
 
     // avoid overflow
     constexpr auto MAX_HITS = gpuClustering::MaxNumClusters;
-    for (int i = first, iend = gpuClustering::MaxNumModules + 1; i < iend; i += blockDim.x) {
-      if (moduleStart[i] > MAX_HITS)
-        moduleStart[i] = MAX_HITS;
-    }
+    std::for_each(
+        std::execution::par, std::ranges::cbegin(iter_max_one), std::ranges::cend(iter_max_one), [=](const auto i) {
+          if (moduleStart[i] > MAX_HITS)
+            moduleStart[i] = MAX_HITS;
+        });
   }
 
   // Interface to outside
@@ -544,72 +544,43 @@ namespace pixelgpudetails {
 
     if (wordCounter)  // protect in case of empty event....
     {
-      const int threadsPerBlock = 512;
-      const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
-
       // wordCounter is the total no of words in each event to be trasfered on device
       assert(0 == wordCounter % 2);
 
       // Launch rawToDigi kernel
-      RawToDigi_kernel<<<blocks, threadsPerBlock, 0>>>(cablingMap,
-                                                       modToUnp,
-                                                       wordCounter,
-                                                       wordFed.word(),
-                                                       wordFed.fedId(),
-                                                       digis_d.xx(),
-                                                       digis_d.yy(),
-                                                       digis_d.adc(),
-                                                       digis_d.pdigi(),
-                                                       digis_d.rawIdArr(),
-                                                       digis_d.moduleInd(),
-                                                       digiErrors_d.error(),  // returns nullptr if default-constructed
-                                                       useQualityInfo,
-                                                       includeErrors,
-                                                       debug);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
+      RawToDigi_kernel(cablingMap,
+                       modToUnp,
+                       wordCounter,
+                       wordFed.word(),
+                       wordFed.fedId(),
+                       digis_d.xx(),
+                       digis_d.yy(),
+                       digis_d.adc(),
+                       digis_d.pdigi(),
+                       digis_d.rawIdArr(),
+                       digis_d.moduleInd(),
+                       digiErrors_d.error(),  // returns nullptr if default-constructed
+                       useQualityInfo,
+                       includeErrors,
+                       debug);
     }
     // End of Raw2Digi and passing data for clustering
 
     {
       // clusterizer ...
       using namespace gpuClustering;
-      int threadsPerBlock = 256;
-      int blocks =
-          (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
-
-      gpuCalibPixel::calibDigis<<<blocks, threadsPerBlock, 0>>>(isRun2,
-                                                                digis_d.moduleInd(),
-                                                                digis_d.c_xx(),
-                                                                digis_d.c_yy(),
-                                                                digis_d.adc(),
-                                                                gains,
-                                                                wordCounter,
-                                                                clusters_d.moduleStart(),
-                                                                clusters_d.clusInModule(),
-                                                                clusters_d.clusModuleStart());
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
-
-#ifdef GPU_DEBUG
-      std::cout << "CUDA countModules kernel launch with " << blocks << " blocks of " << threadsPerBlock
-                << " threads\n";
-#endif
+      gpuCalibPixel::calibDigis(isRun2,
+                                digis_d.moduleInd(),
+                                digis_d.c_xx(),
+                                digis_d.c_yy(),
+                                digis_d.adc(),
+                                gains,
+                                wordCounter,
+                                clusters_d.moduleStart(),
+                                clusters_d.clusInModule(),
+                                clusters_d.clusModuleStart());
 
       countModules(digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter);
-      cudaCheck(cudaGetLastError());
-
-      threadsPerBlock = 256;
-      blocks = MaxNumModules;
-#ifdef GPU_DEBUG
-      std::cout << "CUDA findClus kernel launch with " << blocks << " blocks of " << threadsPerBlock << " threads\n";
-#endif
       findClus(digis_d.c_moduleInd(),
                digis_d.c_xx(),
                digis_d.c_yy(),
@@ -618,34 +589,22 @@ namespace pixelgpudetails {
                clusters_d.moduleId(),
                digis_d.clus(),
                wordCounter);
-      cudaCheck(cudaGetLastError());
-#ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
-#endif
 
       // apply charge cut
-      clusterChargeCut<<<blocks, threadsPerBlock, 0>>>(digis_d.moduleInd(),
-                                                       digis_d.c_adc(),
-                                                       clusters_d.c_moduleStart(),
-                                                       clusters_d.clusInModule(),
-                                                       clusters_d.c_moduleId(),
-                                                       digis_d.clus(),
-                                                       wordCounter);
-      cudaCheck(cudaGetLastError());
+      clusterChargeCut(digis_d.moduleInd(),
+                       digis_d.c_adc(),
+                       clusters_d.c_moduleStart(),
+                       clusters_d.clusInModule(),
+                       clusters_d.c_moduleId(),
+                       digis_d.clus(),
+                       wordCounter);
 
       // count the module start indices already here (instead of
       // rechits) so that the number of clusters/hits can be made
       // available in the rechit producer without additional points of
       // synchronization/ExternalWork
 
-      // MUST be ONE block
-      fillHitsModuleStart<<<1, 1024, 0>>>(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
+      fillHitsModuleStart(clusters_d.c_clusInModule(), clusters_d.clusModuleStart());
     }  // end clusterizer scope
-
-#ifdef GPU_DEBUG
-    cudaDeviceSynchronize();
-    cudaCheck(cudaGetLastError());
-#endif
   }
 }  // namespace pixelgpudetails
