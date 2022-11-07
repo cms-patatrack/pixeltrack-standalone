@@ -18,7 +18,8 @@ namespace gpuPixelRecHits {
                           SiPixelDigis::DeviceConstView const* __restrict__ pdigis,
                           int numElements,
                           SiPixelClusters::DeviceConstView const* __restrict__ pclusters,
-                          TrackingRecHit2DSOAView* phits) {
+                          TrackingRecHit2DSOAView* phits,
+                          uint32_t nModules) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
     // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -26,6 +27,7 @@ namespace gpuPixelRecHits {
 
     assert(phits);
     assert(cpeParams);
+    assert(nModules > 0)
 
     auto& hits = *phits;
 

@@ -27,7 +27,7 @@ namespace pixelgpudetails {
 #endif
     if (blocks)  // protect from empty events
       gpuPixelRecHits::getHits(
-          cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view());
+          cpeParams, bs_d.data(), digis_d.view(), digis_d.nDigis(), clusters_d.view(), hits_d.view(), blocks);
     // assuming full warp of threads is better than a smaller number...
     if (nHits) {
       //Get pointers to pass to the device
