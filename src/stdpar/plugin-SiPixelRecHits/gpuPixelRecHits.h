@@ -98,18 +98,15 @@ namespace gpuPixelRecHits {
             assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
             // init
-            //TODO: memset
-            for (int ic = 0; ic < nClusInIter; ++ic) {
-              clusterParamsRef.minRow[ic] = std::numeric_limits<uint32_t>::max();
-              clusterParamsRef.maxRow[ic] = 0;
-              clusterParamsRef.minCol[ic] = std::numeric_limits<uint32_t>::max();
-              clusterParamsRef.maxCol[ic] = 0;
-              clusterParamsRef.charge[ic] = 0;
-              clusterParamsRef.Q_f_X[ic] = 0;
-              clusterParamsRef.Q_l_X[ic] = 0;
-              clusterParamsRef.Q_f_Y[ic] = 0;
-              clusterParamsRef.Q_l_Y[ic] = 0;
-            }
+            std::fill(clusterParamsRef.minRow, clusterParamsRef.minRow + nClusInIter, std::numeric_limits<uint32_t>::max());
+            std::fill(clusterParamsRef.minCol, clusterParamsRef.minCol + nClusInIter, std::numeric_limits<uint32_t>::max());
+            std::fill(clusterParamsRef.maxRow, clusterParamsRef.maxRow + nClusInIter, 0);
+            std::fill(clusterParamsRef.maxCol, clusterParamsRef.maxCol + nClusInIter, 0);
+            std::fill(clusterParamsRef.charge, clusterParamsRef.charge + nClusInIter, 0);
+            std::fill(clusterParamsRef.Q_f_X, clusterParamsRef.Q_f_X + nClusInIter, 0);
+            std::fill(clusterParamsRef.Q_l_X, clusterParamsRef.Q_l_X + nClusInIter, 0);
+            std::fill(clusterParamsRef.Q_f_Y, clusterParamsRef.Q_f_Y + nClusInIter, 0);
+            std::fill(clusterParamsRef.Q_l_Y, clusterParamsRef.Q_l_Y + nClusInIter, 0);
 
             // one thead per "digi"
 
