@@ -76,7 +76,7 @@ private:
 template <class T>
 class SOAFrame {
 public:
-  constexpr inline SOAFrame() {}
+  constexpr inline SOAFrame() : px(0), py(0), pz(0) {}
 
   constexpr inline SOAFrame(T ix, T iy, T iz, SOARotation<T> const &irot) : px(ix), py(iy), pz(iz), rot(irot) {}
 
