@@ -18,12 +18,12 @@
 namespace gpuPixelRecHits {
 
   void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
-                          BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigis::DeviceConstView const* __restrict__ pdigis,
-                          int numElements,
-                          SiPixelClusters::DeviceConstView const* __restrict__ pclusters,
-                          TrackingRecHit2DSOAView* phits,
-                          uint32_t nModules) {
+               BeamSpotPOD const* __restrict__ bs,
+               SiPixelDigis::DeviceConstView const* __restrict__ pdigis,
+               int numElements,
+               SiPixelClusters::DeviceConstView const* __restrict__ pclusters,
+               TrackingRecHit2DSOAView* phits,
+               uint32_t nModules) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
     // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -40,7 +40,7 @@ namespace gpuPixelRecHits {
 
     // as usual one block per module
     auto clusParams{std::make_unique<ClusParams[]>(nModules)};
-    ClusParams *clusParams_d{clusParams.get()};
+    ClusParams* clusParams_d{clusParams.get()};
 
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
     auto iter{std::views::iota(0u, TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel)};
@@ -60,155 +60,159 @@ namespace gpuPixelRecHits {
     agc.endCapZ[1] = ag.endCapZ[1] - bs->z;
     //         printf("endcapZ %f %f\n",agc.endCapZ[0],agc.endCapZ[1]);
     auto iterModules{std::views::iota(0u, nModules)};
-    std::for_each(std::execution::par, std::ranges::cbegin(iterModules), std::ranges::cend(iterModules), [=](const auto moduleIdx) {
-      auto const& clusters = *pclusters;
-      auto me = clusters.moduleId(moduleIdx);
-      int nclus = clusters.clusInModule(me);
-      auto& clusterParamsRef = clusParams_d[moduleIdx];
-      if (0 == nclus)
-        return;
-      auto& hits = *phits;
+    std::for_each(
+        std::execution::par,
+        std::ranges::cbegin(iterModules),
+        std::ranges::cend(iterModules),
+        [=](const auto moduleIdx) {
+          auto const& clusters = *pclusters;
+          auto me = clusters.moduleId(moduleIdx);
+          int nclus = clusters.clusInModule(me);
+          auto& clusterParamsRef = clusParams_d[moduleIdx];
+          if (0 == nclus)
+            return;
+          auto& hits = *phits;
 
-      auto const digis = *pdigis;  // the copy is intentional!
-  #ifdef GPU_DEBUG
-      auto k = clusters.moduleStart(1 + moduleIdx);
-      while (digis.moduleInd(k) == InvId)
-        ++k;
-      assert(digis.moduleInd(k) == me);
-  #endif
+          auto const digis = *pdigis;  // the copy is intentional!
+#ifdef GPU_DEBUG
+          auto k = clusters.moduleStart(1 + moduleIdx);
+          while (digis.moduleInd(k) == InvId)
+            ++k;
+          assert(digis.moduleInd(k) == me);
+#endif
 
-  #ifdef GPU_DEBUG
-      if (me % 100 == 1)
-          printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
-  #endif
+#ifdef GPU_DEBUG
+          if (me % 100 == 1)
+            printf("hitbuilder: %d clusters in module %d. will write at %d\n", nclus, me, clusters.clusModuleStart(me));
+#endif
 
-      for (int startClus = 0, endClus = nclus; startClus < endClus; startClus += MaxHitsInIter) {
-        auto first = clusters.moduleStart(1 + moduleIdx);
+          for (int startClus = 0, endClus = nclus; startClus < endClus; startClus += MaxHitsInIter) {
+            auto first = clusters.moduleStart(1 + moduleIdx);
 
-        int nClusInIter = std::min(MaxHitsInIter, endClus - startClus);
-        int lastClus = startClus + nClusInIter;
-        assert(nClusInIter <= nclus);
-        assert(nClusInIter > 0);
-        assert(lastClus <= nclus);
+            int nClusInIter = std::min(MaxHitsInIter, endClus - startClus);
+            int lastClus = startClus + nClusInIter;
+            assert(nClusInIter <= nclus);
+            assert(nClusInIter > 0);
+            assert(lastClus <= nclus);
 
-        assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
+            assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
-        // init
-        //TODO: memset
-        for (int ic = 0; ic < nClusInIter; ++ic) {
-          clusterParamsRef.minRow[ic] = std::numeric_limits<uint32_t>::max();
-          clusterParamsRef.maxRow[ic] = 0;
-          clusterParamsRef.minCol[ic] = std::numeric_limits<uint32_t>::max();
-          clusterParamsRef.maxCol[ic] = 0;
-          clusterParamsRef.charge[ic] = 0;
-          clusterParamsRef.Q_f_X[ic] = 0;
-          clusterParamsRef.Q_l_X[ic] = 0;
-          clusterParamsRef.Q_f_Y[ic] = 0;
-          clusterParamsRef.Q_l_Y[ic] = 0;
-        }
+            // init
+            //TODO: memset
+            for (int ic = 0; ic < nClusInIter; ++ic) {
+              clusterParamsRef.minRow[ic] = std::numeric_limits<uint32_t>::max();
+              clusterParamsRef.maxRow[ic] = 0;
+              clusterParamsRef.minCol[ic] = std::numeric_limits<uint32_t>::max();
+              clusterParamsRef.maxCol[ic] = 0;
+              clusterParamsRef.charge[ic] = 0;
+              clusterParamsRef.Q_f_X[ic] = 0;
+              clusterParamsRef.Q_l_X[ic] = 0;
+              clusterParamsRef.Q_f_Y[ic] = 0;
+              clusterParamsRef.Q_l_Y[ic] = 0;
+            }
 
-        // one thead per "digi"
+            // one thead per "digi"
 
-        for (int i = first; i < numElements; ++i) {
-          auto id = digis.moduleInd(i);
-          if (id == InvId)
-            continue;  // not valid
-          if (id != me)
-            break;  // end of module
-          auto cl = digis.clus(i);
-          if (cl < startClus || cl >= lastClus)
-            continue;
-          uint32_t x = digis.xx(i);
-          uint32_t y = digis.yy(i);
-          cl -= startClus;
-          assert(cl >= 0);
-          assert(cl < MaxHitsInIter);
+            for (int i = first; i < numElements; ++i) {
+              auto id = digis.moduleInd(i);
+              if (id == InvId)
+                continue;  // not valid
+              if (id != me)
+                break;  // end of module
+              auto cl = digis.clus(i);
+              if (cl < startClus || cl >= lastClus)
+                continue;
+              uint32_t x = digis.xx(i);
+              uint32_t y = digis.yy(i);
+              cl -= startClus;
+              assert(cl >= 0);
+              assert(cl < MaxHitsInIter);
 
-          cms::cuda::atomicMin(&(clusterParamsRef.minRow[cl]), x);
-          cms::cuda::atomicMax(&(clusterParamsRef.maxRow[cl]), x);
-          cms::cuda::atomicMin(&(clusterParamsRef.minCol[cl]), y);
-          cms::cuda::atomicMax(&(clusterParamsRef.maxCol[cl]), y);
-        }
+              cms::cuda::atomicMin(&(clusterParamsRef.minRow[cl]), x);
+              cms::cuda::atomicMax(&(clusterParamsRef.maxRow[cl]), x);
+              cms::cuda::atomicMin(&(clusterParamsRef.minCol[cl]), y);
+              cms::cuda::atomicMax(&(clusterParamsRef.maxCol[cl]), y);
+            }
 
-        // pixmx is not available in the binary dumps
-        //auto pixmx = cpeParams->detParams(me).pixmx;
-        auto pixmx = std::numeric_limits<uint16_t>::max();
-        for (int i = first; i < numElements; ++i) {
-          auto id = digis.moduleInd(i);
-          if (id == InvId)
-            continue;  // not valid
-          if (id != me)
-            break;  // end of module
-          auto cl = digis.clus(i);
-          if (cl < startClus || cl >= lastClus)
-            continue;
-          cl -= startClus;
-          assert(cl >= 0);
-          assert(cl < MaxHitsInIter);
-          auto x = digis.xx(i);
-          auto y = digis.yy(i);
-          int32_t ch = std::min(digis.adc(i), pixmx);
-          cms::cuda::atomicAdd(&clusterParamsRef.charge[cl], ch);
-          if (clusterParamsRef.minRow[cl] == x)
-            cms::cuda::atomicAdd(&clusterParamsRef.Q_f_X[cl], ch);
-          if (clusterParamsRef.maxRow[cl] == x)
-            cms::cuda::atomicAdd(&clusterParamsRef.Q_l_X[cl], ch);
-          if (clusterParamsRef.minCol[cl] == y)
-            cms::cuda::atomicAdd(&clusterParamsRef.Q_f_Y[cl], ch);
-          if (clusterParamsRef.maxCol[cl] == y)
-            cms::cuda::atomicAdd(&clusterParamsRef.Q_l_Y[cl], ch);
-        }
+            // pixmx is not available in the binary dumps
+            //auto pixmx = cpeParams->detParams(me).pixmx;
+            auto pixmx = std::numeric_limits<uint16_t>::max();
+            for (int i = first; i < numElements; ++i) {
+              auto id = digis.moduleInd(i);
+              if (id == InvId)
+                continue;  // not valid
+              if (id != me)
+                break;  // end of module
+              auto cl = digis.clus(i);
+              if (cl < startClus || cl >= lastClus)
+                continue;
+              cl -= startClus;
+              assert(cl >= 0);
+              assert(cl < MaxHitsInIter);
+              auto x = digis.xx(i);
+              auto y = digis.yy(i);
+              int32_t ch = std::min(digis.adc(i), pixmx);
+              cms::cuda::atomicAdd(&clusterParamsRef.charge[cl], ch);
+              if (clusterParamsRef.minRow[cl] == x)
+                cms::cuda::atomicAdd(&clusterParamsRef.Q_f_X[cl], ch);
+              if (clusterParamsRef.maxRow[cl] == x)
+                cms::cuda::atomicAdd(&clusterParamsRef.Q_l_X[cl], ch);
+              if (clusterParamsRef.minCol[cl] == y)
+                cms::cuda::atomicAdd(&clusterParamsRef.Q_f_Y[cl], ch);
+              if (clusterParamsRef.maxCol[cl] == y)
+                cms::cuda::atomicAdd(&clusterParamsRef.Q_l_Y[cl], ch);
+            }
 
-        // next one cluster per thread...
+            // next one cluster per thread...
 
-        first = clusters.clusModuleStart(me) + startClus;
+            first = clusters.clusModuleStart(me) + startClus;
 
-        for (int ic = 0; ic < nClusInIter; ++ic) {
-          auto h = first + ic;  // output index in global memory
+            for (int ic = 0; ic < nClusInIter; ++ic) {
+              auto h = first + ic;  // output index in global memory
 
-          // this cannot happen anymore
-          if (h >= TrackingRecHit2DSOAView::maxHits())
-            break;  // overflow...
-          assert(h < hits.nHits());
-          assert(h < clusters.clusModuleStart(me + 1));
+              // this cannot happen anymore
+              if (h >= TrackingRecHit2DSOAView::maxHits())
+                break;  // overflow...
+              assert(h < hits.nHits());
+              assert(h < clusters.clusModuleStart(me + 1));
 
-          pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusterParamsRef, ic);
-          pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusterParamsRef, ic);
+              pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusterParamsRef, ic);
+              pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusterParamsRef, ic);
 
-          // store it
+              // store it
 
-          hits.charge(h) = clusterParamsRef.charge[ic];
+              hits.charge(h) = clusterParamsRef.charge[ic];
 
-          hits.detectorIndex(h) = me;
+              hits.detectorIndex(h) = me;
 
-          float xl, yl;
-          hits.xLocal(h) = xl = clusterParamsRef.xpos[ic];
-          hits.yLocal(h) = yl = clusterParamsRef.ypos[ic];
+              float xl, yl;
+              hits.xLocal(h) = xl = clusterParamsRef.xpos[ic];
+              hits.yLocal(h) = yl = clusterParamsRef.ypos[ic];
 
-          hits.clusterSizeX(h) = clusterParamsRef.xsize[ic];
-          hits.clusterSizeY(h) = clusterParamsRef.ysize[ic];
+              hits.clusterSizeX(h) = clusterParamsRef.xsize[ic];
+              hits.clusterSizeY(h) = clusterParamsRef.ysize[ic];
 
-          hits.xerrLocal(h) = clusterParamsRef.xerr[ic] * clusterParamsRef.xerr[ic];
-          hits.yerrLocal(h) = clusterParamsRef.yerr[ic] * clusterParamsRef.yerr[ic];
+              hits.xerrLocal(h) = clusterParamsRef.xerr[ic] * clusterParamsRef.xerr[ic];
+              hits.yerrLocal(h) = clusterParamsRef.yerr[ic] * clusterParamsRef.yerr[ic];
 
-          // keep it local for computations
-          float xg, yg, zg;
-          // to global and compute phi...
-          cpeParams->detParams(me).frame.toGlobal(xl, yl, xg, yg, zg);
-          // here correct for the beamspot...
-          xg -= bs->x;
-          yg -= bs->y;
-          zg -= bs->z;
+              // keep it local for computations
+              float xg, yg, zg;
+              // to global and compute phi...
+              cpeParams->detParams(me).frame.toGlobal(xl, yl, xg, yg, zg);
+              // here correct for the beamspot...
+              xg -= bs->x;
+              yg -= bs->y;
+              zg -= bs->z;
 
-          hits.xGlobal(h) = xg;
-          hits.yGlobal(h) = yg;
-          hits.zGlobal(h) = zg;
+              hits.xGlobal(h) = xg;
+              hits.yGlobal(h) = yg;
+              hits.zGlobal(h) = zg;
 
-          hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
-          hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
-        }
-      }  // end loop on batches
-    });
+              hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
+              hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
+            }
+          }  // end loop on batches
+        });
   }
 
 }  // namespace gpuPixelRecHits
