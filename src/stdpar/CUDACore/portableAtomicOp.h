@@ -12,7 +12,7 @@
 
 namespace cms::cuda {
 
-  template <std::floating_point T, typename Tp = std::add_pointer_t<T>>
+  template <std::totally_ordered T, typename Tp = std::add_pointer_t<T>>
   T atomicAdd(Tp address, T val) {
 #ifdef __NVCOMPILER
     // We need to check if execution space is device or host, ::atomicAdd is undefined in host execution space
@@ -45,6 +45,28 @@ namespace cms::cuda {
     std::atomic_ref<T> pa{*address};
     T old{pa.load()};
     while (!pa.compare_exchange_weak(old, std::min(old, val)))
+      ;
+    return old;
+#endif
+  }
+
+  template <std::totally_ordered T, typename Tp = std::add_pointer_t<T>>
+  T atomicMax(Tp address, T val) {
+#ifdef __NVCOMPILER
+    // We need to check if execution space is device or host, ::atomicMin is undefined in host execution space
+    if target (nv::target::is_device) {
+      return ::atomicMax(address, val);
+    } else {
+      std::atomic_ref<T> pa{*address};
+      T old{pa.load()};
+      while (!pa.compare_exchange_weak(old, std::max(old, val)))
+        ;
+      return old;
+    }
+#else
+    std::atomic_ref<T> pa{*address};
+    T old{pa.load()};
+    while (!pa.compare_exchange_weak(old, std::max(old, val)))
       ;
     return old;
 #endif
