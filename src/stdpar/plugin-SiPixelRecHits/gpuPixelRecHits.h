@@ -98,8 +98,10 @@ namespace gpuPixelRecHits {
             assert(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
             // init
-            std::fill(clusterParamsRef.minRow, clusterParamsRef.minRow + nClusInIter, std::numeric_limits<uint32_t>::max());
-            std::fill(clusterParamsRef.minCol, clusterParamsRef.minCol + nClusInIter, std::numeric_limits<uint32_t>::max());
+            std::fill(
+                clusterParamsRef.minRow, clusterParamsRef.minRow + nClusInIter, std::numeric_limits<uint32_t>::max());
+            std::fill(
+                clusterParamsRef.minCol, clusterParamsRef.minCol + nClusInIter, std::numeric_limits<uint32_t>::max());
             std::fill(clusterParamsRef.maxRow, clusterParamsRef.maxRow + nClusInIter, 0);
             std::fill(clusterParamsRef.maxCol, clusterParamsRef.maxCol + nClusInIter, 0);
             std::fill(clusterParamsRef.charge, clusterParamsRef.charge + nClusInIter, 0);
