@@ -125,10 +125,10 @@ namespace gpuPixelRecHits {
               assert(cl >= 0);
               assert(cl < MaxHitsInIter);
 
-              cms::cuda::atomicMin(&(clusterParamsRef.minRow[cl]), x);
-              cms::cuda::atomicMax(&(clusterParamsRef.maxRow[cl]), x);
-              cms::cuda::atomicMin(&(clusterParamsRef.minCol[cl]), y);
-              cms::cuda::atomicMax(&(clusterParamsRef.maxCol[cl]), y);
+              clusterParamsRef.minRow[cl] = std::min(clusterParamsRef.minRow[cl], x);
+              clusterParamsRef.maxRow[cl] = std::max(clusterParamsRef.maxRow[cl], x);
+              clusterParamsRef.minCol[cl] = std::min(clusterParamsRef.minCol[cl], x);
+              clusterParamsRef.maxCol[cl] = std::max(clusterParamsRef.maxCol[cl], x);
             }
 
             // pixmx is not available in the binary dumps
@@ -149,15 +149,15 @@ namespace gpuPixelRecHits {
               auto x = digis.xx(i);
               auto y = digis.yy(i);
               int32_t ch = std::min(digis.adc(i), pixmx);
-              cms::cuda::atomicAdd(&clusterParamsRef.charge[cl], ch);
+              clusterParamsRef.charge[cl] += ch;
               if (clusterParamsRef.minRow[cl] == x)
-                cms::cuda::atomicAdd(&clusterParamsRef.Q_f_X[cl], ch);
+                clusterParamsRef.Q_f_X[cl] += ch;
               if (clusterParamsRef.maxRow[cl] == x)
-                cms::cuda::atomicAdd(&clusterParamsRef.Q_l_X[cl], ch);
+                clusterParamsRef.Q_l_X[cl] += ch;
               if (clusterParamsRef.minCol[cl] == y)
-                cms::cuda::atomicAdd(&clusterParamsRef.Q_f_Y[cl], ch);
+                clusterParamsRef.Q_f_Y[cl] += ch;
               if (clusterParamsRef.maxCol[cl] == y)
-                cms::cuda::atomicAdd(&clusterParamsRef.Q_l_Y[cl], ch);
+                clusterParamsRef.Q_l_Y[cl] += ch;
             }
 
             // next one cluster per thread...
