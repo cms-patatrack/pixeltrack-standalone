@@ -114,6 +114,79 @@ export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64
 export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
+# Intel oneAPI
+
+# Compiler flags supported by GCC but not by the LLVM-based compilers (clang, hipcc, dpcpp, etc.)
+LLVM_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
+
+# flags to compile AOT:
+AOT_INTEL_FLAGS   := -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device 0x020a"
+AOT_CUDA_FLAGS    := -fsycl-targets=nvptx64-nvidia-cuda -fno-bundle-offload-arch --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version -Wno-linker-warnings
+AOT_HIP_FLAGS     := -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend --offload-arch=gfx900 --rocm-path=$(ROCM_BASE) -Wno-linker-warnings 
+
+# INTEL flags: compile AOT for all the CPUs and for the GPU on olice-05
+# CUDA flags : compile AOT for for NVIDIA GPUs
+# HIP flags  : compile AOT for architectures with ID gfx900 (e.g. the Radeon PRO WX 9100)
+
+# -Wno-linker-warnings will not be needed be needed anymore with https://github.com/intel/llvm/pull/7245
+
+ifdef USE_SYCL_ONEAPI
+ONEAPI_BASE       := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2022
+ONEAPI_VERSION    := latest
+TBB_BASE          := $(ONEAPI_BASE)/tbb/latest
+TBB_LIBDIR        := $(TBB_BASE)/lib/intel64/gcc4.8
+ifneq ($(wildcard $(ONEAPI_BASE)),)
+ONEAPI_ENV        := $(ONEAPI_BASE)/setvars.sh # --config="/eos/user/a/aperego/dev/pixeltrack-standalone/config.txt"
+                                               # the config.txt file can be used to source only specific tools 
+                                               # or a specific version of a tool of the oneAPI package
+SYCL_BASE         := $(ONEAPI_BASE)/compiler/$(ONEAPI_VERSION)/linux
+USER_SYCLFLAGS    := -fp-model=precise -fimf-arch-consistency=true -no-fma
+# math flags : -fp-model=precise -fimf-arch-consistency=true -no-fma
+# workaround for the unexpected intrinsic in ONEAPI 2022.2.0 (SYCL BUG): -fno-sycl-early-optimizations
+export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
+export SYCL_CXXFLAGS := -O3 -fsycl -Wno-sycl-strict $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
+endif
+
+else
+# use llvm 
+SYCL_BASE      := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/build-2022-09
+USER_SYCLFLAGS := 
+
+# make CPUs visible
+export OCL_ICD_FILENAMES := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2022.14.8.0.04/x64/libintelocl.so
+
+export SYCL_CXX      := $(SYCL_BASE)/bin/clang++
+export SYCL_CXXFLAGS := -O3 -fsycl $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
+endif
+
+# Now add the flags to compile ahead of time for CPUs, Intel GPUs, NVIDIA GPUs and AMD GPUs
+# The flags for NVIDIA GPUs and AMD GPUs are added only if llvm is used since they are not yet supported by dpcpp
+# At the moment it's not possible to compile AOT for both CUDA and AMD together (LLVM BUG)
+# so if both are there the default is to compile only for the CUDA backend
+# (the AMD backend has some bugs so there is a high probability that it won't even compile)
+
+ifdef ONEAPI_BASE
+SYCL_CXXFLAGS += $(AOT_INTEL_FLAGS)
+else
+ifdef CUDA_BASE
+SYCL_CXXFLAGS += $(AOT_CUDA_FLAGS)
+else 
+ifdef ROCM_BASE
+SYCL_CXXFLAGS += $(AOT_HIP_FLAGS)
+endif
+endif
+endif
+# check if libraries are under lib or lib64
+ifdef SYCL_BASE
+ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib
+else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib64
+else
+SYCL_BASE :=
+endif
+endif
+
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
 export DATA_DEPS := $(DATA_BASE)/data_ok
@@ -127,8 +200,12 @@ export HWLOC_DEPS := $(HWLOC_BASE)
 HWLOC_CXXFLAGS := -isystem $(HWLOC_BASE)/include
 HWLOC_LDFLAGS := -L$(HWLOC_BASE)/lib -lhwloc
 
+#TBB from external
+ifndef TBB_BASE
 TBB_BASE := $(EXTERNAL_BASE)/tbb
 TBB_LIBDIR := $(TBB_BASE)/lib
+endif
+
 TBB_LIB := $(TBB_LIBDIR)/libtbb.so
 TBB_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(TBB_BASE) \
                   -DCMAKE_INSTALL_LIBDIR=lib \
@@ -139,6 +216,7 @@ export TBB_DEPS := $(TBB_LIB)
 export TBB_CXXFLAGS := -isystem $(TBB_BASE)/include -DTBB_SUPPRESS_DEPRECATED_MESSAGES -DTBB_PREVIEW_NUMA_SUPPORT -DTBB_PREVIEW_TASK_GROUP_EXTENSIONS
 export TBB_LDFLAGS := -L$(TBB_LIBDIR) -ltbb
 export TBB_NVCC_CXXFLAGS :=
+export TBB_SYCL_CXXFLAGS :=
 # The libstdc++ library used by the devtools on RHEL 7 / CentOS 7 requires a workaround because
 # some STL containers do not support the allocator traits, even when using more recent compilers
 ifneq ($(shell [ -f /etc/redhat-release ] && grep -q 'release 7' /etc/redhat-release && which $(CXX) | grep devtoolset),)
@@ -152,6 +230,7 @@ export EIGEN_CXXFLAGS := -isystem $(EIGEN_BASE) -DEIGEN_DONT_PARALLELIZE
 export EIGEN_LDFLAGS :=
 export EIGEN_NVCXX_CXXFLAGS := -DEIGEN_USE_GPU -DEIGEN_UNROLLING_LIMIT=64
 export EIGEN_NVCC_CXXFLAGS := --diag-suppress 20014
+export EIGEN_SYCL_CXXFLAGS := -DEIGEN_USE_SYCL # -DEIGEN_NO_CUDA
 
 BOOST_BASE := /usr
 # Minimum required version of Boost, e.g. 1.78.0
@@ -169,11 +248,13 @@ export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -isystem $(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
 export BOOST_NVCC_CXXFLAGS :=
+export BOOST_SYCL_CXXFLAGS :=
 
 BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
 export BACKTRACE_DEPS := $(BACKTRACE_BASE)
 export BACKTRACE_CXXFLAGS := -isystem $(BACKTRACE_BASE)/include
 export BACKTRACE_LDFLAGS := -L$(BACKTRACE_BASE)/lib -lbacktrace
+export BACKTRACE_SYCL_CXXFLAGS :=
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
@@ -274,40 +355,11 @@ ifdef KOKKOS_HOST_PARALLEL
 endif
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 
-# Intel oneAPI
-ONEAPI_BASE := /opt/intel/oneapi
-ifneq ($(wildcard $(ONEAPI_BASE)),)
-# OneAPI platform found
-ONEAPI_ENV    := $(ONEAPI_BASE)/setvars.sh
-DPCT_BASE     := $(ONEAPI_BASE)/dpcpp-ct/latest
-SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
-DPCT_CXXFLAGS := -isystem $(DPCT_BASE)/include
-endif
-SYCL_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Wno-non-template-friend -Werror=format-contains-nul -Werror=return-local-addr -Werror=unused-but-set-variable
-
-# to use a different toolchain
-#   - unset ONEAPI_ENV
-#   - set SYCL_BASE appropriately
-
-# check if libraries are under lib or lib64
-ifdef SYCL_BASE
-ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib
-else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib64
-else
-SYCL_BASE :=
-endif
-endif
-USER_SYCLFLAGS :=
-ifdef SYCL_BASE
-export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
-export SYCL_CXXFLAGS := -fsycl $(DPCT_CXXFLAGS) $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
 ifdef CUDA_BASE
 export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
 export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
 endif
-endif
+# endif
 
 
 # OpenMP target offload
@@ -467,6 +519,8 @@ endif
 # check if oneAPI environment file exists
 ifneq ($(wildcard $(ONEAPI_ENV)),)
 	@echo 'source $(ONEAPI_ENV)'                                            >> $@
+else
+	@echo 'export OCL_ICD_FILENAMES=$(OCL_ICD_FILENAMES)'                   >> $@
 endif
 
 define TARGET_template
@@ -561,6 +615,7 @@ $(EXTERNAL_BASE):
 external_tbb: $(TBB_LIB)
 
 # Let TBB Makefile to define its own CXXFLAGS
+ifndef USE_SYCL_ONEAPI
 $(TBB_LIB): $(HWLOC_BASE)
 $(TBB_LIB): CXXFLAGS:=
 $(TBB_LIB):
@@ -570,7 +625,7 @@ $(TBB_LIB):
 	mkdir -p $(TBB_TMP)
 	mkdir -p $(TBB_TMP_SRC)
 	mkdir -p $(TBB_TMP_BUILD)
-	git clone --branch v2021.4.0 https://github.com/oneapi-src/oneTBB.git $(TBB_TMP_SRC)
+	git clone --branch v2021.7.0 https://github.com/oneapi-src/oneTBB.git $(TBB_TMP_SRC)
 	cd $(TBB_TMP_BUILD)/ && $(CMAKE) $(TBB_TMP_SRC) $(TBB_CMAKEFLAGS)
 	+$(MAKE) -C $(TBB_TMP_BUILD)
 	+$(MAKE) -C $(TBB_TMP_BUILD) install
@@ -578,16 +633,16 @@ $(TBB_LIB):
 	$(eval undefine TBB_TMP)
 	$(eval undefine TBB_TMP_SRC)
 	$(eval undefine TBB_TMP_BUILD)
+endif
 
 # Eigen
 external_eigen: $(EIGEN_BASE)
 
 $(EIGEN_BASE):
-	# from Eigen master branch as of 2021.08.18
-	git clone -b cms/master/82dd3710dac619448f50331c1d6a35da673f764a https://github.com/cms-externals/eigen-git-mirror.git $@
-	# include all Patatrack updates
-	cd $@ && git reset --hard 6294f3471cc18068079ec6af8ceccebe34b40021
-
+	# from Eigen master branch on gitlab as of 2022.08.09
+	git clone https://gitlab.com/AuroraPerego/eigen.git $@
+	# include all SYCL updates
+	cd $@ && git reset --hard eb029b6bc9c33172f0b77524d226d2bca52945a2
 # Boost
 .PHONY: external_boost
 external_boost: $(BOOST_BASE)
