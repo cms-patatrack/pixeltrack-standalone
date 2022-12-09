@@ -24,11 +24,23 @@ namespace gpuClustering {
 
     uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
+    // clang-format off
+#pragma omp target teams distribute parallel for map(tofrom: id[:numElements], \
+                                                             nClustersInModule[:MaxNumModules], \
+                                                             clusterId[:numElements]) \
+                                                 map(to: adc[:numElements], \
+                                                         moduleStart[:MaxNumModules+1]) \
+                                                 private(charge, ok, newclusId)
+
+                                                 // Only needed for assert below, which was removed
+                                                 // map(to: moduleId[:MaxNumModules])
+    // clang-format on
     for (auto module = firstModule; module < endModule; module += 1) {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
       assert(thisModuleId < MaxNumModules);
-      assert(thisModuleId == moduleId[module]);
+      // The presence of this assert will cause wrong values in nClustersInModule for LLVM 15
+      //assert(thisModuleId == moduleId[module]);
 
       auto nclus = nClustersInModule[thisModuleId];
       if (nclus == 0)
@@ -73,7 +85,8 @@ namespace gpuClustering {
           continue;  // not valid
         if (id[i] != thisModuleId)
           break;  // end of module
-        atomicAdd(&charge[clusterId[i]], adc[i]);
+#pragma omp atomic update
+        charge[clusterId[i]] += adc[i];
       }
 
       auto chargeCut = thisModuleId < 96 ? 2000 : 4000;  // move in constants (calib?)

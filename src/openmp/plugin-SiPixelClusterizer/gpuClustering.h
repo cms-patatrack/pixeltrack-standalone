@@ -21,6 +21,11 @@ namespace gpuClustering {
                     int32_t* __restrict__ clusterId,
                     int numElements) {
     int first = 0;
+    // clang-format off
+#pragma omp target teams distribute parallel for map(tofrom: moduleStart[:MaxNumModules+1]) \
+                                                 map(tofrom: clusterId[:numElements]) \
+                                                 map(to: id[:numElements])
+    // clang-format on
     for (int i = first; i < numElements; i++) {
       clusterId[i] = i;
       if (InvId == id[i])
@@ -30,7 +35,11 @@ namespace gpuClustering {
         --j;
       if (j < 0 or id[j] != id[i]) {
         // boundary...
-        auto loc = atomicInc(moduleStart, MaxNumModules);
+        //auto loc = atomicInc(moduleStart, MaxNumModules);
+        uint32_t loc;
+#pragma omp atomic capture
+        loc = moduleStart[0]++;
+
         moduleStart[loc + 1] = i;
       }
     }
@@ -49,6 +58,16 @@ namespace gpuClustering {
 
     uint32_t firstModule = 0;
     auto endModule = moduleStart[0];
+    // clang-format off
+#pragma omp target teams distribute parallel for map(to:moduleStart[:endModule+1], \
+                                                     id[:numElements], \
+                                                     x[:numElements], \
+                                                     y[:numElements]) \
+                                                 map(tofrom:nClustersInModule[:MaxNumModules], \
+                                                            moduleId[:MaxNumModules], \
+                                                            clusterId[:numElements])
+    // clang-format on
+
     for (auto module = firstModule; module < endModule; module += 1) {
       auto firstPixel = moduleStart[1 + module];
       auto thisModuleId = id[firstPixel];
@@ -124,7 +143,10 @@ namespace gpuClustering {
         hist.fill(y[i], i - firstPixel);
       }
 
-      auto maxiter = hist.size();
+      // Can't do dynamic allocation on the device
+      //auto maxiter = hist.size();
+      constexpr int maxiter = 1024;
+
       // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
       constexpr int maxNeighbours = 10;
       assert((hist.size() / 1) <= maxiter);
@@ -171,8 +193,12 @@ namespace gpuClustering {
           assert(m != i);
           assert(int(y[m]) - int(y[i]) >= 0);
           assert(int(y[m]) - int(y[i]) <= 1);
-          if (std::abs(int(x[m]) - int(x[i])) > 1)
+          // Compiling with LLVM, get nvlink error : Undefined reference to 'abs' in '/tmp/SiPixelRawToClusterGPUKernel.cc-nvptx64-nvidia-cuda-sm_61-4fd64f.cubin'
+          //if (std::abs(int(x[m]) - int(x[i])) > 1)
+          //  continue;
+          if ((int(x[m]) - int(x[i])) > 1 || (int(x[m]) - int(x[i])) < -1)
             continue;
+
           auto l = nnn[k]++;
           assert(l < maxNeighbours);
           nn[k][l] = *p;
