@@ -52,7 +52,7 @@ namespace phase1PixelTopology {
 
   template <class Function, std::size_t... Indices>
   constexpr auto map_to_array_helper(Function f, std::index_sequence<Indices...>)
-      -> std::array<typename std::result_of<Function(std::size_t)>::type, sizeof...(Indices)> {
+      -> std::array<typename std::invoke_result<Function, std::size_t>::type, sizeof...(Indices)> {
     return {{f(Indices)...}};
   }
 
