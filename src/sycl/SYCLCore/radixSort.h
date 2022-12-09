@@ -96,7 +96,8 @@ __attribute__((always_inline)) void radixSortImpl(
   auto cubuff = sycl::ext::oneapi::group_local_memory_for_overwrite<int32_t[sb]>(item.get_group());
   int32_t* cu = (int32_t*)cubuff.get();
 
-  // Broken...
+  // SYCL_BUG_ with accessors results are not updated unless printed 
+  // since it's not reasonable to print stuff, local variables are used instead of shread ones
   // auto ibsbuff = sycl::ext::oneapi::group_local_memory_for_overwrite<int>(item.get_group());
   // int* ibs = (int*)ibsbuff.get();
   // auto pbuff = sycl::ext::oneapi::group_local_memory_for_overwrite<int>(item.get_group());

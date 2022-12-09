@@ -57,7 +57,7 @@ namespace gpuClustering {
       return;
 
 #ifdef GPU_DEBUG
-    uint32_t gMaxHit = 0;  //FIXME_ think about a global accessor with access mode atomic maybe
+    uint32_t gMaxHit = 0;  //FIXME_ 
 #endif
 
     auto firstPixel = moduleStart[1 + item.get_group(0)];
@@ -340,7 +340,7 @@ namespace gpuClustering {
       return;
 
 #ifdef GPU_DEBUG
-    uint32_t gMaxHit = 0;  //FIXME_ think about a global accessor with access mode atomic maybe
+    uint32_t gMaxHit = 0;  //FIXME_ 
 #endif
 
     auto firstPixel = moduleStart[1 + item.get_group(0)];

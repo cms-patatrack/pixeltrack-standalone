@@ -6,8 +6,6 @@
 
 // those atomic functions come from dpct translation of CUDA atomics
 // apart from AtomicInc, the other as fast as native CUDA
-// NOTE: probably due to a bug with atomics and ATS, on olice-05 only
-// the "slow" atomicInc works, while atomicAdd(1) gives wrong results
 
 namespace cms {
   namespace sycltools {
