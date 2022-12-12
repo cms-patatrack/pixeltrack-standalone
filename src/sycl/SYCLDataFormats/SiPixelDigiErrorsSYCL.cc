@@ -10,18 +10,18 @@ SiPixelDigiErrorsSYCL::SiPixelDigiErrorsSYCL(size_t maxFedWords, PixelFormatterE
   error_d = cms::sycltools::make_device_unique<cms::sycltools::SimpleVector<PixelErrorCompact>>(stream);
   data_d = cms::sycltools::make_device_unique<PixelErrorCompact[]>(maxFedWords, stream);
 
-  stream.memset(data_d.get(), 0x00, maxFedWords * sizeof(PixelErrorCompact)).wait();
+  stream.memset(data_d.get(), 0x00, maxFedWords * sizeof(PixelErrorCompact));
 
   error_h = cms::sycltools::make_host_unique<cms::sycltools::SimpleVector<PixelErrorCompact>>(stream);
   cms::sycltools::make_SimpleVector(error_h.get(), maxFedWords, data_d.get());
   assert(error_h->empty());
   assert(error_h->capacity() == static_cast<int>(maxFedWords));
 
-  stream.memcpy(error_d.get(), error_h.get(), sizeof(PixelErrorCompact)).wait();
+  stream.memcpy(error_d.get(), error_h.get(), sizeof(PixelErrorCompact));
 }
 
 void SiPixelDigiErrorsSYCL::copyErrorToHostAsync(sycl::queue stream) {
-  stream.memcpy(error_h.get(), error_d.get(), sizeof(PixelErrorCompact)).wait();
+  stream.memcpy(error_h.get(), error_d.get(), sizeof(PixelErrorCompact));
 }
 
 SiPixelDigiErrorsSYCL::HostDataError SiPixelDigiErrorsSYCL::dataErrorToHostAsync(sycl::queue stream) const {
@@ -32,7 +32,7 @@ SiPixelDigiErrorsSYCL::HostDataError SiPixelDigiErrorsSYCL::dataErrorToHostAsync
 
   // but transfer only the required amount
   if (not error_h->empty()) {
-    stream.memcpy(data.get(), data_d.get(), error_h->size() * sizeof(PixelErrorCompact)).wait();
+    stream.memcpy(data.get(), data_d.get(), error_h->size() * sizeof(PixelErrorCompact));
   }
   auto err = *error_h;
   err.set_data(data.get());

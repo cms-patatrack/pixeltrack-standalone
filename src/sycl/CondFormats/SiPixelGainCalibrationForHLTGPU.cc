@@ -20,11 +20,11 @@ const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsyn
 
     // those in CUDA were three memcpy: here they didn't work
     // this is another way to achieve the same result
-    stream.memcpy(data.gainDataOnGPU.get(), this->gainData_.data(), this->gainData_.size()).wait();
+    stream.memcpy(data.gainDataOnGPU.get(), this->gainData_.data(), this->gainData_.size());
 
     this->gainForHLTonHost_->v_pedestals = data.gainDataOnGPU.get();
 
-    stream.memcpy(data.gainForHLTonGPU.get(), this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)).wait();
+    stream.memcpy(data.gainForHLTonGPU.get(), this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU));
   });
   return data.gainForHLTonGPU.get();
 }

@@ -21,7 +21,7 @@ SiPixelDigisSYCL::SiPixelDigisSYCL(size_t maxFedWords, sycl::queue stream) {
   view->clus_ = clus_d.get();
 
   view_d = cms::sycltools::make_device_unique<DeviceConstView>(stream);
-  stream.memcpy(view_d.get(), view.get(), sizeof(DeviceConstView)).wait();
+  stream.memcpy(view_d.get(), view.get(), sizeof(DeviceConstView));
 }
 
 cms::sycltools::host::unique_ptr<uint16_t[]> SiPixelDigisSYCL::adcToHostAsync(sycl::queue stream) const {

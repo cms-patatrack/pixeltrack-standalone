@@ -33,17 +33,15 @@ private:
     GPUData() = default;
     ~GPUData() {}
 
-    std::unique_ptr<SiPixelFedCablingMapGPU, cms::sycltools::device::impl::DeviceDeleter>
-        cablingMapDevice;  // pointer to struct in GPU
+    cms::sycltools::device::unique_ptr<SiPixelFedCablingMapGPU> cablingMapDevice;  // pointer to struct in GPU
   };
   cms::sycltools::ESProduct<GPUData> gpuData_;
 
   struct ModulesToUnpack {
-    using Deleter = cms::sycltools::device::impl::DeviceDeleter;
     ModulesToUnpack() = default;
     ~ModulesToUnpack(){};
 
-    std::unique_ptr<unsigned char[], cms::sycltools::device::impl::DeviceDeleter> modToUnpDefault;  // pointer to GPU
+    cms::sycltools::device::unique_ptr<unsigned char[]> modToUnpDefault;  // pointer to GPU
   };
   cms::sycltools::ESProduct<ModulesToUnpack> modToUnp_;
 };

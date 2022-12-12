@@ -28,7 +28,7 @@ const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsyn
     // allocate
     data.cablingMapDevice = cms::sycltools::make_device_unique_uninitialized<SiPixelFedCablingMapGPU>(stream);
     // transfer
-    stream.memcpy(data.cablingMapDevice.get(), this->cablingMapHost_, sizeof(SiPixelFedCablingMapGPU)).wait();
+    stream.memcpy(data.cablingMapDevice.get(), this->cablingMapHost_, sizeof(SiPixelFedCablingMapGPU));
   });
   return data.cablingMapDevice.get();
 }
@@ -37,11 +37,8 @@ const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(sycl::q
   const auto& data = modToUnp_.dataForCurrentDeviceAsync(stream, [this](ModulesToUnpack& data, sycl::queue stream) {
     data.modToUnpDefault =
         cms::sycltools::make_device_unique<unsigned char[]>(pixelgpudetails::MAX_SIZE_BYTE_BOOL, stream);
-    stream
-        .memcpy(data.modToUnpDefault.get(),
-                this->modToUnpDefault.data(),
-                this->modToUnpDefault.size() * sizeof(unsigned char))
-        .wait();
+    stream.memcpy(
+        data.modToUnpDefault.get(), this->modToUnpDefault.data(), this->modToUnpDefault.size() * sizeof(unsigned char));
   });
   return data.modToUnpDefault.get();
 }

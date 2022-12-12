@@ -18,5 +18,5 @@ SiPixelClustersSYCL::SiPixelClustersSYCL(size_t maxClusters, sycl::queue stream)
   view->clusModuleStart_ = clusModuleStart_d.get();
 
   view_d = cms::sycltools::make_device_unique<DeviceConstView>(stream);
-  stream.memcpy(view_d.get(), view.get(), sizeof(DeviceConstView)).wait();
+  stream.memcpy(view_d.get(), view.get(), sizeof(DeviceConstView));
 }

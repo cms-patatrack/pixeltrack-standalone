@@ -552,7 +552,7 @@ namespace pixelgpudetails {
       auto fedId_d = cms::sycltools::make_device_unique<uint8_t[]>(wordCounter, stream);
 
       stream.memcpy(word_d.get(), wordFed.word(), sizeof(uint32_t) * wordCounter);
-      stream.memcpy(fedId_d.get(), wordFed.fedId(), sizeof(uint8_t) * wordCounter / 2).wait();
+      stream.memcpy(fedId_d.get(), wordFed.fedId(), sizeof(uint8_t) * wordCounter / 2);
 
       stream.submit([&](sycl::handler &cgh) {
         auto cablingMap_kernel = cablingMap;
@@ -645,7 +645,7 @@ namespace pixelgpudetails {
       });
 
       // read the number of modules into a data member, used by getProduct())
-      stream.memcpy(&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t)).wait();
+      stream.memcpy(&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t));
 
       threadsPerBlock = 256;  //SYCL_BUG_ 256 for GPU, set to 32 (and change values in the kernel for CPU)
       blocks = MaxNumModules;
@@ -752,10 +752,8 @@ namespace pixelgpudetails {
       // MUST be ONE block
 
       // last element holds the number of all clusters
-      stream
-          .memcpy(
-              &(nModules_Clusters_h[1]), clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, sizeof(int32_t))
-          .wait();
+      stream.memcpy(
+          &(nModules_Clusters_h[1]), clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, sizeof(int32_t));
 #ifdef CPU_DEBUG
       stream.wait();
 #endif

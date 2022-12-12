@@ -27,8 +27,8 @@ private:
     ~GPUData();
     // not needed if not used on CPU...
     pixelCPEforGPU::ParamsOnGPU h_paramsOnGPU;
-    cms::sycltools::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> d_paramsOnGPU =
-        nullptr;  // copy of the above on the Device
+    // copy of the above on the Device
+    cms::sycltools::device::unique_ptr<pixelCPEforGPU::ParamsOnGPU> d_paramsOnGPU = nullptr;
   };
   cms::sycltools::ESProduct<GPUData> gpuData_;
 

@@ -55,7 +55,7 @@ namespace cms {
       uint32_t *poff = (uint32_t *)((char *)(h) + offsetof(Histo, off));
       int32_t size = offsetof(Histo, bins) - offsetof(Histo, off);
       assert(size >= int(sizeof(uint32_t) * Histo::totbins()));
-      stream.memset(poff, 0x00, size).wait();
+      stream.memset(poff, 0x00, size);
     }
 
     template <typename Histo>

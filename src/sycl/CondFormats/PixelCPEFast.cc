@@ -50,11 +50,9 @@ const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(sycl::queue 
     stream.memcpy((void *)data.h_paramsOnGPU.m_layerGeometry.get(),
                   &this->m_layerGeometry,
                   sizeof(pixelCPEforGPU::LayerGeometry));
-    stream
-        .memcpy((void *)data.h_paramsOnGPU.m_detParams.get(),
-                this->m_detParamsGPU.data(),
-                this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams))
-        .wait();
+    stream.memcpy((void *)data.h_paramsOnGPU.m_detParams.get(),
+                  this->m_detParamsGPU.data(),
+                  this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams));
   });
   return data.d_paramsOnGPU.get();
 }

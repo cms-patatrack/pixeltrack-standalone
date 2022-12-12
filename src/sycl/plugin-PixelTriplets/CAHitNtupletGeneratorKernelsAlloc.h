@@ -18,7 +18,7 @@ void CAHitNtupletGeneratorKernels::allocateOnGPU(sycl::queue stream) {
   device_hitToTuple_apc_ = (cms::sycltools::AtomicPairCounter*)device_storage_.get() + 1;
   device_nCells_ = (uint32_t*)(device_storage_.get() + 2);
 
-  stream.memset(device_nCells_, 0x00, sizeof(uint32_t)).wait();
+  stream.memset(device_nCells_, 0x00, sizeof(uint32_t));
 
   cms::sycltools::launchZero(device_tupleMultiplicity_.get(), stream);
   cms::sycltools::launchZero(device_hitToTuple_.get(), stream);  // we may wish to keep it in the edm...
