@@ -17,12 +17,12 @@ namespace gpuVertexFinder {
   void loadTracks(TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) {
     assert(ptracks);
     assert(soa);
-    auto const& tracks = *ptracks;
-    auto const& fit = tracks.stateAtBS;
-    auto const* quality = tracks.qualityData();
 
     auto iter{std::views::iota(0, TkSoA::stride())};
     std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto idx) {
+      auto const& tracks = *ptracks;
+      auto const& fit = tracks.stateAtBS;
+      auto const* quality = tracks.qualityData();
       auto nHits = tracks.nHits(idx);
       if (nHits == 0)
         return;  // this is a guard: maybe we need to move to nTracks...
