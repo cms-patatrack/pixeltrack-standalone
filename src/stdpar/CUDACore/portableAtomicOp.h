@@ -12,7 +12,7 @@
 
 namespace cms::cuda {
 
-  template <std::floating_point T, typename Tp = std::add_pointer_t<T>>
+  template <std::totally_ordered T, typename Tp = std::add_pointer_t<T>>
   T atomicAdd(Tp address, T val) {
 #ifdef __NVCOMPILER
     // We need to check if execution space is device or host, ::atomicAdd is undefined in host execution space
