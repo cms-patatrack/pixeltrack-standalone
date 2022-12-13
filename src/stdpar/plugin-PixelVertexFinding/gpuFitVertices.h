@@ -5,18 +5,20 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <execution>
+#include <memory>
+#include <ranges>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/cuda_assert.h"
 #include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void fitVertices(ZVertices* pdata,
-                                              WorkSpace* pws,
-                                              float chi2Max  // for outlier rejection
+  __forceinline__ void fitVertices(ZVertices* pdata,
+                                   WorkSpace* pws,
+                                   float chi2Max  // for outlier rejection
   ) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
@@ -42,73 +44,62 @@ namespace gpuVertexFinder {
     auto foundClusters = nvFinal;
 
     // zero
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
-      zv[i] = 0;
-      wv[i] = 0;
-      chi2[i] = 0;
-    }
+    std::fill(zv, zv + foundClusters, 0);
+    std::fill(wv, wv + foundClusters, 0);
+    std::fill(chi2, chi2 + foundClusters, 0);
 
     // only for test
-    __shared__ int noise;
-    if (verbose && 0 == threadIdx.x)
-      noise = 0;
+    std::unique_ptr<int> noise_p{std::make_unique<int>(0)};
+    int* noise{noise_p.get()};
 
-    __syncthreads();
-    std::atomic_ref<int> noise_atomic{noise};
-    // compute cluster location
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    auto iter{std::views::iota(0U, nt)};
+    // one vertex per thread
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
+      // compute cluster location
       if (iv[i] > 9990) {
         if (verbose)
-          ++noise_atomic;
-        continue;
+          cms::cuda::atomicAdd(noise, 1);
+        return;
       }
       assert(iv[i] >= 0);
       assert(iv[i] < int(foundClusters));
       auto w = 1.f / ezt2[i];
       cms::cuda::atomicAdd(&zv[iv[i]], zt[i] * w);
       cms::cuda::atomicAdd(&wv[iv[i]], w);
-    }
+    });
 
-    __syncthreads();
     // reuse nn
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x) {
+    auto iter_fc{std::views::iota(0U, foundClusters)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_fc), std::ranges::cend(iter_fc), [=](const auto i) {
       assert(wv[i] > 0.f);
       zv[i] /= wv[i];
       nn[i] = -1;  // ndof
-    }
-    __syncthreads();
+    });
 
     // compute chi2
-    for (auto i = threadIdx.x; i < nt; i += blockDim.x) {
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
       if (iv[i] > 9990)
-        continue;
+        return;
 
       auto c2 = zv[iv[i]] - zt[i];
       c2 *= c2 / ezt2[i];
       if (c2 > chi2Max) {
         iv[i] = 9999;
-        continue;
+        return;
       }
       cms::cuda::atomicAdd(&chi2[iv[i]], c2);
-      std::atomic_ref<int32_t> nn_atomic{nn[iv[i]]};
-      ++nn_atomic;
-    }
-    __syncthreads();
-    for (auto i = threadIdx.x; i < foundClusters; i += blockDim.x)
+      cms::cuda::atomicAdd(&nn[iv[i]], 1);
+    });
+
+    std::for_each(std::execution::par, std::ranges::cbegin(iter_fc), std::ranges::cend(iter_fc), [=](const auto i) {
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
+    });
 
-    if (verbose && 0 == threadIdx.x)
+    if (verbose)
       printf("found %d proto clusters ", foundClusters);
-    if (verbose && 0 == threadIdx.x)
-      printf("and %d noise\n", noise);
-  }
-
-  __global__ void fitVerticesKernel(ZVertices* pdata,
-                                    WorkSpace* pws,
-                                    float chi2Max  // for outlier rejection
-  ) {
-    fitVertices(pdata, pws, chi2Max);
+    if (verbose)
+      printf("and %d noise\n", *noise);
   }
 
 }  // namespace gpuVertexFinder
