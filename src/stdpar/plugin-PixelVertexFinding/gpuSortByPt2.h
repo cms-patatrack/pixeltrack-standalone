@@ -9,7 +9,6 @@
 #include <cstdint>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/cuda_assert.h"
 #include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"

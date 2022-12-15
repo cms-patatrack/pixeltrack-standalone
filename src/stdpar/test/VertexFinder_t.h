@@ -162,7 +162,7 @@ int main() {
       cudaDeviceSynchronize();
 
 #ifdef ONE_KERNEL
-      vertexFinderOneKernel<<<1, 512 + 256>>>(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
+      vertexFinderOneKernel(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
       sortByPt2(onGPU_d.get(), ws_d.get());
 #else
       CLUSTERIZE(onGPU_d.get(), ws_d.get(), kk, par[0], par[1], par[2]);
@@ -172,7 +172,7 @@ int main() {
       cudaCheck(cudaGetLastError());
       cudaDeviceSynchronize();
 
-      gpuVertexFinder::fitVerticesKernel<<<1, 1024 - 256>>>(onGPU_d.get(), ws_d.get(), 50.f);
+      gpuVertexFinder::fitVertices(onGPU_d.get(), ws_d.get(), 50.f);
       cudaCheck(cudaGetLastError());
       cudaCheck(cudaMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
@@ -234,7 +234,7 @@ int main() {
       }
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-      gpuVertexFinder::fitVerticesKernel<<<1, 1024 - 256>>>(onGPU_d.get(), ws_d.get(), 50.f);
+      gpuVertexFinder::fitVertices(onGPU_d.get(), ws_d.get(), 50.f);
       cudaCheck(cudaMemcpy(&nv, LOC_ONGPU(nvFinal), sizeof(uint32_t), cudaMemcpyDeviceToHost));
       cudaCheck(cudaMemcpy(nn, LOC_ONGPU(ndof), nv * sizeof(int32_t), cudaMemcpyDeviceToHost));
       cudaCheck(cudaMemcpy(chi2, LOC_ONGPU(chi2), nv * sizeof(float), cudaMemcpyDeviceToHost));
@@ -254,7 +254,7 @@ int main() {
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
       // one vertex per block!!!
-      gpuVertexFinder::splitVerticesKernel<<<1024, 64>>>(onGPU_d.get(), ws_d.get(), 9.f);
+      gpuVertexFinder::splitVertices(onGPU_d.get(), ws_d.get(), 9.f);
       cudaCheck(cudaMemcpy(&nv, LOC_WS(nvIntermediate), sizeof(uint32_t), cudaMemcpyDeviceToHost));
 #else
       gridDim.x = 1;
@@ -266,7 +266,7 @@ int main() {
       std::cout << "after split " << nv << std::endl;
 
 #if defined(__NVCOMPILER) || defined(__CUDACC__)
-      gpuVertexFinder::fitVerticesKernel<<<1, 1024 - 256>>>(onGPU_d.get(), ws_d.get(), 5000.f);
+      gpuVertexFinder::fitVertices(onGPU_d.get(), ws_d.get(), 5000.f);
       cudaCheck(cudaGetLastError());
 
       sortByPt2(onGPU_d.get(), ws_d.get());

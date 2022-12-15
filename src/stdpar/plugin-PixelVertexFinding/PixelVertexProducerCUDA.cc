@@ -46,7 +46,6 @@ void PixelVertexProducerCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   assert(tracks);
   //move unique_ptr into local variable
   auto vertices{m_gpuAlgo.makeAsync(tracks, m_ptMin)};
-  cudaDeviceSynchronize();  //wait for the device to finish kernels
   //We now move the unique_ptr into the event
   iEvent.emplace(tokenVertex_, std::move(vertices));
 }

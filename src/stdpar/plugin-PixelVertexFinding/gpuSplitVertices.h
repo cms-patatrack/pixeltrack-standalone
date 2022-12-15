@@ -5,16 +5,17 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <memory>
+#include <ranges>
 
 #include "CUDACore/HistoContainer.h"
-#include "CUDACore/cuda_assert.h"
 #include "CUDACore/portableAtomicOp.h"
 
 #include "gpuVertexFinder.h"
 
 namespace gpuVertexFinder {
 
-  __device__ __forceinline__ void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
+  __forceinline__ void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
     auto& __restrict__ data = *pdata;
@@ -32,30 +33,32 @@ namespace gpuVertexFinder {
 
     assert(pdata);
     assert(zt);
+    constexpr int MAXTK = 512;
+    auto it_sp{std::make_unique<uint32_t[]>(MAXTK)};  // track index
+    auto it{it_sp.get()};
+    auto zz_sp{std::make_unique<float[]>(MAXTK)};  // z pos
+    auto zz{zz_sp.get()};
+    auto newV_sp{std::make_unique<uint8_t[]>(MAXTK)};  // 0 or 1
+    auto newV{newV_sp.get()};
+    auto ww_sp{std::make_unique<float[]>(MAXTK)};  // z weight
+    auto ww{ww_sp.get()};
 
-    // one vertex per block
-    for (auto kv = blockIdx.x; kv < nvFinal; kv += gridDim.x) {
+    auto iter{std::views::iota(0U, nvFinal)};
+    // one vertex per thread
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto kv) {
       if (nn[kv] < 4)
-        continue;
+        return;
       if (chi2[kv] < maxChi2 * float(nn[kv]))
-        continue;
+        return;
 
-      constexpr int MAXTK = 512;
       assert(nn[kv] < MAXTK);
       if (nn[kv] >= MAXTK)
-        continue;                      // too bad FIXME
-      __shared__ uint32_t it[MAXTK];   // track index
-      __shared__ float zz[MAXTK];      // z pos
-      __shared__ uint8_t newV[MAXTK];  // 0 or 1
-      __shared__ float ww[MAXTK];      // z weight
+        return;  // too bad FIXME
 
-      __shared__ uint32_t nq;  // number of track for this vertex
-      nq = 0;
-      __syncthreads();
-      std::atomic_ref<uint32_t> nq_atomic{nq};
+      uint32_t nq{0};  // number of track for this vertex
 
       // copy to local
-      for (auto k = threadIdx.x; k < nt; k += blockDim.x) {
+      for (auto k = 0; k < nt; ++k) {
         if (iv[k] == int(kv)) {
           auto old = cms::cuda::atomicInc(&nq, static_cast<uint32_t>(MAXTK));
           zz[old] = zt[k] - zv[kv];
@@ -65,9 +68,8 @@ namespace gpuVertexFinder {
         }
       }
 
-      __shared__ float znew[2], wnew[2];  // the new vertices
+      float znew[2], wnew[2];  // the new vertices
 
-      __syncthreads();
       assert(int(nq) == nn[kv] + 1);
 
       int maxiter = 20;
@@ -75,25 +77,18 @@ namespace gpuVertexFinder {
       bool more = true;
       while (__syncthreads_or(more)) {
         more = false;
-        if (0 == threadIdx.x) {
-          znew[0] = 0;
-          znew[1] = 0;
-          wnew[0] = 0;
-          wnew[1] = 0;
-        }
-        __syncthreads();
-        for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+        znew[0] = 0;
+        znew[1] = 0;
+        wnew[0] = 0;
+        wnew[1] = 0;
+        for (auto k = 0; k < nq; ++k) {
           auto i = newV[k];
-          cms::cuda::atomicAdd(&znew[i], zz[k] * ww[k]);
-          cms::cuda::atomicAdd(&wnew[i], ww[k]);
+          znew[i] += zz[k] * ww[k];
+          wnew[i] += ww[k];
         }
-        __syncthreads();
-        if (0 == threadIdx.x) {
-          znew[0] /= wnew[0];
-          znew[1] /= wnew[1];
-        }
-        __syncthreads();
-        for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+        znew[0] /= wnew[0];
+        znew[1] /= wnew[1];
+        for (auto k = 0; k < nq; ++k) {
           auto d0 = fabs(zz[k] - znew[0]);
           auto d1 = fabs(zz[k] - znew[1]);
           auto newer = d0 < d1 ? 0 : 1;
@@ -107,36 +102,30 @@ namespace gpuVertexFinder {
 
       // avoid empty vertices
       if (0 == wnew[0] || 0 == wnew[1])
-        continue;
+        return;
 
       // quality cut
       auto dist2 = (znew[0] - znew[1]) * (znew[0] - znew[1]);
 
       auto chi2Dist = dist2 / (1.f / wnew[0] + 1.f / wnew[1]);
 
-      if (verbose && 0 == threadIdx.x)
+      if (verbose && 0 == kv)
         printf("inter %d %f %f\n", 20 - maxiter, chi2Dist, dist2 * wv[kv]);
 
       if (chi2Dist < 4)
-        continue;
+        return;
 
       // get a new global vertex
-      __shared__ uint32_t igv;
-      if (0 == threadIdx.x) {
-        std::atomic_ref<uint32_t> ws_intermediate_atomic{ws.nvIntermediate};
-        igv = ws_intermediate_atomic++;
-      }
-      __syncthreads();
-      for (auto k = threadIdx.x; k < nq; k += blockDim.x) {
+      uint32_t igv;
+      // we need to get a ref to the pointee for nvc++ to accept the atomic_ref construction
+      auto& ws_d = *pws;
+      std::atomic_ref<uint32_t> ws_intermediate_atomic{ws_d.nvIntermediate};
+      igv = ws_intermediate_atomic++;
+      for (auto k = 0; k < nq; ++k) {
         if (1 == newV[k])
           iv[it[k]] = igv;
       }
-
-    }  // loop on vertices
-  }
-
-  __global__ void splitVerticesKernel(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
-    splitVertices(pdata, pws, maxChi2);
+    });  // loop on vertices
   }
 
 }  // namespace gpuVertexFinder
