@@ -123,10 +123,12 @@ LLVM_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werro
 AOT_INTEL_FLAGS   := -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device 0x020a"
 AOT_CUDA_FLAGS    := -fsycl-targets=nvptx64-nvidia-cuda $(foreach ARCH,$(CUDA_ARCH),-Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_$(ARCH)) -fno-bundle-offload-arch --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version -Wno-linker-warnings
 AOT_HIP_FLAGS     := -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend --offload-arch=gfx900 --rocm-path=$(ROCM_BASE) -Wno-linker-warnings 
+AOT_CPU_FLAGS     := -fsycl-targets=spir64_x86_64
 
 # INTEL flags: compile AOT for all the CPUs and for the GPU on olice-05
-# CUDA flags : compile AOT for for NVIDIA GPUs
+# CUDA flags : compile AOT for NVIDIA GPUs
 # HIP flags  : compile AOT for architectures with ID gfx900 (e.g. the Radeon PRO WX 9100)
+# CPU flags  : compile AOT for all the CPUs
 
 # -Wno-linker-warnings will not be needed be needed anymore with https://github.com/intel/llvm/pull/7245
 
@@ -166,19 +168,24 @@ endif
 # The flags for NVIDIA GPUs and AMD GPUs are added only if llvm is used since they are not yet supported by dpcpp
 # At the moment it's not possible to compile AOT for both CUDA and AMD together (LLVM BUG)
 # so if both are there the default is to compile only for the CUDA backend
-# same for CPUs and CUDA backend : it's not possible to compile AOT for both right now
+# same for CPUs and CUDA backend : it's not possible to compile AOT for both right now -> 
+# keep a look on https://github.com/intel/llvm/issues/7676 for that error.
 # (the AMD backend has some bugs so there is a high probability that it won't even compile)
 
 ifdef ONEAPI_BASE
-SYCL_CXXFLAGS += $(AOT_INTEL_FLAGS)
+  SYCL_CXXFLAGS += $(AOT_INTEL_FLAGS)
 else
-ifdef CUDA_BASE
-SYCL_CXXFLAGS += $(AOT_CUDA_FLAGS)
-else 
-ifdef ROCM_BASE
-SYCL_CXXFLAGS += $(AOT_HIP_FLAGS)
-endif
-endif
+  ifdef CPU_FLAGS
+    SYCL_CXXFLAGS += $(AOT_CPU_FLAGS)
+  else
+    ifdef CUDA_BASE
+      SYCL_CXXFLAGS += $(AOT_CUDA_FLAGS)
+    else 
+      ifdef ROCM_BASE
+        SYCL_CXXFLAGS += $(AOT_HIP_FLAGS)
+      endif
+    endif
+  endif
 endif
 # check if libraries are under lib or lib64
 ifdef SYCL_BASE

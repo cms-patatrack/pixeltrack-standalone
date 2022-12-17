@@ -83,6 +83,9 @@ inline TrackingRecHit2DSYCL::TrackingRecHit2DSYCL(uint32_t nHits,
   // if empy do not bother
   if (0 == nHits) {
     stream.memcpy(m_view.get(), view.get(), sizeof(TrackingRecHit2DSOAView));
+#ifdef CPU_DEBUG
+   stream.wait();
+#endif
     return;
   }
 
@@ -122,6 +125,9 @@ inline TrackingRecHit2DSYCL::TrackingRecHit2DSYCL(uint32_t nHits,
 
   // transfer view
   stream.memcpy(m_view.get(), view.get(), sizeof(TrackingRecHit2DSOAView)); 
+#ifdef CPU_DEBUG
+  stream.wait();
+#endif
 }
 
 #endif  // SYCLDataFormats_TrackingRecHit_interface_TrackingRecHit2DSYCL_h

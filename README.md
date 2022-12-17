@@ -429,6 +429,12 @@ To select `dpcpp` as the compiler, use the following:
 USE_SYCL_ONEAPI=1 make sycl
 ```
 
+To run on CPU additional synchronization is required. Compiling with:
+```bash
+CPU_FLAGS=1 make -j 20 sycl USER_CXXFLAGS="-DCPU_DEBUG"
+```
+will enable the flags to compile AOT for all the CPUs and the additional synchronization inside the code.
+
 ##### Supported backends
 The official Intel compiler at the moment supports only CPUs and Intel GPUs. The open source compiler instead supports 
 also NVIDIA GPUs and AMD GPUs. To compile for those backends the corresponding flags in the Makefile must be set.
