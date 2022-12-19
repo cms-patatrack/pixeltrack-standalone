@@ -63,7 +63,7 @@ CUDA_LIBDIR := $(CUDA_BASE)/lib64
 USER_CUDAFLAGS :=
 export CUDA_BASE
 export CUDA_DEPS := $(CUDA_LIBDIR)/libcudart.so
-export CUDA_ARCH := 35 50 60 70
+export CUDA_ARCH := 50 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_TEST_CXXFLAGS := -DGPU_DEBUG
 export CUDA_LDFLAGS := -L$(CUDA_LIBDIR) -lcudart -lcudadevrt
@@ -133,7 +133,7 @@ AOT_CPU_FLAGS     := -fsycl-targets=spir64_x86_64
 # -Wno-linker-warnings will not be needed be needed anymore with https://github.com/intel/llvm/pull/7245
 
 ifdef USE_SYCL_ONEAPI
-  ONEAPI_BASE       := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2022
+  ONEAPI_BASE       := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2023
   TBB_BASE          := $(ONEAPI_BASE)/tbb/latest
   TBB_LIBDIR        := $(TBB_BASE)/lib/intel64/gcc4.8
   ifneq ($(wildcard $(ONEAPI_BASE)),)

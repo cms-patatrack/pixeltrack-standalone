@@ -45,11 +45,11 @@ namespace cms {
       friend class ScopedContextProduce;
       friend class edm::Wrapper<Product<T>>;
 
-      explicit Product(sycl::queue stream, sycl::event event, T data)
+      explicit Product(std::shared_ptr<sycl::queue> stream, sycl::event event, T data)
           : ProductBase(std::move(stream), std::move(event)), data_(std::move(data)) {}
 
       template <typename... Args>
-      explicit Product(sycl::queue stream, sycl::event event, Args&&... args)
+      explicit Product(std::shared_ptr<sycl::queue> stream, sycl::event event, Args&&... args)
           : ProductBase(std::move(stream), std::move(event)), data_(std::forward<Args>(args)...) {}
 
       T data_;  //!

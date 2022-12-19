@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_SYCLCore_ContextState_h
 #define HeterogeneousCore_SYCLCore_ContextState_h
 
+#include <iostream>
 #include <memory>
 #include <optional>
 
@@ -28,33 +29,39 @@ namespace cms {
       friend class ScopedContextProduce;
       friend class ScopedContextTask;
 
-      void set(sycl::queue stream) {
+      void set(std::shared_ptr<sycl::queue> stream) {
         throwIfStream();
-        stream_ = stream;
+        stream_ = std::move(stream);
       }
 
-      sycl::device device() const { return stream_->get_device(); }
+      sycl::device device() const { 
+	throwIfNoStream();
+	return stream_->get_device(); 
+      }
 
       sycl::queue stream() const {
         throwIfNoStream();
         return *stream_;
       }
 
-      sycl::queue releaseStream() {
+    std::shared_ptr<sycl::queue> const& streamPtr() const {
+      throwIfNoStream();
+      return stream_;
+    }
+
+      std::shared_ptr<sycl::queue> releaseStreamPtr() {
         throwIfNoStream();
         // This function needs to effectively reset stream_ (i.e. stream_
         // must be empty after this function). This behavior ensures that
         // the sycl::queue is not hold for inadvertedly long (i.e. to
         // the next event), and is checked at run time.
-        sycl::queue stream = *stream_;
-        stream_.reset();
-        return stream;
+        return std::move(stream_);
       }
 
       void throwIfStream() const;
       void throwIfNoStream() const;
 
-      std::optional<sycl::queue> stream_;
+      std::shared_ptr<sycl::queue> stream_;
     };
   }  // namespace sycltools
 }  // namespace cms

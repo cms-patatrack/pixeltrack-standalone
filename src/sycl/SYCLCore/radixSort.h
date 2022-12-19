@@ -98,6 +98,9 @@ __attribute__((always_inline)) void radixSortImpl(
 
   // SYCL_BUG_ with accessors results are not updated unless printed 
   // since it's not reasonable to print stuff, local variables are used instead of shread ones
+  // More studies (https://github.com/llvm/llvm-project/issues/59632) show that this could be related
+  // to specific GPUs, so maybe accessors work on others..
+
   // auto ibsbuff = sycl::ext::oneapi::group_local_memory_for_overwrite<int>(item.get_group());
   // int* ibs = (int*)ibsbuff.get();
   // auto pbuff = sycl::ext::oneapi::group_local_memory_for_overwrite<int>(item.get_group());

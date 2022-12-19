@@ -7,23 +7,6 @@
 
 namespace cms::sycltools {
 
-  namespace {
-
-    void syclExceptionHandler(sycl::exception_list exceptions) {
-      std::ostringstream msg;
-      msg << "Caught asynchronous SYCL exception:";
-      for (auto const& exc_ptr : exceptions) {
-        try {
-          std::rethrow_exception(exc_ptr);
-        } catch (cl::sycl::exception const& e) {
-          msg << '\n' << e.what();
-        }
-        throw std::runtime_error(msg.str());
-      }
-    }
-
-  }  // namespace
-
   static std::vector<sycl::device> discoverDevices() {
     std::vector<sycl::device> temp;
     std::vector<sycl::device> cpus = sycl::device::get_devices(sycl::info::device_type::cpu);
@@ -102,13 +85,4 @@ namespace cms::sycltools {
     }
     return device;
   }
-
-  sycl::queue getDeviceQueue(unsigned int index) {
-    return sycl::queue{chooseDevice(index), syclExceptionHandler, sycl::property::queue::in_order()};
-  }
-
-  sycl::queue getDeviceQueue(sycl::device device) {
-    return sycl::queue{device, syclExceptionHandler, sycl::property::queue::in_order()};
-  }
-
 }  // namespace cms::sycltools

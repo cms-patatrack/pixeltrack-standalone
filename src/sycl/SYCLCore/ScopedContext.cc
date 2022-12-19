@@ -10,12 +10,12 @@ namespace cms::sycltools {
 
   namespace impl {
 
-    ScopedContextBase::ScopedContextBase(edm::StreamID streamID) : stream_(getDeviceQueue(streamID)) {}
+    ScopedContextBase::ScopedContextBase(edm::StreamID streamID) : stream_(getStreamCache().get(chooseDevice(streamID))) {}
 
     ScopedContextBase::ScopedContextBase(ProductBase const &data)
-        : stream_(data.mayReuseStream() ? data.stream() : getDeviceQueue(data.device())) {}
+        : stream_(data.mayReuseStream() ? data.streamPtr() : getStreamCache().get(data.device())) {}
 
-    ScopedContextBase::ScopedContextBase(sycl::queue stream) : stream_(std::move(stream)) {}
+    ScopedContextBase::ScopedContextBase(std::shared_ptr<sycl::queue> stream) : stream_(std::move(stream)) {}
 
     ////////////////////
 
@@ -52,7 +52,7 @@ namespace cms::sycltools {
   ScopedContextAcquire::~ScopedContextAcquire() {
     holderHelper_.enqueueCallback(stream());
     if (contextState_) {
-      contextState_->set(stream());
+      contextState_->set(streamPtr());
     }
   }
 

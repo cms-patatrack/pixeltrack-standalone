@@ -1,11 +1,13 @@
 #ifndef HeterogeneousCore_SYCLCore_ScopedContext_h
 #define HeterogeneousCore_SYCLCore_ScopedContext_h
 
+#include <iostream>
 #include <optional>
 
 #include <CL/sycl.hpp>
 
 #include "SYCLCore/ContextState.h"
+#include "SYCLCore/StreamCache.h"
 #include "SYCLCore/Product.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
@@ -23,8 +25,9 @@ namespace cms {
       // This class is intended to be derived by other ScopedContext*, not for general use
       class ScopedContextBase {
       public:
-        sycl::device device() const { return stream_.get_device(); }
-        sycl::queue stream() const { return stream_; }
+        sycl::device device() const { return stream_->get_device(); }
+        sycl::queue stream() const { return *stream_; }
+	const std::shared_ptr<sycl::queue>& streamPtr() const { return stream_; }
 
       protected:
         // The constructors set the current device, but the device
@@ -35,10 +38,10 @@ namespace cms {
 
         explicit ScopedContextBase(ProductBase const& data);
 
-        explicit ScopedContextBase(sycl::queue stream);
+        explicit ScopedContextBase(std::shared_ptr<sycl::queue> stream);
 
       private:
-        sycl::queue stream_;
+        std::shared_ptr<sycl::queue> stream_;
       };
 
       class ScopedContextGetterBase : public ScopedContextBase {
@@ -144,7 +147,7 @@ namespace cms {
       explicit ScopedContextProduce(const ProductBase& data) : ScopedContextGetterBase(data) {}
 
       /// Constructor to re-use the SYCL stream of acquire() (ExternalWork module)
-      explicit ScopedContextProduce(ContextState& state) : ScopedContextGetterBase(state.releaseStream()) {}
+      explicit ScopedContextProduce(ContextState& state) : ScopedContextGetterBase(state.releaseStreamPtr()) {}
 
       /// Record the SYCL event, all asynchronous work must have been queued before the destructor
       ~ScopedContextProduce();
@@ -152,20 +155,20 @@ namespace cms {
       template <typename T>
       std::unique_ptr<Product<T>> wrap(T data) {
         // make_unique doesn't work because of private constructor
-        return std::unique_ptr<Product<T>>(new Product<T>(stream(), event_, std::move(data)));
+        return std::unique_ptr<Product<T>>(new Product<T>(streamPtr(), event_, std::move(data)));
       }
 
       template <typename T, typename... Args>
       auto emplace(edm::Event& iEvent, edm::EDPutTokenT<T> token, Args&&... args) {
-        return iEvent.emplace(token, stream(), event_, std::forward<Args>(args)...);
+        return iEvent.emplace(token, streamPtr(), event_, std::forward<Args>(args)...);
       }
 
     private:
       friend class sycltest::TestScopedContext;
 
       // This construcor is only meant for testing
-      explicit ScopedContextProduce(sycl::queue stream, sycl::event event)
-          : ScopedContextGetterBase(stream), event_{event} {}
+      explicit ScopedContextProduce(std::shared_ptr<sycl::queue> stream, sycl::event event)
+          : ScopedContextGetterBase(std::move(stream)), event_{event} {}
 
       // the barrier should be a no-op on an ordered queue, but is used to initialise the event on the data stream
       sycl::event event_ = stream().submit_barrier();
@@ -181,7 +184,7 @@ namespace cms {
     public:
       /// Constructor to re-use the SYCL stream of acquire() (ExternalWork module)
       explicit ScopedContextTask(ContextState const* state, edm::WaitingTaskWithArenaHolder waitingTaskHolder)
-          : ScopedContextBase(state->stream()), holderHelper_{std::move(waitingTaskHolder)}, contextState_{state} {}
+          : ScopedContextBase(state->streamPtr()), holderHelper_{std::move(waitingTaskHolder)}, contextState_{state} {}
 
       ~ScopedContextTask();
 

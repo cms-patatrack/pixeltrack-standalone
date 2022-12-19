@@ -9,8 +9,6 @@ namespace cms::sycltools {
   std::vector<sycl::device> const& enumerateDevices(bool verbose = false);
   std::vector<sycl::platform> const& enumeratePlatforms(bool verbose = false);
   sycl::device chooseDevice(edm::StreamID id, bool verbose = false);
-  sycl::queue getDeviceQueue(unsigned int index = 0);
-  sycl::queue getDeviceQueue(sycl::device device);
 }  // namespace cms::sycltools
 
 #endif
