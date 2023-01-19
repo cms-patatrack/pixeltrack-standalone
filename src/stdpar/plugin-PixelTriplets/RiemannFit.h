@@ -30,7 +30,7 @@ namespace Rfit {
  */
 
   template <typename VNd1, typename VNd2>
-  __host__ __device__ inline void computeRadLenUniformMaterial(const VNd1& length_values, VNd2& rad_lengths) {
+  inline void computeRadLenUniformMaterial(const VNd1& length_values, VNd2& rad_lengths) {
     // Radiation length of the pixel detector in the uniform assumption, with
     // 0.06 rad_len at 16 cm
     constexpr double XX_0_inv = 0.06 / 16.;
@@ -61,7 +61,7 @@ namespace Rfit {
  */
 
   template <typename V4, typename VNd1, typename VNd2, int N>
-  __host__ __device__ inline auto Scatter_cov_line(Matrix2d const* cov_sz,
+  inline auto Scatter_cov_line(Matrix2d const* cov_sz,
                                                    const V4& fast_fit,
                                                    VNd1 const& s_arcs,
                                                    VNd2 const& z_values,
@@ -122,7 +122,7 @@ namespace Rfit {
     negligible).
  */
   template <typename M2xN, typename V4, int N>
-  __host__ __device__ inline MatrixNd<N> Scatter_cov_rad(const M2xN& p2D,
+  inline MatrixNd<N> Scatter_cov_rad(const M2xN& p2D,
                                                          const V4& fast_fit,
                                                          VectorNd<N> const& rad,
                                                          double B) {
@@ -170,7 +170,7 @@ namespace Rfit {
 */
 
   template <typename M2xN, int N>
-  __host__ __device__ inline Matrix2Nd<N> cov_radtocart(const M2xN& p2D,
+  inline Matrix2Nd<N> cov_radtocart(const M2xN& p2D,
                                                         const MatrixNd<N>& cov_rad,
                                                         const VectorNd<N>& rad) {
 #ifdef RFIT_DEBUG
@@ -207,7 +207,7 @@ namespace Rfit {
     \warning correlation between different point are not computed.
 */
   template <typename M2xN, int N>
-  __host__ __device__ inline VectorNd<N> cov_carttorad(const M2xN& p2D,
+  inline VectorNd<N> cov_carttorad(const M2xN& p2D,
                                                        const Matrix2Nd<N>& cov_cart,
                                                        const VectorNd<N>& rad) {
     constexpr u_int n = N;
@@ -238,7 +238,7 @@ namespace Rfit {
     orthogonal system.
 */
   template <typename M2xN, typename V4, int N>
-  __host__ __device__ inline VectorNd<N> cov_carttorad_prefit(const M2xN& p2D,
+  inline VectorNd<N> cov_carttorad_prefit(const M2xN& p2D,
                                                               const Matrix2Nd<N>& cov_cart,
                                                               V4& fast_fit,
                                                               const VectorNd<N>& rad) {
@@ -274,7 +274,7 @@ namespace Rfit {
 */
 
   template <int N>
-  __host__ __device__ inline VectorNd<N> Weight_circle(const MatrixNd<N>& cov_rad_inv) {
+  inline VectorNd<N> Weight_circle(const MatrixNd<N>& cov_rad_inv) {
     return cov_rad_inv.colwise().sum().transpose();
   }
 
@@ -287,7 +287,7 @@ namespace Rfit {
     \return q int 1 or -1.
 */
   template <typename M2xN>
-  __host__ __device__ inline int32_t Charge(const M2xN& p2D, const Vector3d& par_uvr) {
+  inline int32_t Charge(const M2xN& p2D, const Vector3d& par_uvr) {
     return ((p2D(0, 1) - p2D(0, 0)) * (par_uvr.y() - p2D(1, 0)) - (p2D(1, 1) - p2D(1, 0)) * (par_uvr.x() - p2D(0, 0)) >
             0)
                ? -1
@@ -309,7 +309,7 @@ namespace Rfit {
     For this optimization the matrix type must be known at compiling time.
 */
 
-  __host__ __device__ inline Vector3d min_eigen3D(const Matrix3d& A, double& chi2) {
+  inline Vector3d min_eigen3D(const Matrix3d& A, double& chi2) {
 #ifdef RFIT_DEBUG
     printf("min_eigen3D - enter\n");
 #endif
@@ -334,7 +334,7 @@ namespace Rfit {
     speed up in  single precision.
 */
 
-  __host__ __device__ inline Vector3d min_eigen3D_fast(const Matrix3d& A) {
+  inline Vector3d min_eigen3D_fast(const Matrix3d& A) {
     Eigen::SelfAdjointEigenSolver<Matrix3f> solver(3);
     solver.computeDirect(A.cast<float>());
     int min_index;
@@ -352,7 +352,7 @@ namespace Rfit {
     significantly in single precision.
 */
 
-  __host__ __device__ inline Vector2d min_eigen2D(const Matrix2d& A, double& chi2) {
+  inline Vector2d min_eigen2D(const Matrix2d& A, double& chi2) {
     Eigen::SelfAdjointEigenSolver<Matrix2d> solver(2);
     solver.computeDirect(A);
     int min_index;
@@ -374,7 +374,7 @@ namespace Rfit {
 */
 
   template <typename M3xN, typename V4>
-  __host__ __device__ inline void Fast_fit(const M3xN& hits, V4& result) {
+  inline void Fast_fit(const M3xN& hits, V4& result) {
     constexpr uint32_t N = M3xN::ColsAtCompileTime;
     constexpr auto n = N;  // get the number of hits
     printIt(&hits, "Fast_fit - hits: ");
@@ -454,7 +454,7 @@ namespace Rfit {
     scattering.
 */
   template <typename M2xN, typename V4, int N>
-  __host__ __device__ inline circle_fit Circle_fit(const M2xN& hits2D,
+  inline circle_fit Circle_fit(const M2xN& hits2D,
                                                    const Matrix2Nd<N>& hits_cov2D,
                                                    const V4& fast_fit,
                                                    const VectorNd<N>& rad,
@@ -783,7 +783,7 @@ namespace Rfit {
  */
 
   template <typename M3xN, typename M6xN, typename V4>
-  __host__ __device__ inline line_fit Line_fit(const M3xN& hits,
+  inline line_fit Line_fit(const M3xN& hits,
                                                const M6xN& hits_ge,
                                                const circle_fit& circle,
                                                const V4& fast_fit,

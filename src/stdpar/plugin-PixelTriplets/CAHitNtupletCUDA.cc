@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 
 #include "Framework/EventSetup.h"
 #include "Framework/Event.h"

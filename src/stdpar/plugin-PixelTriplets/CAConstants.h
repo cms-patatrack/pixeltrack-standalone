@@ -3,8 +3,6 @@
 
 #include <cstdint>
 
-#include <cuda_runtime.h>
-
 #include "CUDACore/HistoContainer.h"
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/VecArray.h"
