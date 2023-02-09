@@ -7,7 +7,8 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
-#include <cuda_runtime.h>
+#include <atomic>
+#include <cstdint>
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDACore/VecArray.h"
@@ -20,7 +21,7 @@
 
 class GPUCACell {
 public:
-  using ptrAsInt = unsigned long long;
+  using ptrAsInt = uintptr_t;
 
   static constexpr int maxCellsPerHit = CAConstants::maxCellsPerHit();
   using OuterHitOfCell = CAConstants::OuterHitOfCell;
@@ -40,7 +41,7 @@ public:
 
   GPUCACell() = default;
 
-  __device__ __forceinline__ void init(CellNeighborsVector& cellNeighbors,
+  __forceinline__ void init(CellNeighborsVector& cellNeighbors,
                                        CellTracksVector& cellTracks,
                                        Hits const& hh,
                                        int layerPairId,
@@ -64,72 +65,62 @@ public:
     assert(tracks().empty());
   }
 
-  __device__ __forceinline__ int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
+  int addOuterNeighbor(CellNeighbors::value_t t, CellNeighborsVector& cellNeighbors) {
     // use smart cache
     if (outerNeighbors().empty()) {
       auto i = cellNeighbors.extend();  // maybe waisted....
       if (i > 0) {
         cellNeighbors[i].reset();
-        __threadfence();
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-        auto zero = (ptrAsInt)(&cellNeighbors[0]);
-        atomicCAS((ptrAsInt*)(&theOuterNeighbors),
-                  zero,
-                  (ptrAsInt)(&cellNeighbors[i]));  // if fails we cannot give "i" back...
-#else
-        theOuterNeighbors = &cellNeighbors[i];
-#endif
+        auto outer_as_int{reinterpret_cast<ptrAsInt>(theOuterNeighbors)};
+        std::atomic_ref<ptrAsInt> r{outer_as_int};
+        ptrAsInt zero = reinterpret_cast<ptrAsInt>(&cellNeighbors[0]);
+        r.compare_exchange_strong(zero, reinterpret_cast<ptrAsInt>(&cellNeighbors[i]));  // if fails we cannot give "i" back...
       } else
         return -1;
     }
-    __threadfence();
     return outerNeighbors().push_back(t);
   }
 
-  __device__ __forceinline__ int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
+  int addTrack(CellTracks::value_t t, CellTracksVector& cellTracks) {
     if (tracks().empty()) {
       auto i = cellTracks.extend();  // maybe waisted....
       if (i > 0) {
         cellTracks[i].reset();
-        __threadfence();
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-        auto zero = (ptrAsInt)(&cellTracks[0]);
-        atomicCAS((ptrAsInt*)(&theTracks), zero, (ptrAsInt)(&cellTracks[i]));  // if fails we cannot give "i" back...
-#else
-        theTracks = &cellTracks[i];
-#endif
+        auto track_as_int{reinterpret_cast<ptrAsInt>(theTracks)};
+        std::atomic_ref<ptrAsInt> r{track_as_int};
+        ptrAsInt zero = reinterpret_cast<ptrAsInt>(&cellTracks[0]);
+        r.compare_exchange_strong(zero, reinterpret_cast<ptrAsInt>(&cellTracks[i]));  // if fails we cannot give "i" back...
       } else
         return -1;
     }
-    __threadfence();
     return tracks().push_back(t);
   }
 
-  __device__ __forceinline__ CellTracks& tracks() { return *theTracks; }
-  __device__ __forceinline__ CellTracks const& tracks() const { return *theTracks; }
-  __device__ __forceinline__ CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
-  __device__ __forceinline__ CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
-  __device__ __forceinline__ float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
-  __device__ __forceinline__ float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
-  __device__ __forceinline__ float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
-  __device__ __forceinline__ float get_outer_y(Hits const& hh) const { return hh.yGlobal(theOuterHitId); }
-  __device__ __forceinline__ float get_inner_z(Hits const& hh) const { return theInnerZ; }
+  __forceinline__ CellTracks& tracks() { return *theTracks; }
+  __forceinline__ CellTracks const& tracks() const { return *theTracks; }
+  __forceinline__ CellNeighbors& outerNeighbors() { return *theOuterNeighbors; }
+  __forceinline__ CellNeighbors const& outerNeighbors() const { return *theOuterNeighbors; }
+  __forceinline__ float get_inner_x(Hits const& hh) const { return hh.xGlobal(theInnerHitId); }
+  __forceinline__ float get_outer_x(Hits const& hh) const { return hh.xGlobal(theOuterHitId); }
+  __forceinline__ float get_inner_y(Hits const& hh) const { return hh.yGlobal(theInnerHitId); }
+  __forceinline__ float get_outer_y(Hits const& hh) const { return hh.yGlobal(theOuterHitId); }
+  __forceinline__ float get_inner_z(Hits const& hh) const { return theInnerZ; }
   // { return hh.zGlobal(theInnerHitId); } // { return theInnerZ; }
-  __device__ __forceinline__ float get_outer_z(Hits const& hh) const { return hh.zGlobal(theOuterHitId); }
-  __device__ __forceinline__ float get_inner_r(Hits const& hh) const { return theInnerR; }
+  __forceinline__ float get_outer_z(Hits const& hh) const { return hh.zGlobal(theOuterHitId); }
+  __forceinline__ float get_inner_r(Hits const& hh) const { return theInnerR; }
   // { return hh.rGlobal(theInnerHitId); } // { return theInnerR; }
-  __device__ __forceinline__ float get_outer_r(Hits const& hh) const { return hh.rGlobal(theOuterHitId); }
+  __forceinline__ float get_outer_r(Hits const& hh) const { return hh.rGlobal(theOuterHitId); }
 
-  __device__ __forceinline__ auto get_inner_iphi(Hits const& hh) const { return hh.iphi(theInnerHitId); }
-  __device__ __forceinline__ auto get_outer_iphi(Hits const& hh) const { return hh.iphi(theOuterHitId); }
+  __forceinline__ auto get_inner_iphi(Hits const& hh) const { return hh.iphi(theInnerHitId); }
+  __forceinline__ auto get_outer_iphi(Hits const& hh) const { return hh.iphi(theOuterHitId); }
 
-  __device__ __forceinline__ float get_inner_detIndex(Hits const& hh) const { return hh.detectorIndex(theInnerHitId); }
-  __device__ __forceinline__ float get_outer_detIndex(Hits const& hh) const { return hh.detectorIndex(theOuterHitId); }
+  __forceinline__ float get_inner_detIndex(Hits const& hh) const { return hh.detectorIndex(theInnerHitId); }
+  __forceinline__ float get_outer_detIndex(Hits const& hh) const { return hh.detectorIndex(theOuterHitId); }
 
   constexpr unsigned int get_inner_hit_id() const { return theInnerHitId; }
   constexpr unsigned int get_outer_hit_id() const { return theOuterHitId; }
 
-  __device__ void print_cell() const {
+  void print_cell() const {
     printf("printing cell: %d, on layerPair: %d, innerHitId: %d, outerHitId: %d \n",
            theDoubletId,
            theLayerPairId,
@@ -137,7 +128,7 @@ public:
            theOuterHitId);
   }
 
-  __device__ bool check_alignment(Hits const& hh,
+  bool check_alignment(Hits const& hh,
                                   GPUCACell const& otherCell,
                                   const float ptmin,
                                   const float hardCurvCut,
@@ -174,7 +165,7 @@ public:
                    hardCurvCut));  // FIXME tune cuts
   }
 
-  __device__ __forceinline__ static bool areAlignedRZ(
+  __forceinline__ static bool areAlignedRZ(
       float r1, float z1, float ri, float zi, float ro, float zo, const float ptmin, const float thetaCut) {
     float radius_diff = std::abs(r1 - ro);
     float distance_13_squared = radius_diff * radius_diff + (z1 - zo) * (z1 - zo);
@@ -186,7 +177,7 @@ public:
     return tan_12_13_half_mul_distance_13_squared * pMin <= thetaCut * distance_13_squared * radius_diff;
   }
 
-  __device__ inline bool dcaCut(Hits const& hh,
+  inline bool dcaCut(Hits const& hh,
                                 GPUCACell const& otherCell,
                                 const float region_origin_radius_plus_tolerance,
                                 const float maxCurv) const {
@@ -207,7 +198,7 @@ public:
     return std::abs(eq.dca0()) < region_origin_radius_plus_tolerance * std::abs(eq.curvature());
   }
 
-  __device__ __forceinline__ static bool dcaCutH(float x1,
+  __forceinline__ static bool dcaCutH(float x1,
                                                  float y1,
                                                  float x2,
                                                  float y2,
@@ -223,7 +214,7 @@ public:
     return std::abs(eq.dca0()) < region_origin_radius_plus_tolerance * std::abs(eq.curvature());
   }
 
-  __device__ inline bool hole0(Hits const& hh, GPUCACell const& innerCell) const {
+  inline bool hole0(Hits const& hh, GPUCACell const& innerCell) const {
     constexpr uint32_t max_ladder_bpx0 = 12;
     constexpr uint32_t first_ladder_bpx0 = 0;
     constexpr float module_length = 6.7f;
@@ -246,7 +237,7 @@ public:
     return gap;
   }
 
-  __device__ inline bool hole4(Hits const& hh, GPUCACell const& innerCell) const {
+  inline bool hole4(Hits const& hh, GPUCACell const& innerCell) const {
     constexpr uint32_t max_ladder_bpx4 = 64;
     constexpr uint32_t first_ladder_bpx4 = 84;
     // constexpr float radius_even_ladder = 15.815f;
@@ -278,7 +269,7 @@ public:
   // trying to free the track building process from hardcoded layers, leaving
   // the visit of the graph based on the neighborhood connections between cells.
   template <int DEPTH>
-  __device__ inline void find_ntuplets(Hits const& hh,
+  inline void find_ntuplets(Hits const& hh,
                                        GPUCACell* __restrict__ cells,
                                        CellTracksVector& cellTracks,
                                        HitContainer& foundNtuplets,
@@ -349,7 +340,7 @@ private:
 };
 
 template <>
-__device__ inline void GPUCACell::find_ntuplets<0>(Hits const& hh,
+inline void GPUCACell::find_ntuplets<0>(Hits const& hh,
                                                    GPUCACell* __restrict__ cells,
                                                    CellTracksVector& cellTracks,
                                                    HitContainer& foundNtuplets,
