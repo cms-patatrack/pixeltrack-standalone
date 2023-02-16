@@ -17,26 +17,25 @@
 
 namespace gpuPixelDoublets {
 
-void fishbone(GPUCACell::Hits const* __restrict__ hhp,
-                           GPUCACell* cells,
-                           uint32_t const* __restrict__ nCells,
-                           GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
-                           uint32_t nHits,
-                           bool checkTrack) {
+  void fishbone(GPUCACell::Hits const* __restrict__ hhp,
+                GPUCACell* cells,
+                uint32_t const* __restrict__ nCells,
+                GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
+                uint32_t nHits,
+                bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
-  
-  auto iter{std::views::iota(0U, nHits)};
-  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto idy) {
-    auto const& hh = *hhp;
-    // auto layer = [&](uint16_t id) { return hh.cpeParams().layer(id); };
+    auto iter{std::views::iota(0U, nHits)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto idy) {
+      auto const& hh = *hhp;
+      // auto layer = [&](uint16_t id) { return hh.cpeParams().layer(id); };
 
-    // x run faster...
+      // x run faster...
 
-    float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
-    uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
-    uint32_t cc[maxCellsPerHit];
-    //for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
+      float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
+      uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
+      uint32_t cc[maxCellsPerHit];
+      //for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
       auto const& vc = isOuterHitOfCell[idy];
       auto s = vc.size();
       if (s < 2)
@@ -85,7 +84,7 @@ void fishbone(GPUCACell::Hits const* __restrict__ hhp,
           }
         }  //cj
       }    // ci
-    });      // hits
+    });    // hits
   }
 }  // namespace gpuPixelDoublets
 

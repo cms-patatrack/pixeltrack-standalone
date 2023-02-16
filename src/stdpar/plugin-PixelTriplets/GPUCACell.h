@@ -42,12 +42,12 @@ public:
   GPUCACell() = default;
 
   __forceinline__ void init(CellNeighborsVector& cellNeighbors,
-                                       CellTracksVector& cellTracks,
-                                       Hits const& hh,
-                                       int layerPairId,
-                                       int doubletId,
-                                       hindex_type innerHitId,
-                                       hindex_type outerHitId) {
+                            CellTracksVector& cellTracks,
+                            Hits const& hh,
+                            int layerPairId,
+                            int doubletId,
+                            hindex_type innerHitId,
+                            hindex_type outerHitId) {
     theInnerHitId = innerHitId;
     theOuterHitId = outerHitId;
     theDoubletId = doubletId;
@@ -74,7 +74,8 @@ public:
         auto outer_as_int{reinterpret_cast<ptrAsInt>(theOuterNeighbors)};
         std::atomic_ref<ptrAsInt> r{outer_as_int};
         ptrAsInt zero = reinterpret_cast<ptrAsInt>(&cellNeighbors[0]);
-        r.compare_exchange_strong(zero, reinterpret_cast<ptrAsInt>(&cellNeighbors[i]));  // if fails we cannot give "i" back...
+        r.compare_exchange_strong(
+            zero, reinterpret_cast<ptrAsInt>(&cellNeighbors[i]));  // if fails we cannot give "i" back...
       } else
         return -1;
     }
@@ -89,7 +90,8 @@ public:
         auto track_as_int{reinterpret_cast<ptrAsInt>(theTracks)};
         std::atomic_ref<ptrAsInt> r{track_as_int};
         ptrAsInt zero = reinterpret_cast<ptrAsInt>(&cellTracks[0]);
-        r.compare_exchange_strong(zero, reinterpret_cast<ptrAsInt>(&cellTracks[i]));  // if fails we cannot give "i" back...
+        r.compare_exchange_strong(zero,
+                                  reinterpret_cast<ptrAsInt>(&cellTracks[i]));  // if fails we cannot give "i" back...
       } else
         return -1;
     }
@@ -129,13 +131,13 @@ public:
   }
 
   bool check_alignment(Hits const& hh,
-                                  GPUCACell const& otherCell,
-                                  const float ptmin,
-                                  const float hardCurvCut,
-                                  const float CAThetaCutBarrel,
-                                  const float CAThetaCutForward,
-                                  const float dcaCutInnerTriplet,
-                                  const float dcaCutOuterTriplet) const {
+                       GPUCACell const& otherCell,
+                       const float ptmin,
+                       const float hardCurvCut,
+                       const float CAThetaCutBarrel,
+                       const float CAThetaCutForward,
+                       const float dcaCutInnerTriplet,
+                       const float dcaCutOuterTriplet) const {
     // detIndex of the layerStart for the Phase1 Pixel Detector:
     // [BPX1, BPX2, BPX3, BPX4,  FP1,  FP2,  FP3,  FN1,  FN2,  FN3, LAST_VALID]
     // [   0,   96,  320,  672, 1184, 1296, 1408, 1520, 1632, 1744,       1856]
@@ -178,9 +180,9 @@ public:
   }
 
   inline bool dcaCut(Hits const& hh,
-                                GPUCACell const& otherCell,
-                                const float region_origin_radius_plus_tolerance,
-                                const float maxCurv) const {
+                     GPUCACell const& otherCell,
+                     const float region_origin_radius_plus_tolerance,
+                     const float maxCurv) const {
     auto x1 = otherCell.get_inner_x(hh);
     auto y1 = otherCell.get_inner_y(hh);
 
@@ -199,13 +201,13 @@ public:
   }
 
   __forceinline__ static bool dcaCutH(float x1,
-                                                 float y1,
-                                                 float x2,
-                                                 float y2,
-                                                 float x3,
-                                                 float y3,
-                                                 const float region_origin_radius_plus_tolerance,
-                                                 const float maxCurv) {
+                                      float y1,
+                                      float x2,
+                                      float y2,
+                                      float x3,
+                                      float y3,
+                                      const float region_origin_radius_plus_tolerance,
+                                      const float maxCurv) {
     CircleEq<float> eq(x1, y1, x2, y2, x3, y3);
 
     if (eq.curvature() > maxCurv)
@@ -270,14 +272,14 @@ public:
   // the visit of the graph based on the neighborhood connections between cells.
   template <int DEPTH>
   inline void find_ntuplets(Hits const& hh,
-                                       GPUCACell* __restrict__ cells,
-                                       CellTracksVector& cellTracks,
-                                       HitContainer& foundNtuplets,
-                                       cms::cuda::AtomicPairCounter& apc,
-                                       Quality* __restrict__ quality,
-                                       TmpTuple& tmpNtuplet,
-                                       const unsigned int minHitsPerNtuplet,
-                                       bool startAt0) const {
+                            GPUCACell* __restrict__ cells,
+                            CellTracksVector& cellTracks,
+                            HitContainer& foundNtuplets,
+                            cms::cuda::AtomicPairCounter& apc,
+                            Quality* __restrict__ quality,
+                            TmpTuple& tmpNtuplet,
+                            const unsigned int minHitsPerNtuplet,
+                            bool startAt0) const {
     // the building process for a track ends if:
     // it has no right neighbor
     // it has no compatible neighbor
@@ -341,14 +343,14 @@ private:
 
 template <>
 inline void GPUCACell::find_ntuplets<0>(Hits const& hh,
-                                                   GPUCACell* __restrict__ cells,
-                                                   CellTracksVector& cellTracks,
-                                                   HitContainer& foundNtuplets,
-                                                   cms::cuda::AtomicPairCounter& apc,
-                                                   Quality* __restrict__ quality,
-                                                   TmpTuple& tmpNtuplet,
-                                                   const unsigned int minHitsPerNtuplet,
-                                                   bool startAt0) const {
+                                        GPUCACell* __restrict__ cells,
+                                        CellTracksVector& cellTracks,
+                                        HitContainer& foundNtuplets,
+                                        cms::cuda::AtomicPairCounter& apc,
+                                        Quality* __restrict__ quality,
+                                        TmpTuple& tmpNtuplet,
+                                        const unsigned int minHitsPerNtuplet,
+                                        bool startAt0) const {
   printf("ERROR: GPUCACell::find_ntuplets reached full depth!\n");
 #ifdef __CUDA_ARCH__
   __trap();

@@ -62,12 +62,12 @@ namespace Rfit {
 
   template <typename V4, typename VNd1, typename VNd2, int N>
   inline auto Scatter_cov_line(Matrix2d const* cov_sz,
-                                                   const V4& fast_fit,
-                                                   VNd1 const& s_arcs,
-                                                   VNd2 const& z_values,
-                                                   const double theta,
-                                                   const double B,
-                                                   MatrixNd<N>& ret) {
+                               const V4& fast_fit,
+                               VNd1 const& s_arcs,
+                               VNd2 const& z_values,
+                               const double theta,
+                               const double B,
+                               MatrixNd<N>& ret) {
 #ifdef RFIT_DEBUG
     Rfit::printIt(&s_arcs, "Scatter_cov_line - s_arcs: ");
 #endif
@@ -122,10 +122,7 @@ namespace Rfit {
     negligible).
  */
   template <typename M2xN, typename V4, int N>
-  inline MatrixNd<N> Scatter_cov_rad(const M2xN& p2D,
-                                                         const V4& fast_fit,
-                                                         VectorNd<N> const& rad,
-                                                         double B) {
+  inline MatrixNd<N> Scatter_cov_rad(const M2xN& p2D, const V4& fast_fit, VectorNd<N> const& rad, double B) {
     constexpr u_int n = N;
     double p_t = std::min(20., fast_fit(2) * B);  // limit pt to avoid too small error!!!
     double p_2 = p_t * p_t * (1. + 1. / (fast_fit(3) * fast_fit(3)));
@@ -170,9 +167,7 @@ namespace Rfit {
 */
 
   template <typename M2xN, int N>
-  inline Matrix2Nd<N> cov_radtocart(const M2xN& p2D,
-                                                        const MatrixNd<N>& cov_rad,
-                                                        const VectorNd<N>& rad) {
+  inline Matrix2Nd<N> cov_radtocart(const M2xN& p2D, const MatrixNd<N>& cov_rad, const VectorNd<N>& rad) {
 #ifdef RFIT_DEBUG
     printf("Address of p2D: %p\n", &p2D);
 #endif
@@ -207,9 +202,7 @@ namespace Rfit {
     \warning correlation between different point are not computed.
 */
   template <typename M2xN, int N>
-  inline VectorNd<N> cov_carttorad(const M2xN& p2D,
-                                                       const Matrix2Nd<N>& cov_cart,
-                                                       const VectorNd<N>& rad) {
+  inline VectorNd<N> cov_carttorad(const M2xN& p2D, const Matrix2Nd<N>& cov_cart, const VectorNd<N>& rad) {
     constexpr u_int n = N;
     VectorNd<N> cov_rad;
     const VectorNd<N> rad_inv2 = rad.cwiseInverse().array().square();
@@ -239,9 +232,9 @@ namespace Rfit {
 */
   template <typename M2xN, typename V4, int N>
   inline VectorNd<N> cov_carttorad_prefit(const M2xN& p2D,
-                                                              const Matrix2Nd<N>& cov_cart,
-                                                              V4& fast_fit,
-                                                              const VectorNd<N>& rad) {
+                                          const Matrix2Nd<N>& cov_cart,
+                                          V4& fast_fit,
+                                          const VectorNd<N>& rad) {
     constexpr u_int n = N;
     VectorNd<N> cov_rad;
     for (u_int i = 0; i < n; ++i) {
@@ -455,11 +448,11 @@ namespace Rfit {
 */
   template <typename M2xN, typename V4, int N>
   inline circle_fit Circle_fit(const M2xN& hits2D,
-                                                   const Matrix2Nd<N>& hits_cov2D,
-                                                   const V4& fast_fit,
-                                                   const VectorNd<N>& rad,
-                                                   const double B,
-                                                   const bool error) {
+                               const Matrix2Nd<N>& hits_cov2D,
+                               const V4& fast_fit,
+                               const VectorNd<N>& rad,
+                               const double B,
+                               const bool error) {
 #ifdef RFIT_DEBUG
     printf("circle_fit - enter\n");
 #endif
@@ -784,11 +777,11 @@ namespace Rfit {
 
   template <typename M3xN, typename M6xN, typename V4>
   inline line_fit Line_fit(const M3xN& hits,
-                                               const M6xN& hits_ge,
-                                               const circle_fit& circle,
-                                               const V4& fast_fit,
-                                               const double B,
-                                               const bool error) {
+                           const M6xN& hits_ge,
+                           const circle_fit& circle,
+                           const V4& fast_fit,
+                           const double B,
+                           const bool error) {
     constexpr uint32_t N = M3xN::ColsAtCompileTime;
     constexpr auto n = N;
     double theta = -circle.q * atan(fast_fit(3));

@@ -79,9 +79,7 @@ namespace Rfit {
     \return z component of the cross product.
   */
 
-  inline double cross2D(const Vector2d& a, const Vector2d& b) {
-    return a.x() * b.y() - a.y() * b.x();
-  }
+  inline double cross2D(const Vector2d& a, const Vector2d& b) { return a.x() * b.y() - a.y() * b.x(); }
 
   /*!
    *  load error in CMSSW format to our formalism
