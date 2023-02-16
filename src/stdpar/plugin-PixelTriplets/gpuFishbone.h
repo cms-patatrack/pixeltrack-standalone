@@ -5,20 +5,19 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <execution>
 #include <limits>
+#include <ranges>
 
 #include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/VecArray.h"
-#include "CUDACore/cuda_assert.h"
 
 #include "GPUCACell.h"
 
 namespace gpuPixelDoublets {
 
-  //  __device__
-  //  __forceinline__
-  __global__ void fishbone(GPUCACell::Hits const* __restrict__ hhp,
+void fishbone(GPUCACell::Hits const* __restrict__ hhp,
                            GPUCACell* cells,
                            uint32_t const* __restrict__ nCells,
                            GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
@@ -26,22 +25,22 @@ namespace gpuPixelDoublets {
                            bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
+  
+  auto iter{std::views::iota(0U, nHits)};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto idy) {
     auto const& hh = *hhp;
     // auto layer = [&](uint16_t id) { return hh.cpeParams().layer(id); };
 
     // x run faster...
-    auto firstY = threadIdx.y + blockIdx.y * blockDim.y;
-    auto firstX = threadIdx.x;
 
     float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
     uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
     uint32_t cc[maxCellsPerHit];
-
-    for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
+    //for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
       auto const& vc = isOuterHitOfCell[idy];
       auto s = vc.size();
       if (s < 2)
-        continue;
+        return;
       // if alligned kill one of the two.
       // in principle one could try to relax the cut (only in r-z?) for jumping-doublets
       auto const& c0 = cells[vc[0]];
@@ -52,9 +51,9 @@ namespace gpuPixelDoublets {
       for (int32_t ic = 0; ic < s; ++ic) {
         auto& ci = cells[vc[ic]];
         if (0 == ci.theUsed)
-          continue;  // for triplets equivalent to next
+          return;  // for triplets equivalent to next
         if (checkTrack && ci.tracks().empty())
-          continue;
+          return;
         cc[sg] = vc[ic];
         d[sg] = ci.get_inner_detIndex(hh);
         //      l[sg] = layer(d[sg]);
@@ -65,9 +64,9 @@ namespace gpuPixelDoublets {
         ++sg;
       }
       if (sg < 2)
-        continue;
+        return;
       // here we parallelize
-      for (int32_t ic = firstX; ic < sg - 1; ic += blockDim.x) {
+      for (int32_t ic = 0; ic < sg - 1; ++ic) {
         auto& ci = cells[cc[ic]];
         for (auto jc = ic + 1; jc < sg; ++jc) {
           auto& cj = cells[cc[jc]];
@@ -86,7 +85,7 @@ namespace gpuPixelDoublets {
           }
         }  //cj
       }    // ci
-    }      // hits
+    });      // hits
   }
 }  // namespace gpuPixelDoublets
 

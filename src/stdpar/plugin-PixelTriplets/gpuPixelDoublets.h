@@ -1,6 +1,12 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoublets_h
 
+#include <algorithm>
+#include <atomic>
+#include <execution>
+#include <memory>
+#include <ranges>
+
 #define CONSTANT_VAR __constant__
 
 namespace gpuPixelDoublets {
@@ -61,37 +67,28 @@ namespace gpuPixelDoublets {
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
 
-  __global__ void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
+  void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                int nHits,
                                CellNeighborsVector* cellNeighbors,
                                CellNeighbors* cellNeighborsContainer,
                                CellTracksVector* cellTracks,
                                CellTracks* cellTracksContainer) {
     assert(isOuterHitOfCell);
-    int first = blockIdx.x * blockDim.x + threadIdx.x;
-    for (int i = first; i < nHits; i += gridDim.x * blockDim.x)
+    auto iter{std::views::iota(0, nHits)};
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto i) {
       isOuterHitOfCell[i].reset();
-
-    if (0 == first) {
-      cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
-      cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
-      auto i = cellNeighbors->extend();
-      assert(0 == i);
-      (*cellNeighbors)[0].reset();
-      i = cellTracks->extend();
-      assert(0 == i);
-      (*cellTracks)[0].reset();
-    }
+    });
+    cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
+    cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
+    auto i = cellNeighbors->extend();
+    assert(0 == i);
+    (*cellNeighbors)[0].reset();
+    i = cellTracks->extend();
+    assert(0 == i);
+    (*cellTracks)[0].reset();
   }
 
-  constexpr auto getDoubletsFromHistoMaxBlockSize = 64;  // for both x and y
-  constexpr auto getDoubletsFromHistoMinBlocksPerMP = 16;
-
-  __global__
-#if defined(__NVCOMPILER) || defined(__CUDACC__)
-  __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
-#endif
-      void getDoubletsFromHisto(GPUCACell* cells,
+  void getDoubletsFromHisto(GPUCACell* cells,
                                 uint32_t* nCells,
                                 CellNeighborsVector* cellNeighbors,
                                 CellTracksVector* cellTracks,
@@ -103,49 +100,44 @@ namespace gpuPixelDoublets {
                                 bool doZ0Cut,
                                 bool doPtCut,
                                 uint32_t maxNumOfDoublets) {
-    auto const& __restrict__ hh = *hhp;
-    // ysize cuts (z in the barrel)  times 8
-    // these are used if doClusterCut is true
-    constexpr int minYsizeB1 = 36;
-    constexpr int minYsizeB2 = 28;
-    constexpr int maxDYsize12 = 28;
-    constexpr int maxDYsize = 20;
-    constexpr int maxDYPred = 20;
-    constexpr float dzdrFact = 8 * 0.0285 / 0.015;  // from dz/dr to "DY"
 
-    bool isOuterLadder = ideal_cond;
 
     using Hist = TrackingRecHit2DSOAView::Hist;
 
-    auto const& __restrict__ hist = hh.phiBinner();
-    uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
-    assert(offsets);
+    auto iter{std::views::iota(0U, hhp->nHits() * 4)};
+    //block-level parallelism in cudauvm
+    std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto _block) {
+      // ysize cuts (z in the barrel)  times 8
+      // these are used if doClusterCut is true
+      constexpr int minYsizeB1 = 36;
+      constexpr int minYsizeB2 = 28;
+      constexpr int maxDYsize12 = 28;
+      constexpr int maxDYsize = 20;
+      constexpr int maxDYPred = 20;
+      constexpr float dzdrFact = 8 * 0.0285 / 0.015;  // from dz/dr to "DY"
+      auto const& __restrict__ hh = *hhp;
+      bool isOuterLadder = ideal_cond;
+      auto const& __restrict__ hist = hh.phiBinner();
+      uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
+      assert(offsets);
 
-    auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
-
-    // nPairsMax to be optimized later (originally was 64).
-    // If it should be much bigger, consider using a block-wide parallel prefix scan,
-    // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
-    const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
-    assert(nPairs <= nPairsMax);
-    __shared__ uint32_t innerLayerCumulativeSize[nPairsMax];
-    __shared__ uint32_t ntot;
-    if (threadIdx.y == 0 && threadIdx.x == 0) {
+      auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
+      // nPairsMax to be optimized later (originally was 64).
+      // If it should be much bigger, consider using a block-wide parallel prefix scan,
+      // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
+      const int nPairsMax = CAConstants::maxNumberOfLayerPairs();
+      assert(nPairs <= nPairsMax);
+      uint32_t innerLayerCumulativeSize[nPairsMax];
+      uint32_t ntot;
       innerLayerCumulativeSize[0] = layerSize(layerPairs[0]);
       for (uint32_t i = 1; i < nPairs; ++i) {
         innerLayerCumulativeSize[i] = innerLayerCumulativeSize[i - 1] + layerSize(layerPairs[2 * i]);
       }
       ntot = innerLayerCumulativeSize[nPairs - 1];
-    }
-    __syncthreads();
-
-    // x runs faster
-    auto idy = blockIdx.y * blockDim.y + threadIdx.y;
-    auto first = threadIdx.x;
-    auto stride = blockDim.x;
-
-    uint32_t pairLayerId = 0;  // cannot go backward
-    for (auto j = idy; j < ntot; j += blockDim.y * gridDim.y) {
+      //
+      // x runs faster
+      uint32_t pairLayerId = 0;  // cannot go backward
+      for (auto j = 0; j < ntot; ++j) {
       while (j >= innerLayerCumulativeSize[pairLayerId++])
         ;
       --pairLayerId;  // move to lower_bound ??
@@ -171,7 +163,7 @@ namespace gpuPixelDoublets {
       // found hit corresponding to our cuda thread, now do the job
       auto mi = hh.detectorIndex(i);
       if (mi > 2000)
-        continue;  // invalid
+        return;  // invalid
 
       /* maybe clever, not effective when zoCut is on
       auto bpos = (mi%8)/4;  // if barrel is 1 for z>0
@@ -182,7 +174,7 @@ namespace gpuPixelDoublets {
       auto mez = hh.zGlobal(i);
 
       if (mez < minz[pairLayerId] || mez > maxz[pairLayerId])
-        continue;
+        return;
 
       int16_t mes = -1;  // make compiler happy
       if (doClusterCut) {
@@ -196,10 +188,10 @@ namespace gpuPixelDoublets {
 
         if (inner == 0 && outer > 3)  // B1 and F1
           if (mes > 0 && mes < minYsizeB1)
-            continue;                 // only long cluster  (5*8)
+            return;                 // only long cluster  (5*8)
         if (inner == 1 && outer > 3)  // B2 and F1
           if (mes > 0 && mes < minYsizeB2)
-            continue;
+            return;
       }
       auto mep = hh.iphi(i);
       auto mer = hh.rGlobal(i);
@@ -260,9 +252,8 @@ namespace gpuPixelDoublets {
 #endif
         auto const* __restrict__ p = hist.begin(kk + hoff);
         auto const* __restrict__ e = hist.end(kk + hoff);
-        p += first;
-        for (; p < e; p += stride) {
-          auto oi = __ldg(p);
+        for (; p < e; ++p) {
+          auto oi = *p;
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
           auto mo = hh.detectorIndex(oi);
@@ -282,9 +273,10 @@ namespace gpuPixelDoublets {
           if (doPtCut && ptcut(oi, idphi))
             continue;
 
-          auto ind = atomicAdd(nCells, 1);
+          std::atomic_ref<uint32_t> ar_nCells{*nCells};
+          auto ind = ar_nCells++;
           if (ind >= maxNumOfDoublets) {
-            atomicSub(nCells, 1);
+            ar_nCells--;
             break;
           }  // move to SimpleVector??
           // int layerPairId, int doubletId, int innerHitId, int outerHitId)
@@ -301,7 +293,8 @@ namespace gpuPixelDoublets {
       if (tooMany > 0)
         printf("OuterHitOfCell full for %d in layer %d/%d, %d,%d %d\n", i, inner, outer, nmin, tot, tooMany);
 #endif
-    }  // loop in block...
+      }
+    });  // loop in block...
   }
 
 }  // namespace gpuPixelDoublets

@@ -44,9 +44,9 @@ namespace gpuVertexFinder {
     auto foundClusters = nvFinal;
 
     // zero
-    std::fill(zv, zv + foundClusters, 0);
-    std::fill(wv, wv + foundClusters, 0);
-    std::fill(chi2, chi2 + foundClusters, 0);
+    std::fill(std::execution::par, zv, zv + foundClusters, 0);
+    std::fill(std::execution::par, wv, wv + foundClusters, 0);
+    std::fill(std::execution::par, chi2, chi2 + foundClusters, 0);
 
     // only for test
     std::unique_ptr<int> noise_p{std::make_unique<int>(0)};
