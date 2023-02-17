@@ -21,13 +21,12 @@
 #endif
 #endif
 
+#include <algorithm>
 #include <cstdint>
-
-#include <cuda_runtime.h>
+#include <execution>
+#include <ranges>
 
 #include "CUDADataFormats/TrackingRecHit2D.h"
-#include "CUDACore/cudaCheck.h"
-#include "CUDACore/cuda_assert.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "RiemannFit.h"
@@ -38,14 +37,14 @@ using Tuples = pixelTrack::HitContainer;
 using OutputSoA = pixelTrack::TrackSoA;
 
 template <int N>
-__global__ void kernelFastFit(Tuples const *__restrict__ foundNtuplets,
-                              CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                              uint32_t nHits,
-                              HitsOnGPU const *__restrict__ hhp,
-                              double *__restrict__ phits,
-                              float *__restrict__ phits_ge,
-                              double *__restrict__ pfast_fit,
-                              uint32_t offset) {
+void kernelFastFit(Tuples const *__restrict__ foundNtuplets,
+                   CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                   uint32_t nHits,
+                   HitsOnGPU const *__restrict__ hhp,
+                   double *__restrict__ phits,
+                   float *__restrict__ phits_ge,
+                   double *__restrict__ pfast_fit,
+                   uint32_t offset) {
   constexpr uint32_t hitsInFit = N;
 
   assert(hitsInFit <= nHits);
@@ -54,16 +53,11 @@ __global__ void kernelFastFit(Tuples const *__restrict__ foundNtuplets,
   assert(foundNtuplets);
   assert(tupleMultiplicity);
 
-  // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
-
 #ifdef RIEMANN_DEBUG
-  if (0 == local_start)
-    printf("%d Ntuple of size %d for %d hits to fit\n", tupleMultiplicity->size(nHits), nHits, hitsInFit);
+  printf("%d Ntuple of size %d for %d hits to fit\n", tupleMultiplicity->size(nHits), nHits, hitsInFit);
 #endif
-
-  for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+  auto iter{std::views::iota(0U, Rfit::maxNumberOfConcurrentFits())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto local_idx) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
       break;
@@ -99,27 +93,26 @@ __global__ void kernelFastFit(Tuples const *__restrict__ foundNtuplets,
     assert(fast_fit(1) == fast_fit(1));
     assert(fast_fit(2) == fast_fit(2));
     assert(fast_fit(3) == fast_fit(3));
-  }
+  });
 }
 
 template <int N>
-__global__ void kernelCircleFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                uint32_t nHits,
-                                double B,
-                                double *__restrict__ phits,
-                                float *__restrict__ phits_ge,
-                                double *__restrict__ pfast_fit_input,
-                                Rfit::circle_fit *circle_fit,
-                                uint32_t offset) {
+void kernelCircleFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                     uint32_t nHits,
+                     double B,
+                     double *__restrict__ phits,
+                     float *__restrict__ phits_ge,
+                     double *__restrict__ pfast_fit_input,
+                     Rfit::circle_fit *circle_fit,
+                     uint32_t offset) {
   assert(circle_fit);
   assert(N <= nHits);
 
   // same as above...
 
   // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
-  for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+  auto iter{std::views::iota(0U, Rfit::maxNumberOfConcurrentFits())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto local_idx) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
       break;
@@ -140,29 +133,27 @@ __global__ void kernelCircleFit(CAConstants::TupleMultiplicity const *__restrict
 //  printf("kernelCircleFit circle.par(0,1,2): %d %f,%f,%f\n", tkid,
 //         circle_fit[local_idx].par(0), circle_fit[local_idx].par(1), circle_fit[local_idx].par(2));
 #endif
-  }
+  });
 }
 
 template <int N>
-__global__ void kernelLineFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                              uint32_t nHits,
-                              double B,
-                              OutputSoA *results,
-                              double *__restrict__ phits,
-                              float *__restrict__ phits_ge,
-                              double *__restrict__ pfast_fit_input,
-                              Rfit::circle_fit *__restrict__ circle_fit,
-                              uint32_t offset) {
+void kernelLineFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                   uint32_t nHits,
+                   double B,
+                   OutputSoA *results,
+                   double *__restrict__ phits,
+                   float *__restrict__ phits_ge,
+                   double *__restrict__ pfast_fit_input,
+                   Rfit::circle_fit *__restrict__ circle_fit,
+                   uint32_t offset) {
   assert(results);
   assert(circle_fit);
   assert(N <= nHits);
 
   // same as above...
 
-  // look in bin for this hit multiplicity
-  auto local_start = (blockIdx.x * blockDim.x + threadIdx.x);
-  for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+  auto iter{std::views::iota(0U, Rfit::maxNumberOfConcurrentFits())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto local_idx) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
       break;
@@ -202,5 +193,5 @@ __global__ void kernelLineFit(CAConstants::TupleMultiplicity const *__restrict__
            line_fit.cov(0, 0),
            line_fit.cov(1, 1));
 #endif
-  }
+  });
 }
