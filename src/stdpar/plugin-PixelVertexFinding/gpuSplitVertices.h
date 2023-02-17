@@ -34,14 +34,14 @@ namespace gpuVertexFinder {
     assert(pdata);
     assert(zt);
     constexpr int MAXTK = 512;
-    auto it_sp{std::make_unique<uint32_t[]>(MAXTK)};  // track index
-    auto it{it_sp.get()};
-    auto zz_sp{std::make_unique<float[]>(MAXTK)};  // z pos
-    auto zz{zz_sp.get()};
-    auto newV_sp{std::make_unique<uint8_t[]>(MAXTK)};  // 0 or 1
-    auto newV{newV_sp.get()};
-    auto ww_sp{std::make_unique<float[]>(MAXTK)};  // z weight
-    auto ww{ww_sp.get()};
+    auto it_sp{std::make_unique<uint32_t[]>(MAXTK * nvFinal)};  // track index
+    auto pit{it_sp.get()};
+    auto zz_sp{std::make_unique<float[]>(MAXTK * nvFinal)};  // z pos
+    auto pzz{zz_sp.get()};
+    auto newV_sp{std::make_unique<uint8_t[]>(MAXTK * nvFinal)};  // 0 or 1
+    auto pnewV{newV_sp.get()};
+    auto ww_sp{std::make_unique<float[]>(MAXTK * nvFinal)};  // z weight
+    auto pww{ww_sp.get()};
 
     auto iter{std::views::iota(0U, nvFinal)};
     // one vertex per thread
@@ -55,6 +55,10 @@ namespace gpuVertexFinder {
       if (nn[kv] >= MAXTK)
         return;  // too bad FIXME
 
+      auto it = &pit[MAXTK * kv];
+      auto zz = &pzz[MAXTK * kv];
+      auto newV = &pnewV[MAXTK * kv];
+      auto ww = &pww[MAXTK * kv];
       uint32_t nq{0};  // number of track for this vertex
 
       // copy to local
@@ -75,7 +79,7 @@ namespace gpuVertexFinder {
       int maxiter = 20;
       // kt-min....
       bool more = true;
-      while (__syncthreads_or(more)) {
+      while (more) {
         more = false;
         znew[0] = 0;
         znew[1] = 0;
