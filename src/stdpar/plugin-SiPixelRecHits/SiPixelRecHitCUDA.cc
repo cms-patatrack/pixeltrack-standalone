@@ -1,4 +1,3 @@
-#include <cuda_runtime.h>
 #include <utility>
 
 #include "CUDADataFormats/BeamSpot.h"
@@ -49,7 +48,6 @@ void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
     std::cout << "Clusters/Hits Overflow " << nHits << " >= " << TrackingRecHit2DSOAView::maxHits() << std::endl;
   }
   auto recHits2D{gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.get())};
-  cudaDeviceSynchronize();
   iEvent.emplace(tokenHit_, std::move(recHits2D));
 }
 

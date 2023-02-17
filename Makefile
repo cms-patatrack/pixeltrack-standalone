@@ -325,7 +325,7 @@ ifeq ($(OPENMP_COMPILER), LLVM)
   # HIP
   #export OPENMP_TARGETS := -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdhsa-amd-amdhsa  -march=gfx900
   export OPENMP_CXXFLAGS := -fopenmp-version=51 -foffload-lto -O2 -fPIC -std=c++17 -fopenmp $(OPENMP_TARGETS) -fopenmp-offload-mandatory $(OPENMP_EIGEN_CXXFLAGS) --gcc-toolchain=$(GCC_TOOLCHAIN)
-  export OPENMP_LDFLAGS := $(LDFLAGS) -foffload-lto -O2 --gcc-toolchain=$(GCC_TOOLCHAIN)
+  export OPENMP_LDFLAGS := $(LDFLAGS) -foffload-lto -O2 --gcc-toolchain=$(GCC_TOOLCHAIN) -fopenmp $(OPENMP_TARGETS)
 else ifeq ($(OPENMP_COMPILER), AMD)
   $(error "aompcc not supported")
   # aompcc doesn't support C++ files with .cc suffix
@@ -335,7 +335,7 @@ else ifeq ($(OPENMP_COMPILER), INTEL)
   export OPENMP_CXXFLAGS := -fiopenmp -fopenmp-targets=spir64 -std=c++17 -fPIC $(OPENMP_EIGEN_CXXFLAGS)
 else ifeq ($(OPENMP_COMPILER), NVIDIA)
   export OPENMP_CXX := nvc++
-  export OPENMP_CXXFLAGS := -mp=gpu
+  export OPENMP_CXXFLAGS := -mp=gpu -gpu=cc80 -std=c++17 -fPIC --gcc-toolchain=$(GCC_TOOLCHAIN) $(OPENMP_EIGEN_CXXFLAGS)
 endif
 
 
