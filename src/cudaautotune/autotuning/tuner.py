@@ -1,149 +1,120 @@
-import argparse
-import pathlib
 import subprocess
-import itertools
-import random
-import datetime
+import argparse
 
-parser = argparse.ArgumentParser(description='Autotuner script.')
-parser.add_argument('-p', '--process', type=pathlib.Path, nargs=1, required=True,
-        help='path to the program to be autotuned')
-parser.add_argument('-c', '--configurations', type=pathlib.Path, nargs=1,
-        default=[pathlib.Path('src/cudaautotune/autotuning/kernel_configs')], help='path to save the configurations for the tunable process to read them. Default = autotuning/kernel_configs/')
-parser.add_argument('-t', '--tunables', type=argparse.FileType('r'), nargs=1,
-        default=[open('src/cudaautotune/autotuning/tunables.csv', 'r')], help='csv file that contains the tunable parameters. Default = autotuning/tunables.csv')
-parser.add_argument('-r', '--results', type=argparse.FileType('a'), nargs=1,
-        default=[open('src/cudaautotune/autotuning/results.txt', 'a')],
-        help='results file, if it exists, results will be appended to the end, if not, it will be created. Default = autotuning/results.txt')
-parser.add_argument('--validation', nargs='?', const=True, default=False,
-        help='validate the output of the process. Default = False')
-parser.add_argument('--preheat',  nargs='?', const=True, default=False,
-        help='run the process multiple times before autotuning. Default = False')
-parser.add_argument('--verbose', '-v', action='count', default=0)
+import opentuner
+from opentuner.measurement import MeasurementInterface
+from opentuner.search.manipulator import (ConfigurationManipulator,
+                                          IntegerParameter)
 
-args = parser.parse_args()
+parser = argparse.ArgumentParser(parents=opentuner.argparsers())
 
-tunables = {}
-tunables_list = []
-lbounds = []
-ubounds = []
-steps = []
-
-tunables_file = args.tunables[0]
-for n, line in enumerate(tunables_file.readlines()):
-    parameters = line.strip('\n').split(',')
-
-    if args.verbose > 1:
-        print(parameters)
-
-    tunables[parameters[0]] = n
-    tunables_list.append(parameters[0])
-    lbounds.append(int(parameters[1]))
-    ubounds.append(int(parameters[2]))
-    steps.append(int(parameters[3]))
-
-tunables_file.close()
- 
-configurations = []
-ranges = [range(l, u + 1, s) for l, u, s in zip(lbounds, ubounds, steps)]
-length = 1
-for r in ranges:
-    r = list(r)
-    length = length * len(r)
-    random.shuffle(r)
-    configurations.append(r)
-
-if args.verbose:
-    print("number of configurations is " + str(length))
+base_path = "/home/nfs/asubah/dev/pixeltrack-standalone/"
 
 # Heating up the GPU before tuning
-process_path = args.process[0].resolve()
+process_path = base_path + "cudaautotune"
 
-if args.preheat:
-    if args.verbose:
-        print('Preheating started')
-    cmd = [process_path, "--runForMinutes", "1", "--numberOfThreads", "12", "--numberOfStreams", "12"]
-    if args.verbose > 1:
-        print('Preheat command:', cmd)
-    subprocess.run(cmd)
-    if args.verbose:
-        print('Preheating finished')
+print('Preheating started')
+cmd = [process_path, "--runForMinutes", "10", "--numberOfThreads", "12", "--numberOfStreams", "8"]
+subprocess.run(cmd)
+print('Preheating finished')
 
-# Tuning
-configurations = list(itertools.product(*configurations))
-random.shuffle(configurations)
-results_file = args.results[0]
-kernels_config_path = args.configurations[0]
-kernels = tunables_list[:-2]
-for config in configurations:
-    if args.verbose:
-        print('Configuration:', config)
-
-    # TODO write only when the parameter change
-    for kernel in kernels:
-        file = open(kernels_config_path / kernel, 'w')
-        file.write(str(config[tunables[kernel]]))
-        file.close()
+class CMSSWTuner(MeasurementInterface):
+    def output_config_file(self, params):
+        from mako.template import Template
+        template = Template(filename=base_path+"src/cudaautotune/autotuning/configs.mako")
+        with open(base_path+"src/cudaautotune/autotuning/configs", "w") as f:
+            f.write(template.render(**params))
     
-    # Validation
-    validation = ""
-    cmd = [process_path,
-            "--numberOfThreads", "12",
-            "--numberOfStreams", "12",
-            "--validation"]
-    if args.verbose > 1:
-        print('Validation command:', cmd)
-    process = subprocess.run(cmd, encoding='UTF-8', capture_output=True)
-    if (process.returncode == 0):
-        if args.verbose > 1:
-            print('Validation output:', process.stdout)
-        if process.stdout.find("passed validation"):
-            validation = "PASSED"
-        elif process.stdout.find("failed validation"):
-            validation = "FAILED"
+    def manipulator(self):
+        manipulator = ConfigurationManipulator()
+        # manipulator.add_parameter(IntegerParameter("numberOfThreads", 1, 24))
+        # manipulator.add_parameter(IntegerParameter("numberOfStreams", 1, 24))
+        manipulator.add_parameter(IntegerParameter("findClus", 1, 32))
+        manipulator.add_parameter(IntegerParameter("RawToDigi_kernel", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_connect_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_connect_stride", 1, 8))
+        manipulator.add_parameter(IntegerParameter("getHits", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_find_ntuplets", 1, 32))
+        manipulator.add_parameter(IntegerParameter("fishbone_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("fishbone_stride", 1, 32))
+        manipulator.add_parameter(IntegerParameter("clusterChargeCut", 1, 32))
+        manipulator.add_parameter(IntegerParameter("calibDigis", 1, 32))
+        manipulator.add_parameter(IntegerParameter("countModules", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit3_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit4_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit5_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit3_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit4_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit5_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit3_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit4_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit5_threads", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit3_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit4_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelFastFit5_blocks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_fillHitDetIndices", 1, 32))
+        manipulator.add_parameter(IntegerParameter("finalizeBulk", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_earlyDuplicateRemover", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_countMultiplicity", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_fillMultiplicity", 1, 32))
+        manipulator.add_parameter(IntegerParameter("initDoublets", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_classifyTracks", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_fishboneCleaner", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernel_fastDuplicateRemover", 1, 32))
+
+        return manipulator
+    
+    def run(self, desired_result, input, limit):
+        cfg = desired_result.configuration.data
+        self.output_config_file(cfg)
+    
+        # Benchmarking
+        time = float('inf')
+        throughput = float('-inf')
+        cpu_efficiency = ""
+        status = ""
+        validation = ""
+        output = ""
+        
+        cmd = [process_path,
+               "--numberOfThreads", str(12),# str(cfg["numberOfThreads"]),
+               "--numberOfStreams", str(8),# str(cfg["numberOfStreams"]),
+               "--validation"]
+        
+        # print('Validation command:', cmd)
+        process = subprocess.run(cmd, encoding='UTF-8', capture_output=True)
+        if (process.returncode == 0):
+            # print('Validation output:\n', process.stdout)
+            if process.stdout.find("passed validation"):
+                validation = "PASSED"
+                status = "OK"
+                # print(process.stdout)
+                output = process.stdout.split('\n')[-2].split(' ')
+                # print(output)
+                time = float(output[4])
+                throughput = output[7]
+                cpu_efficiency = output[13]
+            elif process.stdout.find("failed validation"):
+                validation = "FAILED"
+            else:
+                validation = "ERROR"
         else:
+            # print(process.stdout)
             validation = "ERROR"
-    else:
-        print(process.stdout)
-        validation = "ERROR"
-    if args.verbose:
-        print('Validation result:', validation)
+            time = float('inf')
         
-    # Benchmarking
-    time = "NaN"
-    throughput = "NaN"
-    cpu_efficiency = "NaN"
-    status = ""
+        # print('Validation result:', validation)
+    
+        cfg["throughput"] = throughput
+        cfg["cpu_efficiency"] = cpu_efficiency
+        cfg["status"] = status
+        cfg["validation"] = validation
+        cfg["time"] = time
 
-    cpu_threads = config[tunables["cpu_threads"]]
-    gpu_streams = cpu_threads + config[tunables["gpu_streams"]]
-    cmd = [process_path,
-            "--maxEvents", "10000",
-            "--numberOfThreads", str(cpu_threads),
-            "--numberOfStreams", str(gpu_streams)]
-    if args.verbose > 1:
-        print('Tuning command:', cmd)
-    process = subprocess.run(cmd, encoding='UTF-8', capture_output=True)
+        # print(cfg)
+    
+        return opentuner.resultsdb.models.Result(time=time)
 
-    output = process.stdout
-    if (process.returncode == 0):
-        if args.verbose > 1:
-            print(output)
-        status = "OK"
-        output = output.split('\n')[2].split(' ')
-        time = output[4]
-        throughput = output[7]
-        cpu_efficiency = output[13]
-    else:
-        print(output)
-        status = "ERROR"
-        
-    result = ' '.join([str(datetime.datetime.now()),
-        throughput, time, cpu_efficiency, status, validation, str(config)]) + '\n'
-    results_file.write(result)
-    results_file.flush()
-
-    if args.verbose:
-        print('Result:', result)
-
-results_file.close()
+if __name__ == '__main__':
+    args = parser.parse_args()
+    CMSSWTuner.main(args)
