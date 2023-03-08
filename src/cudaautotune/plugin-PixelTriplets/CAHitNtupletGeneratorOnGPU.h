@@ -2,6 +2,7 @@
 #define RecoPixelVertexing_PixelTriplets_plugins_CAHitNtupletGeneratorOnGPU_h
 
 #include <cuda_runtime.h>
+#include <unordered_map>
 
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
@@ -37,7 +38,7 @@ public:
 
   ~CAHitNtupletGeneratorOnGPU();
 
-  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, cudaStream_t stream) const;
+  PixelTrackHeterogeneous makeTuplesAsync(TrackingRecHit2DGPU const& hits_d, float bfield, std::unordered_map<std::string, int> launchConfigs, cudaStream_t stream) const;
 
   PixelTrackHeterogeneous makeTuples(TrackingRecHit2DCPU const& hits_d, float bfield) const;
 

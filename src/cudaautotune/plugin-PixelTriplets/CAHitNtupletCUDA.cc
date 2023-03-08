@@ -7,6 +7,7 @@
 #include "Framework/EDProducer.h"
 #include "Framework/RunningAverage.h"
 #include "CUDACore/ScopedContext.h"
+#include "CUDACore/KernelConfigurations.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
@@ -38,7 +39,7 @@ void CAHitNtupletCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
   cms::cuda::ScopedContextProduce ctx{phits};
   auto const& hits = ctx.get(phits);
 
-  ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, ctx.stream()));
+  ctx.emplace(iEvent, tokenTrackGPU_, gpuAlgo_.makeTuplesAsync(hits, bf, cms::getLaunchConfigs(), ctx.stream()));
 }
 
 DEFINE_FWK_MODULE(CAHitNtupletCUDA);

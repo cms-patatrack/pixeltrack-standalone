@@ -4,6 +4,7 @@
 void HelixFitOnGPU::launchBrokenLineKernels(HitsView const *hv,
                                             uint32_t hitsInFit,
                                             uint32_t maxNumberOfTuples,
+                                            std::unordered_map<std::string, int> launchConfigs,
                                             cudaStream_t stream) {
   assert(tuples_d);
 
@@ -15,24 +16,29 @@ void HelixFitOnGPU::launchBrokenLineKernels(HitsView const *hv,
   auto fast_fit_resultsGPU_ = cms::cuda::make_device_unique<double[]>(
       maxNumberOfConcurrentFits_ * sizeof(Rfit::Vector4d) / sizeof(double), stream);
 
-  cms::cuda::ExecutionConfiguration exec;
-  auto blockSize_ff3 = exec.configFromFile("kernelFastFit3");
-  auto numberOfBlocks_ff3 = (maxNumberOfConcurrentFits_ + blockSize_ff3 - 1) / blockSize_ff3;
+  auto blockSize_ff3 = launchConfigs["kernelFastFit3_threads"];
+  auto numberOfBlocks_ff3 = launchConfigs["kernelFastFit3_blocks"];
+  // auto numberOfBlocks_ff3 = (maxNumberOfConcurrentFits_ + blockSize_ff3 - 1) / blockSize_ff3;
 
-  auto blockSize_blf3 = exec.configFromFile("kernelLineFit3");
-  auto numberOfBlocks_blf3 = (maxNumberOfConcurrentFits_ + blockSize_blf3 - 1) / blockSize_blf3;
+  auto blockSize_blf3 = launchConfigs["kernelLineFit3_threads"];
+  auto numberOfBlocks_blf3 = launchConfigs["kernelLineFit3_blocks"];
+  // auto numberOfBlocks_blf3 = (maxNumberOfConcurrentFits_ + blockSize_blf3 - 1) / blockSize_blf3;
 
-  auto blockSize_ff4 = exec.configFromFile("kernelFastFit4");
-  auto numberOfBlocks_ff4 = (maxNumberOfConcurrentFits_ + blockSize_ff4 - 1) / blockSize_ff4;
+  auto blockSize_ff4 = launchConfigs["kernelFastFit4_threads"];
+  auto numberOfBlocks_ff4 = launchConfigs["kernelFastFit4_blocks"];
+  // auto numberOfBlocks_ff4 = (maxNumberOfConcurrentFits_ + blockSize_ff4 - 1) / blockSize_ff4;
 
-  auto blockSize_blf4 = exec.configFromFile("kernelLineFit4");
-  auto numberOfBlocks_blf4 = (maxNumberOfConcurrentFits_ + blockSize_blf4 - 1) / blockSize_blf4;
+  auto blockSize_blf4 = launchConfigs["kernelLineFit4_threads"];
+  auto numberOfBlocks_blf4 = launchConfigs["kernelFastFit4_blocks"];
+  // auto numberOfBlocks_blf4 = (maxNumberOfConcurrentFits_ + blockSize_blf4 - 1) / blockSize_blf4;
 
-  auto blockSize_ff5 = exec.configFromFile("kernelFastFit5");
-  auto numberOfBlocks_ff5 = (maxNumberOfConcurrentFits_ + blockSize_ff5 - 1) / blockSize_ff5;
+  auto blockSize_ff5 = launchConfigs["kernelFastFit5_threads"];
+  auto numberOfBlocks_ff5 = launchConfigs["kernelFastFit5_blocks"];
+  // auto numberOfBlocks_ff5 = (maxNumberOfConcurrentFits_ + blockSize_ff5 - 1) / blockSize_ff5;
 
-  auto blockSize_blf5 = exec.configFromFile("kernelLineFit5");
-  auto numberOfBlocks_blf5 = (maxNumberOfConcurrentFits_ + blockSize_blf5 - 1) / blockSize_blf5;
+  auto blockSize_blf5 = launchConfigs["kernelLineFit5_threads"];
+  auto numberOfBlocks_blf5 = launchConfigs["kernelLineFit5_blocks"];
+  // auto numberOfBlocks_blf5 = (maxNumberOfConcurrentFits_ + blockSize_blf5 - 1) / blockSize_blf5;
   for (uint32_t offset = 0; offset < maxNumberOfTuples; offset += maxNumberOfConcurrentFits_) {
     // fit triplets
     kernelBLFastFit<3><<<numberOfBlocks_ff3, blockSize_ff3, 0, stream>>>(
