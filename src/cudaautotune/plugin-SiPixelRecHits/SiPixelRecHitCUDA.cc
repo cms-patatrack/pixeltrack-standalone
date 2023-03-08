@@ -10,6 +10,7 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "CUDACore/ScopedContext.h"
+#include "CUDACore/KernelConfigurations.h"
 #include "CondFormats/PixelCPEFast.h"
 
 #include "PixelRecHits.h"  // TODO : spit product from kernel
@@ -55,7 +56,7 @@ void SiPixelRecHitCUDA::produce(edm::Event& iEvent, const edm::EventSetup& es) {
 
   ctx.emplace(iEvent,
               tokenHit_,
-              gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.getGPUProductAsync(ctx.stream()), ctx.stream()));
+              gpuAlgo_.makeHitsAsync(digis, clusters, bs, fcpe.getGPUProductAsync(ctx.stream()), cms::getLaunchConfigs(), ctx.stream()));
 }
 
 DEFINE_FWK_MODULE(SiPixelRecHitCUDA);

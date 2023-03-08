@@ -36,12 +36,12 @@ namespace pixelgpudetails {
                                                            SiPixelClustersCUDA const& clusters_d,
                                                            BeamSpotCUDA const& bs_d,
                                                            pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                                           std::unordered_map<std::string, int> launchConfigs,
                                                            cudaStream_t stream) const {
     auto nHits = clusters_d.nClusters();
     TrackingRecHit2DCUDA hits_d(nHits, cpeParams, clusters_d.clusModuleStart(), stream);
 
-    cms::cuda::ExecutionConfiguration exec;
-    int threadsPerBlock = exec.configFromFile("getHits");
+    int threadsPerBlock = launchConfigs["getHits"];
     int blocks = digis_d.nModules();  // active modules (with digis)
 
 #ifdef GPU_DEBUG

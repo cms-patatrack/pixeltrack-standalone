@@ -2,6 +2,7 @@
 #define RecoLocalTracker_SiPixelRecHits_plugins_PixelRecHits_h
 
 #include <cstdint>
+#include <unordered_map>
 
 #include <cuda_runtime.h>
 
@@ -26,6 +27,7 @@ namespace pixelgpudetails {
                                        SiPixelClustersCUDA const& clusters_d,
                                        BeamSpotCUDA const& bs_d,
                                        pixelCPEforGPU::ParamsOnGPU const* cpeParams,
+                                       std::unordered_map<std::string, int> launchConfigs,
                                        cudaStream_t stream) const;
   };
 }  // namespace pixelgpudetails
