@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cuda_runtime.h>
+#include <unordered_map>
 
 #include "CUDADataFormats/SiPixelDigisCUDA.h"
 #include "CUDADataFormats/SiPixelDigiErrorsCUDA.h"
@@ -178,6 +179,7 @@ namespace pixelgpudetails {
                            bool useQualityInfo,
                            bool includeErrors,
                            bool debug,
+                           std::unordered_map<std::string, int> launchConfigs,
                            cudaStream_t stream);
 
     std::pair<SiPixelDigisCUDA, SiPixelClustersCUDA> getResults() {

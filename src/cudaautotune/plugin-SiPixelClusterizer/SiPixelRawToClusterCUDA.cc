@@ -14,6 +14,7 @@
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
 #include "CUDACore/ScopedContext.h"
+#include "CUDACore/KernelConfigurations.h"
 
 #include "ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
@@ -158,6 +159,7 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                              useQuality_,
                              includeErrors_,
                              false,  // debug
+                             cms::getLaunchConfigs(),
                              ctx.stream());
 }
 
