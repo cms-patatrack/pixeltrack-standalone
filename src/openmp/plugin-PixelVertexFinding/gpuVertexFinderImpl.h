@@ -14,11 +14,14 @@ namespace gpuVertexFinder {
     auto const& fit = tracks.stateAtBS;
     auto const* quality = tracks.qualityData();
 
-    auto first = 0;
-    for (int idx = first, nt = TkSoA::stride(); idx < nt; idx++) {
+    int nt = TkSoA::stride();
+#pragma omp target teams distribute parallel for map(tofrom:soa[:1],pws[:1]) map(to:quality[:pixelTrack::maxNumber()])
+    for (int idx = 0; idx < nt; idx++) {
       auto nHits = tracks.nHits(idx);
       if (nHits == 0)
-        break;  // this is a guard: maybe we need to move to nTracks...
+        continue;
+        //break;  // this is a guard: maybe we need to move to nTracks...
+
 
       // initialize soa...
       soa->idv[idx] = -1;
@@ -34,7 +37,11 @@ namespace gpuVertexFinder {
         continue;
 
       auto& data = *pws;
-      auto it = atomicAdd(&data.ntrks, 1);
+      //auto it = atomicAdd(&data.ntrks, 1);
+      uint32_t it;
+#pragma omp atomic capture
+      it = data.ntrks++;
+
       data.itrk[it] = idx;
       data.zt[it] = tracks.zip(idx);
       data.ezt2[it] = fit.covariance(idx)(14);
