@@ -191,13 +191,18 @@ namespace gpuVertexFinder {
 
     // find the number of different clusters, identified by a tracks with clus[i] == i and density larger than threshold;
     // mark these tracks with a negative id.
-    // OMP triggers assertion failure in gpuFitVertices.h:62 (fitVertices, assert: iv[i] < foundClusters)
-//#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS]) map(to:nn[:MAXTRACKS])
+
+// Need to add foundClusters to the map list.  Don't know why it's
+// not automatically mapped.  info output says it's firstprivate
+// On AMD: OMP triggers assertion failure in gpuFitVertices.h:62 (fitVertices, assert: iv[i] < foundClusters)
+// On NVidia: "operation not supported on global/shared address space" error
+
+#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS],foundClusters) map(to:nn[:MAXTRACKS])
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] == int(i)) {
         if (nn[i] >= minT) {
           uint32_t old;
-//#pragma omp atomic capture
+#pragma omp atomic capture
           old = foundClusters++;
           //auto old = atomicInc(&foundClusters, 0xffffffff);
           iv[i] = -(old + 1);
