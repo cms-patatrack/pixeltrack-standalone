@@ -54,8 +54,8 @@ namespace gpuVertexFinder {
 
 
 // Incomplete list
-//#pragma omp target enter data map(to: zt[:MAXTRACKS], ezt2[:MAXTRACKS], izt[:MAXTRACKS]) \
-//                          map(alloc: iv[:MAXTRACKS])
+#pragma omp target enter data map(to: zt[:MAXTRACKS], ezt2[:MAXTRACKS], izt[:MAXTRACKS], nn[:MAXTRACKS]) \
+                          map(alloc: iv[:MAXTRACKS])
 
     using Hist = cms::cuda::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
     Hist hist;
@@ -72,7 +72,7 @@ namespace gpuVertexFinder {
 
 
     // fill hist  (bin shall be wider than "eps")
-#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS], nn[:MAXTRACKS],izt[:MAXTRACKS]) map(to:zt[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       assert(i < ZVertices::MAXTRACKS);
       int iz = int(zt[i] * 10.);  // valid if eps<=0.1
@@ -89,13 +89,13 @@ namespace gpuVertexFinder {
     hist.finalize();
 
     assert(hist.size() == nt);
-#pragma omp target teams distribute parallel for map(to:izt[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       hist.fill(izt[i], uint16_t(i));
     }
 
     // count neighbours
-#pragma omp target teams distribute parallel for map(to:ezt2[:MAXTRACKS], zt[:MAXTRACKS]) map(tofrom:nn[:MAXTRACKS], izt[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       if (ezt2[i] > er2mx)
         continue;
@@ -114,8 +114,7 @@ namespace gpuVertexFinder {
     }
 
     // find closest above me .... (we ignore the possibility of two j at same distance from i)
-#pragma omp target teams distribute parallel for map(to:nn[:MAXTRACKS], zt[:MAXTRACKS],ezt2[:MAXTRACKS],izt[:MAXTRACKS]) \
-    map(tofrom:iv[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       float mdist = eps;
       auto loop = [&](uint32_t j) {
@@ -136,7 +135,7 @@ namespace gpuVertexFinder {
 
 #ifdef GPU_DEBUG
     //  mini verification
-#pragma omp target teams distribute parallel for map(to:iv[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] != int(i))
         assert(iv[iv[i]] != int(i));
@@ -145,7 +144,7 @@ namespace gpuVertexFinder {
 #endif
 
     // consolidate graph (percolate index of seed)
-#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       auto m = iv[i];
       while (m != iv[m])
@@ -164,7 +163,7 @@ namespace gpuVertexFinder {
 
 #ifdef GPU_DEBUG
     // and verify that we did not spit any cluster...
-#pragma omp target teams distribute parallel for map(to:nn[:MAXTRACKS],zt[:MAXTRACKS],ezt2[:MAXTRACKS],izt[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       auto minJ = i;
       auto mdist = eps;
@@ -197,7 +196,7 @@ namespace gpuVertexFinder {
 // On AMD: OMP triggers assertion failure in gpuFitVertices.h:62 (fitVertices, assert: iv[i] < foundClusters)
 // On NVidia: "operation not supported on global/shared address space" error
 
-#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS],foundClusters) map(to:nn[:MAXTRACKS])
+#pragma omp target teams distribute parallel for map(tofrom:foundClusters)
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] == int(i)) {
         if (nn[i] >= minT) {
@@ -215,7 +214,7 @@ namespace gpuVertexFinder {
     assert(foundClusters < ZVertices::MAXVTX);
 
     // propagate the negative id to all the tracks in the cluster.
-#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] >= 0) {
         // mark each track in a cluster with the same id as the first one
@@ -224,13 +223,13 @@ namespace gpuVertexFinder {
     }
 
     // adjust the cluster id to be a positive value starting from 0
-#pragma omp target teams distribute parallel for map(tofrom:iv[:MAXTRACKS])
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       iv[i] = -iv[i] - 1;
     }
 
 // incomplete list
-//#pragma omp target exit data map(delete: zt[:MAXTRACKS],ezt2[:MAXTRACKS],izt[:MAXTRACKS])  map(from:iv[:MAXTRACKS])
+#pragma omp target exit data map(delete: zt[:MAXTRACKS],ezt2[:MAXTRACKS],izt[:MAXTRACKS])  map(from:iv[:MAXTRACKS],nn[:MAXTRACKS])
 
     nvIntermediate = nvFinal = foundClusters;
 
