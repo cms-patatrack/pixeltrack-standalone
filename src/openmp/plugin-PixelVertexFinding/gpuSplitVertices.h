@@ -133,8 +133,8 @@ namespace gpuVertexFinder {
       // get a new global vertex
       uint32_t igv;
       //igv = atomicAdd(&ws.nvIntermediate, 1);
-//#pragma omp atomic capture
       //igv = ws.nvIntermediate++;
+#pragma omp atomic capture
       igv = nvIntermediate++;
 
 #pragma omp parallel for
