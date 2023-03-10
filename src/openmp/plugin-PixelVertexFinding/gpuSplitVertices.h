@@ -15,6 +15,9 @@ namespace gpuVertexFinder {
   inline void splitVertices(ZVertices* pdata, WorkSpace* pws, float maxChi2) {
     constexpr bool verbose = false;  // in principle the compiler should optmize out if false
 
+    constexpr uint32_t MAXTRACKS = WorkSpace::MAXTRACKS;
+    constexpr uint32_t MAXVTX = WorkSpace::MAXVTX;
+
     auto& __restrict__ data = *pdata;
     auto& __restrict__ ws = *pws;
     auto nt = ws.ntrks;
@@ -24,6 +27,7 @@ namespace gpuVertexFinder {
     float* __restrict__ wv = data.wv;
     float const* __restrict__ chi2 = data.chi2;
     uint32_t& nvFinal = data.nvFinal;
+    uint32_t& nvIntermediate = ws.nvIntermediate;
 
     int32_t const* __restrict__ nn = data.ndof;
     int32_t* __restrict__ iv = ws.iv;
@@ -32,6 +36,8 @@ namespace gpuVertexFinder {
     assert(zt);
 
     // one vertex per block
+#pragma omp target teams distribute map(tofrom:iv[:MAXTRACKS], nvIntermediate) \
+     map(to:nn[:MAXTRACKS],chi2[:MAXVTX],zv[:MAXVTX], wv[:MAXVTX], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
     for (uint32_t kv = 0; kv < nvFinal; kv += 1) {
       if (nn[kv] < 4)
         continue;
@@ -51,13 +57,19 @@ namespace gpuVertexFinder {
       nq = 0;
 
       // copy to local
+#pragma omp parallel for
       for (uint32_t k = 0; k < nt; k++) {
         if (iv[k] == int(kv)) {
-          auto old = atomicInc(&nq, MAXTK);
-          zz[old] = zt[k] - zv[kv];
-          newV[old] = zz[old] < 0 ? 0 : 1;
-          ww[old] = 1.f / ezt2[k];
-          it[old] = k;
+          //auto old = atomicInc(&nq, MAXTK);
+          uint32_t old;
+#pragma omp atomic capture
+          old = nq++;
+          if (old < MAXTK) {
+              zz[old] = zt[k] - zv[kv];
+              newV[old] = zz[old] < 0 ? 0 : 1;
+              ww[old] = 1.f / ezt2[k];
+              it[old] = k;
+          }
         }
       }
 
@@ -76,15 +88,21 @@ namespace gpuVertexFinder {
         wnew[0] = 0;
         wnew[1] = 0;
 
+#pragma omp parallel for
         for (uint32_t k = 0; k < nq; k++) {
           auto i = newV[k];
-          atomicAdd(&znew[i], zz[k] * ww[k]);
-          atomicAdd(&wnew[i], ww[k]);
+#pragma omp atomic update
+          znew[i] += zz[k] * ww[k];
+          //atomicAdd(&znew[i], zz[k] * ww[k]);
+#pragma omp atomic update
+          wnew[i] += ww[k];
+          //atomicAdd(&wnew[i], ww[k]);
         }
 
         znew[0] /= wnew[0];
         znew[1] /= wnew[1];
 
+#pragma omp parallel for
         for (uint32_t k = 0; k < nq; k++) {
           auto d0 = fabs(zz[k] - znew[0]);
           auto d1 = fabs(zz[k] - znew[1]);
@@ -114,8 +132,12 @@ namespace gpuVertexFinder {
 
       // get a new global vertex
       uint32_t igv;
-      igv = atomicAdd(&ws.nvIntermediate, 1);
+      //igv = atomicAdd(&ws.nvIntermediate, 1);
+//#pragma omp atomic capture
+      //igv = ws.nvIntermediate++;
+      igv = nvIntermediate++;
 
+#pragma omp parallel for
       for (uint32_t k = 0; k < nq; k++) {
         if (1 == newV[k])
           iv[it[k]] = igv;
