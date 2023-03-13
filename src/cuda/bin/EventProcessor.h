@@ -14,7 +14,8 @@
 namespace edm {
   class EventProcessor {
   public:
-    explicit EventProcessor(int maxEvents,
+    explicit EventProcessor(int batchEvents,
+                            int maxEvents,
                             int runForMinutes,
                             int numberOfStreams,
                             std::vector<std::string> const& path,

@@ -2,9 +2,10 @@
 #define Worker_h
 
 #include <atomic>
-#include <vector>
 //#include <iostream>
+#include <vector>
 
+#include "Framework/EventRange.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskList.h"
@@ -23,10 +24,10 @@ namespace edm {
     void setItemsToGet(std::vector<Worker*> workers) { itemsToGet_ = std::move(workers); }
 
     // thread safe
-    void prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask);
+    void prefetchAsync(EventRange events, EventSetup const& eventSetup, WaitingTaskHolder iTask);
 
     // not thread safe
-    virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask) = 0;
+    virtual void doWorkAsync(EventRange events, EventSetup const& eventSetup, WaitingTaskHolder iTask) = 0;
 
     // not thread safe
     virtual void doEndJob() = 0;
@@ -50,22 +51,22 @@ namespace edm {
   public:
     explicit WorkerT(ProductRegistry& reg) : producer_(reg) {}
 
-    void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
+    void doWorkAsync(EventRange events, EventSetup const& eventSetup, WaitingTaskHolder task) override {
       waitingTasksWork_.add(task);
       //std::cout << "doWorkAsync for " << this << " with iTask " << iTask << std::endl;
       bool expected = false;
       if (workStarted_.compare_exchange_strong(expected, true)) {
         //std::cout << "first doWorkAsync call" << std::endl;
 
-        WaitingTask* moduleTask =
-            make_waiting_task([this, &event, &eventSetup](std::exception_ptr const* iPtr) mutable {
+        WaitingTask* moduleTask = 
+        make_waiting_task([this, events, &eventSetup](std::exception_ptr const* iPtr) mutable {
               if (iPtr) {
                 waitingTasksWork_.doneWaiting(*iPtr);
               } else {
                 std::exception_ptr exceptionPtr;
                 try {
                   //std::cout << "calling doProduce " << this << std::endl;
-                  producer_.doProduce(event, eventSetup);
+                  producer_.doProduce(events, eventSetup);
                 } catch (...) {
                   exceptionPtr = std::current_exception();
                 }
@@ -76,23 +77,23 @@ namespace edm {
         auto* group = task.group();
         if (producer_.hasAcquire()) {
           WaitingTaskWithArenaHolder runProduceHolder{*group, moduleTask};
-          moduleTask = make_waiting_task([this, &event, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
-                                             std::exception_ptr const* iPtr) mutable {
-            if (iPtr) {
-              runProduceHolder.doneWaiting(*iPtr);
-            } else {
-              std::exception_ptr exceptionPtr;
-              try {
-                producer_.doAcquire(event, eventSetup, runProduceHolder);
-              } catch (...) {
-                exceptionPtr = std::current_exception();
-              }
-              runProduceHolder.doneWaiting(exceptionPtr);
-            }
-          });
+          moduleTask = make_waiting_task([this, events = ConstEventRange(events), &eventSetup, runProduceHolder = std::move(runProduceHolder)](
+                  std::exception_ptr const* iPtr) mutable {
+                if (iPtr) {
+                  runProduceHolder.doneWaiting(*iPtr);
+                } else {
+                  std::exception_ptr exceptionPtr;
+                  try {
+                    producer_.doAcquire(events, eventSetup, runProduceHolder);
+                  } catch (...) {
+                    exceptionPtr = std::current_exception();
+                  }
+                  runProduceHolder.doneWaiting(exceptionPtr);
+                }
+              });
         }
         //std::cout << "calling prefetchAsync " << this << " with moduleTask " << moduleTask << std::endl;
-        prefetchAsync(event, eventSetup, WaitingTaskHolder(*group, moduleTask));
+        prefetchAsync(events, eventSetup, WaitingTaskHolder(*group, moduleTask));
       }
     }
 

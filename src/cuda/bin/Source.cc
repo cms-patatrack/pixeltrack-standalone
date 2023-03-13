@@ -24,9 +24,11 @@ namespace {
 
 namespace edm {
   Source::Source(
-      int maxEvents, int runForMinutes, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
-      : maxEvents_(maxEvents),
+      int batchEvents, int maxEvents, int runForMinutes, ProductRegistry &reg, std::filesystem::path const &datadir, bool validation)
+      : batchEvents_(batchEvents),
+        maxEvents_(maxEvents),
         runForMinutes_(runForMinutes),
+        numEvents_(0),
         rawToken_(reg.produces<FEDRawDataCollection>()),
         validation_(validation) {
     std::ifstream in_raw(datadir / "raw.bin", std::ios::binary);
@@ -78,6 +80,10 @@ namespace edm {
       assert(raw_.size() == vertices_.size());
     }
 
+    if (batchEvents_ < 1) {
+      batchEvents_ = 1;
+    }
+
     if (runForMinutes_ < 0 and maxEvents_ < 0) {
       maxEvents_ = raw_.size();
     }
@@ -89,20 +95,29 @@ namespace edm {
     }
   }
 
-  std::unique_ptr<Event> Source::produce(int streamId, ProductRegistry const &reg) {
+  EventBatch Source::produce(int streamId, ProductRegistry const &reg) {
     if (shouldStop_) {
-      return nullptr;
+      return {};
     }
 
-    const int old = numEvents_.fetch_add(1);
-    const int iev = old + 1;
+    // atomically increase the event counter, without overflowing over maxEvents_
+    int old_value, new_value;
+
     if (runForMinutes_ < 0) {
-      if (old >= maxEvents_) {
+      // atomically increase the event counter, without overflowing over maxEvents_
+      old_value = numEvents_;
+      do {
+        new_value = std::min(old_value + batchEvents_, maxEvents_);
+      }
+      while (not numEvents_.compare_exchange_weak(old_value, new_value));
+      if (old_value >= maxEvents_) {
         shouldStop_ = true;
-        --numEvents_;
-        return nullptr;
+        return {};
       }
     } else {
+      // atomically increase the event counter, and periodically check if runForMinutes_ have passed
+      old_value = numEvents_.fetch_add(batchEvents_);
+      new_value = old_value + batchEvents_;
       if (numEvents_ - numEventsTimeLastCheck_ > static_cast<int>(raw_.size())) {
         std::scoped_lock lock(timeMutex_);
         // if some other thread beat us, no need to do anything
@@ -114,21 +129,28 @@ namespace edm {
           numEventsTimeLastCheck_ = (numEvents_ / raw_.size()) * raw_.size();
         }
         if (shouldStop_) {
-          --numEvents_;
-          return nullptr;
+          numEvents_ -= batchEvents_;
+          return {};
         }
       }
     }
-    auto ev = std::make_unique<Event>(streamId, iev, reg);
-    const int index = old % raw_.size();
 
-    ev->emplace(rawToken_, raw_[index]);
-    if (validation_) {
-      ev->emplace(digiClusterToken_, digiclusters_[index]);
-      ev->emplace(trackToken_, tracks_[index]);
-      ev->emplace(vertexToken_, vertices_[index]);
+    // check how many events should be read
+    const int size = new_value - old_value;
+    EventBatch events;
+    events.reserve(size);
+    for (int iev = old_value + 1; iev <= new_value; ++iev) {
+      Event &event = events.emplace(streamId, iev, reg);
+      const int index = (iev - 1) % raw_.size();
+
+      event.emplace(rawToken_, raw_[index]);
+      if (validation_) {
+        event.emplace(digiClusterToken_, digiclusters_[index]);
+        event.emplace(trackToken_, tracks_[index]);
+        event.emplace(vertexToken_, vertices_[index]);
+      }
     }
 
-    return ev;
+    return events;
   }
 }  // namespace edm

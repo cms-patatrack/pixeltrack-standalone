@@ -40,7 +40,7 @@ namespace edm {
     }
     ~WaitingTaskHolder() {
       if (m_task) {
-        doneWaiting(std::exception_ptr{});
+        doneWaiting();
       }
     }
 
@@ -89,11 +89,8 @@ namespace edm {
       }
     }
 
-    void doneWaiting(std::exception_ptr iExcept) {
-      if (iExcept) {
-        m_task->dependentTaskFailed(iExcept);
-      }
-      //task_group::run can run the task before we finish
+    void doneWaiting() {
+      //spawn can run the task before we finish
       // doneWaiting and some other thread might
       // try to reuse this object. Resetting
       // before spawn avoids problems
@@ -105,6 +102,13 @@ namespace edm {
           task->execute();
         });
       }
+    }
+
+    void doneWaiting(std::exception_ptr iExcept) {
+      if (iExcept) {
+        m_task->dependentTaskFailed(iExcept);
+      }
+      doneWaiting();
     }
 
   private:

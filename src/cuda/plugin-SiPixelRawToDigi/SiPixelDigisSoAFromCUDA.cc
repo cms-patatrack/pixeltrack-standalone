@@ -8,7 +8,15 @@
 #include "CUDACore/ScopedContext.h"
 #include "CUDACore/host_unique_ptr.h"
 
-class SiPixelDigisSoAFromCUDA : public edm::EDProducerExternalWork {
+struct SiPixelDigisSoAFromCUDA_AsyncState {
+  cms::cuda::host::unique_ptr<uint32_t[]> pdigi;
+  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArr;
+  cms::cuda::host::unique_ptr<uint16_t[]> adc;
+  cms::cuda::host::unique_ptr<int32_t[]> clus;
+  size_t nDigis;
+};
+
+class SiPixelDigisSoAFromCUDA : public edm::EDProducerExternalWork<SiPixelDigisSoAFromCUDA_AsyncState> {
 public:
   explicit SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg);
   ~SiPixelDigisSoAFromCUDA() override = default;
@@ -16,18 +24,12 @@ public:
 private:
   void acquire(const edm::Event& iEvent,
                const edm::EventSetup& iSetup,
-               edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
-  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
+               edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+               AsyncState& state) const override;
+  void produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) override;
 
-  edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
-  edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
-
-  cms::cuda::host::unique_ptr<uint32_t[]> pdigi_;
-  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArr_;
-  cms::cuda::host::unique_ptr<uint16_t[]> adc_;
-  cms::cuda::host::unique_ptr<int32_t[]> clus_;
-
-  size_t nDigis_;
+  const edm::EDGetTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiGetToken_;
+  const edm::EDPutTokenT<SiPixelDigisSoA> digiPutToken_;
 };
 
 SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)
@@ -36,20 +38,20 @@ SiPixelDigisSoAFromCUDA::SiPixelDigisSoAFromCUDA(edm::ProductRegistry& reg)
 
 void SiPixelDigisSoAFromCUDA::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
-                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
+                                      edm::WaitingTaskWithArenaHolder waitingTaskHolder,
+                                      AsyncState& state) const {
   // Do the transfer in a CUDA stream parallel to the computation CUDA stream
   cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder)};
 
   const auto& gpuDigis = ctx.get(iEvent, digiGetToken_);
-
-  nDigis_ = gpuDigis.nDigis();
-  pdigi_ = gpuDigis.pdigiToHostAsync(ctx.stream());
-  rawIdArr_ = gpuDigis.rawIdArrToHostAsync(ctx.stream());
-  adc_ = gpuDigis.adcToHostAsync(ctx.stream());
-  clus_ = gpuDigis.clusToHostAsync(ctx.stream());
+  state.pdigi = gpuDigis.pdigiToHostAsync(ctx.stream());
+  state.rawIdArr = gpuDigis.rawIdArrToHostAsync(ctx.stream());
+  state.adc = gpuDigis.adcToHostAsync(ctx.stream());
+  state.clus = gpuDigis.clusToHostAsync(ctx.stream());
+  state.nDigis = gpuDigis.nDigis();
 }
 
-void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup, AsyncState& state) {
   // The following line copies the data from the pinned host memory to
   // regular host memory. In principle that feels unnecessary (why not
   // just use the pinned host memory?). There are a few arguments for
@@ -60,12 +62,8 @@ void SiPixelDigisSoAFromCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
   //     host memory to be allocated without a CUDA stream
   // - What if a CPU algorithm would produce the same SoA? We can't
   //   use cudaMallocHost without a GPU...
-  iEvent.emplace(digiPutToken_, nDigis_, pdigi_.get(), rawIdArr_.get(), adc_.get(), clus_.get());
-
-  pdigi_.reset();
-  rawIdArr_.reset();
-  adc_.reset();
-  clus_.reset();
+  iEvent.emplace(
+      digiPutToken_, state.nDigis, state.pdigi.get(), state.rawIdArr.get(), state.adc.get(), state.clus.get());
 }
 
 // define as framework plugin

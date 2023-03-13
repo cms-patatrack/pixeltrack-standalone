@@ -7,8 +7,10 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "Framework/Event.h"
+#include "Framework/EventBatch.h"
 #include "DataFormats/FEDRawDataCollection.h"
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
@@ -18,7 +20,7 @@ namespace edm {
   class Source {
   public:
     explicit Source(
-        int maxEvents, int runForMinutes, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
+        int batchEvents, int maxEvents, int runForMinutes, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
 
     void startProcessing();
 
@@ -26,9 +28,10 @@ namespace edm {
     int processedEvents() const { return numEvents_; }
 
     // thread safe
-    std::unique_ptr<Event> produce(int streamId, ProductRegistry const& reg);
+    EventBatch produce(int streamId, ProductRegistry const& reg);
 
   private:
+    int batchEvents_;
     int maxEvents_;
 
     // these are all for the mode where the processing length is limited by time
