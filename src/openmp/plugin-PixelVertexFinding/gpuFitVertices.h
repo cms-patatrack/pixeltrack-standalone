@@ -101,14 +101,14 @@ namespace gpuVertexFinder {
     }
 
 
-#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
-                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
+//#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
+//                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
 
 
 
     // compute chi2
 // For an AMD target, adding this loop will result in an assertion gpuSplitVertices.h:66 in event 6
-//#pragma omp target teams distribute parallel for
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < nt; i++) {
       if (iv[i] > 9990)
         continue;
@@ -120,10 +120,10 @@ namespace gpuVertexFinder {
         continue;
       }
 
-//#pragma omp atomic update
+#pragma omp atomic update
       chi2[iv[i]] += c2;
 
-//#pragma omp atomic update
+#pragma omp atomic update
       nn[iv[i]]++;
       //atomicAdd(&chi2[iv[i]], c2);
       //atomicAdd(&nn[iv[i]], 1);
@@ -131,13 +131,13 @@ namespace gpuVertexFinder {
 //#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
 //                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
 
-//#pragma omp target teams distribute parallel for
+#pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < foundClusters; i++)
       if (nn[i] > 0)
         wv[i] *= float(nn[i]) / chi2[i];
 
-//#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
-//                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
+#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
+                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
 
     if (verbose)
       printf("found %d proto clusters ", foundClusters);
