@@ -41,7 +41,6 @@ namespace gpuVertexFinder {
     assert(nvFinal <= nvIntermediate);
     nvFinal = nvIntermediate;
     auto foundClusters = nvFinal;
-    //printf("foundClusters = %d MAXVTX = %d\n",foundClusters,MAXVTX);
 
 #pragma omp target enter data map(alloc:zv[:MAXVTX], wv[:MAXVTX], chi2[:MAXVTX], nn[:MAXTRACKS]) \
                        map(to:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
@@ -122,8 +121,6 @@ namespace gpuVertexFinder {
       //atomicAdd(&chi2[iv[i]], c2);
       //atomicAdd(&nn[iv[i]], 1);
     }
-//#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
-//                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
 
 #pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < foundClusters; i++)

@@ -228,7 +228,6 @@ namespace gpuVertexFinder {
       iv[i] = -iv[i] - 1;
     }
 
-// incomplete list
 #pragma omp target exit data map(delete: zt[:MAXTRACKS],ezt2[:MAXTRACKS],izt[:MAXTRACKS])  map(from:iv[:MAXTRACKS],nn[:MAXTRACKS])
 
     nvIntermediate = nvFinal = foundClusters;
