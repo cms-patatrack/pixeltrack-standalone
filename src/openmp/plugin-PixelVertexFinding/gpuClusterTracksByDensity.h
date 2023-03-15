@@ -53,7 +53,6 @@ namespace gpuVertexFinder {
     assert(zt);
 
 
-// Incomplete list
 #pragma omp target enter data map(to: zt[:MAXTRACKS], ezt2[:MAXTRACKS], izt[:MAXTRACKS], nn[:MAXTRACKS]) \
                           map(alloc: iv[:MAXTRACKS])
 
