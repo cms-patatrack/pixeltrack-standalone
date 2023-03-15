@@ -87,9 +87,6 @@ namespace gpuVertexFinder {
       wv[iv[i]] +=  w;
     }
 
-//#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
-//                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
-
     // reuse nn
 #pragma omp target teams distribute parallel for
     for (uint32_t i = 0; i < foundClusters; i++) {
@@ -100,9 +97,6 @@ namespace gpuVertexFinder {
       nn[i] = -1;  // ndof
     }
 
-
-//#pragma omp target exit data map(from:zv[:MAXVTX], wv[:MAXVTX] , chi2[:MAXVTX], nn[:MAXTRACKS]) \
-//                       map(delete:iv[:MAXTRACKS], ezt2[:MAXTRACKS], zt[:MAXTRACKS])
 
 
 
