@@ -4,9 +4,10 @@
 
 // #define BROKENLINE_DEBUG
 
+#include <algorithm>
+#include <execution>
 #include <cstdint>
-
-#include <cuda_runtime.h>
+#include <ranges>
 
 #include "CUDADataFormats/TrackingRecHit2D.h"
 #include "CUDACore/cudaCheck.h"
@@ -23,14 +24,14 @@ using OutputSoA = pixelTrack::TrackSoA;
 // #define BL_DUMP_HITS
 
 template <int N>
-__global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
-                                CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                                HitsOnGPU const *__restrict__ hhp,
-                                double *__restrict__ phits,
-                                float *__restrict__ phits_ge,
-                                double *__restrict__ pfast_fit,
-                                uint32_t nHits,
-                                uint32_t offset) {
+void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
+                     CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                     HitsOnGPU const *__restrict__ hhp,
+                     double *__restrict__ phits,
+                     float *__restrict__ phits_ge,
+                     double *__restrict__ pfast_fit,
+                     uint32_t nHits,
+                     uint32_t offset) {
   constexpr uint32_t hitsInFit = N;
 
   assert(hitsInFit <= nHits);
@@ -41,20 +42,16 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
   assert(tupleMultiplicity);
 
   // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
 
 #ifdef BROKENLINE_DEBUG
-  if (0 == local_start) {
-    printf("%d total Ntuple\n", foundNtuplets->nbins());
-    printf("%d Ntuple of size %d for %d hits to fit\n", tupleMultiplicity->size(nHits), nHits, hitsInFit);
-  }
+  printf("%d total Ntuple\n", foundNtuplets->nbins());
+  printf("%d Ntuple of size %d for %d hits to fit\n", tupleMultiplicity->size(nHits), nHits, hitsInFit);
 #endif
-
-  for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+  auto iter{std::views::iota(0U, Rfit::maxNumberOfConcurrentFits())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto local_idx) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
-      break;
+      return;
 
     // get it from the ntuple container (one to one to helix)
     auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
@@ -112,18 +109,18 @@ __global__ void kernelBLFastFit(Tuples const *__restrict__ foundNtuplets,
     assert(fast_fit(1) == fast_fit(1));
     assert(fast_fit(2) == fast_fit(2));
     assert(fast_fit(3) == fast_fit(3));
-  }
+  });
 }
 
 template <int N>
-__global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
-                            double B,
-                            OutputSoA *results,
-                            double *__restrict__ phits,
-                            float *__restrict__ phits_ge,
-                            double *__restrict__ pfast_fit,
-                            uint32_t nHits,
-                            uint32_t offset) {
+void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                 double B,
+                 OutputSoA *results,
+                 double *__restrict__ phits,
+                 float *__restrict__ phits_ge,
+                 double *__restrict__ pfast_fit,
+                 uint32_t nHits,
+                 uint32_t offset) {
   assert(N <= nHits);
 
   assert(results);
@@ -132,12 +129,11 @@ __global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ t
   // same as above...
 
   // look in bin for this hit multiplicity
-  auto local_start = blockIdx.x * blockDim.x + threadIdx.x;
-  for (int local_idx = local_start, nt = Rfit::maxNumberOfConcurrentFits(); local_idx < nt;
-       local_idx += gridDim.x * blockDim.x) {
+  auto iter{std::views::iota(0U, Rfit::maxNumberOfConcurrentFits())};
+  std::for_each(std::execution::par, std::ranges::cbegin(iter), std::ranges::cend(iter), [=](const auto local_idx) {
     auto tuple_idx = local_idx + offset;
     if (tuple_idx >= tupleMultiplicity->size(nHits))
-      break;
+      return;
 
     // get it for the ntuple container (one to one to helix)
     auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
@@ -181,5 +177,5 @@ __global__ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ t
            line.cov(0, 0),
            line.cov(1, 1));
 #endif
-  }
+  });
 }

@@ -3,8 +3,6 @@
 
 #include <memory>
 
-#include <cuda_runtime.h>
-
 #include "CUDACore/SimpleVector.h"
 #include "CUDADataFormats/PixelTrack.h"
 #include "CUDADataFormats/TrackingRecHit2D.h"

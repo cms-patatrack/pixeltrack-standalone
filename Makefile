@@ -80,7 +80,7 @@ export CUDA_DLINKFLAGS
 endif
 
 # NVIDIA HPC SDK
-NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/22.11
+NVHPC_BASE := /opt/nvidia/hpc_sdk/Linux_x86_64/23.1
 ifeq ($(wildcard $(NVHPC_BASE)),)
 # HPC SDK not found
 NVHPC_BASE :=

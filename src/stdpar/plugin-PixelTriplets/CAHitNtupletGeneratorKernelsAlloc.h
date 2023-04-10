@@ -2,8 +2,6 @@
 
 #include "CAHitNtupletGeneratorKernels.h"
 
-#include "CUDACore/cudaCheck.h"
-
 void CAHitNtupletGeneratorKernelsGPU::allocateOnGPU() {
   //////////////////////////////////////////////////////////
   // ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)

@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 
-#include <cuda_runtime.h>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
