@@ -25,4 +25,5 @@
 /kokkos
 /kokkostest
 /serial
+/sycl
 /sycltest

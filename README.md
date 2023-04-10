@@ -17,6 +17,7 @@
     * [`hip` and `hiptest`](#hip-and-hiptest)
     * [`kokkos` and `kokkostest`](#kokkos-and-kokkostest)
     * [`alpaka` and `alpakatest`](#alpaka-and-alpakatest)
+    * [`sycl` and `sycltest`](#sycl-and-sycltest)
     * [`stdpar`](#stdpar)
 * [Code structure](#code-structure)
 * [Build system](#build-system)
@@ -52,14 +53,16 @@ In addition, the individual programs assume the following be found from the syst
 | `alpakatest` |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
 | `alpaka`     |                    | :white_check_mark: (3)      | :white_check_mark: (4) |                                                                                                                  |
 | `sycltest`   |                    |                             |                        | :heavy_check_mark:                                                                                               |
+| `sycl`       |                    |           (5)               |           (6)          | :heavy_check_mark: (7)                                                                                           |
 | `stdpar`     |                    | :heavy_check_mark:          |                        |                                                                                                                  |
 
 1. `kokkos` and `kokkostest` have an optional dependence on CUDA, by default it is required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 2. `kokkos` and `kokkostest` have an optional dependence on ROCm, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
 3. `alpaka` and `alpakatest` have an optional dependence on CUDA, by default it is required (see [`alpaka` and `alpakatest`](#alpaka-and-alpakatest) for more details)
 4. `alpaka` and `alpakatest` have an optional dependence on ROCm, by default it is not required (see [`alpaka` and `alpakatest`](#alpaka-and-alpakatest) for more details)
-
-
+5. `sycl` has an optional dependence on CUDA, by default it is not required (see [`sycl` and `sycltest`](#sycl-and-sycltest) for more details)
+6. `sycl` has an optional dependence on ROCm, by default it is not required (see [`sycl` and `sycltest`](#sycl-and-sycltest) for more details)
+7. As an alternative, the [open source llvm compiler](https://github.com/intel/llvm) can be used (see [`sycl` and `sycltest`](#sycl-and-sycltest) for more details)
 All other dependencies (listed below) are downloaded and built automatically
 
 
@@ -79,11 +82,13 @@ All other dependencies (listed below) are downloaded and built automatically
 | `alpakatest` | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |                                                                |                                                   |
 | `alpaka`     | :heavy_check_mark:                  |                                      |                                            | :heavy_check_mark:                  | :heavy_check_mark:                               |                                                                |                                                   |
 | `sycltest`   | :heavy_check_mark:                  |                                      |                                            |                                     |                                                  |                                                                |                                                   |
+| `sycl`       | :heavy_check_mark: (3)              | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 | `stdpar`     | :heavy_check_mark:                  | :heavy_check_mark:                   |                                            | :heavy_check_mark:                  |                                                  | :heavy_check_mark:                                             |                                                   |
 
 
 1. Boost libraries from the system can also be used, but they need to be version 1.73.0 or newer
 2. `kokkos` and `kokkostest` have an optional dependence on hwloc, by default it is not required (see [`kokkos` and `kokkostest`](#kokkos-and-kokkostest) for more details)
+3. When OneAPI is used, TBB is taken from the OneAPI folder instead of cloning it in the external
 
 The input data set consists of a minimal binary dump of 1000 events of
 ttbar+PU events from of
@@ -141,6 +146,7 @@ RHEL 8.x / CentOS 8.x use GCC 8 as their system compiler.
 | `alpakatest` | Alpaka FW test                   | :heavy_check_mark: |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |                    |
 | `alpaka`     | Alpaka version                   | :white_check_mark: |                    |                    | :white_check_mark: |                    |                    |                    |                    |                    |                    |
 | `sycltest`   | SYCL/oneAPI FW test              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |                    |                    |                    |                    |                    |                    |                    |
+| `sycl`       | SYCL/oneAPI version              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | `stdpar`     | `std::execution::par` version    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 The "Device framework" refers to a mechanism similar to [`cms::cuda::Product`](src/cuda/CUDACore/Product.h) and [`cms::cuda::ScopedContext`](src/cuda/CUDACore/ScopedContext.h) to support chains of modules to use the same device and the same work queue.
@@ -387,7 +393,6 @@ make alpaka ... CUDA_BASE= ROCM_BASE=path_to_rocm
 Due to conflicting symbols in the two backends and in Alpaka itself, rnabling both backends at the same time
 results in compilation errors or undefined behaviour.
 
-
 ##### Memory allocation strategy
 
 The use of caching allocator can be disabled at compile time setting the
@@ -404,6 +409,53 @@ compile time setting also the `ALPAKA_DISABLE_ASYNC_ALLOCATOR` preprocessor symb
 ```
 make alpaka ... USER_CXXFLAGS="-DALPAKA_DISABLE_CACHING_ALLOCATOR -DALPAKA_DISABLE_ASYNC_ALLOCATOR"
 ```
+
+#### `sycl` and `sycltest`
+
+##### Compiler
+To compile `sycl` there are two possibilities: 
+- `dpcpp`: compiler from the Intel OneAPI Toolkit (the latest version available is sourced and used)
+- `llvm`: open source compiler (current version: clang 16.0.0)
+
+Unlike the other applications, `source env.sh` has to be done before `make sycl` to source SYCL libraries
+(or source oneAPI is enough).
+The default compiler is `llvm` because it supports the CUDA and AMD backends. If NVIDIA GPUs are available, 
+it will compile ahead of time (AOT) for those. Same for Intel GPUs and AMD GPUs, but the specific architecture must be set
+in the Makefile in those cases.
+At the moment is not possible to compile AOT for both CUDA and AMD backends, as well as for CPUs and CUDA
+(because of bugs in SYCL).
+To select `dpcpp` as the compiler, use the following:
+```
+USE_SYCL_ONEAPI=1 make sycl
+```
+
+To run on CPU additional synchronization is required. Compiling with:
+```bash
+CPU_FLAGS=1 make -j 20 sycl USER_CXXFLAGS="-DCPU_DEBUG"
+```
+will enable the flags to compile AOT for all the CPUs and the additional synchronization inside the code.
+
+##### Supported backends
+The official Intel compiler at the moment supports only CPUs and Intel GPUs. The open source compiler instead supports 
+also NVIDIA GPUs and AMD GPUs. To compile for those backends the corresponding flags in the Makefile must be set.
+Note that due to some bugs, it's not possible to compile for both NVIDA and AMD backend together 
+and the AMD version doesn't compile due to a compiler bug.
+The device can be chosen at runtime with the argument `--device` and the device:
+- `opencl:cpu:0` where `opencl` is the backend and can be omitted and `0` is needed only if more than one CPU is 
+available but only the first one has to be selected. To select a cpu `--device cpu` is enough
+- `opencl:gpu:0` or `level_zero:gpu:0`, or just `--device gpu` (in this case both backends will be used) 
+- `cuda` to target NVIDIA GPU (CUDA\_VISIBLE\_DEVICES works as well)
+- `hip` to target AMD GPU
+To select more than one device, list them separated with a comma (e.g. `--device cpu,gpu`)
+
+##### Memory allocation strategy
+
+The use of caching allocator can be disabled at compile time setting the
+`SYCL_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
+```
+make sycl ... USER_CXXFLAGS="-DSYCL_DISABLE_CACHING_ALLOCATOR"
+```
+The async caching allocator is not available in SYCL.
 
 ### `stdpar`
 
