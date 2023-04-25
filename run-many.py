@@ -202,6 +202,7 @@ def runMany(programs, opts, logfilenamebase, monitor):
                 pass
             p.handle.wait()
 
+    msg = ""
     while len(running_programs) > 0:
         try:
             running_programs[0].handle.wait(timeout=monitor.intervalSeconds())
@@ -218,10 +219,6 @@ def runMany(programs, opts, logfilenamebase, monitor):
         except KeyboardInterrupt:
             terminate_programs()
     monitor.snapshot(running_programs)
-    msg = ""
-    for i, p in enumerate(running_programs):
-        if p.returncode != 0:
-            msg += "Program {} {} got return code %d, see output in log file %s\n".format(i, programs[i].program(), logfilenamebase.format(i))
     if len(msg) > 0:
         raise Exception(msg)
 

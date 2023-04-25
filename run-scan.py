@@ -118,7 +118,7 @@ def listCudaDevices():
     try:
         p = subprocess.Popen(["nvidia-smi", "--query-gpu=index,name,driver_version", "--format=csv,noheader,nounits"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     except FileNotFoundError:
-        return []
+        return {}
     output = p.communicate()[0]
     ret = {}
     for line in output.split("\n"):
@@ -349,7 +349,7 @@ def main(opts):
           printMessage("Warming up")
           wmon = Monitor(opts)
           wmon.setIntervalSeconds(None)
-          run("_warmup.txt", monitor=wmon)
+          run("_warmup.txt", monitor=wmon, cudaDevices=opts.cudaDevices)
           print()
           opts.warmup = False
 
