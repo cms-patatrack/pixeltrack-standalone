@@ -655,9 +655,9 @@ external_eigen: $(EIGEN_BASE)
 
 $(EIGEN_BASE):
 	# from Eigen master branch on gitlab as of 2022.08.09
-	git clone https://gitlab.com/AuroraPerego/eigen.git $@
-	# include all SYCL updates
-	cd $@ && git reset --hard eb029b6bc9c33172f0b77524d226d2bca52945a2
+	git clone https://github.com/cms-patatrack/eigen.git $@
+	# include all SYCL updates and CMS/patatrack patches
+	cd $@ && git reset --hard adbb8e379ab50707b44e33303f700868a9ce2f9f
 # Boost
 .PHONY: external_boost
 external_boost: $(BOOST_BASE)
