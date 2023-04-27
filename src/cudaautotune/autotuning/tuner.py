@@ -8,7 +8,7 @@ from opentuner.search.manipulator import (ConfigurationManipulator,
 
 parser = argparse.ArgumentParser(parents=opentuner.argparsers())
 
-base_path = "/home/nfs/asubah/dev/pixeltrack-standalone/"
+base_path = "/afs/cern.ch/user/a/abmohame/private/pixeltrack-standalone-latest/"
 
 # Heating up the GPU before tuning
 process_path = base_path + "cudaautotune"
@@ -30,37 +30,39 @@ class CMSSWTuner(MeasurementInterface):
         # manipulator.add_parameter(IntegerParameter("numberOfThreads", 1, 24))
         # manipulator.add_parameter(IntegerParameter("numberOfStreams", 1, 24))
         manipulator.add_parameter(IntegerParameter("findClus", 1, 32))
-        manipulator.add_parameter(IntegerParameter("RawToDigi_kernel", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_connect_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_connect_stride", 1, 8))
+        # manipulator.add_parameter(IntegerParameter("RawToDigi_kernel", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_connect_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_connect_stride", 1, 8))
         manipulator.add_parameter(IntegerParameter("getHits", 1, 32))
         manipulator.add_parameter(IntegerParameter("kernel_find_ntuplets", 1, 32))
-        manipulator.add_parameter(IntegerParameter("fishbone_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("fishbone_stride", 1, 32))
+        manipulator.add_parameter(IntegerParameter("fishbone_threads", 1, 16))
+        manipulator.add_parameter(IntegerParameter("fishbone_stride", 1, 8))
         manipulator.add_parameter(IntegerParameter("clusterChargeCut", 1, 32))
-        manipulator.add_parameter(IntegerParameter("calibDigis", 1, 32))
-        manipulator.add_parameter(IntegerParameter("countModules", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit3_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit4_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit5_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit3_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit4_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelLineFit5_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit3_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit4_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit5_threads", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit3_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit4_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernelFastFit5_blocks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_fillHitDetIndices", 1, 32))
-        manipulator.add_parameter(IntegerParameter("finalizeBulk", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_earlyDuplicateRemover", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_countMultiplicity", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_fillMultiplicity", 1, 32))
-        manipulator.add_parameter(IntegerParameter("initDoublets", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_classifyTracks", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_fishboneCleaner", 1, 32))
-        manipulator.add_parameter(IntegerParameter("kernel_fastDuplicateRemover", 1, 32))
+        manipulator.add_parameter(IntegerParameter("kernelLineFit_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("calibDigis", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("countModules", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit3_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit4_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit5_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit3_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit4_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelLineFit5_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit3_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit4_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit5_threads", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit3_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit4_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernelFastFit5_blocks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_fillHitDetIndices", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("finalizeBulk", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_earlyDuplicateRemover", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_countMultiplicity", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_fillMultiplicity", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("initDoublets", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_classifyTracks", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_fishboneCleaner", 1, 32))
+        # manipulator.add_parameter(IntegerParameter("kernel_fastDuplicateRemover", 1, 32))
 
         return manipulator
     
@@ -78,7 +80,7 @@ class CMSSWTuner(MeasurementInterface):
         
         cmd = [process_path,
                "--numberOfThreads", str(12),# str(cfg["numberOfThreads"]),
-               "--numberOfStreams", str(8),# str(cfg["numberOfStreams"]),
+               "--numberOfStreams", str(12),# str(cfg["numberOfStreams"]),
                "--validation"]
         
         # print('Validation command:', cmd)
