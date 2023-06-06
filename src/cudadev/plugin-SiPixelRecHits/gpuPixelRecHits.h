@@ -16,10 +16,10 @@ namespace gpuPixelRecHits {
 
   __global__ void getHits(pixelCPEforGPU::ParamsOnGPU const* __restrict__ cpeParams,
                           BeamSpotPOD const* __restrict__ bs,
-                          SiPixelDigisCUDA::DeviceConstView const* __restrict__ pdigis,
+                          SiPixelDigisCUDA::DevicePixelConstView digis,
                           int numElements,
-                          SiPixelClustersCUDA::DeviceConstView const* __restrict__ pclusters,
-                          TrackingRecHit2DSOAView* phits) {
+                          SiPixelClustersCUDA::DeviceConstView clusters,
+                          TrackingRecHit2DSOAStore* phits) {
     // FIXME
     // the compiler seems NOT to optimize loads from views (even in a simple test case)
     // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
@@ -30,14 +30,11 @@ namespace gpuPixelRecHits {
 
     auto& hits = *phits;
 
-    auto const digis = *pdigis;  // the copy is intentional!
-    auto const& clusters = *pclusters;
-
     // copy average geometry corrected by beamspot . FIXME (move it somewhere else???)
     if (0 == blockIdx.x) {
       auto& agc = hits.averageGeometry();
       auto const& ag = cpeParams->averageGeometry();
-      for (int il = threadIdx.x, nl = TrackingRecHit2DSOAView::AverageGeometry::numberOfLaddersInBarrel; il < nl;
+      for (int il = threadIdx.x, nl = TrackingRecHit2DSOAStore::AverageGeometry::numberOfLaddersInBarrel; il < nl;
            il += blockDim.x) {
         agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
         agc.ladderX[il] = ag.ladderX[il] - bs->x;
@@ -62,8 +59,8 @@ namespace gpuPixelRecHits {
     // as usual one block per module
     __shared__ ClusParams clusParams;
 
-    auto me = clusters.moduleId(blockIdx.x);
-    int nclus = clusters.clusInModule(me);
+    auto me = clusters[blockIdx.x].moduleId();
+    int nclus = clusters[me].clusInModule();
 
     if (0 == nclus)
       return;
@@ -108,21 +105,21 @@ namespace gpuPixelRecHits {
       __syncthreads();
 
       // one thread per "digi"
-      auto first = clusters.moduleStart(1 + blockIdx.x) + threadIdx.x;
+      auto first = clusters[1 + blockIdx.x].moduleStart() + threadIdx.x;
       for (int i = first; i < numElements; i += blockDim.x) {
-        auto id = digis.moduleInd(i);
+        auto id = digis[i].moduleInd();
         if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
-        auto cl = digis.clus(i);
+        auto cl = digis[i].clus();
         if (cl < startClus || cl >= lastClus)
           continue;
         cl -= startClus;
         assert(cl >= 0);
         assert(cl < MaxHitsInIter);
-        auto x = digis.xx(i);
-        auto y = digis.yy(i);
+        auto x = digis[i].xx();
+        auto y = digis[i].yy();
         atomicMin(&clusParams.minRow[cl], x);
         atomicMax(&clusParams.maxRow[cl], x);
         atomicMin(&clusParams.minCol[cl], y);
@@ -135,20 +132,20 @@ namespace gpuPixelRecHits {
       //auto pixmx = cpeParams->detParams(me).pixmx;
       auto pixmx = std::numeric_limits<uint16_t>::max();
       for (int i = first; i < numElements; i += blockDim.x) {
-        auto id = digis.moduleInd(i);
+        auto id = digis[i].moduleInd();
         if (id == invalidModuleId)
           continue;  // not valid
         if (id != me)
           break;  // end of module
-        auto cl = digis.clus(i);
+        auto cl = digis[i].clus();
         if (cl < startClus || cl >= lastClus)
           continue;
         cl -= startClus;
         assert(cl >= 0);
         assert(cl < MaxHitsInIter);
-        auto x = digis.xx(i);
-        auto y = digis.yy(i);
-        auto ch = std::min(digis.adc(i), pixmx);
+        auto x = digis[i].xx();
+        auto y = digis[i].yy();
+        auto ch = std::min(digis[i].adc(), pixmx);
         atomicAdd(&clusParams.charge[cl], ch);
         if (clusParams.minRow[cl] == x)
           atomicAdd(&clusParams.q_f_X[cl], ch);
@@ -164,29 +161,29 @@ namespace gpuPixelRecHits {
 
       // next one cluster per thread...
 
-      first = clusters.clusModuleStart(me) + startClus;
+      first = clusters[me].clusModuleStart() + startClus;
       for (int ic = threadIdx.x; ic < nClusInIter; ic += blockDim.x) {
         auto h = first + ic;  // output index in global memory
 
         assert(h < hits.nHits());
-        assert(h < clusters.clusModuleStart(me + 1));
+        assert(h < clusters[me + 1].clusModuleStart());
 
         pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
         pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
 
         // store it
-        hits.charge(h) = clusParams.charge[ic];
-        hits.detectorIndex(h) = me;
+        hits[h].charge = clusParams.charge[ic];
+        hits[h].detectorIndex = me;
 
         float xl, yl;
-        hits.xLocal(h) = xl = clusParams.xpos[ic];
-        hits.yLocal(h) = yl = clusParams.ypos[ic];
+        hits[h].xLocal = xl = clusParams.xpos[ic];
+        hits[h].yLocal = yl = clusParams.ypos[ic];
 
-        hits.clusterSizeX(h) = clusParams.xsize[ic];
-        hits.clusterSizeY(h) = clusParams.ysize[ic];
+        hits[h].clusterSizeX = clusParams.xsize[ic];
+        hits[h].clusterSizeY = clusParams.ysize[ic];
 
-        hits.xerrLocal(h) = clusParams.xerr[ic] * clusParams.xerr[ic];
-        hits.yerrLocal(h) = clusParams.yerr[ic] * clusParams.yerr[ic];
+        hits[h].xerrLocal = clusParams.xerr[ic] * clusParams.xerr[ic];
+        hits[h].yerrLocal = clusParams.yerr[ic] * clusParams.yerr[ic];
 
         // keep it local for computations
         float xg, yg, zg;
@@ -197,12 +194,12 @@ namespace gpuPixelRecHits {
         yg -= bs->y;
         zg -= bs->z;
 
-        hits.xGlobal(h) = xg;
-        hits.yGlobal(h) = yg;
-        hits.zGlobal(h) = zg;
+        hits[h].xGlobal = xg;
+        hits[h].yGlobal = yg;
+        hits[h].zGlobal = zg;
 
-        hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
-        hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
+        hits[h].rGlobal = std::sqrt(xg * xg + yg * yg);
+        hits[h].iphi = unsafe_atan2s<7>(yg, xg);
       }
       __syncthreads();
     }  // end loop on batches

@@ -16,7 +16,7 @@
 #include "BrokenLine.h"
 #include "HelixFitOnGPU.h"
 
-using HitsOnGPU = TrackingRecHit2DSOAView;
+using HitsOnGPU = TrackingRecHit2DSOAStore;
 using Tuples = pixelTrack::HitContainer;
 using OutputSoA = pixelTrack::TrackSoA;
 
@@ -79,8 +79,8 @@ __global__ void kernel_BLFastFit(Tuples const *__restrict__ foundNtuplets,
       auto hit = hitId[i];
       float ge[6];
       hhp->cpeParams()
-          .detParams(hhp->detectorIndex(hit))
-          .frame.toGlobal(hhp->xerrLocal(hit), 0, hhp->yerrLocal(hit), ge);
+          .detParams((*hhp)[hit].detectorIndex())
+          .frame.toGlobal((*hhp)[hit].xerrLocal(), 0, (*hhp)[hit].yerrLocal(), ge);
 #ifdef BL_DUMP_HITS
       if (dump) {
         printf("Hit global: %d: %d hits.col(%d) << %f,%f,%f\n",
@@ -102,7 +102,7 @@ __global__ void kernel_BLFastFit(Tuples const *__restrict__ foundNtuplets,
                ge[5]);
       }
 #endif
-      hits.col(i) << hhp->xGlobal(hit), hhp->yGlobal(hit), hhp->zGlobal(hit);
+      hits.col(i) << (*hhp)[hit].xGlobal(), (*hhp)[hit].yGlobal(), (*hhp)[hit].zGlobal();
       hits_ge.col(i) << ge[0], ge[1], ge[2], ge[3], ge[4], ge[5];
     }
     brokenline::fastFit(hits, fast_fit);

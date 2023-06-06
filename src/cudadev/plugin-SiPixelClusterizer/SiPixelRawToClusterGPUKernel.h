@@ -16,7 +16,7 @@
 // local include(s)
 #include "SiPixelClusterThresholds.h"
 
-struct SiPixelROCsStatusAndMapping;
+struct SiPixelROCsStatusAndMappingConstView;
 class SiPixelGainForHLTonGPU;
 
 namespace pixelgpudetails {
@@ -43,12 +43,6 @@ namespace pixelgpudetails {
   const uint32_t numColsInRoc = 52;
 
   const uint32_t MAX_WORD = 2000;
-
-  struct DetIdGPU {
-    uint32_t rawId;
-    uint32_t rocInDet;
-    uint32_t moduleId;
-  };
 
   struct Pixel {
     uint32_t row;
@@ -141,7 +135,7 @@ namespace pixelgpudetails {
 
     void makeClustersAsync(bool isRun2,
                            const SiPixelClusterThresholds clusterThresholds,
-                           const SiPixelROCsStatusAndMapping* cablingMap,
+                           SiPixelROCsStatusAndMappingConstView& cablingMap,
                            const unsigned char* modToUnp,
                            const SiPixelGainForHLTonGPU* gains,
                            const WordFedAppender& wordFed,

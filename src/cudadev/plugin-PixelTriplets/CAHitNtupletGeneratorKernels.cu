@@ -50,7 +50,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   kernel_connect<<<blks, thrs, 0, cudaStream>>>(
       device_hitTuple_apc_,
       device_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
-      hh.view(),
+      hh.store(),
       device_theCells_.get(),
       device_nCells_,
       device_theCellNeighbors_.get(),
@@ -71,13 +71,13 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
     dim3 blks(1, numberOfBlocks, 1);
     dim3 thrs(stride, blockSize, 1);
     gpuPixelDoublets::fishbone<<<blks, thrs, 0, cudaStream>>>(
-        hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
+        hh.store(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
     cudaCheck(cudaGetLastError());
   }
 
   blockSize = 64;
   numberOfBlocks = (3 * params_.maxNumberOfDoublets_ / 4 + blockSize - 1) / blockSize;
-  kernel_find_ntuplets<<<numberOfBlocks, blockSize, 0, cudaStream>>>(hh.view(),
+  kernel_find_ntuplets<<<numberOfBlocks, blockSize, 0, cudaStream>>>(hh.store(),
                                                                      device_theCells_.get(),
                                                                      device_nCells_,
                                                                      device_theCellTracks_.get(),
@@ -88,7 +88,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   cudaCheck(cudaGetLastError());
 
   if (params_.doStats_)
-    kernel_mark_used<<<numberOfBlocks, blockSize, 0, cudaStream>>>(hh.view(), device_theCells_.get(), device_nCells_);
+    kernel_mark_used<<<numberOfBlocks, blockSize, 0, cudaStream>>>(hh.store(), device_theCells_.get(), device_nCells_);
   cudaCheck(cudaGetLastError());
 
 #ifdef GPU_DEBUG
@@ -123,7 +123,7 @@ void CAHitNtupletGeneratorKernelsGPU::launchKernels(HitsOnCPU const &hh, TkSoA *
     dim3 blks(1, numberOfBlocks, 1);
     dim3 thrs(stride, blockSize, 1);
     gpuPixelDoublets::fishbone<<<blks, thrs, 0, cudaStream>>>(
-        hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
+        hh.store(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
     cudaCheck(cudaGetLastError());
   }
 
@@ -205,7 +205,7 @@ void CAHitNtupletGeneratorKernelsGPU::buildDoublets(HitsOnCPU const &hh, cudaStr
                                                                     device_nCells_,
                                                                     device_theCellNeighbors_.get(),
                                                                     device_theCellTracks_.get(),
-                                                                    hh.view(),
+                                                                    hh.store(),
                                                                     device_isOuterHitOfCell_.get(),
                                                                     nActualPairs,
                                                                     params_.idealConditions_,
@@ -275,7 +275,7 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
     // remove duplicates (tracks that share a hit)
     numberOfBlocks = (hitToTupleView_.offSize + blockSize - 1) / blockSize;
     kernel_sharedHitCleaner<<<numberOfBlocks, blockSize, 0, cudaStream>>>(
-        hh.view(), tuples_d, tracks_d, quality_d, params_.minHitsForSharingCut_, device_hitToTuple_.get());
+        hh.store(), tuples_d, tracks_d, quality_d, params_.minHitsForSharingCut_, device_hitToTuple_.get());
     cudaCheck(cudaGetLastError());
   }
 
@@ -314,7 +314,7 @@ void CAHitNtupletGeneratorKernelsGPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
   static std::atomic<int> iev(0);
   ++iev;
   kernel_print_found_ntuplets<<<1, 32, 0, cudaStream>>>(
-      hh.view(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
+      hh.store(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
 #endif
 }
 

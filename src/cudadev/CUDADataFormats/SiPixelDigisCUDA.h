@@ -6,10 +6,79 @@
 #include "CUDACore/cudaCompat.h"
 #include "CUDACore/device_unique_ptr.h"
 #include "CUDACore/host_unique_ptr.h"
+#include "DataFormats/SoALayout.h"
+#include "DataFormats/SoAView.h"
 
 class SiPixelDigisCUDA {
 public:
-  SiPixelDigisCUDA() = default;
+  GENERATE_SOA_LAYOUT(
+      DeviceOnlyLayoutTemplate,
+      /* These are consumed by downstream device code                                                   */
+      SOA_COLUMN(uint16_t, xx),       /* local coordinates of each pixel                              */
+      SOA_COLUMN(uint16_t, yy),       /*                                                              */
+      SOA_COLUMN(uint16_t, moduleInd) /* module id of each pixel                                      */
+  )
+
+  using DeviceOnlyLayout = DeviceOnlyLayoutTemplate<>;
+
+  GENERATE_SOA_LAYOUT(
+      HostDeviceLayoutTemplate,
+      /* These are also transferred to host (see HostDataView) */
+      SOA_COLUMN(uint16_t, adc), /* ADC of each pixel                                            */
+      SOA_COLUMN(int32_t, clus), /* cluster id of each pixel                                     */
+      /* These are for CPU output; should we (eventually) place them to a                               */
+      /* separate product?                                                                              */
+      SOA_COLUMN(uint32_t, pdigi),   /* packed digi (row, col, adc) of each pixel                     */
+      SOA_COLUMN(uint32_t, rawIdArr) /* DetId of each pixel                                           */
+  )
+
+  using HostDeviceLayout = HostDeviceLayoutTemplate<>;
+
+  GENERATE_SOA_VIEW(HostDeviceViewTemplate,
+                    SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)),
+                    SOA_VIEW_VALUE_LIST(
+                        SOA_VIEW_VALUE(hostDevice, adc),   /* ADC of each pixel                                      */
+                        SOA_VIEW_VALUE(hostDevice, clus),  /* cluster id of each pixel                               */
+                        SOA_VIEW_VALUE(hostDevice, pdigi), /* packed digi (row, col, adc) of each pixel              */
+                        SOA_VIEW_VALUE(hostDevice,
+                                       rawIdArr) /* DetId of each pixel                                    */
+                        ))
+
+  using HostDeviceView = HostDeviceViewTemplate<>;
+
+  GENERATE_SOA_VIEW(
+      DeviceFullViewTemplate,
+      SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(DeviceOnlyLayout, deviceOnly),
+                           SOA_VIEW_LAYOUT(HostDeviceLayout, hostDevice)),
+      SOA_VIEW_VALUE_LIST(
+          SOA_VIEW_VALUE(deviceOnly, xx),        /* local coordinates of each pixel                        */
+          SOA_VIEW_VALUE(deviceOnly, yy),        /*                                                        */
+          SOA_VIEW_VALUE(deviceOnly, moduleInd), /* module id of each pixel                                */
+          SOA_VIEW_VALUE(hostDevice, adc),       /* ADC of each pixel                                      */
+          SOA_VIEW_VALUE(hostDevice, clus),      /* cluster id of each pixel                               */
+          SOA_VIEW_VALUE(hostDevice, pdigi),     /* packed digi (row, col, adc) of each pixel              */
+          SOA_VIEW_VALUE(hostDevice, rawIdArr)   /* DetId of each pixel                                    */
+          ))
+
+  using DeviceFullView = DeviceFullViewTemplate<>;
+
+  /* Device pixel view: this is a second generation view (view from view) */
+  GENERATE_SOA_CONST_VIEW(
+      DevicePixelConstViewTemplate,
+      /* We get out data from the DeviceFullView */
+      SOA_VIEW_LAYOUT_LIST(SOA_VIEW_LAYOUT(DeviceFullView, deviceFullView)),
+      /* These are consumed by downstream device code                                                   */
+      SOA_VIEW_VALUE_LIST(
+          SOA_VIEW_VALUE(deviceFullView, xx),        /* local coordinates of each pixel                       */
+          SOA_VIEW_VALUE(deviceFullView, yy),        /*                                                       */
+          SOA_VIEW_VALUE(deviceFullView, moduleInd), /* module id of each pixel                          */
+          SOA_VIEW_VALUE(deviceFullView, adc),       /* ADC of each pixel                                      */
+          SOA_VIEW_VALUE(deviceFullView, clus)       /* cluster id of each pixel                                */
+          ))
+
+  using DevicePixelConstView = DevicePixelConstViewTemplate<>;
+
+  explicit SiPixelDigisCUDA();
   explicit SiPixelDigisCUDA(size_t maxFedWords, cudaStream_t stream);
   ~SiPixelDigisCUDA() = default;
 
@@ -26,58 +95,50 @@ public:
   uint32_t nModules() const { return nModules_h; }
   uint32_t nDigis() const { return nDigis_h; }
 
-  uint16_t *xx() { return xx_d.get(); }
-  uint16_t *yy() { return yy_d.get(); }
-  uint16_t *adc() { return adc_d.get(); }
-  uint16_t *moduleInd() { return moduleInd_d.get(); }
-  int32_t *clus() { return clus_d.get(); }
-  uint32_t *pdigi() { return pdigi_d.get(); }
-  uint32_t *rawIdArr() { return rawIdArr_d.get(); }
+  uint16_t *xx() { return deviceFullView_.xx(); }
+  uint16_t *yy() { return deviceFullView_.yy(); }
+  uint16_t *adc() { return deviceFullView_.adc(); }
+  uint16_t *moduleInd() { return deviceFullView_.moduleInd(); }
+  int32_t *clus() { return deviceFullView_.clus(); }
+  uint32_t *pdigi() { return deviceFullView_.pdigi(); }
+  uint32_t *rawIdArr() { return deviceFullView_.rawIdArr(); }
 
-  uint16_t const *xx() const { return xx_d.get(); }
-  uint16_t const *yy() const { return yy_d.get(); }
-  uint16_t const *adc() const { return adc_d.get(); }
-  uint16_t const *moduleInd() const { return moduleInd_d.get(); }
-  int32_t const *clus() const { return clus_d.get(); }
-  uint32_t const *pdigi() const { return pdigi_d.get(); }
-  uint32_t const *rawIdArr() const { return rawIdArr_d.get(); }
+  uint16_t const *xx() const { return deviceFullView_.xx(); }
+  uint16_t const *yy() const { return deviceFullView_.yy(); }
+  uint16_t const *adc() const { return deviceFullView_.adc(); }
+  uint16_t const *moduleInd() const { return deviceFullView_.moduleInd(); }
+  int32_t const *clus() const { return deviceFullView_.clus(); }
+  uint32_t const *pdigi() const { return deviceFullView_.pdigi(); }
+  uint32_t const *rawIdArr() const { return deviceFullView_.rawIdArr(); }
 
-  cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
-  cms::cuda::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+  class HostStore {
+    friend SiPixelDigisCUDA;
 
-  class DeviceConstView {
   public:
-    __device__ __forceinline__ uint16_t xx(int i) const { return __ldg(xx_ + i); }
-    __device__ __forceinline__ uint16_t yy(int i) const { return __ldg(yy_ + i); }
-    __device__ __forceinline__ uint16_t adc(int i) const { return __ldg(adc_ + i); }
-    __device__ __forceinline__ uint16_t moduleInd(int i) const { return __ldg(moduleInd_ + i); }
-    __device__ __forceinline__ int32_t clus(int i) const { return __ldg(clus_ + i); }
+    HostStore();
+    const SiPixelDigisCUDA::HostDeviceView view() { return hostView_; }
+    void reset();
 
-    uint16_t const *xx_;
-    uint16_t const *yy_;
-    uint16_t const *adc_;
-    uint16_t const *moduleInd_;
-    int32_t const *clus_;
+  private:
+    HostStore(size_t maxFedWords, cudaStream_t stream);
+    cms::cuda::host::unique_ptr<std::byte[]> data_h;
+    HostDeviceLayout hostLayout_;
+    HostDeviceView hostView_;
   };
+  HostStore dataToHostAsync(cudaStream_t stream) const;
 
-  const DeviceConstView *view() const { return view_d.get(); }
+  // Special copy for validation
+  cms::cuda::host::unique_ptr<uint16_t[]> adcToHostAsync(cudaStream_t stream) const;
+
+  const DevicePixelConstView &pixelConstView() const { return devicePixelConstView_; }
 
 private:
   // These are consumed by downstream device code
-  cms::cuda::device::unique_ptr<uint16_t[]> xx_d;         // local coordinates of each pixel
-  cms::cuda::device::unique_ptr<uint16_t[]> yy_d;         //
-  cms::cuda::device::unique_ptr<uint16_t[]> adc_d;        // ADC of each pixel
-  cms::cuda::device::unique_ptr<uint16_t[]> moduleInd_d;  // module id of each pixel
-  cms::cuda::device::unique_ptr<int32_t[]> clus_d;        // cluster id of each pixel
-  cms::cuda::device::unique_ptr<DeviceConstView> view_d;  // "me" pointer
-
-  // These are for CPU output; should we (eventually) place them to a
-  // separate product?
-  cms::cuda::device::unique_ptr<uint32_t[]> pdigi_d;     // packed digi (row, col, adc) of each pixel
-  cms::cuda::device::unique_ptr<uint32_t[]> rawIdArr_d;  // DetId of each pixel
-
+  cms::cuda::device::unique_ptr<std::byte[]> data_d;  // Single SoA storage
+  DeviceOnlyLayout deviceOnlyLayout_d;
+  HostDeviceLayout hostDeviceLayout_d;
+  DeviceFullView deviceFullView_;
+  DevicePixelConstView devicePixelConstView_;
   uint32_t nModules_h = 0;
   uint32_t nDigis_h = 0;
 };

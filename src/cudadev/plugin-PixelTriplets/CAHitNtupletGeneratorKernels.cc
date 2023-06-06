@@ -63,7 +63,7 @@ void CAHitNtupletGeneratorKernelsCPU::buildDoublets(HitsOnCPU const &hh, cudaStr
                                          device_nCells_,
                                          device_theCellNeighbors_.get(),
                                          device_theCellTracks_.get(),
-                                         hh.view(),
+                                         hh.store(),
                                          device_isOuterHitOfCell_.get(),
                                          nActualPairs,
                                          params_.idealConditions_,
@@ -94,7 +94,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   kernel_connect(device_hitTuple_apc_,
                  device_hitToTuple_apc_,  // needed only to be reset, ready for next kernel
-                 hh.view(),
+                 hh.store(),
                  device_theCells_.get(),
                  device_nCells_,
                  device_theCellNeighbors_.get(),
@@ -108,10 +108,10 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   if (nhits > 1 && params_.earlyFishbone_) {
     gpuPixelDoublets::fishbone(
-        hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
+        hh.store(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
   }
 
-  kernel_find_ntuplets(hh.view(),
+  kernel_find_ntuplets(hh.store(),
                        device_theCells_.get(),
                        device_nCells_,
                        device_theCellTracks_.get(),
@@ -120,7 +120,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
                        quality_d,
                        params_.minHitsPerNtuplet_);
   if (params_.doStats_)
-    kernel_mark_used(hh.view(), device_theCells_.get(), device_nCells_);
+    kernel_mark_used(hh.store(), device_theCells_.get(), device_nCells_);
 
   cms::cuda::finalizeBulk(device_hitTuple_apc_, tuples_d);
 
@@ -133,7 +133,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
 
   if (nhits > 1 && params_.lateFishbone_) {
     gpuPixelDoublets::fishbone(
-        hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
+        hh.store(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
   }
 
   if (params_.doStats_) {
@@ -178,7 +178,7 @@ void CAHitNtupletGeneratorKernelsCPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
   // remove duplicates (tracks that share a hit)
   if (params_.doSharedHitCut_) {
     kernel_sharedHitCleaner(
-        hh.view(), tuples_d, tracks_d, quality_d, params_.minHitsForSharingCut_, device_hitToTuple_.get());
+        hh.store(), tuples_d, tracks_d, quality_d, params_.minHitsForSharingCut_, device_hitToTuple_.get());
   }
 
   if (params_.doStats_) {
@@ -190,6 +190,6 @@ void CAHitNtupletGeneratorKernelsCPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
 #ifdef DUMP_GPU_TK_TUPLES
   static std::atomic<int> iev(0);
   ++iev;
-  kernel_print_found_ntuplets(hh.view(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
+  kernel_print_found_ntuplets(hh.store(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
 #endif
 }
