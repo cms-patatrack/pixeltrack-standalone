@@ -640,7 +640,7 @@ $(TBB_LIB):
 	mkdir -p $(TBB_TMP)
 	mkdir -p $(TBB_TMP_SRC)
 	mkdir -p $(TBB_TMP_BUILD)
-	git clone --branch v2021.7.0 https://github.com/oneapi-src/oneTBB.git $(TBB_TMP_SRC)
+	git clone --branch v2021.9.0 https://github.com/oneapi-src/oneTBB.git $(TBB_TMP_SRC)
 	cd $(TBB_TMP_BUILD)/ && $(CMAKE) $(TBB_TMP_SRC) $(TBB_CMAKEFLAGS)
 	+$(MAKE) -C $(TBB_TMP_BUILD)
 	+$(MAKE) -C $(TBB_TMP_BUILD) install
@@ -707,7 +707,7 @@ $(HWLOC_BASE):
 external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
-	git clone git@github.com:alpaka-group/alpaka.git -b develop $@
+	git clone https://github.com/alpaka-group/alpaka.git -b develop $@
 	cd $@ && git checkout b518e8c943a816eba06c3e12c0a7e1b58c8faedc
 
 # Kokkos
