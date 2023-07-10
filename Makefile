@@ -581,7 +581,7 @@ endif
 
 define TARGET_template
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
-	+$(MAKE) -C src/$(1)
+	+$(MAKE) -C src/$(1) TARGET_NAME=$(firstword $(TARGET_NAME) $(1))
 
 test_$(1): test_$(1)_cpu test_$(1)_auto
 ifdef CUDA_BASE
@@ -640,7 +640,7 @@ $(foreach target,$(TARGETS_ALL),$(eval $(call FORMAT_template,$(target))))
 format: $(patsubst %,format_%,$(TARGETS_ALL))
 
 clean:
-	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL)
+	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL) $(TARGET_NAME)
 
 distclean: | clean
 	rm -fR $(EXTERNAL_BASE) .original_env
@@ -652,7 +652,7 @@ define CLEAN_template
 clean_$(1):
 	rm -fR $(LIB_DIR)/$(1) $(OBJ_DIR)/$(1) $(TEST_DIR)/$(1) $(1)
 endef
-$(foreach target,$(TARGETS_ALL),$(eval $(call CLEAN_template,$(target))))
+$(foreach target,$(TARGETS_ALL) $(TARGET_NAME),$(eval $(call CLEAN_template,$(target))))
 
 # Data rules
 $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt
