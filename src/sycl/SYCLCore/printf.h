@@ -1,7 +1,7 @@
 #ifndef HeterogeneousCore_SYCLUtilities_interface_printf_h
 #define HeterogeneousCore_SYCLUtilities_interface_printf_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #ifdef __AMDGCN__
 

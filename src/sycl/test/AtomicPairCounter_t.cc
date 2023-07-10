@@ -1,6 +1,6 @@
 #include <cassert>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/AtomicPairCounter.h"
 #include "SYCLCore/chooseDevice.h"
@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
 
-  std::cout << "AtomicPairCounter offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "AtomicPairCounter offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   AtomicPairCounter *dc_d = sycl::malloc_device<AtomicPairCounter>(1, queue);

@@ -32,7 +32,7 @@ end;
 #include <limits>
 #include <algorithm>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 using sycl::abs;
 
 template <int DEGREE>

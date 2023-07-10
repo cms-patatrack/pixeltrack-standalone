@@ -1,7 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClusterChargeCut_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <cstdint>
 #include <cstdio>
 

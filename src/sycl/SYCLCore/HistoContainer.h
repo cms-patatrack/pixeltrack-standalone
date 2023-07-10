@@ -1,7 +1,7 @@
 #ifndef HeterogeneousCore_SYCLUtilities_interface_HistoContainer_h
 #define HeterogeneousCore_SYCLUtilities_interface_HistoContainer_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

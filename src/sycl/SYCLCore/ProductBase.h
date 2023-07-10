@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace cms {
   namespace sycltools {
@@ -45,7 +45,8 @@ namespace cms {
       sycl::event event() const { return *event_; }
 
     protected:
-      explicit ProductBase(std::shared_ptr<sycl::queue> stream, sycl::event event) : stream_{std::move(stream)}, event_{event} {}
+      explicit ProductBase(std::shared_ptr<sycl::queue> stream, sycl::event event)
+          : stream_{std::move(stream)}, event_{event} {}
 
     private:
       friend class impl::ScopedContextBase;
@@ -62,7 +63,7 @@ namespace cms {
       }
 
       std::shared_ptr<sycl::queue> stream_;  //!
-      std::optional<sycl::event> event_;   //!
+      std::optional<sycl::event> event_;     //!
 
       // This flag tells whether the SYCL stream may be reused by a
       // consumer or not. The goal is to have a "chain" of modules to

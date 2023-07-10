@@ -6,7 +6,7 @@
 #include <array>
 #include <memory>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/AtomicPairCounter.h"
 #include "SYCLCore/HistoContainer.h"
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
   cms::sycltools::enumerateDevices(true);
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
-  std::cout << "OneToMany offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "OneToMany offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   auto v_d = cms::sycltools::make_device_unique<std::array<uint16_t, 4>[]>(N, queue);

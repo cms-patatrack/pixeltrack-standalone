@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <array>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // Function for testing RunningAverage
 namespace test_average {

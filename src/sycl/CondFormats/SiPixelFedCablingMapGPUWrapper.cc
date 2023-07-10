@@ -6,7 +6,7 @@
 #include <vector>
 
 // SYCL includes
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // CMSSW includes
 #include "SYCLCore/device_unique_ptr.h"

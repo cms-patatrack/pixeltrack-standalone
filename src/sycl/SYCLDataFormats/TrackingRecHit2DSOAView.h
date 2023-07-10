@@ -1,7 +1,7 @@
 #ifndef SYCLDataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 #define SYCLDataFormats_TrackingRecHit_interface_TrackingRecHit2DSOAView_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLDataFormats/gpuClusteringConstants.h"
 #include "SYCLCore/HistoContainer.h"

@@ -1,7 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
 #define RecoLocalTracker_SiPixelRecHits_plugins_gpuPixelDoubletsAlgos_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>

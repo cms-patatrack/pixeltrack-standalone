@@ -4,7 +4,7 @@
 #include <random>
 #include <limits>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/HistoContainer.h"
 #include "SYCLCore/device_unique_ptr.h"
@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
 
-  std::cout << "HistoContainer offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "HistoContainer offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   std::cout << "test <int16_t>" << std::endl;

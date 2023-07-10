@@ -1,13 +1,13 @@
 #include <iostream>
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
-void sycl_exception_handler(cl::sycl::exception_list exceptions) {
+void sycl_exception_handler(sycl::exception_list exceptions) {
   std::ostringstream msg;
   msg << "Caught asynchronous SYCL exception:";
   for (auto const &exc_ptr : exceptions) {
     try {
       std::rethrow_exception(exc_ptr);
-    } catch (cl::sycl::exception const &e) {
+    } catch (sycl::exception const &e) {
       msg << '\n' << e.what();
     }
     throw std::runtime_error(msg.str());

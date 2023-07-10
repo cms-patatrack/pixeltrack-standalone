@@ -1,13 +1,13 @@
 #ifndef HeterogeneousCore_SYCLUtilities_eventWorkHasCompleted_h
 #define HeterogeneousCore_SYCLUtilities_eventWorkHasCompleted_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace cms {
   namespace sycltools {
     /**
    * Returns true if the work captured by the event (=queued to the
-   * SYCL stream at the point of submit_barrier()) has completed.
+   * SYCL stream at the point of ext_oneapi_submit_barrier()) has completed.
    *
    * Returns false if any captured work is incomplete.
    */

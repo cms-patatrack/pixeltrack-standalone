@@ -10,7 +10,7 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/chooseDevice.h"
 #include "EventProcessor.h"

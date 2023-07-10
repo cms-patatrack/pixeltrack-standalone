@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "CondFormats/pixelCPEforGPU.h"
 #include "SYCLDataFormats/TrackingRecHit2DSYCL.h"
@@ -73,7 +73,7 @@ void kernelBLFastFit(Tuples const *foundNtuplets,
     *done = 0;
     sycl::group_barrier(item.get_group());
     bool dump = (foundNtuplets->size(tkid) == 5 &&
-                 0 == cms::sycltools::atomic_fetch_add<int, cl::sycl::access::address_space::local_space>(done, 1));
+                 0 == cms::sycltools::atomic_fetch_add<int, sycl::access::address_space::local_space>(done, 1));
 #endif
 
     // Prepare data structure

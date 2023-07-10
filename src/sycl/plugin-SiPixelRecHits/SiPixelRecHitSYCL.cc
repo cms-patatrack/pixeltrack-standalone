@@ -1,4 +1,4 @@
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLDataFormats/BeamSpotSYCL.h"
 #include "SYCLCore/Product.h"

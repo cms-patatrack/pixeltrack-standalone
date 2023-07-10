@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
 
-  std::cout << "VertexFinder offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "VertexFinder offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   auto onGPU_d = cms::sycltools::make_device_unique<gpuVertexFinder::ZVertices[]>(1, queue);
@@ -303,9 +303,8 @@ int main(int argc, char** argv) {
         auto ws_kernel = ws_d.get();
         cgh.parallel_for<class fitVertices_Kernel_t3>(
             sycl::nd_range<1>(numberOfBlocks * sycl::range<1>(blockSize), sycl::range<1>(blockSize)),
-            [=](sycl::nd_item<1> item) [[intel::reqd_sub_group_size(32)]] {
-              fitVerticesKernel(soa_kernel, ws_kernel, 5000., item);
-            });
+            [=](sycl::nd_item<1> item)
+                [[intel::reqd_sub_group_size(32)]] { fitVerticesKernel(soa_kernel, ws_kernel, 5000., item); });
       });
 
       numberOfBlocks = 1;

@@ -2,7 +2,7 @@
 #include <ios>
 #include <iostream>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/chooseDevice.h"
 #include "SYCLCore/prefixScan.h"
@@ -137,13 +137,13 @@ int main(int argc, char **argv) try {
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
 
-  std::cout << "Prefixscan offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "Prefixscan offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   // query the device for the maximum workgroup size
   // FIXME the OpenCL CPU device reports a maximum workgroup size of 8192,
   // but workgroups bigger than 4096 result in a CL_OUT_OF_RESOURCES error
-  const unsigned int maxWorkgroupSize = device.get_info<cl::sycl::info::device::max_work_group_size>();
+  const unsigned int maxWorkgroupSize = device.get_info<sycl::info::device::max_work_group_size>();
   std::cout << "max workgroup size: " << maxWorkgroupSize << std::endl;
 
   std::cout << "warp level" << std::endl;

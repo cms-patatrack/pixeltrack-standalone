@@ -66,7 +66,7 @@ namespace gpuVertexFinder {
       // copy to local
       for (auto k = item.get_local_id(0); k < nt; k += item.get_local_range(0)) {
         if (iv[k] == int(kv)) {
-          int old = cms::sycltools::atomic_fetch_compare_inc<uint32_t, cl::sycl::access::address_space::local_space>(
+          int old = cms::sycltools::atomic_fetch_compare_inc<uint32_t, sycl::access::address_space::local_space>(
               nq, (uint32_t)MAXTK);
           zz[old] = zt[k] - zv[kv];
           newV[old] = zz[old] < 0 ? 0 : 1;
@@ -97,9 +97,8 @@ namespace gpuVertexFinder {
         sycl::group_barrier(item.get_group());
         for (auto k = item.get_local_id(0); k < (unsigned long)*nq; k += item.get_local_range(0)) {
           auto i = newV[k];
-          cms::sycltools::atomic_fetch_add<float, cl::sycl::access::address_space::local_space>(&znew[i],
-                                                                                                zz[k] * ww[k]);
-          cms::sycltools::atomic_fetch_add<float, cl::sycl::access::address_space::local_space>(&wnew[i], ww[k]);
+          cms::sycltools::atomic_fetch_add<float, sycl::access::address_space::local_space>(&znew[i], zz[k] * ww[k]);
+          cms::sycltools::atomic_fetch_add<float, sycl::access::address_space::local_space>(&wnew[i], ww[k]);
         }
         sycl::group_barrier(item.get_group());
         if (0 == item.get_local_id(0)) {

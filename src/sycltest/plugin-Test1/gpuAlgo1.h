@@ -1,7 +1,7 @@
 #ifndef Test1_gpuAlgo1_h
 #define Test1_gpuAlgo1_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/device_unique_ptr.h"
 

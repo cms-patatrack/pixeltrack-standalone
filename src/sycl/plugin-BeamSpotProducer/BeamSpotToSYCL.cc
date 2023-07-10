@@ -1,6 +1,6 @@
 #include <fstream>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/Product.h"
 #include "SYCLCore/ScopedContext.h"

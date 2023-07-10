@@ -3,7 +3,7 @@
 #ifndef HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
 #define HeterogeneousCore_SYCLUtilities_ScopedSetDevice_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <vector>
 
 namespace cms {
