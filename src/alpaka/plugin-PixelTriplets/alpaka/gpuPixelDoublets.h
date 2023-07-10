@@ -3,7 +3,11 @@
 
 #include "gpuPixelDoubletsAlgos.h"
 
+#if ALPAKA_ACC_SYCL_ENABLED
+#define CONSTANT_VAR constexpr
+#else
 #define CONSTANT_VAR ALPAKA_STATIC_ACC_MEM_CONSTANT
+#endif
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuPixelDoublets {
