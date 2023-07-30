@@ -31,11 +31,11 @@ namespace alpaka {
   struct ApiHipRt;
 
   // Platforms
-  class PltfCpu;
+  class PlatformCpu;
   template <typename TApi>
-  class PltfUniformCudaHipRt;
-  using PltfCudaRt = PltfUniformCudaHipRt<ApiCudaRt>;
-  using PltfHipRt = PltfUniformCudaHipRt<ApiHipRt>;
+  class PlatformUniformCudaHipRt;
+  using PlatformCudaRt = PlatformUniformCudaHipRt<ApiCudaRt>;
+  using PlatformHipRt = PlatformUniformCudaHipRt<ApiHipRt>;
 
   // Devices
   class DevCpu;

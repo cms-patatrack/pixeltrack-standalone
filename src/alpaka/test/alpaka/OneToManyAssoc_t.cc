@@ -6,6 +6,7 @@
 #include <memory>
 #include <random>
 
+#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
@@ -134,8 +135,8 @@ struct verifyBulk {
 
 int main() {
   cms::alpakatools::initialise<Platform>();
-  const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  const DevHost host(alpaka::getDevByIdx(cms::alpakatools::platformHost, 0u));
+  const Device device(alpaka::getDevByIdx(*cms::alpakatools::platform, 0u));
   Queue queue(device);
 
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;

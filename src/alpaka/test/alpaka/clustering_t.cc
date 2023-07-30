@@ -9,7 +9,7 @@
 #include <set>
 #include <vector>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
 #include "AlpakaCore/initialise.h"
@@ -24,8 +24,8 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 int main(void) {
   cms::alpakatools::initialise<Platform>();
 
-  const DevHost host(alpaka::getDevByIdx<PltfHost>(0u));
-  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  const DevHost host(alpaka::getDevByIdx(cms::alpakatools::platformHost, 0u));
+  const Device device(alpaka::getDevByIdx(*cms::alpakatools::platform, 0u));
   Queue queue(device);
 
   constexpr unsigned int numElements = 256 * 2000;
