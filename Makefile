@@ -116,7 +116,7 @@ export ROCM_BASE
 export ROCM_DEPS := $(ROCM_LIBDIR)/libamdhip64.so
 export ROCM_ARCH := gfx900
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
-export HIPCC_CXXFLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_CXXFLAGS := -fno-gpu-rdc $(foreach ARCH,$(ROCM_ARCH),--offload-arch=$(ARCH)) $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 export HIPCC_LDFLAGS := $(LDFLAGS) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
 export ROCM_CXXFLAGS := -D__HIP_PLATFORM_HCC__ -D__HIP_PLATFORM_AMD__ -I$(ROCM_BASE)/include -I$(ROCM_BASE)/hiprand/include -I$(ROCM_BASE)/rocrand/include
@@ -125,9 +125,10 @@ export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # SYCL and Intel oneAPI
+SYCL_USE_INTEL_ONEAPI := true
 
 # Intel GPU ids
-OCLOC_IDS := tgllp # acm_g10 pvc
+OCLOC_IDS := pvc    # tgllp acm_g10 pvc
 
 ifdef SYCL_USE_INTEL_ONEAPI
   ONEAPI_BASE := /opt/intel/oneapi
@@ -155,7 +156,7 @@ else
   # use clang++
   # latest release: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/release/2022-12
   # latest nightly: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230708
-  SYCL_BASE     := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/release/2022-12
+  SYCL_BASE     := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230805_160000
   SYCL_PATH     := $(SYCL_BASE)/bin
   SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib64
   SYCL_LIBDIR   := $(SYCL_BASE)/lib
@@ -168,29 +169,70 @@ endif
 ifneq ($(wildcard $(SYCL_BASE)),)
   # SYCL targets
   # compile for the default spir64 JIT target
-  JIT_TARGETS       := spir64
-  JIT_FLAGS         := -fsycl-device-code-split=per_kernel
+  #JIT_TARGETS      := spir64
+  #JIT_FLAGS        :=
   # compile AOT for x86_64 CPUs, targetting the Intel OpenCL runtime
-  #AOT_CPU_TARGETS   := spir64_x86_64      # or x86_64
-  #AOT_CPU_FLAGS     :=
+  #AOT_CPU_TARGETS  := spir64_x86_64        # or x86_64
+  #AOT_CPU_FLAGS    :=
   # compile AOT for the Intel GPUs identified by the $(OCLOC_IDS) architectures
-  #AOT_INTEL_TARGETS := $(foreach ARCH,$(OCLOC_IDS),intel_gpu_$(ARCH))
-  #AOT_INTEL_FLAGS   :=
+  AOT_INTEL_TARGETS := $(foreach ARCH,$(OCLOC_IDS),intel_gpu_$(ARCH))
+  AOT_INTEL_FLAGS   := -Xsycl-target-backend=intel_gpu_pvc '-q -options -ze-intel-enable-auto-large-GRF-mode'
   # compile AOT for the NVIDIA GPUs identified by the $(CUDA_ARCH) CUDA architectures
-  #AOT_CUDA_TARGETS  := $(foreach ARCH,$(CUDA_ARCH),nvidia_gpu_sm_$(ARCH))
-  #AOT_CUDA_FLAGS    := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version # -Wno-linker-warnings # -fno-bundle-offload-arch
+  #AOT_CUDA_TARGETS := $(foreach ARCH,$(CUDA_ARCH),nvidia_gpu_sm_$(ARCH))
+  #AOT_CUDA_FLAGS   := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version # -Wno-linker-warnings # -fno-bundle-offload-arch
   # compile AOT for the AMD GPUs identified by the $(ROCM_ARCH) ROCm architectures
-  #AOT_ROCM_TARGETS  := $(foreach ARCH,$(ROCM_ARCH),amd_gpu_$(ARCH))
-  #AOT_ROCM_FLAGS    := --rocm-path=$(ROCM_BASE) # -Wno-linker-warnings
+  #AOT_ROCM_TARGETS := $(foreach ARCH,$(ROCM_ARCH),amd_gpu_$(ARCH))
+  #AOT_ROCM_FLAGS   := --rocm-path=$(ROCM_BASE) # -Wno-linker-warnings
+
   # compile JIT and AOT for all the targets
   SYCL_TARGETS      := $(subst $(SPACE),$(COMMA),$(strip $(JIT_TARGETS) $(AOT_CPU_TARGETS) $(AOT_INTEL_TARGETS) $(AOT_CUDA_TARGETS) $(AOT_ROCM_TARGETS)))
-  SYCL_FLAGS        := -O3 -fsycl -fsycl-targets=$(SYCL_TARGETS) $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
+  SYCL_FLAGS        := -fsycl -fsycl-targets=$(SYCL_TARGETS)
+  SYCL_LDFLAGS      := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
+
+  # other SYCL options
+  #  -fsycl-device-code-split=per_kernel
+  #    build one binary image per kernel (very slow), to allow kernel built for subgroup sizes not supported by all devices;
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Specifies SYCL device code module assembly. Mode is one of the following:
+  #      * per_kernel - creates a separate device code module for each SYCL kernel.
+  #        Each device code module will contain a kernel and all its dependencies,
+  #        such as called functions and used variables.
+  #      * per_source - creates a separate device code module for each source
+  #        (translation unit). Each device code module will contain a bunch of
+  #        kernels grouped on per-source basis and all their dependencies, such as
+  #        all used variables and called functions, including the `SYCL_EXTERNAL`
+  #        macro-marked functions from other translation units.
+  #      * off - creates a single module for all kernels. If `-fsycl-no-rdc` is
+  #        specified, the behavior is the same as per_source.
+  #      * auto - the compiler will use a heuristic to select the best way of
+  #        splitting device code. This is default mode.
+  #
+  #  -fno-sycl-early-optimizations
+  #    workaround for the unexpected intrinsic in oneApi 2022.2.0, generates very slow code;
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Disables intermediate representation optimization pipeline before translation to SPIR-V.
+  #
+  #  -fsycl-max-parallel-link-jobs=8
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Experimental feature. When specified, it informs the compiler
+  #      that it can simultaneously spawn up to `N` processes to perform
+  #      actions required to link the DPC++ application. This option is
+  #      only useful in SYCL mode. It only takes effect if link action
+  #      needs to be executed, i.e. it won't have any effect in presence of
+  #      options like `-c` or `-E`. Default value of `N` is 1.
+  #
+  #  -Xsycl-target-backend=intel_gpu_pvc '-options -ze-intel-enable-auto-large-GRF-mode'
+  #    enable Large Register Mode for Intel Ponte Vecchio GPUs;
+  #    from https://www.intel.com/content/www/us/en/docs/oneapi/optimization-guide-gpu/2023-2/small-register-mode-vs-large-register-mode.html :
+  #      Intel® Data Center GPU Max Series products support two GRF modes: small GRF mode and large GRF mode.
+  #      Each Execution Unit (EU) has a total of 64 KB of storage available in registers. In Small GRF mode,
+  #      a single hardware thread in an EU can access 128 GRF registers, each of which is 64B wide. In this mode,
+  #      8 hardware threads are available per EU. In Large GRF mode, a single hardware thread in an EU can access
+  #      256 GRF registers, each of which is 64B wide. In this mode, 4 hardware threads are available per EU.
 
   export SYCL_CXX
   export SYCL_CXXFLAGS := $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(SYCL_FLAGS) $(USER_SYCLFLAGS)
-  #export SYCL_CXXFLAGS := -O3 -fsycl -Wno-sycl-strict -fp-model=precise -fimf-arch-consistency=true -no-fma $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
-  # math flags : -fp-model=precise -fimf-arch-consistency=true -no-fma
-  # workaround for the unexpected intrinsic in ONEAPI 2022.2.0 (SYCL BUG): -fno-sycl-early-optimizations
+  export SYCL_LDFLAGS
 
   # add the SYCL paths to the PATH and LD_LIBRARY_PATH
   export PATH := $(SYCL_PATH):$(PATH)
