@@ -694,8 +694,7 @@ external_hwloc: $(HWLOC_BASE)
 $(HWLOC_BASE): CXXFLAGS:=
 $(HWLOC_BASE):
 	$(eval HWLOC_TMP := $(shell mktemp -d))
-	git clone -b hwloc-2.5.0 https://github.com/open-mpi/hwloc.git $(HWLOC_TMP)
-	cd $(HWLOC_TMP)/ && ./autogen.sh
+	curl -L https://download.open-mpi.org/release/hwloc/v2.9/hwloc-2.9.2.tar.gz | tar xz --strip-components=1 -C $(HWLOC_TMP)
 	cd $(HWLOC_TMP)/ && ./configure --prefix=$@ --enable-shared
 	$(MAKE) -C $(HWLOC_TMP)
 	$(MAKE) -C $(HWLOC_TMP) install
