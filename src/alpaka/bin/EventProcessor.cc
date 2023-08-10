@@ -11,14 +11,15 @@
 #include "EventProcessor.h"
 
 namespace edm {
-  EventProcessor::EventProcessor(int maxEvents,
+  EventProcessor::EventProcessor(int warmupEvents,
+                                 int maxEvents,
                                  int runForMinutes,
                                  int numberOfStreams,
                                  Alternatives alternatives,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
                                  bool validation)
-      : source_(maxEvents, runForMinutes, registry_, datadir, validation) {
+      : source_(warmupEvents, maxEvents, runForMinutes, registry_, datadir, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
@@ -30,7 +31,7 @@ namespace edm {
     for (auto const& alternative : alternatives) {
       total += alternative.weight;
     }
-    //schedules_.reserve(numberOfStreams);
+    schedules_.reserve(numberOfStreams);
     float cumulative = 0.;
     int lower_range = 0;
     int upper_range = 0;
@@ -46,7 +47,6 @@ namespace edm {
   }
 
   void EventProcessor::runToCompletion() {
-    source_.startProcessing();
     // The task that waits for all other work
     FinalWaitingTask globalWaitTask;
     tbb::task_group group;
@@ -58,6 +58,7 @@ namespace edm {
     if (globalWaitTask.exceptionPtr()) {
       std::rethrow_exception(*(globalWaitTask.exceptionPtr()));
     }
+    stop_.mark();
   }
 
   void EventProcessor::endJob() {

@@ -13,27 +13,33 @@
 #include "DataFormats/DigiClusterCount.h"
 #include "DataFormats/TrackCount.h"
 #include "DataFormats/VertexCount.h"
+#include "Timestamp.h"
 
 namespace edm {
   class Source {
   public:
-    explicit Source(
-        int maxEvents, int runForMinutes, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
+    explicit Source(int warmupEvents,
+                    int maxEvents,
+                    int runForMinutes,
+                    ProductRegistry& reg,
+                    std::filesystem::path const& datadir,
+                    bool validation);
 
-    void startProcessing();
-
-    int maxEvents() const { return maxEvents_; }
-    int processedEvents() const { return numEvents_; }
+    int maxEvents() const {
+      return runForMinutes_ < 0 ? maxEvents_ - warmupEvents_ : -1; 
+    }
+    int processedEvents() const { return numEvents_ - warmupEvents_; }
+    Timestamp const& start() const { return start_; }
 
     // thread safe
     std::unique_ptr<Event> produce(int streamId, ProductRegistry const& reg);
 
   private:
+    int warmupEvents_;
     int maxEvents_;
 
     // these are all for the mode where the processing length is limited by time
     int const runForMinutes_;
-    std::chrono::steady_clock::time_point startTime_;
     std::mutex timeMutex_;
     std::atomic<int> numEventsTimeLastCheck_ = 0;
     std::atomic<bool> shouldStop_ = false;
@@ -48,6 +54,7 @@ namespace edm {
     std::vector<TrackCount> tracks_;
     std::vector<VertexCount> vertices_;
     bool const validation_;
+    Timestamp start_;
   };
 }  // namespace edm
 
