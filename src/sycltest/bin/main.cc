@@ -20,14 +20,17 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << name
-        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
-           "[--empty]\n\n"
+        << ": [--device BACKEND:DEVICE] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH]"
+           "                     [--transfer] [--validation] [--empty]\n\n"
         << "Options\n"
+        << " --device            Specifies the device which should run the code (default all, options: <backend>:<devices>\n"
+           "                       see https://intel.github.io/llvm-docs/EnvironmentVariables.html#oneapi-device-selector\n"
+           "                       for the accepted syntax)\n"
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
-           "(default -1 for disabled; conflicts with --maxEvents)\n"
+           "                       (default -1 for disabled; conflicts with --maxEvents)\n"
         << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
         << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
@@ -51,6 +54,10 @@ int main(int argc, char** argv) try {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+    } else if (*i == "--device") {
+      ++i;
+      std::string device = *i;
+      setenv("ONEAPI_DEVICE_SELECTOR", device.c_str(), true);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);

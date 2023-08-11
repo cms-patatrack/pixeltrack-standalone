@@ -19,7 +19,7 @@ void go(sycl::queue queue) {
   T v[N];
   auto v_d = cms::sycltools::make_device_unique<T[]>(N, queue);
 
-  queue.memcpy(v_d.get(), v, N * sizeof(T)).wait();
+  queue.memcpy(v_d.get(), v, N * sizeof(T));
 
   constexpr uint32_t nParts = 10;
   constexpr uint32_t partSize = N / nParts;
@@ -55,7 +55,7 @@ void go(sycl::queue queue) {
       offsets[10] = 3297 + offsets[9];
     }
 
-    queue.memcpy(off_d.get(), offsets, 4 * (nParts + 1)).wait();
+    queue.memcpy(off_d.get(), offsets, 4 * (nParts + 1));
 
     for (long long j = 0; j < N; j++)
       v[j] = rgen(eng);
@@ -65,7 +65,7 @@ void go(sycl::queue queue) {
         v[j] = sizeof(T) == 1 ? 22 : 3456;
     }
 
-    queue.memcpy(v_d.get(), v, N * sizeof(T)).wait();
+    queue.memcpy(v_d.get(), v, N * sizeof(T));
     cms::sycltools::fillManyFromVector(h_d.get(), nParts, v_d.get(), off_d.get(), offsets[10], 256, queue);
     queue.memcpy(&h, h_d.get(), sizeof(Hist)).wait();
     //assert(0 == h.off[0]);
@@ -139,12 +139,14 @@ void go(sycl::queue queue) {
         //assert(!l);
       }
     }
+
+    queue.wait_and_throw();
   }
 }
 
 int main(int argc, char** argv) {
   std::string devices(argv[1]);
-  setenv("SYCL_DEVICE_FILTER", devices.c_str(), true);
+  setenv("ONEAPI_DEVICE_SELECTOR", devices.c_str(), true);
 
   cms::sycltools::enumerateDevices(true);
   sycl::device device = cms::sycltools::chooseDevice(0);
