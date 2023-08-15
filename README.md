@@ -413,33 +413,43 @@ make alpaka ... USER_CXXFLAGS="-DALPAKA_DISABLE_CACHING_ALLOCATOR -DALPAKA_DISAB
 #### `sycl` and `sycltest`
 
 ##### Compiler
-To compile `sycl` there are two possibilities: 
-- `dpcpp`: compiler from the Intel OneAPI Toolkit (the latest version available is sourced and used)
-- `llvm`: open source compiler (current version: clang 16.0.0)
+To compile `sycl` and `sycltest` there are a few choices of compiler:
+  - the `icpx` compiler from the Intel OneAPI Toolkit 2023.1.0 or later (default);
+  - the `clang++` compiler from the Intel OneAPI Toolkit 2023.1.0 or later;
+  - the `clang++` open source compiler from the Intel LLVM sycl branch.
 
-Unlike the other applications, `source env.sh` has to be done before `make sycl` to source SYCL libraries
-(or source oneAPI is enough).
-The default compiler is `llvm` because it supports the CUDA and AMD backends. If NVIDIA GPUs are available, 
-it will compile ahead of time (AOT) for those. Same for Intel GPUs and AMD GPUs, but the specific architecture must be set
-in the Makefile in those cases.
-At the moment is not possible to compile AOT for both CUDA and AMD backends, as well as for CPUs and CUDA
-(because of bugs in SYCL).
-To select `dpcpp` as the compiler, use the following:
-```
-USE_SYCL_ONEAPI=1 make sycl
-```
+The default installation of Intel oneAPI supports only x86 CPUs (using the Intel OpenCL runtime)
+and Intel GPUs (using the Intel OpenCL and Level Zero back-ends).
+For these targets the recommended compiler is `icpx`; it can be selected in the `Makefile` setting
+`SYCL_USE_INTEL_ONEAPI` to any non-empty value and `SYCL_CXX` to `$(SYCL_BASE)/bin/icpx`.
 
-To run on CPU additional synchronization is required. Compiling with:
+The plugins to support NVIDIA and AMD GPUs can be downloaded separately from the Codeplay web site,
+and installed on top of the corresponding oneAPI installation.
+When targetting NVIDIA or AMD GPUs it is recommended to use the `clang++` compiler instead of
+`icpx`; it can be selected in the `Makefile` setting `SYCL_USE_INTEL_ONEAPI` to any non-empty value
+and `SYCL_CXX` to `$(SYCL_BASE)/bin-llvm/clang++`.
+
+The open source Intel LLVM compiler can be built with support for x86 CPUs, Intel GPUs, NVIDIA GPUs
+and AMD GPUs.
+It can be selected in the `Makefile` leaving `SYCL_USE_INTEL_ONEAPI` undefined or empty, and setting
+`SYCL_CXX` to `$(SYCL_BASE)/bin/clang++`.
+
+All compilers _should_ support multiple targets at the same time, _e.g._ x86 CPUs and different
+Intel GPUs. This does not seem to work consistently, so it is recommended to enable a single back-end
+at a time, setting only one of `JIT_TARGETS` or `AOT_..._TARGETS` variables in the `Makefile`.
+
+To help testing different back-ends, the `sycl` and `sycltest` target support being built with
+arbitrary names, using the syntax
 ```bash
-CPU_FLAGS=1 make -j 20 sycl USER_CXXFLAGS="-DCPU_DEBUG"
+make sycl TARGET_NAME=sycl_cpu
 ```
-will enable the flags to compile AOT for all the CPUs and the additional synchronization inside the code.
+This affects
+  - the name of the binary, `${TARGET_NAME}`;
+  - the name of the directory containing the shared libraries, `lib/${TARGET_NAME}/`;
+  - the name of the directory containing the tests, `test/${TARGET_NAME}/`.
 
-##### Supported backends
-The official Intel compiler at the moment supports only CPUs and Intel GPUs. The open source compiler instead supports 
-also NVIDIA GPUs and AMD GPUs. To compile for those backends the corresponding flags in the Makefile must be set.
-Note that due to some bugs, it's not possible to compile for both NVIDA and AMD backend together 
-and the AMD version doesn't compile due to a compiler bug.
+##### Device choice
+
 The device can be chosen at runtime with the argument `--device` and the device:
 - `opencl:cpu:0` where `opencl` is the backend and can be omitted and `0` is needed only if more than one CPU is 
 available but only the first one has to be selected. To select a cpu `--device cpu` is enough
@@ -455,7 +465,9 @@ The use of caching allocator can be disabled at compile time setting the
 ```
 make sycl ... USER_CXXFLAGS="-DSYCL_DISABLE_CACHING_ALLOCATOR"
 ```
-The async caching allocator is not available in SYCL.
+
+The queue-ordered memory allocations are not available in SYCL.
+
 
 ### `stdpar`
 
