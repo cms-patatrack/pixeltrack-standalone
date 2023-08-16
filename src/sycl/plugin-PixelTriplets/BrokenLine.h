@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
 #define RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include <Eigen/Eigenvalues>
 

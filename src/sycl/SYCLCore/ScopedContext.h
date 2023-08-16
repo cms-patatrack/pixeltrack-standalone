@@ -4,7 +4,7 @@
 #include <iostream>
 #include <optional>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/ContextState.h"
 #include "SYCLCore/StreamCache.h"
@@ -27,7 +27,7 @@ namespace cms {
       public:
         sycl::device device() const { return stream_->get_device(); }
         sycl::queue stream() const { return *stream_; }
-	const std::shared_ptr<sycl::queue>& streamPtr() const { return stream_; }
+        const std::shared_ptr<sycl::queue>& streamPtr() const { return stream_; }
 
       protected:
         // The constructors set the current device, but the device
@@ -171,7 +171,7 @@ namespace cms {
           : ScopedContextGetterBase(std::move(stream)), event_{event} {}
 
       // the barrier should be a no-op on an ordered queue, but is used to initialise the event on the data stream
-      sycl::event event_ = stream().submit_barrier();
+      sycl::event event_ = stream().ext_oneapi_submit_barrier();
     };
 
     /**

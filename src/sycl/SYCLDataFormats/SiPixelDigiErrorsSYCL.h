@@ -1,7 +1,7 @@
 #ifndef SYCLDataFormats_SiPixelDigi_interface_SiPixelDigiErrorsSYCL_h
 #define SYCLDataFormats_SiPixelDigi_interface_SiPixelDigiErrorsSYCL_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/SimpleVector.h"
 #include "SYCLCore/device_unique_ptr.h"

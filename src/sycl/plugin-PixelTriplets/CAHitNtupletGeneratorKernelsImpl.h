@@ -4,7 +4,7 @@
 
 // #define NTUPLE_DEBUG
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <cmath>
 #include <cstdint>
 

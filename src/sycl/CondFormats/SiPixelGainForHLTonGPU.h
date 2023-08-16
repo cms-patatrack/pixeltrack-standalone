@@ -1,7 +1,7 @@
 #ifndef CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 #define CondFormats_SiPixelObjects_SiPixelGainForHLTonGPU_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <cstdint>
 #include <cstdio>
 #include <tuple>

@@ -3,7 +3,7 @@
 #include <numeric>
 
 // SYCL runtime
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // CMSSW headers
 #include "SYCLCore/device_unique_ptr.h"

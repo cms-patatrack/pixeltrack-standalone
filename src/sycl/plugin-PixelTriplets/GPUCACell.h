@@ -7,7 +7,7 @@
 
 // #define ONLY_TRIPLETS_IN_HOLE
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <stdatomic.h>
 
 #include "SYCLCore/printf.h"

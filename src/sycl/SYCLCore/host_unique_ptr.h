@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include "SYCLCore/getHostCachingAllocator.h"
 
 namespace cms {

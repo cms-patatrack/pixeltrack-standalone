@@ -199,7 +199,7 @@ void HelixFitOnGPU::launchBrokenLineKernels(HitsView const *hv,
                                                 });
       });
     }
-#ifdef CPU_DEBUG   
+#ifdef CPU_DEBUG
     stream.wait();
 #endif
   }  // loop on concurrent fits

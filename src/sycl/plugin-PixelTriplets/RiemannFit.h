@@ -1,7 +1,7 @@
 #ifndef RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
 #define RecoPixelVertexing_PixelTrackFitting_interface_RiemannFit_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/printf.h"
 

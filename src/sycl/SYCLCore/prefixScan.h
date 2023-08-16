@@ -2,7 +2,7 @@
 #define HeterogeneousCore_SYCLUtilities_interface_prefixScan_h
 
 #include <cstdint>
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include "SYCLCore/syclAtomic.h"
 #include "SYCLCore/sycl_assert.h"
 

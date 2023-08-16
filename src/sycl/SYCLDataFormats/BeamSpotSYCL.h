@@ -1,7 +1,7 @@
 #ifndef SYCLDataFormats_BeamSpot_interface_BeamSpotSYCL_h
 #define SYCLDataFormats_BeamSpot_interface_BeamSpotSYCL_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "DataFormats/BeamSpotPOD.h"
 #include "SYCLCore/device_unique_ptr.h"

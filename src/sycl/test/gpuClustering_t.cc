@@ -9,7 +9,7 @@
 #include <set>
 #include <vector>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include "SYCLCore/device_unique_ptr.h"
 // dirty, but works
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
   sycl::device device = cms::sycltools::chooseDevice(0);
   sycl::queue queue = sycl::queue(device, sycl::property::queue::in_order());
 
-  std::cout << "gpuClustering offload to " << device.get_info<cl::sycl::info::device::name>() << " on backend "
+  std::cout << "gpuClustering offload to " << device.get_info<sycl::info::device::name>() << " on backend "
             << device.get_backend() << std::endl;
 
   int numElements = 256 * 2000;

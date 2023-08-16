@@ -5,7 +5,8 @@
 #include <memory>
 #include <optional>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
+#include "SYCLCore/getDeviceCachingAllocator.h"
 
 namespace cms {
   namespace sycltools {
@@ -17,9 +18,10 @@ namespace cms {
           DeviceDeleter() = default;  // for edm::Wrapper
           DeviceDeleter(sycl::queue stream) : stream_{stream} {}
 
-          void operator()(void *ptr) {
+          void operator()(void* ptr) {
             if (stream_) {
-              sycl::free(ptr, *stream_);
+              CachingAllocator& allocator = getDeviceCachingAllocator(*stream_);
+              allocator.free(ptr);
             }
           }
 
@@ -48,50 +50,54 @@ namespace cms {
     }    // namespace device
 
     template <typename T>
-    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique(sycl::queue stream) {
+    typename device::impl::make_device_unique_selector<T>::non_array make_device_unique(sycl::queue const& stream) {
       static_assert(std::is_trivially_constructible<T>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      void *mem = sycl::malloc_device(sizeof(T), stream);
-      return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
+      CachingAllocator& allocator = getDeviceCachingAllocator(stream);
+      void* mem = allocator.allocate(sizeof(T), stream);
+      return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T*>(mem),
                                                                               device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
-    typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique(size_t n,
-                                                                                              sycl::queue stream) {
+    typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique(
+        size_t n, sycl::queue const& stream) {
       using element_type = typename std::remove_extent<T>::type;
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
-      void *mem = sycl::malloc_device(n * sizeof(element_type), stream);
+      CachingAllocator& allocator = getDeviceCachingAllocator(stream);
+      void* mem = allocator.allocate(n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
+          reinterpret_cast<element_type*>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
-    typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique(Args &&...) = delete;
+    typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique(Args&&...) = delete;
 
     // No check for the trivial constructor, make it clear in the interface
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::non_array make_device_unique_uninitialized(
-        sycl::queue stream) {
-      void *mem = sycl::malloc_device(sizeof(T), stream);
-      return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
+        sycl::queue const& stream) {
+      CachingAllocator& allocator = getDeviceCachingAllocator(stream);
+      void* mem = allocator.allocate(sizeof(T), stream);
+      return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T*>(mem),
                                                                               device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T>
     typename device::impl::make_device_unique_selector<T>::unbounded_array make_device_unique_uninitialized(
-        size_t n, sycl::queue stream) {
+        size_t n, sycl::queue const& stream) {
       using element_type = typename std::remove_extent<T>::type;
-      void *mem = sycl::malloc_device(n * sizeof(element_type), stream);
+      CachingAllocator& allocator = getDeviceCachingAllocator(stream);
+      void* mem = allocator.allocate(n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{stream}};
+          reinterpret_cast<element_type*>(mem), device::impl::DeviceDeleter{stream}};
     }
 
     template <typename T, typename... Args>
-    typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique_uninitialized(Args &&...) =
+    typename device::impl::make_device_unique_selector<T>::bounded_array make_device_unique_uninitialized(Args&&...) =
         delete;
   }  // namespace sycltools
 }  // namespace cms
 
-#endif
+#endif  //HeterogeneousCore_SYCLUtilities_interface_device_unique_ptr_h

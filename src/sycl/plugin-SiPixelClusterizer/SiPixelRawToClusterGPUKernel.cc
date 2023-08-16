@@ -17,7 +17,7 @@
 #include <string>
 
 // SYCL includes
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 // CMSSW includes
 #include "SYCLDataFormats/gpuClusteringConstants.h"

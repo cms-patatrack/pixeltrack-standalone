@@ -1,7 +1,7 @@
 #ifndef RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuClustering_h
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <cstdint>
 #include <cstdio>
 
@@ -57,7 +57,7 @@ namespace gpuClustering {
       return;
 
 #ifdef GPU_DEBUG
-    uint32_t gMaxHit = 0;  //FIXME_ 
+    uint32_t gMaxHit = 0;  //FIXME_
 #endif
 
     auto firstPixel = moduleStart[1 + item.get_group(0)];
@@ -340,7 +340,7 @@ namespace gpuClustering {
       return;
 
 #ifdef GPU_DEBUG
-    uint32_t gMaxHit = 0;  //FIXME_ 
+    uint32_t gMaxHit = 0;  //FIXME_
 #endif
 
     auto firstPixel = moduleStart[1 + item.get_group(0)];

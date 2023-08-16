@@ -3,7 +3,7 @@
 
 //  author: Felice Pantaleo, CERN, 2018
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include <type_traits>
 #include <utility>

@@ -61,7 +61,7 @@ namespace gpuVertexFinder {
     for (auto i = item.get_local_id(0); i < nt; i += item.get_local_range(0)) {
       if (iv[i] > 9990) {
 #ifdef VERTEX_DEBUG
-        cms::sycltools::atomic_fetch_add<int, cl::sycl::access::address_space::local_space>(noise, 1);
+        cms::sycltools::atomic_fetch_add<int, sycl::access::address_space::local_space>(noise, 1);
 #endif
         continue;
       }

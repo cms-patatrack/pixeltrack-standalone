@@ -1,31 +1,25 @@
-#ifndef SYCLCore_getDeviceCachingAllocator_h
-#define SYCLCore_getDeviceCachingAllocator_h
+#ifndef SYCLCore_getHostCachingAllocator_h
+#define SYCLCore_getHostCachingAllocator_h
 
-#include <optional>
-#include <mutex>
-#include <vector>
-
-#include <sycl/sycl.hpp>
-
-#include "SYCLCore/getDeviceIndex.h"
+#include "SYCLCore/getPlatformIndex.h"
 #include "SYCLCore/AllocatorConfig.h"
 #include "SYCLCore/CachingAllocator.h"
 
 namespace cms::sycltools {
 
   namespace detail {
-    inline auto allocate_device_allocators() {
+    inline auto allocate_host_allocators() {
       using Allocator = cms::sycltools::CachingAllocator;
-      auto const& devices = enumerateDevices();
-      auto const size = devices.size();
+      auto const& platforms = enumeratePlatforms();
+      auto const size = platforms.size();
 
       // allocate the storage for the objects
       auto ptr = std::allocator<Allocator>().allocate(size);
 
       // construct the objects in the storage
       for (size_t index = 0; index < size; ++index) {
-        new (ptr + index) Allocator(devices[index],
-                                    false,  // isHost
+        new (ptr + index) Allocator(platforms[index],
+                                    true,  //isHost
                                     config::binGrowth,
                                     config::minBin,
                                     config::maxBin,
@@ -48,12 +42,11 @@ namespace cms::sycltools {
 
   }  // namespace detail
 
-  inline CachingAllocator& getDeviceCachingAllocator(sycl::queue const& stream) {
-    // initialise all allocators, one per device
-    static auto allocators = detail::allocate_device_allocators();
+  inline CachingAllocator& getHostCachingAllocator(sycl::queue const& stream) {
+    static auto allocators = detail::allocate_host_allocators();
 
-    size_t const index = getDeviceIndex(stream.get_device());
-    assert(index < cms::sycltools::enumerateDevices().size());
+    size_t const index = getPlatformIndex(stream.get_device().get_platform());
+    assert(index < cms::sycltools::enumeratePlatforms().size());
 
     // the public interface is thread safe
     return allocators[index];
@@ -61,4 +54,4 @@ namespace cms::sycltools {
 
 }  // namespace cms::sycltools
 
-#endif  // SYCLCore_getDeviceCachingAllocator_h
+#endif  // SYCLCore_getHostCachingAllocator_h

@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 namespace cms {
   namespace sycltools {
@@ -34,9 +34,9 @@ namespace cms {
         stream_ = std::move(stream);
       }
 
-      sycl::device device() const { 
-	throwIfNoStream();
-	return stream_->get_device(); 
+      sycl::device device() const {
+        throwIfNoStream();
+        return stream_->get_device();
       }
 
       sycl::queue stream() const {
@@ -44,10 +44,10 @@ namespace cms {
         return *stream_;
       }
 
-    std::shared_ptr<sycl::queue> const& streamPtr() const {
-      throwIfNoStream();
-      return stream_;
-    }
+      std::shared_ptr<sycl::queue> const& streamPtr() const {
+        throwIfNoStream();
+        return stream_;
+      }
 
       std::shared_ptr<sycl::queue> releaseStreamPtr() {
         throwIfNoStream();

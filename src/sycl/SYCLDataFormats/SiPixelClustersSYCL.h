@@ -4,7 +4,7 @@
 #include "SYCLCore/device_unique_ptr.h"
 #include "SYCLCore/host_unique_ptr.h"
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 class SiPixelClustersSYCL {
 public:

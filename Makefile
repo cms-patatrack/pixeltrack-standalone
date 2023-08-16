@@ -1,5 +1,10 @@
 export BASE_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+# Speacial characters
+COMMA:= ,
+EMPTY:=
+SPACE:= $(EMPTY) $(EMPTY)
+
 # Compiler
 export CC  := gcc
 export CXX := g++
@@ -25,6 +30,11 @@ endif
 # Build flags
 USER_CXXFLAGS :=
 HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmessage-length=0 -fno-math-errno -ftree-vectorize -fvisibility-inlines-hidden --param vect-max-version-for-alias-checks=50 -msse3 -pipe -pthread -Werror=address -Wall -Werror=array-bounds -Wno-attributes -Werror=conversion-null -Werror=delete-non-virtual-dtor -Wno-deprecated -Werror=format-contains-nul -Werror=format -Wno-long-long -Werror=main -Werror=missing-braces -Werror=narrowing -Wno-non-template-friend -Wnon-virtual-dtor -Werror=overflow -Werror=overlength-strings -Wparentheses -Werror=pointer-arith -Wno-psabi -Werror=reorder -Werror=return-local-addr -Wreturn-type -Werror=return-type -Werror=sign-compare -Werror=strict-aliasing -Wstrict-overflow -Werror=switch -Werror=type-limits -Wunused -Werror=unused-but-set-variable -Wno-unused-local-typedefs -Werror=unused-value -Wno-error=unused-variable -Wno-vla -Werror=write-strings -Wfatal-errors
+# in case os linker resolve errors, try adding -mcmodel=large
+
+# Compiler flags supported by GCC but not by the LLVM-based compilers (clang, hipcc, icpx, etc.)
+LLVM_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
+
 export CXXFLAGS := -std=c++17 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
 export NVCXX_CXXFLAGS := -std=c++20 -O0 -cuda -gpu=managed -stdpar -fpic -gopt $(USER_CXXFLAGS)
 export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs -ldl
@@ -88,14 +98,14 @@ else
 USER_NVHPCFLAGS :=
 export NVHPC_BASE
 export NVHPC_DEPS :=
-export NVHPC_NVCXXFLAGS := 
+export NVHPC_NVCXXFLAGS :=
 export NVHPC_TEST_NVCXXFLAGS := -DGPU_DEBUG
-export NVHPC_LDFLAGS := 
+export NVHPC_LDFLAGS :=
 export NVCXX := $(NVHPC_BASE)/compilers/bin/nvc++
 endif
 
 # ROCm
-ROCM_BASE := /opt/rocm-5.0.2
+ROCM_BASE := /opt/rocm-5.4.3
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=
@@ -104,9 +114,9 @@ else
 ROCM_LIBDIR := $(ROCM_BASE)/lib
 export ROCM_BASE
 export ROCM_DEPS := $(ROCM_LIBDIR)/libamdhip64.so
+export ROCM_ARCH := gfx900
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
-HIPCC_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
-export HIPCC_CXXFLAGS := -fno-gpu-rdc --amdgpu-target=gfx900 $(filter-out $(HIPCC_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
+export HIPCC_CXXFLAGS := -fno-gpu-rdc $(foreach ARCH,$(ROCM_ARCH),--offload-arch=$(ARCH)) $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 export HIPCC_LDFLAGS := $(LDFLAGS) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
 export ROCM_CXXFLAGS := -D__HIP_PLATFORM_HCC__ -D__HIP_PLATFORM_AMD__ -I$(ROCM_BASE)/include -I$(ROCM_BASE)/hiprand/include -I$(ROCM_BASE)/rocrand/include
@@ -114,89 +124,126 @@ export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64
 export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
-# Intel oneAPI
+# SYCL and Intel oneAPI
+SYCL_USE_INTEL_ONEAPI := true
 
-# Compiler flags supported by GCC but not by the LLVM-based compilers (clang, hipcc, dpcpp, etc.)
-LLVM_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
+# Intel GPU ids
+OCLOC_IDS := pvc    # tgllp acm_g10 pvc
 
-# flags to compile AOT:
-AOT_INTEL_FLAGS   := -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device 0x020a"
-AOT_CUDA_FLAGS    := -fsycl-targets=nvptx64-nvidia-cuda $(foreach ARCH,$(CUDA_ARCH),-Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_$(ARCH)) -fno-bundle-offload-arch --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version -Wno-linker-warnings
-AOT_HIP_FLAGS     := -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend --offload-arch=gfx900 --rocm-path=$(ROCM_BASE) -Wno-linker-warnings 
-AOT_CPU_FLAGS     := -fsycl-targets=spir64_x86_64
+ifdef SYCL_USE_INTEL_ONEAPI
+  ONEAPI_BASE := /opt/intel/oneapi
 
-# INTEL flags: compile AOT for all the CPUs and for the GPU on olice-05
-# CUDA flags : compile AOT for NVIDIA GPUs
-# HIP flags  : compile AOT for architectures with ID gfx900 (e.g. the Radeon PRO WX 9100)
-# CPU flags  : compile AOT for all the CPUs
-
-# -Wno-linker-warnings will not be needed be needed anymore with https://github.com/intel/llvm/pull/7245
-
-ifdef USE_SYCL_ONEAPI
-  ONEAPI_BASE       := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2023
-  TBB_BASE          := $(ONEAPI_BASE)/tbb/latest
-  TBB_LIBDIR        := $(TBB_BASE)/lib/intel64/gcc4.8
-  ifneq ($(wildcard $(ONEAPI_BASE)),)
-    ONEAPI_ENV        := $(ONEAPI_BASE)/setvars.sh # --config="/eos/user/a/aperego/dev/pixeltrack-standalone/config.txt"
-                                                   # the config.txt file can be used to source only specific tools 
-                                                   # or a specific version of a tool of the oneAPI package
-    SYCL_BASE         := $(ONEAPI_BASE)/compiler/latest/linux
-    SYCL_LIBDIR       := $(SYCL_BASE)/lib
-    TBB_BASE          := $(ONEAPI_BASE)/tbb/latest
-    TBB_LIBDIR        := $(TBB_BASE)/lib/intel64/gcc4.8
-    USER_SYCLFLAGS    :=
-    export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
-    export SYCL_CXXFLAGS := -O3 -fsycl -Wno-sycl-strict -fp-model=precise -fimf-arch-consistency=true -no-fma $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
-    # math flags : -fp-model=precise -fimf-arch-consistency=true -no-fma
-    # workaround for the unexpected intrinsic in ONEAPI 2022.2.0 (SYCL BUG): -fno-sycl-early-optimizations
-  else
+  ifeq ($(wildcard $(ONEAPI_BASE)),)
     $(error Cannot find an Intel oneAPI installation at $(ONEAPI_BASE))
   endif
+
+  # Intel oneTBB
+  TBB_BASE      := $(ONEAPI_BASE)/tbb/latest
+  TBB_LIBDIR    := $(TBB_BASE)/lib/intel64/gcc4.8
+
+  # use Intel oneAPI DPC++/C++ Compiler
+  SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
+  SYCL_PATH     := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin-llvm
+  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib/x64:$(SYCL_BASE)/compiler/lib/intel64_lin
+  SYCL_LIBDIR   := $(SYCL_BASE)/lib
+  # use ICPX:       $(SYCL_BASE)/bin/icpx
+  # use clang++:    $(SYCL_BASE)/bin-llvm/clang++
+  SYCL_CXX      := $(SYCL_BASE)/bin/icpx
+
+  # use the oneAPI CPU OpenCL runtime
+  export OCL_ICD_FILENAMES := $(SYCL_BASE)/lib/x64/libintelocl.so
 else
-  # use llvm 
-  SYCL_BASE      := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/build-2022-09
-  USER_SYCLFLAGS := 
-  
-  # make CPUs visible
-  export OCL_ICD_FILENAMES := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2022.14.8.0.04/x64/libintelocl.so
-  
-  export SYCL_CXX      := $(SYCL_BASE)/bin/clang++
-  export SYCL_CXXFLAGS := -O3 -fsycl $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
+  # use clang++
+  # latest release: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/release/2022-12
+  # latest nightly: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230708
+  SYCL_BASE     := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230805_160000
+  SYCL_PATH     := $(SYCL_BASE)/bin
+  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib64
+  SYCL_LIBDIR   := $(SYCL_BASE)/lib
+  SYCL_CXX      := $(SYCL_BASE)/bin/clang++
+
+  # use the latest CPU OpenCL runtime (2023.16.6.0.28)
+  export OCL_ICD_FILENAMES := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2023.16.6.0.28/x64/libintelocl.so
 endif
 
-# Now add the flags to compile ahead of time for CPUs, Intel GPUs, NVIDIA GPUs and AMD GPUs
-# The flags for NVIDIA GPUs and AMD GPUs are added only if llvm is used since they are not yet supported by dpcpp
-# At the moment it's not possible to compile AOT for both CUDA and AMD together (LLVM BUG)
-# so if both are there the default is to compile only for the CUDA backend
-# same for CPUs and CUDA backend : it's not possible to compile AOT for both right now -> 
-# keep a look on https://github.com/intel/llvm/issues/7676 for that error.
-# (the AMD backend has some bugs so there is a high probability that it won't even compile)
+ifneq ($(wildcard $(SYCL_BASE)),)
+  # SYCL targets
+  # compile for the default spir64 JIT target
+  #JIT_TARGETS      := spir64
+  #JIT_FLAGS        :=
+  # compile AOT for x86_64 CPUs, targetting the Intel OpenCL runtime
+  #AOT_CPU_TARGETS  := spir64_x86_64        # or x86_64
+  #AOT_CPU_FLAGS    :=
+  # compile AOT for the Intel GPUs identified by the $(OCLOC_IDS) architectures
+  AOT_INTEL_TARGETS := $(foreach ARCH,$(OCLOC_IDS),intel_gpu_$(ARCH))
+  AOT_INTEL_FLAGS   := -Xsycl-target-backend=intel_gpu_pvc '-q -options -ze-intel-enable-auto-large-GRF-mode'
+  # compile AOT for the NVIDIA GPUs identified by the $(CUDA_ARCH) CUDA architectures
+  #AOT_CUDA_TARGETS := $(foreach ARCH,$(CUDA_ARCH),nvidia_gpu_sm_$(ARCH))
+  #AOT_CUDA_FLAGS   := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version # -Wno-linker-warnings # -fno-bundle-offload-arch
+  # compile AOT for the AMD GPUs identified by the $(ROCM_ARCH) ROCm architectures
+  #AOT_ROCM_TARGETS := $(foreach ARCH,$(ROCM_ARCH),amd_gpu_$(ARCH))
+  #AOT_ROCM_FLAGS   := --rocm-path=$(ROCM_BASE) # -Wno-linker-warnings
 
-ifdef ONEAPI_BASE
-  SYCL_CXXFLAGS += $(AOT_INTEL_FLAGS)
-else
-  ifdef CPU_FLAGS
-    SYCL_CXXFLAGS += $(AOT_CPU_FLAGS)
-  else
-    ifdef CUDA_BASE
-      SYCL_CXXFLAGS += $(AOT_CUDA_FLAGS)
-    else 
-      ifdef ROCM_BASE
-        SYCL_CXXFLAGS += $(AOT_HIP_FLAGS)
-      endif
-    endif
-  endif
+  # compile JIT and AOT for all the targets
+  SYCL_TARGETS      := $(subst $(SPACE),$(COMMA),$(strip $(JIT_TARGETS) $(AOT_CPU_TARGETS) $(AOT_INTEL_TARGETS) $(AOT_CUDA_TARGETS) $(AOT_ROCM_TARGETS)))
+  SYCL_FLAGS        := -fsycl -fsycl-targets=$(SYCL_TARGETS)
+  SYCL_LDFLAGS      := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
+
+  # other SYCL options
+  #  -fsycl-device-code-split=per_kernel
+  #    build one binary image per kernel (very slow), to allow kernel built for subgroup sizes not supported by all devices;
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Specifies SYCL device code module assembly. Mode is one of the following:
+  #      * per_kernel - creates a separate device code module for each SYCL kernel.
+  #        Each device code module will contain a kernel and all its dependencies,
+  #        such as called functions and used variables.
+  #      * per_source - creates a separate device code module for each source
+  #        (translation unit). Each device code module will contain a bunch of
+  #        kernels grouped on per-source basis and all their dependencies, such as
+  #        all used variables and called functions, including the `SYCL_EXTERNAL`
+  #        macro-marked functions from other translation units.
+  #      * off - creates a single module for all kernels. If `-fsycl-no-rdc` is
+  #        specified, the behavior is the same as per_source.
+  #      * auto - the compiler will use a heuristic to select the best way of
+  #        splitting device code. This is default mode.
+  #
+  #  -fno-sycl-early-optimizations
+  #    workaround for the unexpected intrinsic in oneApi 2022.2.0, generates very slow code;
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Disables intermediate representation optimization pipeline before translation to SPIR-V.
+  #
+  #  -fsycl-max-parallel-link-jobs=8
+  #    from https://github.com/intel/llvm/blob/sycl/sycl/doc/UsersManual.md :
+  #      Experimental feature. When specified, it informs the compiler
+  #      that it can simultaneously spawn up to `N` processes to perform
+  #      actions required to link the DPC++ application. This option is
+  #      only useful in SYCL mode. It only takes effect if link action
+  #      needs to be executed, i.e. it won't have any effect in presence of
+  #      options like `-c` or `-E`. Default value of `N` is 1.
+  #
+  #  -Xsycl-target-backend=intel_gpu_pvc '-options -ze-intel-enable-auto-large-GRF-mode'
+  #    enable Large Register Mode for Intel Ponte Vecchio GPUs;
+  #    from https://www.intel.com/content/www/us/en/docs/oneapi/optimization-guide-gpu/2023-2/small-register-mode-vs-large-register-mode.html :
+  #      Intel® Data Center GPU Max Series products support two GRF modes: small GRF mode and large GRF mode.
+  #      Each Execution Unit (EU) has a total of 64 KB of storage available in registers. In Small GRF mode,
+  #      a single hardware thread in an EU can access 128 GRF registers, each of which is 64B wide. In this mode,
+  #      8 hardware threads are available per EU. In Large GRF mode, a single hardware thread in an EU can access
+  #      256 GRF registers, each of which is 64B wide. In this mode, 4 hardware threads are available per EU.
+
+  export SYCL_CXX
+  export SYCL_CXXFLAGS := $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(SYCL_FLAGS) $(USER_SYCLFLAGS)
+  export SYCL_LDFLAGS
+
+  # add the SYCL paths to the PATH and LD_LIBRARY_PATH
+  export PATH := $(SYCL_PATH):$(PATH)
+  export LD_LIBRARY_PATH := $(SYCL_LDPATH):$(LD_LIBRARY_PATH)
+
+  # enable double precision floating point emulation for Intel GPUs
+  # see https://github.com/intel/compute-runtime/blob/master/opencl/doc/FAQ.md#feature-double-precision-emulation-fp64
+  export IGC_EnableDPEmulation := 1
+  export OverrideDefaultFP64Settings := 1
 endif
-# check if libraries are under lib or lib64
-ifdef SYCL_BASE
-ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib
-else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib64
-else
-SYCL_BASE :=
-endif
-endif
+
 
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
@@ -370,12 +417,6 @@ ifdef KOKKOS_HOST_PARALLEL
 endif
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 
-ifdef CUDA_BASE
-export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
-export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
-endif
-# endif
-
 
 # OpenMP target offload
 
@@ -498,6 +539,7 @@ env.sh: Makefile
 	@echo '  echo "LD_LIBRARY_PATH=$$LD_LIBRARY_PATH"   >> .original_env'   >> $@
 	@echo 'fi'                                                              >> $@
 	@echo                                                                   >> $@
+	@# set the LD_LIBRARY_PATH
 	@echo -n 'export LD_LIBRARY_PATH='                                      >> $@
 	@echo -n '$(TBB_LIBDIR):'                                               >> $@
 	@echo -n '$(BACKTRACE_BASE)/lib:'                                       >> $@
@@ -513,11 +555,10 @@ ifdef ROCM_BASE
 endif
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 ifneq ($(SYCL_BASE),)
-ifeq ($(wildcard $(ONEAPI_ENV)),)
-	@echo -n '$(SYCL_LIBDIR):'                                              >> $@
-endif
+	@echo -n '$(SYCL_LDPATH):'                                              >> $@
 endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
+	@# set the PATH
 	@echo -n 'export PATH='                                                 >> $@
 ifdef CUDA_BASE
 	@echo -n '$(CUDA_BASE)/bin:'                                            >> $@
@@ -526,21 +567,21 @@ ifdef ROCM_BASE
 	@echo -n '$(ROCM_BASE)/bin:'                                            >> $@
 endif
 ifneq ($(SYCL_BASE),)
-ifeq ($(wildcard $(ONEAPI_ENV)),)
-	@echo -n '$(SYCL_BASE)/bin:'                                            >> $@
-endif
+	@echo -n '$(SYCL_PATH):'                                                >> $@
 endif
 	@echo '$$PATH'                                                          >> $@
-# check if oneAPI environment file exists
-ifneq ($(wildcard $(ONEAPI_ENV)),)
-	@echo 'source $(ONEAPI_ENV)'                                            >> $@
-else
+ifneq ($(SYCL_BASE),)
+	@# load the CPU OpenCL runtime
 	@echo 'export OCL_ICD_FILENAMES=$(OCL_ICD_FILENAMES)'                   >> $@
+	@# enable double precision floating point emulation for Intel GPUs
+	@# see https://github.com/intel/compute-runtime/blob/master/opencl/doc/FAQ.md#feature-double-precision-emulation-fp64
+	@echo 'export IGC_EnableDPEmulation=1'                                  >> $@
+	@echo 'export OverrideDefaultFP64Settings=1'                            >> $@
 endif
 
 define TARGET_template
 $(1): $$(foreach dep,$$($(1)_EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) | $(DATA_DEPS)
-	+$(MAKE) -C src/$(1)
+	+$(MAKE) -C src/$(1) TARGET_NAME=$(firstword $(TARGET_NAME) $(1))
 
 test_$(1): test_$(1)_cpu test_$(1)_auto
 ifdef CUDA_BASE
@@ -599,7 +640,7 @@ $(foreach target,$(TARGETS_ALL),$(eval $(call FORMAT_template,$(target))))
 format: $(patsubst %,format_%,$(TARGETS_ALL))
 
 clean:
-	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL)
+	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL) $(TARGET_NAME)
 
 distclean: | clean
 	rm -fR $(EXTERNAL_BASE) .original_env
@@ -611,7 +652,7 @@ define CLEAN_template
 clean_$(1):
 	rm -fR $(LIB_DIR)/$(1) $(OBJ_DIR)/$(1) $(TEST_DIR)/$(1) $(1)
 endef
-$(foreach target,$(TARGETS_ALL),$(eval $(call CLEAN_template,$(target))))
+$(foreach target,$(TARGETS_ALL) $(TARGET_NAME),$(eval $(call CLEAN_template,$(target))))
 
 # Data rules
 $(DATA_DEPS): $(DATA_TAR_GZ) | $(DATA_BASE)/md5.txt
@@ -630,7 +671,7 @@ $(EXTERNAL_BASE):
 external_tbb: $(TBB_LIB)
 
 # Let TBB Makefile to define its own CXXFLAGS
-ifndef USE_SYCL_ONEAPI
+ifndef SYCL_USE_INTEL_ONEAPI
 $(TBB_LIB): $(HWLOC_BASE)
 $(TBB_LIB): CXXFLAGS:=
 $(TBB_LIB):
@@ -694,8 +735,7 @@ external_hwloc: $(HWLOC_BASE)
 $(HWLOC_BASE): CXXFLAGS:=
 $(HWLOC_BASE):
 	$(eval HWLOC_TMP := $(shell mktemp -d))
-	git clone -b hwloc-2.5.0 https://github.com/open-mpi/hwloc.git $(HWLOC_TMP)
-	cd $(HWLOC_TMP)/ && ./autogen.sh
+	curl -L https://download.open-mpi.org/release/hwloc/v2.9/hwloc-2.9.2.tar.gz | tar xz --strip-components=1 -C $(HWLOC_TMP)
 	cd $(HWLOC_TMP)/ && ./configure --prefix=$@ --enable-shared
 	$(MAKE) -C $(HWLOC_TMP)
 	$(MAKE) -C $(HWLOC_TMP) install

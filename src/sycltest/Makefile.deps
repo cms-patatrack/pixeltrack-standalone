@@ -1,4 +1,4 @@
-sycltest_EXTERNAL_DEPENDS := TBB SYCL
+sycltest_EXTERNAL_DEPENDS := TBB
 SYCLCore_DEPENDS := Framework
 Test1_DEPENDS := Framework SYCLCore DataFormats
 Test2_DEPENDS := Framework SYCLCore
