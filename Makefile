@@ -134,7 +134,7 @@ ifdef SYCL_USE_INTEL_ONEAPI
   ONEAPI_BASE := /opt/intel/oneapi
 
   ifeq ($(wildcard $(ONEAPI_BASE)),)
-    $(error Cannot find an Intel oneAPI installation at $(ONEAPI_BASE))
+    $(warning Cannot find an Intel oneAPI installation at $(ONEAPI_BASE))
   endif
 
   # Intel oneTBB
