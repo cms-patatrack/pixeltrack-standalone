@@ -20,7 +20,7 @@ using namespace gpuClustering;
 
 int main(int argc, char **argv) {
   std::string devices(argv[1]);
-  setenv("SYCL_DEVICE_FILTER", devices.c_str(), true);
+  setenv("ONEAPI_DEVICE_SELECTOR", devices.c_str(), true);
 
   cms::sycltools::enumerateDevices(true);
   sycl::device device = cms::sycltools::chooseDevice(0);
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
     queue.memcpy(d_id.get(), h_id.get(), size16);
     queue.memcpy(d_x.get(), h_x.get(), size16);
     queue.memcpy(d_y.get(), h_y.get(), size16);
-    queue.memcpy(d_adc.get(), h_adc.get(), size16).wait();
+    queue.memcpy(d_adc.get(), h_adc.get(), size16);
     // Launch SYCL Kernels
     int max_work_group_size = queue.get_device().get_info<sycl::info::device::max_work_group_size>();
     int threadsPerBlock = std::min(((kkk == 5) ? 512 : ((kkk == 3) ? 128 : 256)), max_work_group_size);
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 
     std::cout << "SYCL findModules kernel launch with " << blocksPerGrid << " blocks of " << threadsPerBlock
               << " threads\n";
-    queue.memset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t)).wait();
+    queue.memset(d_clusInModule.get(), 0, MaxNumModules * sizeof(uint32_t));
 
     if (queue.get_device().is_cpu()) {
       threadsPerBlock = 32;
@@ -321,8 +321,7 @@ int main(int argc, char **argv) {
             });
       });
     }
-    queue.wait_and_throw();
-    queue.memcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t)).wait();
+    queue.memcpy(&nModules, d_moduleStart.get(), sizeof(uint32_t));
 
     uint32_t nclus[MaxNumModules], moduleId[nModules];
     queue.memcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t)).wait();
@@ -353,7 +352,6 @@ int main(int argc, char **argv) {
           });
     });
 
-    queue.wait_and_throw();
 
     std::cout << "found " << nModules << " Modules active" << std::endl;
 
@@ -361,6 +359,7 @@ int main(int argc, char **argv) {
     queue.memcpy(h_clus.get(), d_clus.get(), size32);
     queue.memcpy(&nclus, d_clusInModule.get(), MaxNumModules * sizeof(uint32_t));
     queue.memcpy(&moduleId, d_moduleId.get(), nModules * sizeof(uint32_t)).wait();
+    queue.wait_and_throw();
 
     std::set<unsigned int> clids;
     for (int i = 0; i < n; ++i) {
@@ -410,5 +409,6 @@ int main(int argc, char **argv) {
       }
     // << " and " << seeds.size() << " seeds" << std::endl;
   }  /// end loop kkk
+
   return 0;
 }
