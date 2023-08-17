@@ -199,7 +199,8 @@ void HelixFitOnGPU::launchBrokenLineKernels(HitsView const *hv,
                                                 });
       });
     }
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
   }  // loop on concurrent fits

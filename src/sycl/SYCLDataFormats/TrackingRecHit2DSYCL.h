@@ -83,7 +83,8 @@ inline TrackingRecHit2DSYCL::TrackingRecHit2DSYCL(uint32_t nHits,
   // if empy do not bother
   if (0 == nHits) {
     stream.memcpy(m_view.get(), view.get(), sizeof(TrackingRecHit2DSOAView));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
     return;
@@ -125,7 +126,8 @@ inline TrackingRecHit2DSYCL::TrackingRecHit2DSYCL(uint32_t nHits,
 
   // transfer view
   stream.memcpy(m_view.get(), view.get(), sizeof(TrackingRecHit2DSOAView));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+  // FIXME needed only on CPU ?
   stream.wait();
 #endif
 }

@@ -21,13 +21,15 @@ const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsyn
     // those in CUDA were three memcpy: here they didn't work
     // this is another way to achieve the same result
     stream.memcpy(data.gainDataOnGPU.get(), this->gainData_.data(), this->gainData_.size());
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
     this->gainForHLTonHost_->v_pedestals = data.gainDataOnGPU.get();
 
     stream.memcpy(data.gainForHLTonGPU.get(), this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
   });

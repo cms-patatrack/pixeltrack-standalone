@@ -96,7 +96,8 @@ namespace pixelgpudetails {
 #ifdef GPU_DEBUG
     stream.wait();
 #endif
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
 

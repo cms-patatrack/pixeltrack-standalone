@@ -22,7 +22,8 @@ SiPixelDigisSYCL::SiPixelDigisSYCL(size_t maxFedWords, sycl::queue stream) {
 
   view_d = cms::sycltools::make_device_unique<DeviceConstView>(stream);
   stream.memcpy(view_d.get(), view.get(), sizeof(DeviceConstView));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+  // FIXME needed only on CPU ?
   stream.wait();
 #endif
 }
