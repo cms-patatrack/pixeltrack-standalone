@@ -236,7 +236,7 @@ ifneq ($(wildcard $(SYCL_BASE)),)
 
   # add the SYCL paths to the PATH and LD_LIBRARY_PATH
   export PATH := $(SYCL_PATH):$(PATH)
-  export LD_LIBRARY_PATH := $(SYCL_LDPATH):$(LD_LIBRARY_PATH)
+  export LD_LIBRARY_PATH := $(SYCL_LDPATH):$(TBB_LIBDIR):$(LD_LIBRARY_PATH)
 
   # enable double precision floating point emulation for Intel GPUs
   # see https://github.com/intel/compute-runtime/blob/master/opencl/doc/FAQ.md#feature-double-precision-emulation-fp64
