@@ -754,15 +754,15 @@ namespace pixelgpudetails {
       // last element holds the number of all clusters
       stream.memcpy(
           &(nModules_Clusters_h[1]), clusters_d.clusModuleStart() + gpuClustering::MaxNumModules, sizeof(int32_t));
-#ifdef CPU_DEBUG
-      stream.wait();
-#endif
 #ifdef GPU_DEBUG
       stream.wait();
       std::cout << "Number of modules (nModules_Clusters_h[0]): " << nModules_Clusters_h[0]
                 << " and number of clusters (nModules_Clusters_h[1]): " << nModules_Clusters_h[1] << std::endl;
 #endif
-
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+      // FIXME needed only on CPU ?
+      stream.wait();
+#endif
     }  // end clusterizer scope
   }
 }  // namespace pixelgpudetails

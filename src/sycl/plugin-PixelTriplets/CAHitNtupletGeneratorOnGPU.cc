@@ -96,14 +96,16 @@ PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuplesAsync(TrackingRecH
   } else {
     fitter.launchBrokenLineKernels(hits_d.view(), hits_d.nHits(), CAConstants::maxNumberOfQuadruplets(), stream);
   }
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+  // FIXME needed only on CPU ?
+  stream.wait();
+#endif
 
 #ifdef NTUPLE_DEBUG
   std::cout << "..end of n-tuplets fit.\n";
   std::cout << "------------------------\n";
 #endif
-#ifdef CPU_DEBUG
-  stream.wait();
-#endif
+
   kernels.classifyTuples(hits_d, soa, stream);
   stream.wait();
 

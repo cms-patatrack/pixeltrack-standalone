@@ -53,7 +53,8 @@ const pixelCPEforGPU::ParamsOnGPU *PixelCPEFast::getGPUProductAsync(sycl::queue 
     stream.memcpy((void *)data.h_paramsOnGPU.m_detParams.get(),
                   this->m_detParamsGPU.data(),
                   this->m_detParamsGPU.size() * sizeof(pixelCPEforGPU::DetParams));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
   });

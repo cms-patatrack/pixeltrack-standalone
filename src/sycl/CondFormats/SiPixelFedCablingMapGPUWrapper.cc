@@ -29,7 +29,8 @@ const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsyn
     data.cablingMapDevice = cms::sycltools::make_device_unique_uninitialized<SiPixelFedCablingMapGPU>(stream);
     // transfer
     stream.memcpy(data.cablingMapDevice.get(), this->cablingMapHost_, sizeof(SiPixelFedCablingMapGPU));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
   });
@@ -42,7 +43,8 @@ const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(sycl::q
         cms::sycltools::make_device_unique<unsigned char[]>(pixelgpudetails::MAX_SIZE_BYTE_BOOL, stream);
     stream.memcpy(
         data.modToUnpDefault.get(), this->modToUnpDefault.data(), this->modToUnpDefault.size() * sizeof(unsigned char));
-#ifdef CPU_DEBUG
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+    // FIXME needed only on CPU ?
     stream.wait();
 #endif
   });
