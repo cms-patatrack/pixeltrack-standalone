@@ -20,20 +20,22 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout
-        << name
-        << ": [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] [--transfer] [--validation] "
-           "[--empty]\n\n"
-        << "Options\n"
-        << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
-        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
-        << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
-        << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
-           "(default -1 for disabled; conflicts with --maxEvents)\n"
-        << " --data              Path to the 'data' directory (default 'data' in the directory of the executable)\n"
-        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-        << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
-        << " --empty             Ignore all producers (for testing only)\n"
-        << std::endl;
+        << "Usage: " << name
+        << " [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME] [--runForMinutes RM]"
+        << " [--data PATH] [--transfer] [--validation] [--empty]\n";
+    std::cout << R"(
+Options:
+  --numberOfThreads             Number of threads to use (default 1, use 0 to use all CPU cores).
+  --numberOfStreams             Number of concurrent events (default 0 = numberOfThreads).
+  --warmupEvents                Number of events to process before starting the benchmark (default 0).
+  --maxEvents                   Number of events to process (default -1 for all events in the input file).
+  --runForMinutes               Continue processing the set of 1000 events until this many minutes have passed
+                                (default -1 for disabled; conflicts with --maxEvents).
+  --data                        Path to the 'data' directory (default 'data' in the directory of the executable).
+  --transfer                    Transfer results from GPU to CPU (default is to leave them on GPU).
+  --validation                  Run (rudimentary) validation at the end (implies --transfer).
+  --empty                       Ignore all producers (for testing only).
+)";
   }
 }  // namespace
 
@@ -42,6 +44,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
   int numberOfStreams = 0;
+  int warmupEvents = 0;
   int maxEvents = -1;
   int runForMinutes = -1;
   std::filesystem::path datadir;
@@ -58,6 +61,9 @@ int main(int argc, char** argv) {
     } else if (*i == "--numberOfStreams") {
       ++i;
       numberOfStreams = std::stoi(*i);
+    } else if (*i == "--warmupEvents") {
+      ++i;
+      warmupEvents = std::stoi(*i);
     } else if (*i == "--maxEvents") {
       ++i;
       maxEvents = std::stoi(*i);
@@ -125,20 +131,45 @@ int main(int argc, char** argv) {
       // add modules for transfer
     }
   }
-  edm::EventProcessor processor(
-      maxEvents, runForMinutes, numberOfStreams, std::move(edmodules), std::move(esmodules), datadir, validation);
+  edm::EventProcessor processor(warmupEvents,
+                                maxEvents,
+                                runForMinutes,
+                                numberOfStreams,
+                                std::move(edmodules),
+                                std::move(esmodules),
+                                datadir,
+                                validation);
 
   if (runForMinutes < 0) {
-    std::cout << "Processing " << processor.maxEvents() << " events, of which " << numberOfStreams
-              << " concurrently, with " << numberOfThreads << " threads." << std::endl;
+    std::cout << "Processing " << processor.maxEvents() << " events,";
   } else {
-    std::cout << "Processing for about " << runForMinutes << " minutes with " << numberOfStreams
-              << " concurrent events and " << numberOfThreads << " threads." << std::endl;
+    std::cout << "Processing for about " << runForMinutes << " minutes,";
   }
+  if (warmupEvents > 0) {
+    std::cout << " after " << warmupEvents << " events of warm up,";
+  }
+  std::cout << " with " << numberOfStreams << " concurrent events and " << numberOfThreads << " threads." << std::endl;
 
-  // Initialize he TBB thread pool
+  // Initialize the TBB thread pool
   tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
                                       static_cast<std::size_t>(numberOfThreads)};
+
+  // Warm up
+  try {
+    tbb::task_arena arena(numberOfThreads);
+    arena.execute([&] { processor.warmUp(); });
+  } catch (std::runtime_error& e) {
+    std::cout << "\n----------\nCaught std::runtime_error" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (std::exception& e) {
+    std::cout << "\n----------\nCaught std::exception" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cout << "\n----------\nCaught exception of unknown type" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Run work
   auto cpu_start = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();
