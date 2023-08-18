@@ -4,16 +4,21 @@
 #include <iomanip>
 #include <iostream>
 
+#include <cuda_runtime.h>
+
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/deviceCount.h"
 #include "CachingDeviceAllocator.h"
 
 namespace cms::cuda::allocator {
   // Use caching or not
-#ifdef CUDAUVM_DISABLE_CACHING_ALLOCATOR
-  constexpr bool useCaching = false;
+  enum class Policy { Synchronous = 0, Asynchronous = 1, Caching = 2 };
+#ifndef CUDAUVM_DISABLE_CACHING_ALLOCATOR
+  constexpr Policy policy = Policy::Caching;
+#elif CUDA_VERSION >= 11020 && !defined CUDAUVM_DISABLE_ASYNC_ALLOCATOR
+  constexpr Policy policy = Policy::Asynchronous;
 #else
-  constexpr bool useCaching = true;
+  constexpr Policy policy = Policy::Synchronous;
 #endif
   // Growth factor (bin_growth in cub::CachingDeviceAllocator
   constexpr unsigned int binGrowth = 2;

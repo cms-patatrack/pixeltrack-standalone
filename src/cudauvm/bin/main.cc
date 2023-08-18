@@ -13,6 +13,7 @@
 
 #include <cuda_runtime.h>
 
+#include "CUDACore/getCachingDeviceAllocator.h"
 #include "EventProcessor.h"
 #include "PosixClockGettime.h"
 
@@ -123,6 +124,16 @@ int main(int argc, char** argv) {
 #endif
 #ifdef CUDAUVM_DISABLE_MANAGED_BEAMSPOT
   std::cout << "Managed memory is disabled in BeamSpotToCUDA" << std::endl;
+#endif
+
+#if CUDA_VERSION >= 11020
+  // Initialize the CUDA memory pool
+  uint64_t threshold = cms::cuda::allocator::minCachedBytes();
+  for (int device = 0; device < numberOfDevices; ++device) {
+    cudaMemPool_t pool;
+    cudaDeviceGetDefaultMemPool(&pool, device);
+    cudaMemPoolSetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &threshold);
+  }
 #endif
 
   // Initialize EventProcessor

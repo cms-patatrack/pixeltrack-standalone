@@ -13,7 +13,7 @@ namespace {
 namespace cms::cuda {
   void *allocate_managed(size_t nbytes, cudaStream_t stream) {
     void *ptr = nullptr;
-    if constexpr (allocator::useCaching) {
+    if constexpr (allocator::policy == allocator::Policy::Caching) {
       if (nbytes > maxAllocationSize) {
         throw std::runtime_error("Tried to allocate " + std::to_string(nbytes) +
                                  " bytes, but the allocator maximum is " + std::to_string(maxAllocationSize));
@@ -26,7 +26,7 @@ namespace cms::cuda {
   }
 
   void free_managed(void *ptr) {
-    if constexpr (allocator::useCaching) {
+    if constexpr (allocator::policy == allocator::Policy::Caching) {
       cudaCheck(allocator::getCachingManagedAllocator().ManagedFree(ptr));
     } else {
       cudaCheck(cudaFree(ptr));
