@@ -78,11 +78,9 @@ namespace gpuPixelDoublets {
     if (0 == first) {
       cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
       cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
-      auto i = cellNeighbors->extend();
-      assert(0 == i);
+      assert(0 == cellNeighbors->extend());
       (*cellNeighbors)[0].reset();
-      i = cellTracks->extend();
-      assert(0 == i);
+      assert(0 == cellTracks->extend());
       (*cellTracks)[0].reset();
     }
   }

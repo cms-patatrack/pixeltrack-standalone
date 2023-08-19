@@ -97,7 +97,7 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
       // crash on multi-gpu processes
       CAHitNtupletGeneratorKernelsGPU::printCounters(m_counters);
     }
-    hipFree(m_counters);
+    (void)hipFree(m_counters);
   } else {
     if (m_params.doStats_) {
       CAHitNtupletGeneratorKernelsCPU::printCounters(m_counters);
