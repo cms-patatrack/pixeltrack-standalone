@@ -4,13 +4,22 @@
 #include <iomanip>
 #include <iostream>
 
+#include <hip/hip_runtime.h>
+
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/deviceCount.h"
 #include "CachingDeviceAllocator.h"
 
 namespace cms::hip::allocator {
   // Use caching or not
-  constexpr bool useCaching = true;
+  enum class Policy { Synchronous = 0, Asynchronous = 1, Caching = 2 };
+#ifndef HIP_DISABLE_CACHING_ALLOCATOR
+  constexpr Policy policy = Policy::Caching;
+#elif HIP_VERSION >= 50200000 && !defined HIP_DISABLE_ASYNC_ALLOCATOR
+  constexpr Policy policy = Policy::Asynchronous;
+#else
+  constexpr Policy policy = Policy::Synchronous;
+#endif
   // Growth factor (bin_growth in hipcub::CachingDeviceAllocator
   constexpr unsigned int binGrowth = 2;
   // Smallest bin, corresponds to binGrowth^minBin bytes (min_bin in hipcub::CacingDeviceAllocator

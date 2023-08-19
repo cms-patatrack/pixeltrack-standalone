@@ -111,10 +111,20 @@ int main(int argc, char** argv) {
   int numberOfDevices;
   auto status = hipGetDeviceCount(&numberOfDevices);
   if (hipSuccess != status) {
-    std::cout << "Failed to initialize the CUDA runtime";
+    std::cout << "Failed to initialize the HIP runtime";
     return EXIT_FAILURE;
   }
   std::cout << "Found " << numberOfDevices << " devices" << std::endl;
+
+#if HIP_VERSION >= 50200000
+  // Initialize the HIP memory pool
+  uint64_t threshold = cms::hip::allocator::minCachedBytes();
+  for (int device = 0; device < numberOfDevices; ++device) {
+    hipMemPool_t pool;
+    hipDeviceGetDefaultMemPool(&pool, device);
+    hipMemPoolSetAttribute(pool, hipMemPoolAttrReleaseThreshold, &threshold);
+  }
+#endif
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;

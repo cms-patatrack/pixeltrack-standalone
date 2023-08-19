@@ -325,7 +325,25 @@ The program contains the changes from following external PRs on top of `cuda`
 
 #### `hip` and `hiptest`
 
+`hip` and `hiptest` are ports of the `cuda` and `cudatest` programs to HIP,
+built for the AMD ROCm backend.
+
 The path to ROCm can be set with `ROCM_BASE` variable.
+
+The use of caching allocator can be disabled at compile time setting the
+`HIP_DISABLE_CACHING_ALLOCATOR` preprocessor symbol:
+```
+make hip ... USER_CXXFLAGS="-DHIP_DISABLE_CACHING_ALLOCATOR"
+```
+
+If the caching allocator is disabled and HIP version is 5.2.0 or greater is detected,
+device allocations and deallocations will use the stream-ordered HIP functions
+`hipMallocAsync` and `hipFreeAsync`. Their use can be disabled explicitly at
+compile time setting also the `HIP_DISABLE_ASYNC_ALLOCATOR` preprocessor symbol:
+
+```
+make hip ... USER_CXXFLAGS="-DHIP_DISABLE_CACHING_ALLOCATOR -DHIP_DISABLE_ASYNC_ALLOCATOR"
+```
 
 
 #### `kokkos` and `kokkostest`
