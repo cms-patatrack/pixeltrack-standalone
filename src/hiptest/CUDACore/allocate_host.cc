@@ -13,7 +13,7 @@ namespace {
 namespace cms::hip {
   void *allocate_host(size_t nbytes, hipStream_t stream) {
     void *ptr = nullptr;
-    if constexpr (allocator::useCaching) {
+    if constexpr (allocator::policy == allocator::Policy::Caching) {
       if (nbytes > maxAllocationSize) {
         throw std::runtime_error("Tried to allocate " + std::to_string(nbytes) +
                                  " bytes, but the allocator maximum is " + std::to_string(maxAllocationSize));
@@ -26,7 +26,7 @@ namespace cms::hip {
   }
 
   void free_host(void *ptr) {
-    if constexpr (allocator::useCaching) {
+    if constexpr (allocator::policy == allocator::Policy::Caching) {
       cudaCheck(allocator::getCachingHostAllocator().HostFree(ptr));
     } else {
       cudaCheck(hipHostFree(ptr));
