@@ -2,6 +2,7 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/alpakaDevices.h"
 
 namespace {
   struct Print {
@@ -18,7 +19,7 @@ int main() {
   std::cout << "World" << std::endl;
 
   using namespace ALPAKA_ACCELERATOR_NAMESPACE;
-  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  const Device device(alpaka::getDevByIdx(*cms::alpakatools::platform, 0u));
   Queue queue(device);
 
   // Prepare 1D workDiv

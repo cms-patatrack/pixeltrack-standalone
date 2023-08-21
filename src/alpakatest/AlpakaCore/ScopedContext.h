@@ -30,7 +30,7 @@ namespace cms::alpakatools {
     public:
       using Queue = TQueue;
       using Device = alpaka::Dev<Queue>;
-      using Platform = alpaka::Pltf<Device>;
+      using Platform = alpaka::Platform<Device>;
 
       Device device() const { return alpaka::getDev(*stream_); }
 
