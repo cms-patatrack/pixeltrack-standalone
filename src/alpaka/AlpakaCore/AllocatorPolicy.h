@@ -41,6 +41,8 @@ namespace cms::alpakatools {
   constexpr inline AllocatorPolicy allocator_policy<alpaka::DevHipRt> =
 #if !defined ALPAKA_DISABLE_CACHING_ALLOCATOR
       AllocatorPolicy::Caching;
+#elif HIP_VERSION >= 50200000 && !defined ALPAKA_DISABLE_ASYNC_ALLOCATOR
+      AllocatorPolicy::Asynchronous;
 #else
       AllocatorPolicy::Synchronous;
 #endif

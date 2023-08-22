@@ -105,7 +105,7 @@ export NVCXX := $(NVHPC_BASE)/compilers/bin/nvc++
 endif
 
 # ROCm
-ROCM_BASE := /opt/rocm-5.4.3
+ROCM_BASE := /opt/rocm-5.6.0
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=
@@ -114,13 +114,13 @@ else
 ROCM_LIBDIR := $(ROCM_BASE)/lib
 export ROCM_BASE
 export ROCM_DEPS := $(ROCM_LIBDIR)/libamdhip64.so
-export ROCM_ARCH := gfx900
+export ROCM_ARCH := gfx900 gfx90a gfx1030
 export ROCM_HIPCC := $(ROCM_BASE)/bin/hipcc
 export HIPCC_CXXFLAGS := -fno-gpu-rdc $(foreach ARCH,$(ROCM_ARCH),--offload-arch=$(ARCH)) $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 export HIPCC_LDFLAGS := $(LDFLAGS) --target=$(GCC_TARGET) --gcc-toolchain=$(GCC_TOOLCHAIN)
 # flags to be used by GCC when compiling host code that includes hip_runtime.h
 export ROCM_CXXFLAGS := -D__HIP_PLATFORM_HCC__ -D__HIP_PLATFORM_AMD__ -I$(ROCM_BASE)/include -I$(ROCM_BASE)/hiprand/include -I$(ROCM_BASE)/rocrand/include
-export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64
+export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64 -lhsa-runtime64
 export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
