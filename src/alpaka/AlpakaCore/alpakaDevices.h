@@ -11,29 +11,17 @@
 
 namespace cms::alpakatools {
 
-  // alpaka host device
-  inline const alpaka_common::DevHost host = alpaka::getDevByIdx<alpaka_common::PltfHost>(0u);
+  // alpaka host platform and device
+  inline const alpaka_common::PlatformHost platformHost{};
+  inline const alpaka_common::DevHost host = alpaka::getDevByIdx(platformHost, 0u);
 
-  // alpaka accelerator devices
+  // alpaka accelerator platform and devices
+  // these objects are filled by a call to cms::alpakatools::initialise<TPlatform>()
+  template <typename TPlatform>
+  inline std::optional<TPlatform> platform;
+
   template <typename TPlatform>
   inline std::vector<alpaka::Dev<TPlatform>> devices;
-
-  template <typename TPlatform>
-  std::vector<alpaka::Dev<TPlatform>> enumerate() {
-    assert(getDeviceIndex(host) == 0u);
-
-    using Device = alpaka::Dev<TPlatform>;
-    using Platform = TPlatform;
-
-    std::vector<Device> devices;
-    uint32_t n = alpaka::getDevCount<Platform>();
-    devices.reserve(n);
-    for (uint32_t i = 0; i < n; ++i) {
-      devices.push_back(alpaka::getDevByIdx<Platform>(i));
-      assert(getDeviceIndex(devices.back()) == static_cast<int>(i));
-    }
-    return devices;
-  }
 
 }  // namespace cms::alpakatools
 

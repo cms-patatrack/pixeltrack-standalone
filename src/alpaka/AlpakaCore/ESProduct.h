@@ -22,7 +22,7 @@ namespace cms::alpakatools {
     using Queue = TQueue;
     using Event = alpaka::Event<Queue>;
     using Device = alpaka::Dev<Queue>;
-    using Platform = alpaka::Pltf<Device>;
+    using Platform = alpaka::Platform<Device>;
 
     ESProduct() : gpuDataPerDevice_(cms::alpakatools::devices<Platform>.size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {

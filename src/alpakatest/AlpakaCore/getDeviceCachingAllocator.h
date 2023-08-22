@@ -17,7 +17,7 @@ namespace cms::alpakatools {
     template <typename TDevice, typename TQueue>
     auto allocate_device_allocators() {
       using Allocator = CachingAllocator<TDevice, TQueue>;
-      auto const& devices = cms::alpakatools::devices<alpaka::Pltf<TDevice>>;
+      auto const& devices = cms::alpakatools::devices<alpaka::Platform<TDevice>>;
       auto const size = devices.size();
 
       // allocate the storage for the objects
@@ -54,7 +54,7 @@ namespace cms::alpakatools {
     static auto allocators = detail::allocate_device_allocators<TDevice, TQueue>();
 
     size_t const index = getDeviceIndex(device);
-    assert(index < cms::alpakatools::devices<alpaka::Pltf<TDevice>>.size());
+    assert(index < cms::alpakatools::devices<alpaka::Platform<TDevice>>.size());
 
     // the public interface is thread safe
     return allocators[index];

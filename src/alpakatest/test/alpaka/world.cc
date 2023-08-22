@@ -2,6 +2,7 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/alpakaDevices.h"
 
 namespace {
   struct Print {
@@ -14,19 +15,22 @@ namespace {
   };
 }  // namespace
 
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
+using namespace cms::alpakatools;
+
 int main() {
   std::cout << "World" << std::endl;
 
-  using namespace ALPAKA_ACCELERATOR_NAMESPACE;
-  const Device device(alpaka::getDevByIdx<Platform>(0u));
+  const Device device(alpaka::getDevByIdx(*platform<Platform>, 0u));
   Queue queue(device);
 
-  // Prepare 1D workDiv
-  const Vec1D& blocksPerGrid(Vec1D::all(1u));
-  const Vec1D& threadsPerBlockOrElementsPerThread(Vec1D(4u));
-  const WorkDiv1D& workDiv = cms::alpakatools::make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
+  // prepare a 1D work division
+  const auto blocksPerGrid = Vec1D::all(1u);
+  const auto threadsPerBlockOrElementsPerThread = Vec1D(4u);
+  const auto workDiv = make_workdiv<Acc1D>(blocksPerGrid, threadsPerBlockOrElementsPerThread);
 
   alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(workDiv, Print()));
   alpaka::wait(queue);
+
   return 0;
 }
