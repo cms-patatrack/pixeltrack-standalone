@@ -38,7 +38,7 @@ namespace {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
         << "[--hip] "
 #endif
-        << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+        << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--warmupEvents WE] [--data PATH] "
            "[--transfer] [--validation] [--histogram]\n\n"
         << "Options\n"
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
@@ -55,6 +55,7 @@ namespace {
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
+        << " --warmupEvents      Number of events to process before starting the benchmark (default 0)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
         << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
            "(default -1 for disabled; conflicts with --maxEvents)\n"
@@ -123,6 +124,7 @@ int main(int argc, char** argv) {
   std::unordered_map<Backend, float> backends;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
+  int warmupEvents = 0;
   int maxEvents = -1;
   int runForMinutes = -1;
   std::filesystem::path datadir;
@@ -162,6 +164,8 @@ int main(int argc, char** argv) {
       getArgument(args, i, numberOfThreads);
     } else if (*i == "--numberOfStreams") {
       getArgument(args, i, numberOfStreams);
+    } else if (*i == "--warmupEvents") {
+      getArgument(args, i, warmupEvents);
     } else if (*i == "--maxEvents") {
       getArgument(args, i, maxEvents);
     } else if (*i == "--runForMinutes") {
@@ -256,13 +260,22 @@ int main(int argc, char** argv) {
       alternatives.emplace_back(backend, weight, std::move(edmodules));
     }
   }
-  edm::EventProcessor processor(
-      maxEvents, runForMinutes, numberOfStreams, std::move(alternatives), std::move(esmodules), datadir, validation);
+  edm::EventProcessor processor(warmupEvents,
+                                maxEvents,
+                                runForMinutes,
+                                numberOfStreams,
+                                std::move(alternatives),
+                                std::move(esmodules),
+                                datadir,
+                                validation);
 
   if (runForMinutes < 0) {
     std::cout << "Processing " << processor.maxEvents() << " events,";
   } else {
     std::cout << "Processing for about " << runForMinutes << " minutes,";
+  }
+  if (warmupEvents > 0) {
+    std::cout << " after " << warmupEvents << " events of warm up,";
   }
   {
     std::cout << " with " << numberOfStreams << " concurrent events (";
@@ -280,6 +293,23 @@ int main(int argc, char** argv) {
   // Initialize the TBB thread pool
   tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
                                       static_cast<std::size_t>(numberOfThreads)};
+
+  // Warm up
+  try {
+    tbb::task_arena arena(numberOfThreads);
+    arena.execute([&] { processor.warmUp(); });
+  } catch (std::runtime_error& e) {
+    std::cout << "\n----------\nCaught std::runtime_error" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (std::exception& e) {
+    std::cout << "\n----------\nCaught std::exception" << std::endl;
+    std::cout << e.what() << std::endl;
+    return EXIT_FAILURE;
+  } catch (...) {
+    std::cout << "\n----------\nCaught exception of unknown type" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   // Run work
   auto cpu_start = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();

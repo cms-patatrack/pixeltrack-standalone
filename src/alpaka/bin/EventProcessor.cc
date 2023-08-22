@@ -11,14 +11,18 @@
 #include "EventProcessor.h"
 
 namespace edm {
-  EventProcessor::EventProcessor(int maxEvents,
+  EventProcessor::EventProcessor(int warmupEvents,
+                                 int maxEvents,
                                  int runForMinutes,
                                  int numberOfStreams,
                                  Alternatives alternatives,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& datadir,
                                  bool validation)
-      : source_(maxEvents, runForMinutes, registry_, datadir, validation) {
+      : source_(maxEvents, runForMinutes, registry_, datadir, validation),
+        warmupEvents_(warmupEvents),
+        maxEvents_(source_.maxEvents()),
+        runForMinutes_(runForMinutes) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
@@ -30,7 +34,7 @@ namespace edm {
     for (auto const& alternative : alternatives) {
       total += alternative.weight;
     }
-    //schedules_.reserve(numberOfStreams);
+    schedules_.reserve(numberOfStreams);
     float cumulative = 0.;
     int lower_range = 0;
     int upper_range = 0;
@@ -45,8 +49,24 @@ namespace edm {
     }
   }
 
+  void EventProcessor::warmUp() {
+    if (warmupEvents_ <= 0)
+      return;
+
+    // Configure the source for the warmup step
+    source_.reconfigure(warmupEvents_, -1);
+    process();
+  }
+
   void EventProcessor::runToCompletion() {
+    // Configure the source for the actual reconstrction
+    source_.reconfigure(maxEvents_, runForMinutes_);
+    process();
+  }
+
+  void EventProcessor::process() {
     source_.startProcessing();
+
     // The task that waits for all other work
     FinalWaitingTask globalWaitTask;
     tbb::task_group group;
