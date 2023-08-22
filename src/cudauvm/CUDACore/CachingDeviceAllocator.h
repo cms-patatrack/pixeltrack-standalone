@@ -40,8 +40,8 @@
 
 #include <cmath>
 #include <map>
-#include <set>
 #include <mutex>
+#include <set>
 
 #include "CUDACore/cudaCheck.h"
 #include "CUDACore/deviceAllocatorStatus.h"
@@ -335,7 +335,7 @@ namespace notcub {
         cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
     {
       // CMS: use RAII instead of (un)locking explicitly
-      std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
+      std::unique_lock mutex_locker(mutex, std::defer_lock);
       *d_ptr = nullptr;
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       cudaError_t error = cudaSuccess;
@@ -557,7 +557,7 @@ namespace notcub {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       cudaError_t error = cudaSuccess;
       // CMS: use RAII instead of (un)locking explicitly
-      std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
+      std::unique_lock mutex_locker(mutex, std::defer_lock);
 
       if (device == INVALID_DEVICE_ORDINAL) {
         // CMS: throw exception on error
@@ -668,7 +668,7 @@ namespace notcub {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
       // CMS: use RAII instead of (un)locking explicitly
-      std::unique_lock<std::mutex> mutex_locker(mutex);
+      std::unique_lock mutex_locker(mutex);
 
       while (!cached_blocks.empty()) {
         // Get first block

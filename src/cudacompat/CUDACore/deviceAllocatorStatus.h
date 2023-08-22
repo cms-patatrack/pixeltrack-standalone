@@ -1,6 +1,7 @@
 #ifndef HeterogeneousCore_CUDAUtilities_deviceAllocatorStatus_h
 #define HeterogeneousCore_CUDAUtilities_deviceAllocatorStatus_h
 
+#include <cstddef>
 #include <map>
 
 namespace cms {

@@ -40,8 +40,8 @@
 
 #include <cmath>
 #include <map>
-#include <set>
 #include <mutex>
+#include <set>
 
 #include "CUDACore/cudaCheck.h"
 
@@ -314,7 +314,7 @@ namespace notcub {
         size_t bytes,                          ///< [in] Minimum number of bytes for the allocation
         cudaStream_t active_stream = nullptr)  ///< [in] The stream to be associated with this allocation
     {
-      std::unique_lock<std::mutex> mutex_locker(mutex, std::defer_lock);
+      std::unique_lock mutex_locker(mutex, std::defer_lock);
       *d_ptr = nullptr;
       int device = INVALID_DEVICE_ORDINAL;
       cudaError_t error = cudaSuccess;
@@ -499,7 +499,7 @@ namespace notcub {
       cudaError_t error = cudaSuccess;
 
       // Lock
-      std::unique_lock<std::mutex> mutex_locker(mutex);
+      std::unique_lock mutex_locker(mutex);
 
       // Find corresponding block descriptor
       bool recached = false;
@@ -581,7 +581,7 @@ namespace notcub {
       int entrypoint_device = INVALID_DEVICE_ORDINAL;
       int current_device = INVALID_DEVICE_ORDINAL;
 
-      std::unique_lock<std::mutex> mutex_locker(mutex);
+      std::unique_lock mutex_locker(mutex);
 
       while (!cached_blocks.empty()) {
         // Get first block

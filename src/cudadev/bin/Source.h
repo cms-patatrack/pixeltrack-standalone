@@ -17,12 +17,10 @@
 namespace edm {
   class Source {
   public:
-    explicit Source(int maxEvents,
-                    int runForMinutes,
-                    ProductRegistry& reg,
-                    std::filesystem::path const& datadir,
-                    bool validation);
+    explicit Source(
+        int maxEvents, int runForMinutes, ProductRegistry& reg, std::filesystem::path const& datadir, bool validation);
 
+    void reconfigure(int maxEvents, int runForMinutes);
     void startProcessing();
 
     int maxEvents() const { return maxEvents_; }
@@ -35,7 +33,7 @@ namespace edm {
     int maxEvents_;
 
     // these are all for the mode where the processing length is limited by time
-    int const runForMinutes_;
+    int runForMinutes_;
     std::chrono::steady_clock::time_point startTime_;
     std::mutex timeMutex_;
     std::atomic<int> numEventsTimeLastCheck_ = 0;

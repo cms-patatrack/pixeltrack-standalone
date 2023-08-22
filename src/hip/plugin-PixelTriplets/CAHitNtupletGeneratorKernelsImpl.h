@@ -463,7 +463,7 @@ __global__ void kernel_fillHitDetIndices(HitContainer const *__restrict__ tuples
   }
   // fill hit indices
   auto const &hh = *hhp;
-  auto nhits = hh.nHits();
+  auto const nhits [[maybe_unused]] = hh.nHits();
   for (int idx = first, ntot = tuples->size(); idx < ntot; idx += gridDim.x * blockDim.x) {
     assert(tuples->bins[idx] < nhits);
     hitDetIndices->bins[idx] = hh.detectorIndex(tuples->bins[idx]);

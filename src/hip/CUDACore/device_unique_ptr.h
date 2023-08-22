@@ -1,8 +1,10 @@
 #ifndef HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
 #define HeterogeneousCore_CUDAUtilities_interface_device_unique_ptr_h
 
-#include <memory>
 #include <functional>
+#include <memory>
+
+#include <hip/hip_runtime.h>
 
 #include "CUDACore/allocate_device.h"
 #include "CUDACore/currentDevice.h"
@@ -15,16 +17,17 @@ namespace cms {
         class DeviceDeleter {
         public:
           DeviceDeleter() = default;  // for edm::Wrapper
-          DeviceDeleter(int device) : device_{device} {}
+          DeviceDeleter(int device, hipStream_t stream) : device_{device}, stream_{stream} {}
 
           void operator()(void *ptr) {
             if (device_ >= 0) {
-              free_device(device_, ptr);
+              free_device(device_, ptr, stream_);
             }
           }
 
         private:
           int device_ = -1;
+          hipStream_t stream_ = hipStreamDefault;
         };
       }  // namespace impl
 
@@ -54,7 +57,7 @@ namespace cms {
       int dev = currentDevice();
       void *mem = allocate_device(dev, sizeof(T), stream);
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{dev, stream}};
     }
 
     template <typename T>
@@ -66,7 +69,7 @@ namespace cms {
       int dev = currentDevice();
       void *mem = allocate_device(dev, n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev, stream}};
     }
 
     template <typename T, typename... Args>
@@ -79,7 +82,7 @@ namespace cms {
       int dev = currentDevice();
       void *mem = allocate_device(dev, sizeof(T), stream);
       return typename device::impl::make_device_unique_selector<T>::non_array{reinterpret_cast<T *>(mem),
-                                                                              device::impl::DeviceDeleter{dev}};
+                                                                              device::impl::DeviceDeleter{dev, stream}};
     }
 
     template <typename T>
@@ -89,7 +92,7 @@ namespace cms {
       int dev = currentDevice();
       void *mem = allocate_device(dev, n * sizeof(element_type), stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
-          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
+          reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev, stream}};
     }
 
     template <typename T, typename... Args>

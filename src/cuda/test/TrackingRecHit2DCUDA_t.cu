@@ -6,22 +6,24 @@ namespace testTrackingRecHit2D {
 
   __global__ void fill(TrackingRecHit2DSOAView* phits) {
     assert(phits);
-    auto& hits = *phits;
-    assert(hits.nHits() == 200);
+    assert(phits->nHits() == 200);
 
     int i = threadIdx.x;
     if (i > 200)
       return;
+
+    // FIXME do something ?
   }
 
   __global__ void verify(TrackingRecHit2DSOAView const* phits) {
     assert(phits);
-    auto const& hits = *phits;
-    assert(hits.nHits() == 200);
+    assert(phits->nHits() == 200);
 
     int i = threadIdx.x;
     if (i > 200)
       return;
+
+    // FIXME do something ?
   }
 
   void runKernels(TrackingRecHit2DSOAView* hits) {
@@ -31,12 +33,6 @@ namespace testTrackingRecHit2D {
   }
 
 }  // namespace testTrackingRecHit2D
-
-namespace testTrackingRecHit2D {
-
-  void runKernels(TrackingRecHit2DSOAView* hits);
-
-}
 
 int main() {
   cudaStream_t stream;
