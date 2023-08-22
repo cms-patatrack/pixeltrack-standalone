@@ -87,6 +87,15 @@ namespace edm {
     }
   }
 
+  void Source::reconfigure(int maxEvents, int runForMinutes) {
+    std::scoped_lock lock(timeMutex_);
+    maxEvents_ = maxEvents;
+    runForMinutes_ = runForMinutes;
+    numEventsTimeLastCheck_ = 0;
+    shouldStop_ = false;
+    numEvents_ = 0;
+  }
+
   void Source::startProcessing() {
     if (runForMinutes_ >= 0) {
       startTime_ = std::chrono::steady_clock::now();
