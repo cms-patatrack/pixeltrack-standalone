@@ -10,7 +10,7 @@
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/StreamCache.h"
 #include "AlpakaCore/HostOnlyTask.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/chooseDevice.h"
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"

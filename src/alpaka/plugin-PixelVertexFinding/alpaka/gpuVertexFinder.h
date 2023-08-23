@@ -1,7 +1,7 @@
 #ifndef plugin_PixelVertexFinding_alpaka_gpuVertexFinder_h
 #define plugin_PixelVertexFinding_alpaka_gpuVertexFinder_h
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/ZVertexAlpaka.h"
 

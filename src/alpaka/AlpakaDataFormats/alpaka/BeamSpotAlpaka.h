@@ -3,7 +3,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "DataFormats/BeamSpotPOD.h"
 

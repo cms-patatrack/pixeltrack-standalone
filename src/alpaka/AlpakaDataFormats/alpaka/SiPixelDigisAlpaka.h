@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

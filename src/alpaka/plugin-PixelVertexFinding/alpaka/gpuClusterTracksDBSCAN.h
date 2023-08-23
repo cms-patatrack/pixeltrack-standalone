@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 #include "gpuVertexFinder.h"
 

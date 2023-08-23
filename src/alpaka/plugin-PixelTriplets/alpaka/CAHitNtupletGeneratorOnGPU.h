@@ -2,7 +2,7 @@
 #define plugin_PixelTriplets_alpaka_CAHitNtupletGeneratorOnGPU_h
 
 #include "AlpakaCore/SimpleVector.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 //#include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "AlpakaCore/ESProduct.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 

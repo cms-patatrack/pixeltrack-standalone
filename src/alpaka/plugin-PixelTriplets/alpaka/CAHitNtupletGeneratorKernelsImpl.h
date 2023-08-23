@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "../CAConstants.h"

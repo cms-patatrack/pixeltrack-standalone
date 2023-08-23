@@ -1,7 +1,7 @@
 #include <memory>
 #include <string>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "CondFormats/alpaka/PixelCPEFast.h"
 #include "Framework/ESPluginFactory.h"
 #include "Framework/ESProducer.h"

@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 namespace cms::alpakatools {
 

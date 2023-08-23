@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/alpaka/SiPixelDigiErrorsAlpaka.h"

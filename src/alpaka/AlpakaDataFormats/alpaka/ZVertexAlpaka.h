@@ -1,7 +1,7 @@
 #ifndef AlpakaDataFormats_alpaka_ZVertexAlpaka_h
 #define AlpakaDataFormats_alpaka_ZVertexAlpaka_h
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/ZVertexSoA.h"
 

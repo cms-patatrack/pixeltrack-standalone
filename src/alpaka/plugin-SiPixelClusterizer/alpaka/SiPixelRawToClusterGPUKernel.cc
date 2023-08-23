@@ -21,7 +21,7 @@
 
 // CMSSW includes
 #include "AlpakaCore/prefixScan.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
 

@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 #include "CondFormats/alpaka/SiPixelFedCablingMapGPUWrapper.h"
 #include "Framework/ESPluginFactory.h"

@@ -7,7 +7,7 @@
 
 #include <Eigen/Core>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 namespace eigenSoA {
 

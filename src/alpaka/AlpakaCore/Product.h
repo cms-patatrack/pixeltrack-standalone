@@ -4,7 +4,7 @@
 #include <memory>
 #include <utility>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/ProductBase.h"
 
 namespace edm {

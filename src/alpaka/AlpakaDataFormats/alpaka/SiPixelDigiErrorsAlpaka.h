@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "AlpakaCore/SimpleVector.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "DataFormats/PixelErrors.h"
 

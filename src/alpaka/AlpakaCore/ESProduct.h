@@ -10,7 +10,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/EventCache.h"
 

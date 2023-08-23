@@ -2,7 +2,7 @@
 #define AlpakaDataFormats_TrajectoryStateSoA_h
 
 #include <Eigen/Dense>
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/eigenSoA.h"
 
 template <int32_t S>

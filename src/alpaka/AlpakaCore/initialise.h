@@ -1,7 +1,7 @@
 #ifndef AlpakaCore_initialise_h
 #define AlpakaCore_initialise_h
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 namespace cms::alpakatools {
 

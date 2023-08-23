@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/prefixScan.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 

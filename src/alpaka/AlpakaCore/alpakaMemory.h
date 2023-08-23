@@ -29,7 +29,7 @@ namespace cms {
 
 #include "AlpakaCore/AllocatorPolicy.h"
 #include "AlpakaCore/CachedBufAlloc.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaDevices.h"
 
 namespace cms::alpakatools {

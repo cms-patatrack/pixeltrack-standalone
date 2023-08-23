@@ -6,7 +6,7 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/alpaka/SiPixelDigiErrorsAlpaka.h"
 #include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"

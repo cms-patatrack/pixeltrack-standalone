@@ -1,7 +1,7 @@
 #ifndef AlpakaDataFormats_PixelTrackHost_h
 #define AlpakaDataFormats_PixelTrackHost_h
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/PixelTrackSoA.h"
 
