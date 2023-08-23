@@ -160,8 +160,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 #ifdef TODO
     // only the local coord and detector index
-    cms::alpakatools::host::unique_ptr<uint16_t[]> detIndexToHostAsync(cudaStream_t stream) const;
-    cms::alpakatools::host::unique_ptr<uint32_t[]> hitsModuleStartToHostAsync(cudaStream_t stream) const;
+    cms::alpakatools::host_buffer<uint16_t[]> detIndexToHostAsync(Queue& queue) const;
+    cms::alpakatools::host_buffer<uint32_t[]> hitsModuleStartToHostAsync(Queue& queue) const;
 #endif
 
     // non-const accessors
@@ -254,6 +254,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // This is used to access and modify data on GPU in a SoA format (TrackingRecHit2DSoAView),
     // while the data itself is owned here in the TrackingRecHit2DAlpaka instance.
     cms::alpakatools::device_buffer<Device, TrackingRecHit2DSoAView> m_view;
+
     // Keep a host copy of the device view alive during the asynchronous copy
     cms::alpakatools::host_buffer<TrackingRecHit2DSoAView> m_view_h;
   };

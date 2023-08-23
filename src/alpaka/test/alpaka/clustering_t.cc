@@ -9,10 +9,10 @@
 #include <set>
 #include <vector>
 
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/devices.h"
+#include "AlpakaCore/initialise.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/workdivision.h"
-#include "AlpakaCore/initialise.h"
 
 // dirty, but works
 #include "plugin-SiPixelClusterizer/alpaka/gpuClustering.h"
@@ -23,8 +23,7 @@ using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 int main(void) {
   initialise<Platform>();
-  const DevHost host(alpaka::getDevByIdx(platformHost, 0u));
-  const Device device(alpaka::getDevByIdx(*platform<Platform>, 0u));
+  const Device device = devices<Platform>().at(0);
   Queue queue(device);
 
   constexpr unsigned int numElements = 256 * 2000;

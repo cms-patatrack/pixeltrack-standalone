@@ -3,7 +3,7 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/devices.h"
 #include "AlpakaCore/initialise.h"
 #include "Framework/demangle.h"
 
@@ -12,20 +12,18 @@ namespace cms::alpakatools {
   template <typename TPlatform>
   void initialise(bool verbose) {
     constexpr const char* suffix[] = {"devices.", "device:", "devices:"};
+    static bool done = false;
 
-    if (not platform<TPlatform>.has_value()) {
-      // global objects in the cms::alpakatools namespace
-      platform<TPlatform> = TPlatform{};
-      devices<TPlatform> = alpaka::getDevs(*platform<TPlatform>);
-
-      auto size = devices<TPlatform>.size();
+    if (not done) {
+      auto size = devices<TPlatform>().size();
       std::cout << "Found " << size << " " << suffix[size < 2 ? size : 2] << std::endl;
-      for (auto const& device : devices<TPlatform>) {
+      for (auto const& device : devices<TPlatform>()) {
         std::cout << "  - " << alpaka::getName(device) << std::endl;
       }
       if (verbose) {
         std::cout << edm::demangle<TPlatform> << " platform succesfully initialised." << std::endl;
       }
+      done = true;
     } else {
       if (verbose) {
         std::cout << edm::demangle<TPlatform> << " platform already initialised." << std::endl;

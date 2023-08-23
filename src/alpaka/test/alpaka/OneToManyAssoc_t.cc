@@ -6,11 +6,11 @@
 #include <memory>
 #include <random>
 
-#include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/HistoContainer.h"
+#include "AlpakaCore/devices.h"
+#include "AlpakaCore/initialise.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/workdivision.h"
-#include "AlpakaCore/initialise.h"
 
 constexpr uint32_t MaxElem = 64000;
 constexpr uint32_t MaxTk = 8000;
@@ -135,8 +135,7 @@ struct verifyBulk {
 
 int main() {
   initialise<Platform>();
-  const DevHost host(alpaka::getDevByIdx(platformHost, 0u));
-  const Device device(alpaka::getDevByIdx(*platform<Platform>, 0u));
+  const Device device = devices<Platform>().at(0);
   Queue queue(device);
 
   std::cout << "OneToManyAssoc " << sizeof(Assoc) << ' ' << Assoc::nbins() << ' ' << Assoc::capacity() << std::endl;

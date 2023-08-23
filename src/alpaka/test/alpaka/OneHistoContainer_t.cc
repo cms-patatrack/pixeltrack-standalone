@@ -5,9 +5,9 @@
 #include <random>
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaDevices.h"
-#include "AlpakaCore/memory.h"
+#include "AlpakaCore/devices.h"
 #include "AlpakaCore/initialise.h"
+#include "AlpakaCore/memory.h"
 
 using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
@@ -155,13 +155,12 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
 
 int main() {
   initialise<Platform>();
-  const DevHost host(alpaka::getDevByIdx(platformHost, 0u));
-  const Device device(alpaka::getDevByIdx(*platform<Platform>, 0u));
+  Device const& device = devices<Platform>().at(0);
   Queue queue(device);
 
-  go<int16_t>(host, device, queue);
-  go<uint8_t, 128, 8, 4>(host, device, queue);
-  go<uint16_t, 313 / 2, 9, 4>(host, device, queue);
+  go<int16_t>(host(), device, queue);
+  go<uint8_t, 128, 8, 4>(host(), device, queue);
+  go<uint16_t, 313 / 2, 9, 4>(host(), device, queue);
 
   return 0;
 }

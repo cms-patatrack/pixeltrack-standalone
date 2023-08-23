@@ -30,7 +30,7 @@ namespace cms {
 #include "AlpakaCore/AllocatorPolicy.h"
 #include "AlpakaCore/CachedBufAlloc.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/devices.h"
 
 namespace cms::alpakatools {
 
@@ -81,19 +81,19 @@ namespace cms::alpakatools {
 
   template <typename T>
   std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer() {
-    return alpaka::allocBuf<T, Idx>(host, Scalar{});
+    return alpaka::allocBuf<T, Idx>(host(), Scalar{});
   }
 
   template <typename T>
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer(Extent extent) {
-    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{extent});
+    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host(), Vec1D{extent});
   }
 
   template <typename T>
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer() {
-    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host, Vec1D{std::extent_v<T>});
+    return alpaka::allocBuf<std::remove_extent_t<T>, Idx>(host(), Vec1D{std::extent_v<T>});
   }
 
   // non-cached, pinned, scalar and 1-dimensional host buffers
@@ -101,20 +101,20 @@ namespace cms::alpakatools {
 
   template <typename T, typename TPlatform>
   std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer() {
-    return alpaka::allocMappedBuf<TPlatform, T, Idx>(host, *platform<TPlatform>, Scalar{});
+    return alpaka::allocMappedBuf<TPlatform, T, Idx>(host(), platform<TPlatform>(), Scalar{});
   }
 
   template <typename T, typename TPlatform>
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer(Extent extent) {
-    return alpaka::allocMappedBuf<TPlatform, std::remove_extent_t<T>, Idx>(host, *platform<TPlatform>, Vec1D{extent});
+    return alpaka::allocMappedBuf<TPlatform, std::remove_extent_t<T>, Idx>(host(), platform<TPlatform>(), Vec1D{extent});
   }
 
   template <typename T, typename TPlatform>
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer() {
     return alpaka::allocMappedBuf<TPlatform, std::remove_extent_t<T>, Idx>(
-        host, *platform<TPlatform>, Vec1D{std::extent_v<T>});
+        host(), platform<TPlatform>(), Vec1D{std::extent_v<T>});
   }
 
   // potentially cached, pinned, scalar and 1-dimensional host buffers, associated to a work queue
@@ -123,10 +123,10 @@ namespace cms::alpakatools {
   template <typename T, typename TQueue>
   std::enable_if_t<not std::is_array_v<T>, host_buffer<T>> make_host_buffer(TQueue const& queue) {
     if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
-      return allocCachedBuf<T, Idx>(host, queue, Scalar{});
+      return allocCachedBuf<T, Idx>(host(), queue, Scalar{});
     } else {
       using Platform = alpaka::Platform<alpaka::Dev<TQueue>>;
-      return alpaka::allocMappedBuf<Platform, T, Idx>(host, *platform<Platform>, Scalar{});
+      return alpaka::allocMappedBuf<Platform, T, Idx>(host(), platform<Platform>(), Scalar{});
     }
   }
 
@@ -134,10 +134,10 @@ namespace cms::alpakatools {
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer(TQueue const& queue, Extent extent) {
     if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
-      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host, queue, Vec1D{extent});
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host(), queue, Vec1D{extent});
     } else {
       using Platform = alpaka::Platform<alpaka::Dev<TQueue>>;
-      return alpaka::allocMappedBuf<Platform, std::remove_extent_t<T>, Idx>(host, *platform<Platform>, Vec1D{extent});
+      return alpaka::allocMappedBuf<Platform, std::remove_extent_t<T>, Idx>(host(), platform<Platform>(), Vec1D{extent});
     }
   }
 
@@ -145,11 +145,11 @@ namespace cms::alpakatools {
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_buffer<T>>
   make_host_buffer(TQueue const& queue) {
     if constexpr (allocator_policy<alpaka::Dev<TQueue>> == AllocatorPolicy::Caching) {
-      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host, queue, Vec1D{std::extent_v<T>});
+      return allocCachedBuf<std::remove_extent_t<T>, Idx>(host(), queue, Vec1D{std::extent_v<T>});
     } else {
       using Platform = alpaka::Platform<alpaka::Dev<TQueue>>;
       return alpaka::allocMappedBuf<Platform, std::remove_extent_t<T>, Idx>(
-          host, *platform<Platform>, Vec1D{std::extent_v<T>});
+          host(), platform<Platform>(), Vec1D{std::extent_v<T>});
     }
   }
 
@@ -160,24 +160,24 @@ namespace cms::alpakatools {
 
   template <typename T>
   std::enable_if_t<not std::is_array_v<T>, host_view<T>> make_host_view(T& data) {
-    return alpaka::ViewPlainPtr<DevHost, T, Dim0D, Idx>(&data, host, Scalar{});
+    return alpaka::ViewPlainPtr<DevHost, T, Dim0D, Idx>(&data, host(), Scalar{});
   }
 
   template <typename T>
   host_view<T[]> make_host_view(T* data, Extent extent) {
-    return alpaka::ViewPlainPtr<DevHost, T, Dim1D, Idx>(data, host, Vec1D{extent});
+    return alpaka::ViewPlainPtr<DevHost, T, Dim1D, Idx>(data, host(), Vec1D{extent});
   }
 
   template <typename T>
   std::enable_if_t<cms::is_unbounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_view<T>>
   make_host_view(T& data, Extent extent) {
-    return alpaka::ViewPlainPtr<DevHost, std::remove_extent_t<T>, Dim1D, Idx>(data, host, Vec1D{extent});
+    return alpaka::ViewPlainPtr<DevHost, std::remove_extent_t<T>, Dim1D, Idx>(data, host(), Vec1D{extent});
   }
 
   template <typename T>
   std::enable_if_t<cms::is_bounded_array_v<T> and not std::is_array_v<std::remove_extent_t<T>>, host_view<T>>
   make_host_view(T& data) {
-    return alpaka::ViewPlainPtr<DevHost, std::remove_extent_t<T>, Dim1D, Idx>(data, host, Vec1D{std::extent_v<T>});
+    return alpaka::ViewPlainPtr<DevHost, std::remove_extent_t<T>, Dim1D, Idx>(data, host(), Vec1D{std::extent_v<T>});
   }
 
   // scalar and 1-dimensional device buffers

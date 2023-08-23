@@ -2,10 +2,10 @@
 #include <iostream>
 
 #include "AlpakaCore/AtomicPairCounter.h"
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/devices.h"
+#include "AlpakaCore/initialise.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/workdivision.h"
-#include "AlpakaCore/initialise.h"
 
 using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
@@ -57,8 +57,7 @@ struct verify {
 
 int main() {
   initialise<Platform>();
-  const DevHost host(alpaka::getDevByIdx(platformHost, 0u));
-  const Device device(alpaka::getDevByIdx(*platform<Platform>, 0u));
+  const Device device = devices<Platform>().at(0);
   Queue queue(device);
 
   auto c_d = make_device_buffer<AtomicPairCounter>(queue);
