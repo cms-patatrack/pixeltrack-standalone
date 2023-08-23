@@ -2,7 +2,7 @@
 
 #include "AlpakaCore/alpakaDevices.h"
 #include "AlpakaCore/memory.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/workdivision.h"
 #include "AlpakaCore/initialise.h"
 #include "AlpakaCore/prefixScan.h"
 

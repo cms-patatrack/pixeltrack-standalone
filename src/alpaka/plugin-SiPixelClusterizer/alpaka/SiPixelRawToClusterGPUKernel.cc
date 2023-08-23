@@ -23,7 +23,7 @@
 #include "AlpakaCore/prefixScan.h"
 #include "AlpakaCore/config.h"
 #include "AlpakaCore/memory.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/workdivision.h"
 
 // local includes
 #include "../gpuClusterChargeCut.h"

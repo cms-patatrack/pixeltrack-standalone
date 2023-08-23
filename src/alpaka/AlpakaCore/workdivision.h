@@ -1,5 +1,5 @@
-#ifndef AlpakaCore_alpakaWorkDiv_h
-#define AlpakaCore_alpakaWorkDiv_h
+#ifndef AlpakaCore_workdivision_h
+#define AlpakaCore_workdivision_h
 
 #include <algorithm>
 #include <utility>
@@ -382,4 +382,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // AlpakaCore_alpakaWorkDiv_h
+#endif  // AlpakaCore_workdivision_h

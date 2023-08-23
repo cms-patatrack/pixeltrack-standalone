@@ -2,7 +2,7 @@
 
 #include "AlpakaCore/config.h"
 #include "AlpakaCore/memory.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/workdivision.h"
 
 #include "gpuVertexFinder.h"
 #include "gpuClusterTracksByDensity.h"

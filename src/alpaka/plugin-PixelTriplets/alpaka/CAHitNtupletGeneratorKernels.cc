@@ -5,7 +5,7 @@
 #endif
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/workdivision.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "CAHitNtupletGeneratorKernelsImpl.h"
