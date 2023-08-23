@@ -5,7 +5,7 @@
 
 #include "AlpakaCore/ESProduct.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

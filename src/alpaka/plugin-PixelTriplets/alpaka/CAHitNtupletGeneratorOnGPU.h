@@ -3,7 +3,7 @@
 
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/config.h"
-//#include "AlpakaCore/alpakaMemory.h"
+//#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 

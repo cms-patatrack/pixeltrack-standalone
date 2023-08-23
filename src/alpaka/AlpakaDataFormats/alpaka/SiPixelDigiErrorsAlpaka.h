@@ -5,7 +5,7 @@
 
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "DataFormats/PixelErrors.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

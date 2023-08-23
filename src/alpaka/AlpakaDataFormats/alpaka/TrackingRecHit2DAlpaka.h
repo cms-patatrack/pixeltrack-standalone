@@ -6,7 +6,7 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/TrackingRecHit2DSoAView.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

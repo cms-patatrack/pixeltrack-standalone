@@ -4,7 +4,7 @@
 
 #include "AlpakaCore/ScopedContext.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/PixelTrackHost.h"
 #include "Framework/EDProducer.h"

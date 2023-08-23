@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "AlpakaCore/alpakaDevices.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
 #include "AlpakaCore/initialise.h"
 

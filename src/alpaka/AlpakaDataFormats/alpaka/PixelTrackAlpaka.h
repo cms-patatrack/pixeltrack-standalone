@@ -2,7 +2,7 @@
 #define AlpakaDataFormats_alpaka_PixelTrackAlpaka_h
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/PixelTrackSoA.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

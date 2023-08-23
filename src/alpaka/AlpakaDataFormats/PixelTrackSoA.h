@@ -5,7 +5,7 @@
 
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/TrajectoryStateSoA.h"
 
 namespace trackQuality {

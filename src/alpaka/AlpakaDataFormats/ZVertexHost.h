@@ -2,7 +2,7 @@
 #define AlpakaDataFormats_ZVertexHost_h
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/ZVertexSoA.h"
 
 using ZVertexHost = cms::alpakatools::host_buffer<ZVertexSoA>;

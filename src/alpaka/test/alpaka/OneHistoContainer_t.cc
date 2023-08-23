@@ -6,7 +6,7 @@
 
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpakaDevices.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaCore/initialise.h"
 
 using namespace cms::alpakatools;

@@ -1,5 +1,5 @@
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaCore/alpakaWorkDiv.h"
 
 #include "RiemannFitOnGPU.h"
