@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/initialise.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/prefixScan.h"

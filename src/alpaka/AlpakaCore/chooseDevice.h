@@ -2,7 +2,7 @@
 #define HeterogeneousCore_AlpakaCore_chooseDevice_h
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "Framework/Event.h"
 
 namespace cms::alpakatools {

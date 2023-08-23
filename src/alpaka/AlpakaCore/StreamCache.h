@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "Framework/ReusableObjectHolder.h"
 
 namespace cms::alpakatools {

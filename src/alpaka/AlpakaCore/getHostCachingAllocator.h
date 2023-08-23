@@ -3,7 +3,8 @@
 
 #include "AlpakaCore/AllocatorConfig.h"
 #include "AlpakaCore/CachingAllocator.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
+#include "AlpakaCore/host.h"
 
 namespace cms::alpakatools {
 

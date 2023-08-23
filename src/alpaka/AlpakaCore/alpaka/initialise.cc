@@ -3,7 +3,7 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/initialise.h"
 #include "Framework/demangle.h"
 
@@ -23,13 +23,14 @@ namespace cms::alpakatools {
       if (verbose) {
         std::cout << edm::demangle<TPlatform> << " platform succesfully initialised." << std::endl;
       }
+      std::cout << std::endl;
       done = true;
     } else {
       if (verbose) {
         std::cout << edm::demangle<TPlatform> << " platform already initialised." << std::endl;
+        std::cout << std::endl;
       }
     }
-    std::cout << std::endl;
   }
 
   // explicit template instantiation definition

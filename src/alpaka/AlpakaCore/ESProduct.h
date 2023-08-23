@@ -11,7 +11,7 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/EventCache.h"
 
 namespace cms::alpakatools {

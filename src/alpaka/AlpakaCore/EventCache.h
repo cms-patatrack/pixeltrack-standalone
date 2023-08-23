@@ -7,7 +7,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/getDeviceIndex.h"
 #include "Framework/ReusableObjectHolder.h"
 

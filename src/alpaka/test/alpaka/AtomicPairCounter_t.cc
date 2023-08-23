@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "AlpakaCore/AtomicPairCounter.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/initialise.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/workdivision.h"

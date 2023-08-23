@@ -30,7 +30,8 @@ namespace cms {
 #include "AlpakaCore/AllocatorPolicy.h"
 #include "AlpakaCore/CachedBufAlloc.h"
 #include "AlpakaCore/config.h"
-#include "AlpakaCore/devices.h"
+#include "AlpakaCore/alpaka/devices.h"
+#include "AlpakaCore/host.h"
 
 namespace cms::alpakatools {
 
