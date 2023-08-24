@@ -29,5 +29,13 @@ namespace alpaka_rocm_async {
   void initialise(bool verbose = false);
 }
 #endif
+#ifdef ALPAKA_ACC_SYCL_PRESENT
+namespace alpaka_cpu_sycl {
+  void initialise(bool verbose = false);
+}
+namespace alpaka_gpu_sycl {
+  void initialise(bool verbose = false);
+}
+#endif
 
 #endif  // AlpakaCore_initialise_h

@@ -5,7 +5,7 @@
 #define STRINGIFY_(ARG) #ARG
 #define STRINGIFY(ARG) STRINGIFY_(ARG)
 
-#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__) || defined(__SYCL_DEVICE_ONLY__)
 // CUDA or HIP device compiler
 
 #define CMS_UNROLL_LOOP _Pragma(STRINGIFY(unroll))
@@ -16,7 +16,7 @@
 #define CMS_DEVICE_UNROLL_LOOP_COUNT(N) _Pragma(STRINGIFY(unroll N))
 #define CMS_DEVICE_UNROLL_LOOP_DISABLE _Pragma(STRINGIFY(unroll 1))
 
-#else  // defined (__CUDA_ARCH__) || defined (__HIP_DEVICE_COMPILE__)
+#else  // defined (__CUDA_ARCH__) || defined (__HIP_DEVICE_COMPILE__) || defined(__SYCL_DEVICE_ONLY__)
 
 // any host compiler
 #define CMS_DEVICE_UNROLL_LOOP

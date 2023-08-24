@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/core/CallbackThread.hpp>
 
 namespace alpaka {
 
@@ -59,6 +60,32 @@ namespace alpaka {
       }
     };
 #endif  // ALPAKA_ACC_GPU_HIP_ENABLED
+
+#ifdef ALPAKA_SYCL_ONEAPI_CPU
+    using Task = std::packaged_task<void()>;
+    //! The SYCL CPU async queue enqueue trait specialization for "safe tasks"
+    template <>
+    struct Enqueue<QueueCpuSyclNonBlocking, Task> {
+      ALPAKA_FN_HOST static auto enqueue(QueueCpuSyclNonBlocking& queue, Task&& task) -> void {
+        alpaka::core::CallbackThread m_callbackThread;
+        queue.getNativeHandle().wait();
+        m_callbackThread.submit(std::forward<Task>(task));
+      }
+    };
+#endif // ALPAKA_SYCL_ONEAPI_CPU
+
+#ifdef ALPAKA_SYCL_ONEAPI_GPU
+    using Task = std::packaged_task<void()>;
+    //! The SYCL GPU async queue enqueue trait specialization for "safe tasks"
+    template <>
+    struct Enqueue<QueueGpuSyclIntelNonBlocking, Task> {
+      ALPAKA_FN_HOST static auto enqueue(QueueGpuSyclIntelNonBlocking& queue, Task&& task) -> void {
+        alpaka::core::CallbackThread m_callbackThread;
+        queue.getNativeHandle().wait();
+        m_callbackThread.submit(std::forward<Task>(task));
+      }
+    };
+#endif  // ALPAKA_SYCL_ONEAPI_GPU
 
   }  // namespace trait
 

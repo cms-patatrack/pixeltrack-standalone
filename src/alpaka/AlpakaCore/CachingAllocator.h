@@ -201,9 +201,13 @@ namespace cms::alpakatools {
           std::ostringstream out;
           out << "\t" << deviceType_ << " " << alpaka::getName(device_) << " returned " << block.bytes << " bytes at "
               << ptr << " from associated queue " << block.queue->m_spQueueImpl.get() << " , event "
-              << block.event->m_spEventImpl.get() << " .\n\t\t " << cachedBlocks_.size() << " available blocks cached ("
-              << cachedBytes_.free << " bytes), " << liveBlocks_.size() << " live blocks (" << cachedBytes_.live
-              << " bytes) outstanding." << std::endl;
+#if ALPAKA_ACC_SYCL_ENABLED
+              << " is not a shared pointer in SYCL"
+#else
+              << block.event->m_spEventImpl.get()
+#endif
+              << " .\n\t\t " << cachedBlocks_.size() << " available blocks cached (" << cachedBytes_.free << " bytes), "
+              << liveBlocks_.size() << " live blocks (" << cachedBytes_.live << " bytes) outstanding." << std::endl;
           std::cout << out.str() << std::endl;
         }
       } else {
@@ -212,9 +216,13 @@ namespace cms::alpakatools {
           std::ostringstream out;
           out << "\t" << deviceType_ << " " << alpaka::getName(device_) << " freed " << block.bytes << " bytes at "
               << ptr << " from associated queue " << block.queue->m_spQueueImpl.get() << ", event "
-              << block.event->m_spEventImpl.get() << " .\n\t\t " << cachedBlocks_.size() << " available blocks cached ("
-              << cachedBytes_.free << " bytes), " << liveBlocks_.size() << " live blocks (" << cachedBytes_.live
-              << " bytes) outstanding." << std::endl;
+#if ALPAKA_ACC_SYCL_ENABLED
+              << " is not a shared pointer in SYCL"
+#else
+              << block.event->m_spEventImpl.get()
+#endif
+              << " .\n\t\t " << cachedBlocks_.size() << " available blocks cached (" << cachedBytes_.free << " bytes), "
+              << liveBlocks_.size() << " live blocks (" << cachedBytes_.live << " bytes) outstanding." << std::endl;
           std::cout << out.str() << std::endl;
         }
       }
@@ -301,9 +309,18 @@ namespace cms::alpakatools {
             std::ostringstream out;
             out << "\t" << deviceType_ << " " << alpaka::getName(device_) << " reused cached block at "
                 << block.buffer->data() << " (" << block.bytes << " bytes) for queue "
-                << block.queue->m_spQueueImpl.get() << ", event " << block.event->m_spEventImpl.get()
+                << block.queue->m_spQueueImpl.get() << ", event "
+#if ALPAKA_ACC_SYCL_ENABLED
+                << " is not a shared pointer in SYCL"
+#else
+                << block.event->m_spEventImpl.get()
+#endif
                 << " (previously associated with stream " << iBlock->second.queue->m_spQueueImpl.get() << " , event "
+#if ALPAKA_ACC_SYCL_ENABLED
+                << " is not a shared pointer in SYCL)." << std::endl;
+#else
                 << iBlock->second.event->m_spEventImpl.get() << ")." << std::endl;
+#endif
             std::cout << out.str() << std::endl;
           }
 
@@ -366,7 +383,13 @@ namespace cms::alpakatools {
         std::ostringstream out;
         out << "\t" << deviceType_ << " " << alpaka::getName(device_) << " allocated new block at "
             << block.buffer->data() << " (" << block.bytes << " bytes associated with queue "
-            << block.queue->m_spQueueImpl.get() << ", event " << block.event->m_spEventImpl.get() << "." << std::endl;
+            << block.queue->m_spQueueImpl.get() << ", event "
+#if ALPAKA_ACC_SYCL_ENABLED
+            << " is not a shared pointer in SYCL"
+#else
+            << block.event->m_spEventImpl.get()
+#endif
+            << "." << std::endl;
         std::cout << out.str() << std::endl;
       }
     }

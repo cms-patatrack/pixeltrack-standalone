@@ -26,7 +26,12 @@ namespace cms::alpakatools {
 
     ESProduct() : gpuDataPerDevice_(devices<Platform>().size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event = getEventCache<Event>().get(devices<Platform>()[i]);
+        gpuDataPerDevice_[i].m_event =
+#if !defined(ALPAKA_ACC_SYCL_ENABLED)
+            getEventCache<Event>().get(devices<Platform>()[i]);
+#else
+            std::make_shared<Event>(devices<Platform>()[i]);
+#endif
       }
     }
 

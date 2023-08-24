@@ -48,6 +48,26 @@ namespace cms::alpakatools {
 #endif
 #endif  // ALPAKA_ACC_GPU_HIP_ENABLED
 
+#if defined ALPAKA_SYCL_ONEAPI_CPU
+  template <>
+  constexpr inline AllocatorPolicy allocator_policy<alpaka::DevCpuSycl> =
+#if !defined ALPAKA_DISABLE_CACHING_ALLOCATOR
+      AllocatorPolicy::Caching;
+#else
+      AllocatorPolicy::Synchronous;
+#endif
+#endif  // ALPAKA_SYCL_ONEAPI_CPU
+
+#if defined ALPAKA_SYCL_ONEAPI_GPU
+  template <>
+  constexpr inline AllocatorPolicy allocator_policy<alpaka::DevGpuSyclIntel> =
+#if !defined ALPAKA_DISABLE_CACHING_ALLOCATOR
+      AllocatorPolicy::Caching;
+#else
+      AllocatorPolicy::Synchronous;
+#endif
+#endif  // ALPAKA_SYCL_ONEAPI_GPU
+
 }  // namespace cms::alpakatools
 
 #endif  // AlpakaCore_AllocatorPolicy_h
