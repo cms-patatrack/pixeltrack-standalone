@@ -22,7 +22,7 @@ using namespace cms::alpakatools;
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 int main(void) {
-  initialise<Platform>();
+  initialise();
   const Device device = devices<Platform>().at(0);
   Queue queue(device);
 

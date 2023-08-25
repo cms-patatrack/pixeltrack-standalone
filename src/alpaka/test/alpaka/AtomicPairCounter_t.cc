@@ -56,7 +56,7 @@ struct verify {
 };
 
 int main() {
-  initialise<Platform>();
+  initialise();
   const Device device = devices<Platform>().at(0);
   Queue queue(device);
 

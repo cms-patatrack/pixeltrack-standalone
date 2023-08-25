@@ -110,7 +110,7 @@ struct verify {
 };
 
 int main() {
-  initialise<Platform>();
+  initialise();
   Device const& device = devices<Platform>().at(0);
   Queue queue(device);
 

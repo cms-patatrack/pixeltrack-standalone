@@ -209,22 +209,22 @@ int main(int argc, char** argv) {
   // Initialiase the selected backends
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
   if (backends.find(Backend::SERIAL) != backends.end()) {
-    cms::alpakatools::initialise<alpaka_serial_sync::Platform>();
+    alpaka_serial_sync::initialise();
   }
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
   if (backends.find(Backend::TBB) != backends.end()) {
-    cms::alpakatools::initialise<alpaka_tbb_async::Platform>();
+    alpaka_serial_sync::initialise();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
   if (backends.find(Backend::CUDA) != backends.end()) {
-    cms::alpakatools::initialise<alpaka_cuda_async::Platform>();
+    alpaka_cuda_async::initialise();
   }
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
   if (backends.find(Backend::HIP) != backends.end()) {
-    cms::alpakatools::initialise<alpaka_rocm_async::Platform>();
+    alpaka_rocm_async::initialise();
   }
 #endif
 

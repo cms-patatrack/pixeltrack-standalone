@@ -155,7 +155,7 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
 }
 
 int main() {
-  initialise<Platform>();
+  initialise();
   Device const& device = devices<Platform>().at(0);
   Queue queue(device);
 
