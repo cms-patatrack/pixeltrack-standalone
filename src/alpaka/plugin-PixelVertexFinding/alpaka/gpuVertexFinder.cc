@@ -131,7 +131,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto loadTracksWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks, blockSize);
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+      const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 32);
+#else
       const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1024 - 256);
+#endif
       const auto splitterFitterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1024, 128);
 
       if (oneKernel_) {

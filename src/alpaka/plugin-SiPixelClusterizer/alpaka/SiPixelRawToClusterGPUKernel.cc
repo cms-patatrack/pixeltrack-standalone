@@ -673,7 +673,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 32);
+#else
         const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 256);
+#endif
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.
