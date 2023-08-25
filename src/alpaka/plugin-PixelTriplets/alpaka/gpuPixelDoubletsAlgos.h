@@ -9,6 +9,7 @@
 
 #include "AlpakaCore/VecArray.h"
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "DataFormats/approx_atan2.h"
 
@@ -177,7 +178,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           auto zo = hh.zGlobal(j);
           auto ro = hh.rGlobal(j);
           auto dr = ro - mer;
-          return dr > maxr[pairLayerId] || dr < 0 || std::abs((mez * ro - mer * zo)) > z0cut * dr;
+          return dr > maxr[pairLayerId] || dr < 0 || math::abs((mez * ro - mer * zo)) > z0cut * dr;
         };
 
         auto zsizeCut = [&](int j) {
@@ -189,9 +190,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
           auto zo = hh.zGlobal(j);
           auto ro = hh.rGlobal(j);
-          return onlyBarrel ? mes > 0 && so > 0 && std::abs(so - mes) > dy
-                            : (inner < 4) && mes > 0 &&
-                                  std::abs(mes - int(std::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
+          return onlyBarrel
+                     ? mes > 0 && so > 0 && math::abs(so - mes) > dy
+                     : (inner < 4) && mes > 0 &&
+                           math::abs(mes - int(math::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
         };
 
         auto iphicut = phicuts[pairLayerId];
@@ -199,7 +201,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto kl = Hist::bin(int16_t(mep - iphicut));
         auto kh = Hist::bin(int16_t(mep + iphicut));
         auto incr = [](auto& k) { return k = (k + 1) % Hist::nbins(); };
-        // bool piWrap = std::abs(kh-kl) > Hist::nbins()/2;
+        // bool piWrap = math::abs(kh-kl) > Hist::nbins()/2;
 
 #ifdef GPU_DEBUG
         int tot = 0;
@@ -238,7 +240,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               continue;
 
             auto mop = hh.iphi(oi);
-            uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
+            uint16_t idphi = static_cast<uint16_t>(math::abs(static_cast<int32_t>(static_cast<int16_t>(mep - mop))));
             if (idphi > iphicut)
               continue;
 

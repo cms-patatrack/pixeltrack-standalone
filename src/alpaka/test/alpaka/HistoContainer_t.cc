@@ -8,6 +8,7 @@
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/host.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaCore/memory.h"
 #include "AlpakaCore/initialise.h"
 #include "AlpakaCore/workdivision.h"
@@ -126,7 +127,7 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
           if (kk != kl && kk != kh)
             nm += h->size(kk + off);
           for (auto p = h->begin(kk + off); p < h->end(kk + off); ++p) {
-            if (std::min(std::abs(T(v[*p] - me)), std::abs(T(me - v[*p]))) > window) {
+            if (std::min(math::abs(T(v[*p] - me)), math::abs(T(me - v[*p]))) > window) {
             } else {
               ++tot;
             }

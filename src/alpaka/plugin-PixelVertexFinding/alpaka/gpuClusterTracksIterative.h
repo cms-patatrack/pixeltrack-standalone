@@ -6,6 +6,7 @@
 
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 
 #include "gpuVertexFinder.h"
 
@@ -93,7 +94,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             auto loop = [&](uint32_t j) {
               if (i == j)
                 return;
-              auto dist = std::abs(zt[i] - zt[j]);
+              auto dist = math::abs(zt[i] - zt[j]);
               if (dist > eps)
                 return;
               if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
@@ -131,7 +132,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                   ALPAKA_ASSERT_OFFLOAD(i != j);
                   if (nn[j] < minT)
                     return;  // DBSCAN core rule
-                  auto dist = std::abs(zt[i] - zt[j]);
+                  auto dist = math::abs(zt[i] - zt[j]);
                   if (dist > eps)
                     return;
                   if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
@@ -161,7 +162,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             auto loop = [&](int j) {
               if (nn[j] < minT)
                 return;  // DBSCAN core rule
-              auto dist = std::abs(zt[i] - zt[j]);
+              auto dist = math::abs(zt[i] - zt[j]);
               if (dist > mdist)
                 return;
               if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))

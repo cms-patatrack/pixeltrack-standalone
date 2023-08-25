@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"
@@ -232,7 +233,7 @@ namespace gpuClustering {
           ALPAKA_ASSERT_OFFLOAD(m != i);
           ALPAKA_ASSERT_OFFLOAD(int(y[m]) - int(y[i]) >= 0);
           ALPAKA_ASSERT_OFFLOAD(int(y[m]) - int(y[i]) <= 1);
-          if (std::abs(int(x[m]) - int(x[i])) <= 1) {
+          if (math::abs(int(x[m]) - int(x[i])) <= 1) {
             auto l = nnn[k][jEquivalentClass]++;
             ALPAKA_ASSERT_OFFLOAD(l < maxNeighbours);
             nn[k][jEquivalentClass][l] = *p;
