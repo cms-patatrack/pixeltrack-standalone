@@ -570,7 +570,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       if (wordCounter)  // protect in case of empty event....
       {
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
         const int threadsPerBlockOrElementsPerThread = 512;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
@@ -626,7 +627,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       {
         // clusterizer ...
         using namespace gpuClustering;
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
         const auto threadsPerBlockOrElementsPerThread = 256;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.

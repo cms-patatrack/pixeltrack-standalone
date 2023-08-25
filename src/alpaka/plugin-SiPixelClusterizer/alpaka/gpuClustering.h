@@ -166,7 +166,8 @@ namespace gpuClustering {
       constexpr unsigned int maxiter = 16;
       ALPAKA_ASSERT_OFFLOAD((hist.size() / blockDimension) <= maxiter);
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
       constexpr uint32_t threadDimension = 1;
 #else
       // NB: can be tuned.

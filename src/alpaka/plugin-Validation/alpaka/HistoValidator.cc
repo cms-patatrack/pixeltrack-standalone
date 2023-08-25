@@ -224,6 +224,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::ofstream out("histograms_alpaka_cuda.txt");
 #elif defined ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND
     std::ofstream out("histograms_alpaka_hip.txt");
+#elif defined ALPAKA_ACC_SYCL_ENABLED
+    std::ofstream out("histograms_alpaka_sycl.txt");
 #else
 #error "Support for a new Alpaka backend must be added here"
 #endif
