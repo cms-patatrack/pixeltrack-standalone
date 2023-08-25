@@ -1,38 +1,9 @@
-#ifndef AlpakaCore_alpakaConfig_h
-#define AlpakaCore_alpakaConfig_h
+#ifndef AlpakaCore_config_h
+#define AlpakaCore_config_h
 
 #include "AlpakaCore/alpakaFwd.h"
 
-namespace alpaka_common {
-
-  // common types and dimensions
-  using Idx = uint32_t;
-  using Extent = uint32_t;
-  using Offsets = Extent;
-
-  using Dim0D = alpaka::DimInt<0u>;
-  using Dim1D = alpaka::DimInt<1u>;
-  using Dim2D = alpaka::DimInt<2u>;
-  using Dim3D = alpaka::DimInt<3u>;
-
-  template <typename TDim>
-  using Vec = alpaka::Vec<TDim, Idx>;
-  using Vec1D = Vec<Dim1D>;
-  using Vec2D = Vec<Dim2D>;
-  using Vec3D = Vec<Dim3D>;
-  using Scalar = Vec<Dim0D>;
-
-  template <typename TDim>
-  using WorkDiv = alpaka::WorkDivMembers<TDim, Idx>;
-  using WorkDiv1D = WorkDiv<Dim1D>;
-  using WorkDiv2D = WorkDiv<Dim2D>;
-  using WorkDiv3D = WorkDiv<Dim3D>;
-
-  // host types
-  using DevHost = alpaka::DevCpu;
-  using PlatformHost = alpaka::PlatformCpu;
-
-}  // namespace alpaka_common
+#include "AlpakaCore/common.h"
 
 // trick to force expanding ALPAKA_ACCELERATOR_NAMESPACE before stringification inside DEFINE_FWK_MODULE
 #define DEFINE_FWK_ALPAKA_MODULE2(name) DEFINE_FWK_MODULE(name)
@@ -157,4 +128,4 @@ namespace alpaka_omp2_async {
 #define ALPAKA_ACCELERATOR_NAMESPACE alpaka_omp2_async
 #endif  // ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ASYNC_BACKEND
 
-#endif  // AlpakaCore_alpakaConfig_h
+#endif  // AlpakaCore_config_h

@@ -7,7 +7,7 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/PixelTrackHost.h"
 #include "AlpakaDataFormats/ZVertexHost.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"

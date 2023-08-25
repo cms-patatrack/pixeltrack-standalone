@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <iterator>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "DataFormats/SOARotation.h"
 #include "Geometry/phase1PixelTopology.h"

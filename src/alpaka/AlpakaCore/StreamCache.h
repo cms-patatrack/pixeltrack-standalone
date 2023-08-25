@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "Framework/ReusableObjectHolder.h"
 
 namespace cms::alpakatools {
@@ -16,10 +16,10 @@ namespace cms::alpakatools {
 
   public:
     // StreamCache should be constructed by the first call to
-    // getStreamCache() only if we have CUDA devices present
-    StreamCache() : cache_(alpaka::getDevCount(*cms::alpakatools::platform<Platform>)) {}
+    // getStreamCache() only if we have devices present
+    StreamCache() : cache_(alpaka::getDevCount(platform<Platform>())) {}
 
-    // Gets a (cached) CUDA stream for the current device. The stream
+    // Gets a (cached) queue for the given device. The queue
     // will be returned to the cache by the shared_ptr destructor.
     // This function is thread safe
     ALPAKA_FN_HOST std::shared_ptr<Queue> get(Device const& dev) {

@@ -4,8 +4,8 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/ZVertexHost.h"
 #include "AlpakaDataFormats/alpaka/ZVertexAlpaka.h"
 #include "Framework/EDProducer.h"

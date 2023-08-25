@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 namespace cms::alpakatools {
 

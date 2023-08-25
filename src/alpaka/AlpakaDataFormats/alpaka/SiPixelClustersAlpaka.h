@@ -1,8 +1,8 @@
 #ifndef AlpakaDataFormats_alpaka_SiPixelClustersAlpaka_h
 #define AlpakaDataFormats_alpaka_SiPixelClustersAlpaka_h
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/memory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

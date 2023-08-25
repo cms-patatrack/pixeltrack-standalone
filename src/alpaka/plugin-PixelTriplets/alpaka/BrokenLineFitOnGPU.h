@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
 

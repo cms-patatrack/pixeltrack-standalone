@@ -3,7 +3,7 @@
 #endif
 
 #include "AlpakaCore/AllocatorPolicy.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "PixelRecHits.h"

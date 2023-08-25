@@ -4,8 +4,8 @@
 #include <iostream>
 #endif
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/workdivision.h"
 
 #include "CAHitNtupletGeneratorKernels.h"
 #include "CAHitNtupletGeneratorKernelsImpl.h"

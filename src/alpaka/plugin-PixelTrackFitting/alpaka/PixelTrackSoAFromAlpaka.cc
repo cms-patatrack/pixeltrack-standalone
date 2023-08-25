@@ -3,8 +3,8 @@
 #include <alpaka/alpaka.hpp>
 
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/memory.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/PixelTrackHost.h"
 #include "Framework/EDProducer.h"

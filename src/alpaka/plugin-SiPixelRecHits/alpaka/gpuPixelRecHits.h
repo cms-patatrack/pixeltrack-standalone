@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <limits>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"

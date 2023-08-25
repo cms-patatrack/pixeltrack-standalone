@@ -1,12 +1,12 @@
-#ifndef AlpakaCore_alpakaWorkDiv_h
-#define AlpakaCore_alpakaWorkDiv_h
+#ifndef AlpakaCore_workdivision_h
+#define AlpakaCore_workdivision_h
 
 #include <algorithm>
 #include <utility>
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 using namespace alpaka_common;
 
@@ -382,4 +382,4 @@ namespace cms::alpakatools {
 
 }  // namespace cms::alpakatools
 
-#endif  // AlpakaCore_alpakaWorkDiv_h
+#endif  // AlpakaCore_workdivision_h

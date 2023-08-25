@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemory.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/memory.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -65,9 +65,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
 #ifdef TODO
-    cms::alpakatools::host::unique_ptr<int32_t[]> clusToHostAsync(cudaStream_t stream) const;
-    cms::alpakatools::host::unique_ptr<uint32_t[]> pdigiToHostAsync(cudaStream_t stream) const;
-    cms::alpakatools::host::unique_ptr<uint32_t[]> rawIdArrToHostAsync(cudaStream_t stream) const;
+    cms::alpakatools::host_buffer<int32_t[]> clusToHostAsync(Queue& queue) const;
+    cms::alpakatools::host_buffer<uint32_t[]> pdigiToHostAsync(Queue& queue) const;
+    cms::alpakatools::host_buffer<uint32_t[]> rawIdArrToHostAsync(Queue& queue) const;
 #endif
 
     class DeviceConstView {

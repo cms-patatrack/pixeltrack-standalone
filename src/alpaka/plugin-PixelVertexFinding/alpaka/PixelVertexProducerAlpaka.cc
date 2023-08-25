@@ -1,5 +1,5 @@
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/ZVertexAlpaka.h"
 #include "Framework/EDProducer.h"

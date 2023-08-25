@@ -10,8 +10,8 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaDevices.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/alpaka/devices.h"
 #include "AlpakaCore/EventCache.h"
 
 namespace cms::alpakatools {
@@ -24,10 +24,9 @@ namespace cms::alpakatools {
     using Device = alpaka::Dev<Queue>;
     using Platform = alpaka::Platform<Device>;
 
-    ESProduct() : gpuDataPerDevice_(cms::alpakatools::devices<Platform>.size()) {
+    ESProduct() : gpuDataPerDevice_(devices<Platform>().size()) {
       for (size_t i = 0; i < gpuDataPerDevice_.size(); ++i) {
-        gpuDataPerDevice_[i].m_event =
-            cms::alpakatools::getEventCache<Event>().get(cms::alpakatools::devices<Platform>[i]);
+        gpuDataPerDevice_[i].m_event = getEventCache<Event>().get(devices<Platform>()[i]);
       }
     }
 

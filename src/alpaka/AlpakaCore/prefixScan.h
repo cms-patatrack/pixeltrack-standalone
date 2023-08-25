@@ -6,7 +6,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "Framework/CMSUnrollLoop.h"
 
 namespace cms {

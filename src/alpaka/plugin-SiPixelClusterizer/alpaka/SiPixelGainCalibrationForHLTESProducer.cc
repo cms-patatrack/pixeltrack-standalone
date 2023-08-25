@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "CondFormats/alpaka/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/alpaka/SiPixelGainForHLTonGPU.h"
 #include "Framework/ESPluginFactory.h"

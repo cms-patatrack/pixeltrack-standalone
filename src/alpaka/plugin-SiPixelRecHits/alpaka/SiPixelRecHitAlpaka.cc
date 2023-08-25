@@ -2,7 +2,7 @@
 
 #include "AlpakaCore/Product.h"
 #include "AlpakaCore/ScopedContext.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 #include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/alpaka/SiPixelClustersAlpaka.h"
 #include "AlpakaDataFormats/alpaka/SiPixelDigisAlpaka.h"

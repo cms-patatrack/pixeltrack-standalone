@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 

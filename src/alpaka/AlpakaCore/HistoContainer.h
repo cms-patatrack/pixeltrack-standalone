@@ -7,9 +7,9 @@
 #include <type_traits>
 
 #include "AlpakaCore/AtomicPairCounter.h"
-#include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaCore/alpakaMemory.h"
-#include "AlpakaCore/alpakaWorkDiv.h"
+#include "AlpakaCore/config.h"
+#include "AlpakaCore/memory.h"
+#include "AlpakaCore/workdivision.h"
 #include "AlpakaCore/alpakastdAlgorithm.h"
 #include "AlpakaCore/prefixScan.h"
 

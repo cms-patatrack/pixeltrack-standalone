@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 // SOA for vertices
 // These vertices are clusterized and fitted only along the beam line (z)

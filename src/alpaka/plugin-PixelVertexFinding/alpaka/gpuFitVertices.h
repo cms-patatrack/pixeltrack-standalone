@@ -2,7 +2,7 @@
 #define plugin_PixelVertexFinding_alpaka_gpuFitVertices_h
 
 #include "AlpakaCore/HistoContainer.h"
-#include "AlpakaCore/alpakaConfig.h"
+#include "AlpakaCore/config.h"
 
 #include "gpuVertexFinder.h"
 
