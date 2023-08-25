@@ -275,9 +275,11 @@ namespace alpaka {
 }  // namespace alpaka
 
 template <typename T, typename TAcc>
-struct alpaka::trait::WarpSize<typename cms::alpakatools::multiBlockPrefixScanFirstStep<T>, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+struct alpaka::trait::WarpSize<typename cms::alpakatools::multiBlockPrefixScanFirstStep<T>, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
 
 template <typename TAcc, typename T>
-struct alpaka::trait::WarpSize<typename cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+struct alpaka::trait::WarpSize<typename cms::alpakatools::multiBlockPrefixScanSecondStep<T>, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
 
 #endif  // AlpakaCore_prefixScan_h

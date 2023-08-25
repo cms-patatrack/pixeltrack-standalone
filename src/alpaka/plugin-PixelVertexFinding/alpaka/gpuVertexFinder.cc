@@ -77,6 +77,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         sortByPt2(acc, pdata, pws);
       }
     };
+
 #else
     struct vertexFinderKernel1 {
       template <typename TAcc>
@@ -186,3 +187,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuVertexFinder
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#ifndef THREE_KERNELS
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderOneKernel, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+#else
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderKernel1, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderKernel2, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+#endif

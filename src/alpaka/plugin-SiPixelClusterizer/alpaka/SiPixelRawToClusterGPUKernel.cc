@@ -540,6 +540,10 @@ namespace pixelgpudetails {
 
 }  // namespace pixelgpudetails
 
+template <typename TAcc>
+struct alpaka::trait::WarpSize<pixelgpudetails::fillHitsModuleStart, TAcc> : std::integral_constant<std::uint32_t, 32> {
+};
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 

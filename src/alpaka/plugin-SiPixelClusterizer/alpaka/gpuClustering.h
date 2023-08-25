@@ -355,4 +355,7 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
+template <typename TAcc>
+struct alpaka::trait::WarpSize<gpuClustering::findClus, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+
 #endif  // plugin_SiPixelClusterizer_alpaka_gpuClustering_h

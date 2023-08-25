@@ -252,7 +252,7 @@ ifneq ($(wildcard $(SYCL_BASE)),)
 
   # alpaka SYCL targets$(ALPAKA_SYCL_GPU_TARGETS)
   export SYCL_BASE
-  export ALPAKA_SYCL_CXXFLAGS    := -fsycl -fsycl-default-sub-group-size=32 $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS) -Wno-unused-const-variable -Wno-constant-conversion -Wno-tautological-constant-compare
+  export ALPAKA_SYCL_CXXFLAGS    := -fsycl $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS) -Wno-unused-const-variable -Wno-constant-conversion -Wno-tautological-constant-compare
   export ALPAKA_SYCL_LDFLAGS     := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code -fsycl-max-parallel-link-jobs=8
   export ALPAKA_SYCL_CPU_TARGETS := -fsycl-targets=spir64_x86_64
   export ALPAKA_SYCL_CPU_FLAGS   :=

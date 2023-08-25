@@ -154,6 +154,9 @@ void go(const DevHost& host, const Device& device, Queue& queue) {
   alpaka::wait(queue);
 }
 
+template <typename TAcc, int NBINS, int S, int DELTA>
+struct alpaka::trait::WarpSize<mykernel<NBINS, S, DELTA>, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+
 int main() {
   initialise();
   Device const& device = devices<Platform>().at(0);

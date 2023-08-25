@@ -47,6 +47,9 @@ struct testPrefixScan {
   }
 };
 
+template <typename TAcc, typename T>
+struct alpaka::trait::WarpSize<testPrefixScan<T>, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+
 /*
  * NB: GPU-only, so do not care about elements here.
  */
@@ -90,6 +93,9 @@ struct testWarpPrefixScan {
 #endif
   }
 };
+
+template <typename TAcc, typename T>
+struct alpaka::trait::WarpSize<testWarpPrefixScan<T>, TAcc> : std::integral_constant<std::uint32_t, 32> {};
 
 struct init {
   template <typename TAcc>
