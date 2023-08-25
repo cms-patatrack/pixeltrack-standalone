@@ -2,7 +2,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/config.h"
+#include "AlpakaCore/common.h"
 #include "AlpakaCore/host.h"
 
 namespace cms::alpakatools {

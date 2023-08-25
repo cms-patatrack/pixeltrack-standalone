@@ -1,7 +1,7 @@
 #ifndef AlpakaCore_host_h
 #define AlpakaCore_host_h
 
-#include "AlpakaCore/config.h"
+#include "AlpakaCore/common.h"
 
 namespace cms::alpakatools {
 

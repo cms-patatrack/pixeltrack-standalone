@@ -16,7 +16,6 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
-#include "AlpakaCore/config.h"
 #include "AlpakaCore/backend.h"
 #include "AlpakaCore/initialise.h"
 #include "EventProcessor.h"

@@ -3,8 +3,6 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include "AlpakaCore/config.h"
-
 // Initialise the platform and devices for each backend.
 // Note: these functions are not thread-safe
 
