@@ -141,6 +141,9 @@ ifdef SYCL_USE_INTEL_ONEAPI
   TBB_BASE      := $(ONEAPI_BASE)/tbb/latest
   TBB_LIBDIR    := $(TBB_BASE)/lib/intel64/gcc4.8
 
+  # Intel debugger
+  GDB_ONEAPI_BASE := $(ONEAPI_BASE)/debugger/latest
+
   # use Intel oneAPI DPC++/C++ Compiler
   SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
   SYCL_PATH     := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin-llvm
@@ -556,6 +559,9 @@ endif
 	@echo -n '$(KOKKOS_LIBDIR):'                                            >> $@
 ifneq ($(SYCL_BASE),)
 	@echo -n '$(SYCL_LDPATH):'                                              >> $@
+ifneq ($(SYCL_USE_INTEL_ONEAPI),)
+	@echo -n '$(GDB_ONEAPI_BASE)/gdb/intel64/lib:'                          >> $@
+endif
 endif
 	@echo '$$LD_LIBRARY_PATH'                                               >> $@
 	@# set the PATH
@@ -568,9 +574,15 @@ ifdef ROCM_BASE
 endif
 ifneq ($(SYCL_BASE),)
 	@echo -n '$(SYCL_PATH):'                                                >> $@
+ifneq ($(SYCL_USE_INTEL_ONEAPI),)
+	@echo -n '$(GDB_ONEAPI_BASE)/gdb/intel64/bin:'                          >> $@
+endif
 endif
 	@echo '$$PATH'                                                          >> $@
 ifneq ($(SYCL_BASE),)
+ifneq ($(SYCL_USE_INTEL_ONEAPI),)
+	@echo 'export INTEL_PYTHONHOME=$(GDB_ONEAPI_BASE)/dep'                  >> $@
+endif
 	@# load the CPU OpenCL runtime
 	@echo 'export OCL_ICD_FILENAMES=$(OCL_ICD_FILENAMES)'                   >> $@
 	@# enable double precision floating point emulation for Intel GPUs
