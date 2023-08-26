@@ -250,6 +250,15 @@ ifneq ($(wildcard $(SYCL_BASE)),)
   export SYCL_CXXFLAGS := $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(SYCL_FLAGS) $(USER_SYCLFLAGS)
   export SYCL_LDFLAGS
 
+  # alpaka SYCL targets$(ALPAKA_SYCL_GPU_TARGETS)
+  export SYCL_BASE
+  export ALPAKA_SYCL_CXXFLAGS    := -fsycl -fsycl-default-sub-group-size=32 $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS) -Wno-unused-const-variable -Wno-constant-conversion -Wno-tautological-constant-compare
+  export ALPAKA_SYCL_LDFLAGS     := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code -fsycl-max-parallel-link-jobs=8
+  export ALPAKA_SYCL_CPU_TARGETS := -fsycl-targets=spir64_x86_64
+  export ALPAKA_SYCL_CPU_FLAGS   :=
+  export ALPAKA_SYCL_GPU_TARGETS := -fsycl-targets=$(foreach ARCH,$(OCLOC_IDS),intel_gpu_$(ARCH))
+  export ALPAKA_SYCL_GPU_FLAGS   := -Xsycl-target-backend=intel_gpu_pvc '-q -options -ze-intel-enable-auto-large-GRF-mode'
+
   # add the SYCL paths to the PATH and LD_LIBRARY_PATH
   export PATH := $(SYCL_PATH):$(PATH)
   export LD_LIBRARY_PATH := $(SYCL_LDPATH):$(TBB_LIBDIR):$(LD_LIBRARY_PATH)

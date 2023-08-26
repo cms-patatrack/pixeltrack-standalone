@@ -5,6 +5,9 @@ endif
 ifdef ROCM_BASE
 alpaka_EXTERNAL_DEPENDS += ROCM
 endif
+ifdef SYCL_BASE
+alpaka_EXTERNAL_DEPENDS += INTELOCLCPU
+endif
 AlpakaCore_DEPENDS := Framework
 BeamSpotProducer_DEPENDS := Framework AlpakaCore AlpakaDataFormats DataFormats
 PixelTrackFitting_DEPENDS := Framework AlpakaCore AlpakaDataFormats
