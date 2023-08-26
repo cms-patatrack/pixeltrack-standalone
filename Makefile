@@ -796,7 +796,7 @@ external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
 	git clone https://github.com/alpaka-group/alpaka.git -b develop $@
-	cd $@ && git checkout bb74c9129e8761cb74b9733b034eec62f7c0f600
+	cd $@ && git checkout 819974ddc5b2eb4b33e709bd317701793cdb7d15
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)
