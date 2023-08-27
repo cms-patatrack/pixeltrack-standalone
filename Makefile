@@ -132,41 +132,52 @@ OCLOC_IDS := pvc    # tgllp acm_g10 pvc
 
 ifdef SYCL_USE_INTEL_ONEAPI
   ONEAPI_BASE := /opt/intel/oneapi
+endif
 
-  ifeq ($(wildcard $(ONEAPI_BASE)),)
-    $(warning Cannot find an Intel oneAPI installation at $(ONEAPI_BASE))
-  endif
+ifeq ($(wildcard $(ONEAPI_BASE)),)
+  # Intel oneAPI not available
+  $(warning Cannot find an Intel oneAPI installation at $(ONEAPI_BASE))
+  SYCL_USE_INTEL_ONEAPI :=
+  ONEAPI_BASE :=
+endif
 
+INTELOCLCPU_BASE := $(BASE_DIR)/external/oclcpuexp
+INTELOCLCPU_ICD := $(INTELOCLCPU_BASE)/x64/libintelocl.so
+
+ifdef SYCL_USE_INTEL_ONEAPI
   # Intel oneTBB
-  TBB_BASE      := $(ONEAPI_BASE)/tbb/latest
-  TBB_LIBDIR    := $(TBB_BASE)/lib/intel64/gcc4.8
+  TBB_BASE    := $(ONEAPI_BASE)/tbb/latest
+  TBB_LIBDIR  := $(TBB_BASE)/lib/intel64/gcc4.8
 
   # Intel debugger
   GDB_ONEAPI_BASE := $(ONEAPI_BASE)/debugger/latest
 
   # use Intel oneAPI DPC++/C++ Compiler
-  SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
-  SYCL_PATH     := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin-llvm
-  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib/x64:$(SYCL_BASE)/compiler/lib/intel64_lin
-  SYCL_LIBDIR   := $(SYCL_BASE)/lib
+  SYCL_BASE   := $(ONEAPI_BASE)/compiler/latest/linux
+  SYCL_PATH   := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin-llvm
+  SYCL_LDPATH := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib/x64:$(SYCL_BASE)/compiler/lib/intel64_lin
+  SYCL_LIBDIR := $(SYCL_BASE)/lib
   # use ICPX:       $(SYCL_BASE)/bin/icpx
   # use clang++:    $(SYCL_BASE)/bin-llvm/clang++
-  SYCL_CXX      := $(SYCL_BASE)/bin/icpx
+  SYCL_CXX    := $(SYCL_BASE)/bin/icpx
 
   # use the oneAPI CPU OpenCL runtime
-  export OCL_ICD_FILENAMES := $(SYCL_BASE)/lib/x64/libintelocl.so
+  INTELOCLCPU_ICD := $(SYCL_BASE)/lib/x64/libintelocl.so
+
+  # override the CPU OpenCL runtime with the last known working version (2022.14.8.0.04)
+  INTELOCLCPU_ICD := $(INTELOCLCPU_BASE)/x64/libintelocl.so
 else
   # use clang++
   # latest release: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/release/2022-12
   # latest nightly: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230708
-  SYCL_BASE     := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230805_160000
-  SYCL_PATH     := $(SYCL_BASE)/bin
-  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib64
-  SYCL_LIBDIR   := $(SYCL_BASE)/lib
-  SYCL_CXX      := $(SYCL_BASE)/bin/clang++
+  SYCL_BASE   := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/nightly/20230805_160000
+  SYCL_PATH   := $(SYCL_BASE)/bin
+  SYCL_LDPATH := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib64
+  SYCL_LIBDIR := $(SYCL_BASE)/lib
+  SYCL_CXX    := $(SYCL_BASE)/bin/clang++
 
-  # use the latest CPU OpenCL runtime (2023.16.6.0.28)
-  export OCL_ICD_FILENAMES := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2023.16.6.0.28/x64/libintelocl.so
+  # use the last known working CPU OpenCL runtime (2022.14.8.0.04)
+  INTELOCLCPU_ICD := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2022.14.8.0.04/x64/libintelocl.so
 endif
 
 ifneq ($(wildcard $(SYCL_BASE)),)
@@ -191,6 +202,8 @@ ifneq ($(wildcard $(SYCL_BASE)),)
   SYCL_TARGETS      := $(subst $(SPACE),$(COMMA),$(strip $(JIT_TARGETS) $(AOT_CPU_TARGETS) $(AOT_INTEL_TARGETS) $(AOT_CUDA_TARGETS) $(AOT_ROCM_TARGETS)))
   SYCL_FLAGS        := -fsycl -fsycl-targets=$(SYCL_TARGETS)
   SYCL_LDFLAGS      := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
+
+  export OCL_ICD_FILENAMES := $(INTELOCLCPU_ICD)
 
   # other SYCL options
   #  -fsycl-device-code-split=per_kernel
@@ -255,6 +268,10 @@ DATA_TAR_GZ := $(DATA_BASE)/data.tar.gz
 
 # External definitions
 EXTERNAL_BASE := $(BASE_DIR)/external
+
+export INTELOCLCPU_DEPS := $(INTELOCLCPU_ICD)
+INTELOCLCPU_CXXFLAGS :=
+INTELOCLCPU_LDFLAGS :=
 
 HWLOC_BASE := $(EXTERNAL_BASE)/hwloc
 export HWLOC_DEPS := $(HWLOC_BASE)
@@ -529,7 +546,8 @@ test_auto: $(TEST_AUTO_TARGETS)
 .PHONY: test_auto $(TEST_AUTO_TARGETS)
 .PHONY: format $(patsubst %,format_%,$(TARGETS_ALL))
 .PHONY: environment print_targets clean distclean dataclean
-.PHONY: external_tbb external_cub external_eigen external_kokkos external_kokkos_clean
+.PHONY: external_oclcpu external_tbb external_eigen external_boost external_libbacktrace external_hwloc external_alpaka external_kokkos external_kokkos_clean
+
 
 environment: env.sh
 env.sh: Makefile
@@ -678,6 +696,15 @@ $(DATA_TAR_GZ): | $(DATA_BASE)/url.txt
 # External rules
 $(EXTERNAL_BASE):
 	mkdir -p $@
+
+# OpenCL CPU runtime
+external_oclcpu: $(INTELOCLCPU_ICD)
+ifneq ($(findstring $(EXTERNAL_BASE),$(INTELOCLCPU_ICD)),)
+$(INTELOCLCPU_ICD):
+	mkdir -p $(INTELOCLCPU_BASE)
+	curl -L -s -S https://github.com/intel/llvm/releases/download/2022-WW33/oclcpuexp-2022.14.8.0.04_rel.tar.gz | tar xz -C $(INTELOCLCPU_BASE)
+	chmod -R +rwX $(INTELOCLCPU_BASE)
+endif
 
 # TBB
 external_tbb: $(TBB_LIB)
