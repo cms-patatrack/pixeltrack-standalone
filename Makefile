@@ -105,7 +105,7 @@ export NVCXX := $(NVHPC_BASE)/compilers/bin/nvc++
 endif
 
 # ROCm
-ROCM_BASE := /opt/rocm-5.6.0
+ROCM_BASE := /opt/rocm
 ifeq ($(wildcard $(ROCM_BASE)),)
 # ROCm platform not found
 ROCM_BASE :=
@@ -125,7 +125,7 @@ export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # SYCL and Intel oneAPI
-SYCL_USE_INTEL_ONEAPI := true
+SYCL_USE_INTEL_ONEAPI :=
 
 # Intel GPU ids
 OCLOC_IDS := pvc    # tgllp acm_g10 pvc
