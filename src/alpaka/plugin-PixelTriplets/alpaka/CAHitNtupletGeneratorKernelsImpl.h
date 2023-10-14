@@ -12,6 +12,7 @@
 #include <cstdint>
 
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "CondFormats/pixelCPEforGPU.h"
 
 #include "../CAConstants.h"
@@ -196,7 +197,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           uint16_t im = 60000;
 
           auto score = [&](auto it) {
-            return std::abs(tracks->tip(it));  // tip
+            return math::abs(tracks->tip(it));  // tip
             // return tracks->chi2(it);  //chi2
           };
 
@@ -447,8 +448,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               //   - for quadruplets: |Tip| < 0.5 cm, pT > 0.3 GeV, |Zip| < 12.0 cm
               // (see CAHitNtupletGeneratorGPU.cc)
               auto const &region = (nhits > 3) ? cuts.quadruplet : cuts.triplet;
-              bool isOk = (std::abs(tracks->tip(it)) < region.maxTip) and (tracks->pt(it) > region.minPt) and
-                          (std::abs(tracks->zip(it)) < region.maxZip);
+              bool isOk = (math::abs(tracks->tip(it)) < region.maxTip) and (tracks->pt(it) > region.minPt) and
+                          (math::abs(tracks->zip(it)) < region.maxZip);
 
               if (isOk)
                 quality[it] = trackQuality::loose;
@@ -591,8 +592,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             // for triplets choose best tip!
             for (auto ip = hitToTuple.begin(idx); ip != hitToTuple.end(idx); ++ip) {
               auto const it = *ip;
-              if (quality[it] != bad && std::abs(tracks.tip(it)) < mc) {
-                mc = std::abs(tracks.tip(it));
+              if (quality[it] != bad && math::abs(tracks.tip(it)) < mc) {
+                mc = math::abs(tracks.tip(it));
                 im = it;
               }
             }

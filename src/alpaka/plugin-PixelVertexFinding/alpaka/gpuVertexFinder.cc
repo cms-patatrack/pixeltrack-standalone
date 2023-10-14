@@ -77,6 +77,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         sortByPt2(acc, pdata, pws);
       }
     };
+
 #else
     struct vertexFinderKernel1 {
       template <typename TAcc>
@@ -130,7 +131,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       const auto loadTracksWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(numberOfBlocks, blockSize);
       alpaka::enqueue(queue, alpaka::createTaskKernel<Acc1D>(loadTracksWorkDiv, loadTracks(), tksoa, soa, ws_d, ptMin));
 
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+      const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 32);
+#else
       const auto finderSorterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1, 1024 - 256);
+#endif
       const auto splitterFitterWorkDiv = cms::alpakatools::make_workdiv<Acc1D>(1024, 128);
 
       if (oneKernel_) {
@@ -186,3 +191,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   }  // namespace gpuVertexFinder
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+
+#ifndef THREE_KERNELS
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderOneKernel, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+#else
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderKernel1, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+
+template <typename TAcc>
+struct alpaka::trait::WarpSize<ALPAKA_ACCELERATOR_NAMESPACE::gpuVertexFinder::vertexFinderKernel2, TAcc>
+    : std::integral_constant<std::uint32_t, 32> {};
+#endif

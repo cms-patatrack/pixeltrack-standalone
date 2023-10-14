@@ -48,7 +48,6 @@ namespace cms::alpakatools {
       // functions relying on the current device should be called from
       // the scope where this context is. The current device doesn't
       // really matter between modules (or across TBB tasks).
-
       ScopedContextBase(ProductBase<Queue> const& data)
           : stream_{data.mayReuseStream() ? data.streamPtr() : getStreamCache<Queue>().get(data.device())} {}
 
@@ -216,13 +215,34 @@ namespace cms::alpakatools {
 
     /// Constructor to re-use the CUDA stream of acquire() (ExternalWork module)
     explicit ScopedContextProduce(ContextState<Queue>& state)
-        : ScopedContextGetterBase(state.releaseStreamPtr()), event_{getEventCache<Event>().get(device())} {}
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+        : ScopedContextGetterBase(state.releaseStreamPtr()), event_{std::make_shared<Event>(device())} {
+      event_->setEvent(stream().getNativeHandle().submit_barrier());
+    }
+#else
+        : ScopedContextGetterBase(state.releaseStreamPtr()), event_{getEventCache<Event>().get(device())} {
+    }
+#endif
 
     explicit ScopedContextProduce(ProductBase<Queue> const& data)
-        : ScopedContextGetterBase(data), event_{getEventCache<Event>().get(device())} {}
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+        : ScopedContextGetterBase(data), event_{std::make_shared<Event>(device())} {
+      event_->setEvent(stream().getNativeHandle().submit_barrier());
+    }
+#else
+        : ScopedContextGetterBase(data), event_{getEventCache<Event>().get(device())} {
+    }
+#endif
 
     explicit ScopedContextProduce(edm::StreamID streamID)
-        : ScopedContextGetterBase(streamID), event_{getEventCache<Event>().get(device())} {}
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+        : ScopedContextGetterBase(streamID), event_{std::make_shared<Event>(device())} {
+      event_->setEvent(stream().getNativeHandle().submit_barrier());
+    }
+#else
+        : ScopedContextGetterBase(streamID), event_{getEventCache<Event>().get(device())} {
+    }
+#endif
 
     /// Record the event, all asynchronous work must have been queued before the destructor
     ~ScopedContextProduce() {
@@ -245,7 +265,14 @@ namespace cms::alpakatools {
     friend class ::cms::alpakatest::TestScopedContext;
 
     explicit ScopedContextProduce(std::shared_ptr<Queue> stream)
-        : ScopedContextGetterBase(std::move(stream)), event_{getEventCache<Event>().get(device())} {}
+#if defined(ALPAKA_ACC_SYCL_ENABLED)
+        : ScopedContextGetterBase(std::move(stream)), event_{std::make_shared<Event>(device())} {
+      event_->setEvent(stream().getNativeHandle().submit_barrier());
+    }
+#else
+        : ScopedContextGetterBase(std::move(stream)), event_{getEventCache<Event>().get(device())} {
+    }
+#endif
 
     std::shared_ptr<Event> event_;
   };

@@ -25,6 +25,14 @@ namespace alpaka_serial_sync {
   class TrackingRecHit2DAlpaka;
 }
 
+namespace alpaka_cpu_sycl {
+  class TrackingRecHit2DAlpaka;
+}
+
+namespace alpaka_gpu_sycl {
+  class TrackingRecHit2DAlpaka;
+}
+
 class TrackingRecHit2DSoAView {
 public:
   static constexpr uint32_t maxHits() { return gpuClustering::MaxNumClusters; }
@@ -39,6 +47,8 @@ public:
   friend class alpaka_rocm_async::TrackingRecHit2DAlpaka;
   friend class alpaka_tbb_async::TrackingRecHit2DAlpaka;
   friend class alpaka_serial_sync::TrackingRecHit2DAlpaka;
+  friend class alpaka_cpu_sycl::TrackingRecHit2DAlpaka;
+  friend class alpaka_gpu_sycl::TrackingRecHit2DAlpaka;
 
   ALPAKA_FN_ACC ALPAKA_FN_INLINE uint32_t nHits() const { return m_nHits; }
 

@@ -540,6 +540,10 @@ namespace pixelgpudetails {
 
 }  // namespace pixelgpudetails
 
+template <typename TAcc>
+struct alpaka::trait::WarpSize<pixelgpudetails::fillHitsModuleStart, TAcc> : std::integral_constant<std::uint32_t, 32> {
+};
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace pixelgpudetails {
 
@@ -570,7 +574,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       if (wordCounter)  // protect in case of empty event....
       {
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
         const int threadsPerBlockOrElementsPerThread = 512;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
@@ -626,7 +631,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       {
         // clusterizer ...
         using namespace gpuClustering;
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
         const auto threadsPerBlockOrElementsPerThread = 256;
 #else
         // NB: MPORTANT: This could be tuned to benefit from innermost loop.
@@ -667,7 +673,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             cms::alpakatools::make_device_view(alpaka::getDev(queue), clusters_d->moduleStart(), 1u);
         alpaka::memcpy(queue, nModules_Clusters_h, moduleStartFirstElement);
 
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+        const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 32);
+#else
         const auto workDivMaxNumModules = cms::alpakatools::make_workdiv<Acc1D>(MaxNumModules, 256);
+#endif
         // NB: With present findClus() / chargeCut() algorithm,
         // threadPerBlock (GPU) or elementsPerThread (CPU) = 256 show optimal performance.
         // Though, it does not have to be the same number for CPU/GPU cases.

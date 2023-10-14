@@ -5,6 +5,7 @@
 
 #include "../choleskyInversion.h"
 #include "FitResult.h"
+#include "AlpakaCore/math.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -178,7 +179,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void par_uvrtopak(circle_fit& circle, const double B, const bool error) {
       Vector3d par_pak;
       const double temp0 = circle.par.head(2).squaredNorm();
-      const double temp1 = sqrt(temp0);
+      const double temp1 = math::sqrt(temp0);
       par_pak << atan2(circle.q * circle.par(0), -circle.q * circle.par(1)), circle.q * (temp1 - circle.par(2)),
           circle.par(2) * B;
       if (error) {
@@ -201,7 +202,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_FN_HOST_ACC ALPAKA_FN_INLINE void fromCircleToPerigee(circle_fit& circle) {
       Vector3d par_pak;
       const double temp0 = circle.par.head(2).squaredNorm();
-      const double temp1 = sqrt(temp0);
+      const double temp1 = math::sqrt(temp0);
       par_pak << atan2(circle.q * circle.par(0), -circle.q * circle.par(1)), circle.q * (temp1 - circle.par(2)),
           circle.q / circle.par(2);
 
@@ -225,7 +226,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                                      VO5& op,
                                                                      MO5& ocov) {
       auto sinTheta2 = 1. / (1. + ip(3) * ip(3));
-      auto sinTheta = std::sqrt(sinTheta2);
+      auto sinTheta = math::sqrt(sinTheta2);
       auto cosTheta = ip(3) * sinTheta;
 
       op(0) = sinTheta * ip(2);

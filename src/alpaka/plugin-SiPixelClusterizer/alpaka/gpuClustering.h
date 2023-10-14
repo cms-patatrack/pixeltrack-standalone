@@ -7,6 +7,7 @@
 #include <type_traits>
 
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaCore/HistoContainer.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "Geometry/phase1PixelTopology.h"
@@ -162,10 +163,15 @@ namespace gpuClustering {
       // Real constrainst is maxiter = hist.size() / blockDimension,
       // with blockDimension = threadPerBlock * elementsPerThread.
       // Hence, maxiter can be tuned accordingly to the workdiv.
+#ifdef __SYCL_TARGET_INTEL_X86_64__
+      constexpr unsigned int maxiter = 32;
+#else
       constexpr unsigned int maxiter = 16;
+#endif
       ALPAKA_ASSERT_OFFLOAD((hist.size() / blockDimension) <= maxiter);
 
-#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND)
+#if defined(ALPAKA_ACC_GPU_CUDA_ASYNC_BACKEND) || defined(ALPAKA_ACC_GPU_HIP_ASYNC_BACKEND) || \
+    defined(ALPAKA_ACC_SYCL_ENABLED)
       constexpr uint32_t threadDimension = 1;
 #else
       // NB: can be tuned.
@@ -232,7 +238,7 @@ namespace gpuClustering {
           ALPAKA_ASSERT_OFFLOAD(m != i);
           ALPAKA_ASSERT_OFFLOAD(int(y[m]) - int(y[i]) >= 0);
           ALPAKA_ASSERT_OFFLOAD(int(y[m]) - int(y[i]) <= 1);
-          if (std::abs(int(x[m]) - int(x[i])) <= 1) {
+          if (math::abs(int(x[m]) - int(x[i])) <= 1) {
             auto l = nnn[k][jEquivalentClass]++;
             ALPAKA_ASSERT_OFFLOAD(l < maxNeighbours);
             nn[k][jEquivalentClass][l] = *p;
@@ -352,5 +358,8 @@ namespace gpuClustering {
   };
 
 }  // namespace gpuClustering
+
+template <typename TAcc>
+struct alpaka::trait::WarpSize<gpuClustering::findClus, TAcc> : std::integral_constant<std::uint32_t, 32> {};
 
 #endif  // plugin_SiPixelClusterizer_alpaka_gpuClustering_h

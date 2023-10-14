@@ -8,6 +8,7 @@
 #include <limits>
 
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaDataFormats/alpaka/BeamSpotAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 #include "CondFormats/pixelCPEforGPU.h"
@@ -48,7 +49,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             agc.ladderX[il] = ag.ladderX[il] - bs->x;
             agc.ladderY[il] = ag.ladderY[il] - bs->y;
             agc.ladderZ[il] = ag.ladderZ[il] - bs->z;
-            agc.ladderR[il] = sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
+            agc.ladderR[il] = math::sqrt(agc.ladderX[il] * agc.ladderX[il] + agc.ladderY[il] * agc.ladderY[il]);
             agc.ladderMinZ[il] = ag.ladderMinZ[il] - bs->z;
             agc.ladderMaxZ[il] = ag.ladderMaxZ[il] - bs->z;
           });
@@ -222,7 +223,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             hits.yGlobal(h) = yg;
             hits.zGlobal(h) = zg;
 
-            hits.rGlobal(h) = std::sqrt(xg * xg + yg * yg);
+            hits.rGlobal(h) = math::sqrt(xg * xg + yg * yg);
             hits.iphi(h) = unsafe_atan2s<7>(yg, xg);
           });
 

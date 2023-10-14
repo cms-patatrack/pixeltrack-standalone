@@ -8,6 +8,7 @@
 #include <iterator>
 
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaDataFormats/gpuClusteringConstants.h"
 #include "DataFormats/SOARotation.h"
 #include "Geometry/phase1PixelTopology.h"

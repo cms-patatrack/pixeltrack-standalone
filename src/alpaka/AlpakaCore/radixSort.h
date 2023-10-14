@@ -71,6 +71,7 @@ namespace cms::alpakatools {
       const TAcc& acc, T const* __restrict__ a, uint16_t* ind, uint16_t* ind2, uint32_t size, RF reorder) {
 #if (defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && defined(__CUDA_ARCH__)) || \
     (defined(ALPAKA_ACC_GPU_HIP_ENABLED) && defined(__HIP_DEVICE_COMPILE__))
+#if (defined(ALPAKA_ACC_SYCL_ENABLED) && defined(__SYCL_DEVICE_ONLY__))
     const uint32_t threadIdxLocal(alpaka::getIdx<alpaka::Block, alpaka::Threads>(acc)[0u]);
     const uint32_t blockDimension(alpaka::getWorkDiv<alpaka::Block, alpaka::Elems>(acc)[0u]);
 
@@ -116,6 +117,9 @@ namespace cms::alpakatools {
           auto y = __shfl_up_sync(0xffffffff, x, offset);
 #elif defined(__HIP_DEVICE_COMPILE__)
           auto y = __shfl_up(x, offset);
+#elif defined(__SYCL_DEVICE_ONLY__)
+	  auto sub_group = sycl::ext::oneapi::experimental::this_sub_group();
+	  auto y = sycl::shift_group_right(sub_group, x, offset);
 #endif
           if (laneId >= (uint32_t)offset)
             x += y;
@@ -211,10 +215,10 @@ namespace cms::alpakatools {
       for_each_element_in_block_strided(acc, size, [&](uint32_t idx) { ind[idx] = ind2[idx]; });
 
     alpaka::syncBlockThreads(acc);
-
+#endif  //SYCL
     // now move negative first... (if signed)
     reorder(acc, a, ind, ind2, size);
-#endif
+#endif  //CUDA and HIP
   }
 
   template <typename TAcc,
@@ -224,6 +228,9 @@ namespace cms::alpakatools {
   ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSort(
       const TAcc& acc, T const* a, uint16_t* ind, uint16_t* ind2, uint32_t size) {
     radixSortImpl<TAcc, T, NS>(acc, a, ind, ind2, size, dummyReorder<TAcc, T>);
+#if defined(__SYCL_DEVICE_ONLY__)
+    dummyReorder<TAcc, T>(acc, a, ind, ind2, size);
+#endif
   }
 
   template <typename TAcc,
@@ -233,6 +240,9 @@ namespace cms::alpakatools {
   ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) void radixSort(
       const TAcc& acc, T const* a, uint16_t* ind, uint16_t* ind2, uint32_t size) {
     radixSortImpl<TAcc, T, NS>(acc, a, ind, ind2, size, reorderSigned<TAcc, T>);
+#if defined(__SYCL_DEVICE_ONLY__)
+    reorderSigned<TAcc, T>(acc, a, ind, ind2, size);
+#endif
   }
 
   template <typename TAcc,
@@ -244,6 +254,9 @@ namespace cms::alpakatools {
     static_assert(sizeof(T) == sizeof(int), "radixSort with the wrong type size");
     using I = int;
     radixSortImpl<TAcc, I, NS>(acc, (I const*)(a), ind, ind2, size, reorderFloat<TAcc, I>);
+#if defined(__SYCL_DEVICE_ONLY__)
+    reorderFloat<TAcc, I>(acc, (I const*)(a), ind, ind2, size);
+#endif
   }
 
   /* Not needed

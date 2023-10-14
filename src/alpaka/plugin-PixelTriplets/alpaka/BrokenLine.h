@@ -10,6 +10,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "FitUtils.h"
+#include "AlpakaCore/math.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace BrokenLine {
@@ -62,8 +63,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       constexpr double geometry_factor =
           0.7;  //!< number between 1/3 (uniform material) and 1 (thin scatterer) to be manually tuned
       constexpr double fact = geometry_factor * Rfit::sqr(13.6 / 1000.);
-      return fact / (pt2 * (1. + Rfit::sqr(slope))) * (std::abs(length) * XXI_0) *
-             Rfit::sqr(1. + 0.038 * log(std::abs(length) * XXI_0));
+      return fact / (pt2 * (1. + Rfit::sqr(slope))) * (math::abs(length) * XXI_0) *
+             Rfit::sqr(1. + 0.038 * log(math::abs(length) * XXI_0));
     }
 
     /*!
@@ -75,7 +76,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   */
     ALPAKA_FN_HOST_ACC inline Rfit::Matrix2d RotationMatrix(double slope) {
       Rfit::Matrix2d Rot;
-      Rot(0, 0) = 1. / sqrt(1. + Rfit::sqr(slope));
+      Rot(0, 0) = 1. / math::sqrt(1. + Rfit::sqr(slope));
       Rot(0, 1) = slope * Rot(0, 0);
       Rot(1, 0) = -Rot(0, 1);
       Rot(1, 1) = Rot(0, 0);
@@ -95,13 +96,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                      double y0,
                                                      Rfit::Matrix3d& jacobian) {
       double A, U, BB, C, DO, DP, uu, xi, v, mu, lambda, zeta;
-      DP = x0 * cos(circle.par(0)) + y0 * sin(circle.par(0));
-      DO = x0 * sin(circle.par(0)) - y0 * cos(circle.par(0)) + circle.par(1);
+      DP = x0 * math::cos(circle.par(0)) + y0 * math::sin(circle.par(0));
+      DO = x0 * math::sin(circle.par(0)) - y0 * math::cos(circle.par(0)) + circle.par(1);
       uu = 1 + circle.par(2) * circle.par(1);
-      C = -circle.par(2) * y0 + uu * cos(circle.par(0));
-      BB = circle.par(2) * x0 + uu * sin(circle.par(0));
+      C = -circle.par(2) * y0 + uu * math::cos(circle.par(0));
+      BB = circle.par(2) * x0 + uu * math::sin(circle.par(0));
       A = 2. * DO + circle.par(2) * (Rfit::sqr(DO) + Rfit::sqr(DP));
-      U = sqrt(1. + circle.par(2) * A);
+      U = math::sqrt(1. + circle.par(2) * A);
       xi = 1. / (Rfit::sqr(BB) + Rfit::sqr(C));
       v = 1. + circle.par(2) * DO;
       lambda = (0.5 * A) / (U * Rfit::sqr(1. + U));
@@ -111,7 +112,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       jacobian << xi * uu * v, -xi * Rfit::sqr(circle.par(2)) * DP, xi * DP, 2. * mu * uu * DP, 2. * mu * v,
           mu * zeta - lambda * A, 0, 0, 1.;
 
-      circle.par(0) = atan2(BB, C);
+      circle.par(0) = math::atan2(BB, C);
       circle.par(1) = A / (1 + U);
       // circle.par(2)=circle.par(2);
 
@@ -150,7 +151,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       e = -fast_fit(2) * fast_fit.head(2) / fast_fit.head(2).norm();
       for (i = 0; i < n; i++) {
         d = results.radii.block(0, i, 2, 1);
-        results.s(i) = results.q * fast_fit(2) * atan2(Rfit::cross2D(d, e), d.dot(e));  // calculates the arc length
+        results.s(i) =
+            results.q * fast_fit(2) * math::atan2(Rfit::cross2D(d, e), d.dot(e));  // calculates the arc length
       }
       Rfit::VectorNd<N> z = hits.block(2, 0, 1, n).transpose();
 
@@ -237,13 +239,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       result(1) = hits(1, 0) + (a(0) * c.squaredNorm() + c(0) * a.squaredNorm()) * tmp;
       // check Wikipedia for these formulas
 
-      result(2) = sqrt(a.squaredNorm() * b.squaredNorm() * c.squaredNorm()) / (2. * std::abs(Rfit::cross2D(b, a)));
+      result(2) =
+          math::sqrt(a.squaredNorm() * b.squaredNorm() * c.squaredNorm()) / (2. * math::abs(Rfit::cross2D(b, a)));
       // Using Math Olympiad's formula R=abc/(4A)
 
       const Rfit::Vector2d d = hits.block(0, 0, 2, 1) - result.head(2);
       const Rfit::Vector2d e = hits.block(0, n - 1, 2, 1) - result.head(2);
 
-      result(3) = result(2) * atan2(Rfit::cross2D(d, e), d.dot(e)) / (hits(2, n - 1) - hits(2, 0));
+      result(3) = result(2) * math::atan2(Rfit::cross2D(d, e), d.dot(e)) / (hits(2, n - 1) - hits(2, 0));
       // ds/dz slope between last and first point
     }
 
@@ -347,8 +350,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       Rfit::Vector2d d = hits.block(0, 0, 2, 1) + (-Z(0) + u(0)) * radii.block(0, 0, 2, 1);
       Rfit::Vector2d e = hits.block(0, 1, 2, 1) + (-Z(1) + u(1)) * radii.block(0, 1, 2, 1);
 
-      circle_results.par << atan2((e - d)(1), (e - d)(0)),
-          -circle_results.q * (fast_fit(2) - sqrt(Rfit::sqr(fast_fit(2)) - 0.25 * (e - d).squaredNorm())),
+      circle_results.par << math::atan2((e - d)(1), (e - d)(0)),
+          -circle_results.q * (fast_fit(2) - math::sqrt(Rfit::sqr(fast_fit(2)) - 0.25 * (e - d).squaredNorm())),
           circle_results.q * (1. / fast_fit(2) + u(n));
 
       ALPAKA_ASSERT_OFFLOAD(circle_results.q * circle_results.par(1) <= 0);
@@ -360,9 +363,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       jacobian << (radii(1, 0) * eMinusd(0) - eMinusd(1) * radii(0, 0)) / tmp1,
           (radii(1, 1) * eMinusd(0) - eMinusd(1) * radii(0, 1)) / tmp1, 0,
           (circle_results.q / 2) * (eMinusd(0) * radii(0, 0) + eMinusd(1) * radii(1, 0)) /
-              sqrt(Rfit::sqr(2 * fast_fit(2)) - tmp1),
+              math::sqrt(Rfit::sqr(2 * fast_fit(2)) - tmp1),
           (circle_results.q / 2) * (eMinusd(0) * radii(0, 1) + eMinusd(1) * radii(1, 1)) /
-              sqrt(Rfit::sqr(2 * fast_fit(2)) - tmp1),
+              math::sqrt(Rfit::sqr(2 * fast_fit(2)) - tmp1),
           0, 0, 0, circle_results.q;
 
       circle_results.cov << I(0, 0), I(0, 1), I(0, n), I(1, 0), I(1, 1), I(1, n), I(n, 0), I(n, 1), I(n, n);
@@ -553,8 +556,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       BL_Circle_fit(hits, hits_ge, fast_fit, B, data, circle);
 
       // the circle fit gives k, but here we want p_t, so let's change the parameter and the covariance matrix
-      jacobian << 1., 0, 0, 0, 1., 0, 0, 0, -std::abs(circle.par(2)) * B / (Rfit::sqr(circle.par(2)) * circle.par(2));
-      circle.par(2) = B / std::abs(circle.par(2));
+      jacobian << 1., 0, 0, 0, 1., 0, 0, 0, -math::abs(circle.par(2)) * B / (Rfit::sqr(circle.par(2)) * circle.par(2));
+      circle.par(2) = B / math::abs(circle.par(2));
       circle.cov = jacobian * circle.cov * jacobian.transpose();
 
       helix.par << circle.par, line.par;

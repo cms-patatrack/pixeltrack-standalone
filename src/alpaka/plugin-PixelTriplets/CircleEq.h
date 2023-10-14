@@ -21,6 +21,8 @@
 #include <cmath>
 #include <utility>
 
+#include "AlpakaCore/math.h"
+
 template <typename T>
 class CircleEq {
 public:
@@ -34,14 +36,14 @@ public:
   constexpr T dca0() const {
     auto x = m_c * m_xp + m_alpha;
     auto y = m_c * m_yp + m_beta;
-    return std::sqrt(x * x + y * y) - T(1);
+    return math::sqrt(x * x + y * y) - T(1);
   }
 
   // dca to given point (divided by curvature)
   constexpr T dca(T x, T y) const {
     x = m_c * (m_xp - x) + m_alpha;
     y = m_c * (m_yp - y) + m_beta;
-    return std::sqrt(x * x + y * y) - T(1);
+    return math::sqrt(x * x + y * y) - T(1);
   }
 
   // curvature
@@ -69,7 +71,7 @@ public:
 
 template <typename T>
 constexpr void CircleEq<T>::compute(T x1, T y1, T x2, T y2, T x3, T y3) {
-  bool noflip = std::abs(x3 - x1) < std::abs(y3 - y1);
+  bool noflip = math::abs(x3 - x1) < math::abs(y3 - y1);
 
   auto x1p = noflip ? x1 - x2 : y1 - y2;
   auto y1p = noflip ? y1 - y2 : x1 - x2;
@@ -86,14 +88,14 @@ constexpr void CircleEq<T>::compute(T x1, T y1, T x2, T y2, T x3, T y3) {
   auto sn  = det>0 ? T(1.) : T(-1.);
   auto st2 = (d12*x3p-d32*x1p)/det;
   auto seq = T(1.) +st2*st2;
-  auto al2 = sn/std::sqrt(seq);
+  auto al2 = sn/math::sqrt(seq);
   auto be2 = -st2*al2;
   ct *= T(2.)*al2;
   */
 
   auto st2 = (d12 * x3p - d32 * x1p);
   auto seq = det * det + st2 * st2;
-  auto al2 = T(1.) / std::sqrt(seq);
+  auto al2 = T(1.) / math::sqrt(seq);
   auto be2 = -st2 * al2;
   auto ct = T(2.) * num * al2;
   al2 *= det;

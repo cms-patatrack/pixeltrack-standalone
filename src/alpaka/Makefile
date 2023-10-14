@@ -10,6 +10,7 @@ test_cpu: $(TARGET)
 	@echo "Testing $(TARGET)"
 	$(TARGET) --maxEvents 2 --serial
 	$(TARGET) --maxEvents 2 --tbb
+	$(TARGET) --maxEvents 2 --syclcpu
 	@echo "Succeeded"
 test_nvidiagpu: $(TARGET)
 	@echo
@@ -22,6 +23,9 @@ test_amdgpu: $(TARGET)
 	$(TARGET) --maxEvents 2 --hip
 	@echo "Succeeded"
 test_intelgpu:
+	@echo "Testing $(TARGET)"
+	$(TARGET) --maxEvents 2 --syclgpu
+	@echo "Succeeded"
 test_auto:
 .PHONY: test_cpu test_nvidiagpu test_amdgpu test_intelgpu test_auto
 
@@ -38,8 +42,17 @@ endif
 ifdef ROCM_BASE
 MY_CXXFLAGS += -DALPAKA_ACC_GPU_HIP_PRESENT -DALPAKA_ACC_GPU_HIP_ONLY_MODE
 endif
+ifdef SYCL_BASE
+MY_CXXFLAGS += -DALPAKA_ACC_SYCL_PRESENT -DALPAKA_ACC_SYCL_ONLY_MODE
+endif
 MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
 LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
+
+ifdef SYCL_BASE
+LINK_CXX := $(SYCL_CXX)
+else
+LINK_CXX := $(CXX)
+endif
 
 ALL_DEPENDS := $(EXE_DEP)
 # Files for libraries
@@ -77,6 +90,20 @@ $(1)_CUDA_LDFLAGS := -l$(1)_cuda
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/$(1)/lib$(1)_cudalink.o)
 endif
+# SYCL CPU backend
+ifdef SYCL_BASE
+$(1)_SYCL_CPU_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.syclcpu.o))
+$(1)_SYCL_CPU_DEP := $$($(1)_SYCL_CPU_OBJ:$.o=$.d)
+$(1)_SYCL_CPU_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_syclcpu.so
+LIBS += $$($(1)_SYCL_CPU_LIB)
+$(1)_SYCL_CPU_LDFLAGS := -l$(1)_syclcpu
+# SYCL GPU backend
+$(1)_SYCL_GPU_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.syclgpu.o))
+$(1)_SYCL_GPU_DEP := $$($(1)_SYCL_GPU_OBJ:$.o=$.d)
+$(1)_SYCL_GPU_LIB := $(LIB_DIR)/$(TARGET_NAME)/lib$(1)_syclgpu.so
+LIBS += $$($(1)_SYCL_GPU_LIB)
+$(1)_SYCL_GPU_LDFLAGS := -l$(1)_syclgpu
+endif
 # ROCm backend
 ifdef ROCM_BASE
 $(1)_ROCM_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.rocm.o))
@@ -86,7 +113,7 @@ LIBS += $$($(1)_ROCM_LIB)
 $(1)_ROCM_LDFLAGS := -l$(1)_rocm
 endif
 endif # if PORTABLE_SRC is not empty
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP) $$($(1)_SYCL_CPU_DEP) $$($(1)_SYCL_GPU_DEP)
 endef
 $(foreach lib,$(LIBNAMES),$(eval $(call LIB_template,$(lib))))
 
@@ -124,6 +151,22 @@ PLUGINNAMES += $(1)_cuda
 $(1)_CUOBJ := $$($(1)_CUDA_OBJ)
 $(1)_CUDADLINK := $$(if $$(strip $$($(1)_CUOBJ)),$(OBJ_DIR)/$(TARGET_NAME)/plugin-$(1)/plugin$(1)_cudadlink.o,)
 endif
+# SYCL CPU backend
+ifdef SYCL_BASE
+$(1)_SYCL_CPU_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.syclcpu.o))
+$(1)_SYCL_CPU_DEP := $$($(1)_SYCL_CPU_OBJ:$.o=$.d)
+$(1)_SYCL_CPU_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_syclcpu.so
+PLUGINS += $$($(1)_SYCL_CPU_LIB)
+PLUGINNAMES += $(1)_syclcpu
+endif
+# SYCL GPU backend
+ifdef SYCL_BASE
+$(1)_SYCL_GPU_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.syclgpu.o))
+$(1)_SYCL_GPU_DEP := $$($(1)_SYCL_GPU_OBJ:$.o=$.d)
+$(1)_SYCL_GPU_LIB := $(LIB_DIR)/$(TARGET_NAME)/plugin$(1)_syclgpu.so
+PLUGINS += $$($(1)_SYCL_GPU_LIB)
+PLUGINNAMES += $(1)_syclgpu
+endif
 # ROCm backend
 ifdef ROCM_BASE
 $(1)_ROCM_OBJ := $$(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$$($(1)_PORTABLE_SRC:%=%.rocm.o))
@@ -133,7 +176,7 @@ PLUGINS += $$($(1)_ROCM_LIB)
 PLUGINNAMES += $(1)_rocm
 endif
 endif # if PORTABLE_SRC is not empty
-ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP)
+ALL_DEPENDS += $$($(1)_DEP) $$($(1)_SERIAL_DEP) $$($(1)_TBB_DEP) $$($(1)_CUDA_DEP) $$($(1)_ROCM_DEP) $$($(1)_SYCL_CPU_DEP) $$($(1)_SYCL_GPU_DEP)
 endef
 $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 
@@ -154,6 +197,18 @@ TESTS_CUDA_DEP := $(TESTS_CUDA_OBJ:$.o=$.d)
 TESTS_CUDA_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.cuda,$(TESTS_PORTABLE_SRC))
 TESTS_CUDADLINK := $(TESTS_CUDA_OBJ:$cu.o=$cudadlink.o)
 endif
+# SYCL CPU backend
+ifdef SYCL_BASE
+TESTS_SYCL_CPU_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.syclcpu.o))
+TESTS_SYCL_CPU_DEP := $(TESTS_SYC_CPU_OBJ:$.o=$.d)
+TESTS_SYCL_CPU_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.syclcpu,$(TESTS_PORTABLE_SRC))
+endif
+# SYCL GPU backend
+ifdef SYCL_BASE
+TESTS_SYCL_GPU_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.syclgpu.o))
+TESTS_SYCL_GPU_DEP := $(TESTS_SYC_GPU_OBJ:$.o=$.d)
+TESTS_SYCL_GPU_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.syclgpu,$(TESTS_PORTABLE_SRC))
+endif
 # ROCm backend
 ifdef ROCM_BASE
 TESTS_ROCM_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_PORTABLE_SRC:%=%.rocm.o))
@@ -161,10 +216,10 @@ TESTS_ROCM_DEP := $(TESTS_ROCM_OBJ:$.o=$.d)
 TESTS_ROCM_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%.rocm,$(TESTS_PORTABLE_SRC))
 endif
 #
-TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE) $(TESTS_ROCM_EXE)
-ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP) $(TESTS_ROCM_DEP)
+TESTS_EXE := $(TESTS_SERIAL_EXE) $(TESTS_TBB_EXE) $(TESTS_CUDA_EXE) $(TESTS_ROCM_EXE) $(TESTS_SYCL_CPU_EXE) $(TESTS_SYCL_GPU_EXE)
+ALL_DEPENDS += $(TESTS_SERIAL_DEP) $(TESTS_TBB_DEP) $(TESTS_CUDA_DEP) $(TESTS_ROCM_DEP) $(TESTS_SYCL_CPU_DEP) $(TESTS_SYCL_GPU_DEP)
 # Needed to keep the unit test object files after building $(TARGET)
-.SECONDARY: $(TESTS_SERIAL_OBJ) $(TESTS_TBB_OBJ) $(TESTS_CUDA_OBJ) $(TESTS_CUDADLINK) $(TESTS_ROCM_OBJ)
+.SECONDARY: $(TESTS_SERIAL_OBJ) $(TESTS_TBB_OBJ) $(TESTS_CUDA_OBJ) $(TESTS_CUDADLINK) $(TESTS_ROCM_OBJ) $(TESTS_SYCL_CPU_OBJ) $(TESTS_SYCL_GPU_OBJ)
 
 define RUNTEST_template
 run_$(1): $(1)
@@ -178,6 +233,8 @@ $(foreach test,$(TESTS_SERIAL_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
 $(foreach test,$(TESTS_TBB_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
 $(foreach test,$(TESTS_CUDA_EXE),$(eval $(call RUNTEST_template,$(test),nvidiagpu)))
 $(foreach test,$(TESTS_ROCM_EXE),$(eval $(call RUNTEST_template,$(test),amdgpu)))
+$(foreach test,$(TESTS_SYCL_CPU_EXE),$(eval $(call RUNTEST_template,$(test),cpu)))
+$(foreach test,$(TESTS_SYCL_GPU_EXE),$(eval $(call RUNTEST_template,$(test),intelgpu)))
 
 -include $(ALL_DEPENDS)
 
@@ -187,7 +244,7 @@ $(LIB_DIR)/$(TARGET_NAME)/plugins.txt: $(PLUGINS)
 
 $(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) $(LIB_DIR)/$(TARGET_NAME)/plugins.txt | $(TESTS_EXE)
 	# Link all libraries, also the "portable" ones
-	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS) $($(lib)_TBB_LDFLAGS) $($(lib)_CUDA_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(LINK_CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS) $($(lib)_TBB_LDFLAGS) $($(lib)_CUDA_LDFLAGS) $($(lib)_ROCM_LDFLAGS) $($(lib)_SYCL_CPU_LDFLAGS) $($(lib)_SYCL_GPU_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
 $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
@@ -201,7 +258,7 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(LINK_CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 $$($(1)_SERIAL_LIB): $$($(1)_SERIAL_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
@@ -218,6 +275,15 @@ $$($(1)_CUDA_LIB): $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNA
 $$($(1)_ROCM_LIB): $$($(1)_ROCM_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
 	$(CXX) $$($(1)_ROCM_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
+$$($(1)_SYCL_CPU_LIB): $$($(1)_SYCL_CPU_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SYCL_CPU_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(ALPAKA_SYCL_LDFLAGS) $(ALPAKA_SYCL_CPU_TARGETS) $(ALPAKA_SYCL_CPU_FLAGS) $$($(1)_SYCL_CPU_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SYCL_CPU_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
+$$($(1)_SYCL_GPU_LIB): $$($(1)_SYCL_GPU_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SYCL_GPU_LIB))
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(ALPAKA_SYCL_LDFLAGS) $(ALPAKA_SYCL_GPU_TARGETS) $(ALPAKA_SYCL_GPU_FLAGS) $$($(1)_SYCL_GPU_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SYCL_GPU_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+
 
 # Anything depending on Alpaka
 # Portable code, for serial backend
@@ -249,6 +315,21 @@ $(OBJ_DIR)/$(2)/alpaka/%.cc.cuda.o: $(SRC_DIR)/$(2)/alpaka/%.cc
 $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 	$(CUDA_NVCC) $(CUDA_DLINKFLAGS) $(CUDA_LDFLAGS) $$($(1)_CUOBJ) -o $$@
 endif
+
+# Portable code, for SYCL CPU backend
+ifdef SYCL_BASE
+$(OBJ_DIR)/$(2)/alpaka/%.cc.syclcpu.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(MY_CXXFLAGS) $(ALPAKA_SYCL_CPU_TARGETS) -DALPAKA_ACC_SYCL_ENABLED -DALPAKA_SYCL_BACKEND_ONEAPI -DALPAKA_SYCL_ONEAPI_CPU -UALPAKA_HOST_ONLY $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_SYCL_CXXFLAGS)) -c $$< -o $$@ -MMD
+endif
+
+# Portable code, for SYCL GPU backend
+ifdef SYCL_BASE
+$(OBJ_DIR)/$(2)/alpaka/%.cc.syclgpu.o: $(SRC_DIR)/$(2)/alpaka/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(MY_CXXFLAGS) $(ALPAKA_SYCL_GPU_TARGETS) -DALPAKA_ACC_SYCL_ENABLED -DALPAKA_SYCL_BACKEND_ONEAPI -DALPAKA_SYCL_ONEAPI_GPU -UALPAKA_HOST_ONLY $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_SYCL_CXXFLAGS)) -c $$< -o $$@ -MMD
+endif
+
 
 # Portable code, for ROCm backend
 ifdef ROCM_BASE
@@ -323,4 +404,26 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o: $(SRC_DIR)/$(TARGET_NAME)/tes
 $(TEST_DIR)/$(TARGET_NAME)/%.rocm: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+endif
+
+# SYCL CPU backend
+ifdef SYCL_BASE
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.syclcpu.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(MY_CXXFLAGS) $(ALPAKA_SYCL_CPU_TARGETS) -DALPAKA_ACC_SYCL_ENABLED -DALPAKA_SYCL_BACKEND_ONEAPI -DALPAKA_SYCL_ONEAPI_CPU -UALPAKA_HOST_ONLY $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_SYCL_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.syclcpu: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.syclcpu.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(ALPAKA_SYCL_LDFLAGS) $^ $(LDFLAGS) $(MY_LDFLAGS) $(ALPAKA_SYCL_CPU_TARGETS) $(ALPAKA_SYCL_CPU_FLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SYCL_CPU_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+endif
+
+# SYCL GPU backend
+ifdef SYCL_BASE
+$(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.syclgpu.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(MY_CXXFLAGS) $(ALPAKA_SYCL_GPU_TARGETS) -DALPAKA_ACC_SYCL_ENABLED -DALPAKA_SYCL_BACKEND_ONEAPI -DALPAKA_SYCL_ONEAPI_GPU -UALPAKA_HOST_ONLY $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_SYCL_CXXFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_CXXFLAGS)) -c $< -o $@ -MMD
+
+$(TEST_DIR)/$(TARGET_NAME)/%.syclgpu: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.syclgpu.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(SYCL_CXX) $(ALPAKA_SYCL_CXXFLAGS) $(ALPAKA_SYCL_LDFLAGS) $^ $(LDFLAGS) $(MY_LDFLAGS) $(ALPAKA_SYCL_GPU_TARGETS) $(ALPAKA_SYCL_GPU_FLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SYCL_GPU_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif

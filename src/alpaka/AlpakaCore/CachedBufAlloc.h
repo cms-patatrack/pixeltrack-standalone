@@ -134,6 +134,111 @@ namespace cms::alpakatools {
 
 #endif  // ALPAKA_ACC_GPU_HIP_ENABLED
 
+#ifdef ALPAKA_SYCL_ONEAPI_CPU
+
+    //! The caching memory allocator implementation for the pinned host memory
+    template <typename TElem, typename TDim, typename TIdx>
+    struct CachedBufAlloc<TElem, TDim, TIdx, alpaka::DevCpu, alpaka::QueueCpuSyclNonBlocking, void> {
+      template <typename TExtent>
+      ALPAKA_FN_HOST static auto allocCachedBuf(alpaka::DevCpu const& dev,
+                                                alpaka::QueueCpuSyclNonBlocking queue,
+                                                TExtent const& extent) -> alpaka::BufCpu<TElem, TDim, TIdx> {
+        ALPAKA_DEBUG_MINIMAL_LOG_SCOPE;
+
+        auto& allocator = getHostCachingAllocator<alpaka::QueueCpuSyclNonBlocking>();
+
+        // FIXME the BufCpu does not support a pitch ?
+        size_t size = alpaka::getExtentProduct(extent);
+        size_t sizeBytes = size * sizeof(TElem);
+        void* memPtr = allocator.allocate(sizeBytes, queue);
+
+        // use a custom deleter to return the buffer to the CachingAllocator
+        auto deleter = [alloc = &allocator](TElem* ptr) { alloc->free(ptr); };
+
+        return alpaka::BufCpu<TElem, TDim, TIdx>(dev, reinterpret_cast<TElem*>(memPtr), std::move(deleter), extent);
+      }
+    };
+
+    //! The caching memory allocator implementation for the SYCL CPU device
+    template <typename TElem, typename TDim, typename TIdx, typename TQueue>
+    struct CachedBufAlloc<TElem, TDim, TIdx, alpaka::DevCpuSycl, TQueue, void> {
+      template <typename TExtent>
+      ALPAKA_FN_HOST static auto allocCachedBuf(alpaka::DevCpuSycl const& dev, TQueue queue, TExtent const& extent)
+          -> alpaka::BufCpuSycl<TElem, TDim, TIdx> {
+        ALPAKA_DEBUG_MINIMAL_LOG_SCOPE;
+
+        auto& allocator = getDeviceCachingAllocator<alpaka::DevCpuSycl, TQueue>(dev);
+
+        // size_t width = alpaka::getWidth(extent);
+        // size_t widthBytes = width * static_cast<TIdx>(sizeof(TElem));
+        // TODO implement pitch in SYCL
+        // size_t pitchBytes = widthBytes;
+        size_t size = alpaka::getExtentProduct(extent);
+        size_t sizeBytes = size * sizeof(TElem);
+        void* memPtr = allocator.allocate(sizeBytes, queue);
+
+        // use a custom deleter to return the buffer to the CachingAllocator
+        auto deleter = [alloc = &allocator](TElem* ptr) { alloc->free(ptr); };
+
+        return alpaka::BufCpuSycl<TElem, TDim, TIdx>(dev, reinterpret_cast<TElem*>(memPtr), std::move(deleter), extent);
+      }
+    };
+
+#endif  // ALPAKA_SYCL_ONEAPI_CPU
+
+#ifdef ALPAKA_SYCL_ONEAPI_GPU
+
+    //! The caching memory allocator implementation for the pinned host memory
+    template <typename TElem, typename TDim, typename TIdx>
+    struct CachedBufAlloc<TElem, TDim, TIdx, alpaka::DevCpu, alpaka::QueueGpuSyclIntelNonBlocking, void> {
+      template <typename TExtent>
+      ALPAKA_FN_HOST static auto allocCachedBuf(alpaka::DevCpu const& dev,
+                                                alpaka::QueueGpuSyclIntelNonBlocking queue,
+                                                TExtent const& extent) -> alpaka::BufCpu<TElem, TDim, TIdx> {
+        ALPAKA_DEBUG_MINIMAL_LOG_SCOPE;
+
+        auto& allocator = getHostCachingAllocator<alpaka::QueueGpuSyclIntelNonBlocking>();
+
+        // FIXME the BufCpu does not support a pitch ?
+        size_t size = alpaka::getExtentProduct(extent);
+        size_t sizeBytes = size * sizeof(TElem);
+        void* memPtr = allocator.allocate(sizeBytes, queue);
+
+        // use a custom deleter to return the buffer to the CachingAllocator
+        auto deleter = [alloc = &allocator](TElem* ptr) { alloc->free(ptr); };
+
+        return alpaka::BufCpu<TElem, TDim, TIdx>(dev, reinterpret_cast<TElem*>(memPtr), std::move(deleter), extent);
+      }
+    };
+
+    //! The caching memory allocator implementation for the SYCL GPU device
+    template <typename TElem, typename TDim, typename TIdx, typename TQueue>
+    struct CachedBufAlloc<TElem, TDim, TIdx, alpaka::DevGpuSyclIntel, TQueue, void> {
+      template <typename TExtent>
+      ALPAKA_FN_HOST static auto allocCachedBuf(alpaka::DevGpuSyclIntel const& dev, TQueue queue, TExtent const& extent)
+          -> alpaka::BufGpuSyclIntel<TElem, TDim, TIdx> {
+        ALPAKA_DEBUG_MINIMAL_LOG_SCOPE;
+
+        auto& allocator = getDeviceCachingAllocator<alpaka::DevGpuSyclIntel, TQueue>(dev);
+
+        // size_t width = alpaka::getWidth(extent);
+        // size_t widthBytes = width * static_cast<TIdx>(sizeof(TElem));
+        // TODO implement pitch in SYCL
+        // size_t pitchBytes = widthBytes;
+        size_t size = alpaka::getExtentProduct(extent);
+        size_t sizeBytes = size * sizeof(TElem);
+        void* memPtr = allocator.allocate(sizeBytes, queue);
+
+        // use a custom deleter to return the buffer to the CachingAllocator
+        auto deleter = [alloc = &allocator](TElem* ptr) { alloc->free(ptr); };
+
+        return alpaka::BufGpuSyclIntel<TElem, TDim, TIdx>(
+            dev, reinterpret_cast<TElem*>(memPtr), std::move(deleter), extent);
+      }
+    };
+
+#endif  // ALPAKA_SYCL_ONEAPI_GPU
+
   }  // namespace traits
 
   template <typename TElem, typename TIdx, typename TExtent, typename TQueue, typename TDev>

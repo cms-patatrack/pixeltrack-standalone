@@ -13,6 +13,7 @@
 #include "AlpakaCore/SimpleVector.h"
 #include "AlpakaCore/VecArray.h"
 #include "AlpakaCore/config.h"
+#include "AlpakaCore/math.h"
 #include "AlpakaDataFormats/alpaka/PixelTrackAlpaka.h"
 #include "AlpakaDataFormats/alpaka/TrackingRecHit2DAlpaka.h"
 
@@ -225,11 +226,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) static bool areAlignedRZ(
         float r1, float z1, float ri, float zi, float ro, float zo, const float ptmin, const float thetaCut) {
-      float radius_diff = std::abs(r1 - ro);
+      float radius_diff = math::abs(r1 - ro);
       float distance_13_squared = radius_diff * radius_diff + (z1 - zo) * (z1 - zo);
 
-      float pMin = ptmin * std::sqrt(distance_13_squared);  // this needs to be divided by
-                                                            // radius_diff later
+      float pMin = ptmin * math::sqrt(distance_13_squared);  // this needs to be divided by
+                                                             // radius_diff later
 
       float tan_12_13_half_mul_distance_13_squared = fabs(z1 * (ri - ro) + zi * (ro - r1) + zo * (r1 - ri));
       return tan_12_13_half_mul_distance_13_squared * pMin <= thetaCut * distance_13_squared * radius_diff;
@@ -253,7 +254,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       if (eq.curvature() > maxCurv)
         return false;
 
-      return std::abs(eq.dca0()) < region_origin_radius_plus_tolerance * std::abs(eq.curvature());
+      return math::abs(eq.dca0()) < region_origin_radius_plus_tolerance * math::abs(eq.curvature());
     }
 
     ALPAKA_FN_ACC ALPAKA_FN_INLINE __attribute__((always_inline)) static bool dcaCutH(
@@ -270,7 +271,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       if (eq.curvature() > maxCurv)
         return false;
 
-      return std::abs(eq.dca0()) < region_origin_radius_plus_tolerance * std::abs(eq.curvature());
+      return math::abs(eq.dca0()) < region_origin_radius_plus_tolerance * math::abs(eq.curvature());
     }
 
     ALPAKA_FN_ACC ALPAKA_FN_INLINE bool hole0(Hits const& hh, GPUCACell const& innerCell) const {
@@ -290,7 +291,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto ro = get_outer_r(hh);
       auto zo = get_outer_z(hh);
       auto z0 = zi + (r0 - ri) * (zo - zi) / (ro - ri);
-      auto z_in_ladder = std::abs(z0 - hh.averageGeometry().ladderZ[il]);
+      auto z_in_ladder = math::abs(z0 - hh.averageGeometry().ladderZ[il]);
       auto z_in_module = z_in_ladder - module_length * int(z_in_ladder / module_length);
       auto gap = z_in_module < module_tolerance || z_in_module > (module_length - module_tolerance);
       return gap;
@@ -317,7 +318,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto ro = get_outer_r(hh);
       auto zo = get_outer_z(hh);
       auto z4 = zo + (r4 - ro) * (zo - zi) / (ro - ri);
-      auto z_in_ladder = std::abs(z4 - hh.averageGeometry().ladderZ[il]);
+      auto z_in_ladder = math::abs(z4 - hh.averageGeometry().ladderZ[il]);
       auto z_in_module = z_in_ladder - module_length * int(z_in_ladder / module_length);
       auto gap = z_in_module < module_tolerance || z_in_module > (module_length - module_tolerance);
       auto holeP = z4 > hh.averageGeometry().ladderMaxZ[il] && z4 < hh.averageGeometry().endCapZ[0];

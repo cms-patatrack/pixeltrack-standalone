@@ -143,4 +143,7 @@ namespace gpuClustering {
 
 }  // namespace gpuClustering
 
+template <typename TAcc>
+struct alpaka::trait::WarpSize<gpuClustering::clusterChargeCut, TAcc> : std::integral_constant<std::uint32_t, 32> {};
+
 #endif  // plugin_SiPixelClusterizer_gpuClusterChargeCut_h

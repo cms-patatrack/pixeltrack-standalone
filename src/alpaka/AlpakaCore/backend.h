@@ -1,10 +1,10 @@
 #ifndef AlpakaCore_backend_h
 #define AlpakaCore_backend_h
 
-enum class Backend { SERIAL, TBB, CUDA, HIP };
+enum class Backend { SERIAL, TBB, CUDA, HIP, CPUSYCL, GPUSYCL };
 
 inline std::string const& name(Backend backend) {
-  static const std::string names[] = {"serial_sync", "tbb_async", "cuda_async", "rocm_async"};
+  static const std::string names[] = {"serial_sync", "tbb_async", "cuda_async", "rocm_async", "cpu_sycl", "gpu_sycl"};
   return names[static_cast<int>(backend)];
 }
 

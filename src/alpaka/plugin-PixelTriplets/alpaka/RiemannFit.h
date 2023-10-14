@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "FitUtils.h"
+#include "AlpakaCore/math.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace Rfit {
@@ -39,7 +40,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       u_int n = length_values.rows();
       rad_lengths(0) = length_values(0) * XX_0_inv;
       for (u_int j = 1; j < n; ++j) {
-        rad_lengths(j) = std::abs(length_values(j) - length_values(j - 1)) * XX_0_inv;
+        rad_lengths(j) = math::abs(length_values(j) - length_values(j - 1)) * XX_0_inv;
       }
     }
 
@@ -97,7 +98,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       for (u_int k = 0; k < n; ++k) {
         for (u_int l = k; l < n; ++l) {
           for (u_int i = 0; i < std::min(k, l); ++i) {
-            tmp(k + n, l + n) += std::abs(S_values(k) - S_values(i)) * std::abs(S_values(l) - S_values(i)) * sig2_S(i);
+            tmp(k + n, l + n) +=
+                math::abs(S_values(k) - S_values(i)) * math::abs(S_values(l) - S_values(i)) * sig2_S(i);
           }
           tmp(l + n, k + n) = tmp(k + n, l + n);
         }
@@ -143,12 +145,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         const double cross = cross2D(-o, p);
         const double dot = (-o).dot(p);
         const double atan2_ = atan2(cross, dot);
-        s_values(i) = std::abs(atan2_ * fast_fit(2));
+        s_values(i) = math::abs(atan2_ * fast_fit(2));
       }
-      computeRadLenUniformMaterial(s_values * sqrt(1. + 1. / (fast_fit(3) * fast_fit(3))), rad_lengths);
+      computeRadLenUniformMaterial(s_values * math::sqrt(1. + 1. / (fast_fit(3) * fast_fit(3))), rad_lengths);
       MatrixNd<N> scatter_cov_rad = MatrixNd<N>::Zero();
       VectorNd<N> sig2 = (1. + 0.038 * rad_lengths.array().log()).abs2() * rad_lengths.array();
-      sig2 *= 0.000225 / (p_2 * sqr(sin(theta)));
+      sig2 *= 0.000225 / (p_2 * sqr(math::sin(theta)));
       for (u_int k = 0; k < n; ++k) {
         for (u_int l = k; l < n; ++l) {
           for (u_int i = 0; i < std::min(k, l); ++i) {
@@ -409,7 +411,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto X0 = (0.5 * b2 - Y0 * by) / bx;
       result(0) = hits(0, 0) + (flip ? Y0 : X0);
       result(1) = hits(1, 0) + (flip ? X0 : Y0);
-      result(2) = sqrt(sqr(X0) + sqr(Y0));
+      result(2) = math::sqrt(sqr(X0) + sqr(Y0));
       printIt(&result, "Fast_fit - result: ");
 
       // LINE FIT
@@ -519,7 +521,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // scale
       const double q = mc.squaredNorm();
-      const double s = sqrt(n * 1. / q);  // scaling factor
+      const double s = math::sqrt(n * 1. / q);  // scaling factor
       p3D *= s;
 
       // project on paraboloid
@@ -572,7 +574,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // COMPUTE CIRCLE PARAMETER
 
       // auxiliary quantities
-      const double h = sqrt(1. - sqr(v(2)) - 4. * c * v(2));
+      const double h = math::sqrt(1. - sqr(v(2)) - 4. * c * v(2));
       const double v2x2_inv = 1. / (2. * v(2));
       const double s_inv = 1. / s;
       Vector3d par_uvr_;  // used in error propagation
@@ -799,7 +801,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // Prepare the Rotation Matrix to rotate the points
       Eigen::Matrix<double, 2, 2> rot;
-      rot << sin(theta), cos(theta), -cos(theta), sin(theta);
+      rot << math::sin(theta), math::cos(theta), -math::cos(theta), math::sin(theta);
 
       // PROJECTION ON THE CILINDER
       //
@@ -910,11 +912,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 #endif
 
       // We need now to transfer back the results in the original s-z plane
-      auto common_factor = 1. / (sin(theta) - sol(1, 0) * cos(theta));
+      auto common_factor = 1. / (math::sin(theta) - sol(1, 0) * math::cos(theta));
       Eigen::Matrix<double, 2, 2> J;
-      J << 0., common_factor * common_factor, common_factor, sol(0, 0) * cos(theta) * common_factor * common_factor;
+      J << 0., common_factor * common_factor, common_factor,
+          sol(0, 0) * math::cos(theta) * common_factor * common_factor;
 
-      double m = common_factor * (sol(1, 0) * sin(theta) + cos(theta));
+      double m = common_factor * (sol(1, 0) * math::sin(theta) + math::cos(theta));
       double q = common_factor * sol(0, 0);
       auto cov_mq = J * Cov_params * J.transpose();
 

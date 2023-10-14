@@ -37,6 +37,9 @@ namespace {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
         << "[--hip] "
 #endif
+#ifdef ALPAKA_ACC_SYCL_PRESENT
+        << "[--syclcpu] [--syclgpu]"
+#endif
         << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--warmupEvents WE] [--data PATH] "
            "[--transfer] [--validation] [--histogram]\n\n"
         << "Options\n"
@@ -51,6 +54,10 @@ namespace {
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
         << " --hip               Use ROCm/HIP backend\n"
+#endif
+#ifdef ALPAKA_ACC_SYCL_PRESENT
+        << " --syclcpu           Use SYCL Intel CPU backend\n"
+        << " --syclgpu           Use SYCL Intel GPU backend\n"
 #endif
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
@@ -159,6 +166,16 @@ int main(int argc, char** argv) {
       getOptionalArgument(args, i, weight);
       backends.insert_or_assign(Backend::HIP, weight);
 #endif
+#ifdef ALPAKA_ACC_SYCL_PRESENT
+    } else if (*i == "--syclcpu") {
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::CPUSYCL, weight);
+    } else if (*i == "--syclgpu") {
+      float weight = 1.;
+      getOptionalArgument(args, i, weight);
+      backends.insert_or_assign(Backend::GPUSYCL, weight);
+#endif
     } else if (*i == "--numberOfThreads") {
       getArgument(args, i, numberOfThreads);
     } else if (*i == "--numberOfStreams") {
@@ -224,6 +241,14 @@ int main(int argc, char** argv) {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
   if (backends.find(Backend::HIP) != backends.end()) {
     alpaka_rocm_async::initialise();
+  }
+#endif
+#ifdef ALPAKA_ACC_SYCL_PRESENT
+  if (backends.find(Backend::CPUSYCL) != backends.end()) {
+    alpaka_cpu_sycl::initialise();
+  }
+  if (backends.find(Backend::GPUSYCL) != backends.end()) {
+    alpaka_gpu_sycl::initialise();
   }
 #endif
 
@@ -356,5 +381,6 @@ int main(int argc, char** argv) {
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
             << std::defaultfloat << (maxEvents / time) << " events/s, CPU usage per thread: " << std::fixed
             << std::setprecision(1) << (cpu / time / numberOfThreads * 100) << "%" << std::endl;
+
   return EXIT_SUCCESS;
 }
