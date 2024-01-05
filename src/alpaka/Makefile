@@ -38,8 +38,7 @@ endif
 ifdef ROCM_BASE
 MY_CXXFLAGS += -DALPAKA_ACC_GPU_HIP_PRESENT -DALPAKA_ACC_GPU_HIP_ONLY_MODE
 endif
-MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
-LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
+MY_LDFLAGS := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME)
 
 ALL_DEPENDS := $(EXE_DEP)
 # Files for libraries
@@ -187,7 +186,7 @@ $(LIB_DIR)/$(TARGET_NAME)/plugins.txt: $(PLUGINS)
 
 $(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) $(LIB_DIR)/$(TARGET_NAME)/plugins.txt | $(TESTS_EXE)
 	# Link all libraries, also the "portable" ones
-	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS) $($(lib)_TBB_LDFLAGS) $($(lib)_CUDA_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(CXX) $(EXE_OBJ) $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS) $($(lib)_TBB_LDFLAGS) $($(lib)_CUDA_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
 $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
@@ -201,23 +200,23 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 $$($(1)_SERIAL_LIB): $$($(1)_SERIAL_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_SERIAL_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_SERIAL_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_SERIAL_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 $$($(1)_TBB_LIB): $$($(1)_TBB_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_TBB_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_TBB_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_TBB_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_TBB_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_TBB_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 $$($(1)_CUDA_LIB): $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_CUDA_OBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_CUDA_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 $$($(1)_ROCM_LIB): $$($(1)_ROCM_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS_H),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_ROCM_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_ROCM_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_ROCM_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 
 # Anything depending on Alpaka
 # Portable code, for serial backend
@@ -284,7 +283,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o: $(SRC_DIR)/$(TARGET_NAME)/t
 
 $(TEST_DIR)/$(TARGET_NAME)/%.serial: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.serial.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_SERIAL_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 # TBB backend
 $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(TARGET_NAME)/test/alpaka/%.cc
@@ -298,7 +297,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o: $(SRC_DIR)/$(TARGET_NAME)/test
 
 $(TEST_DIR)/$(TARGET_NAME)/%.tbb: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.tbb.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_TBB_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_TBB_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 # CUDA backend
 ifdef CUDA_BASE
@@ -311,7 +310,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cudadlink.o: $(OBJ_DIR)/$(TARGET_NAME)/t
 
 $(TEST_DIR)/$(TARGET_NAME)/%.cuda: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.o $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.cuda.cudadlink.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_CUDA_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_CUDA_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif
 
 # ROCm backend
@@ -322,5 +321,5 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o: $(SRC_DIR)/$(TARGET_NAME)/tes
 
 $(TEST_DIR)/$(TARGET_NAME)/%.rocm: $(OBJ_DIR)/$(TARGET_NAME)/test/alpaka/%.cc.rocm.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(foreach lib,$(LIBNAMES),$($(lib)_LDFLAGS) $($(lib)_ROCM_LDFLAGS)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 endif

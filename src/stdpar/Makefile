@@ -26,8 +26,7 @@ PLUGINNAMES_NVCXX := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 PLUGINNAMES := $(filter-out $(PLUGINNAMES_NVCXX),$(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *))))
 
 MY_CXXFLAGS := -I$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME) -DDISABLE_RFIT
-MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
-LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
+MY_LDFLAGS := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME)
 
 ALL_DEPENDS := $(EXE_DEP)
 # Files for libraries
@@ -95,7 +94,7 @@ $(LIB_DIR)/$(TARGET_NAME)/plugins.txt: $(PLUGINS)
 
 #Link shared libs and plugins
 $(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) $(LIB_DIR)/$(TARGET_NAME)/plugins.txt | $(TESTS_EXE)
-	$(NVCXX) $(EXE_OBJ) $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(NVCXX) $(EXE_OBJ) $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 
 define BUILD_template
@@ -117,7 +116,7 @@ $$($(1)_CUDADLINK): $$($(1)_CUOBJ)
 
 $$($(1)_LIB): $$($(1)_OBJ) $$($(1)_CUDADLINK) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $$($(1)_CUOBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(CXX) $$($(1)_OBJ) $$($(1)_CUOBJ) $$($(1)_CUDADLINK) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 endef
 
 $(foreach lib,$(PLUGINNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/plugin-$(lib))))
@@ -141,7 +140,7 @@ $(OBJ_DIR)/$(2)/%.cu.o: $(SRC_DIR)/$(2)/%.cu
 
 $$($(1)_LIB): $$($(1)_OBJ) $$($(1)_CUOBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(NVCXX) $$($(1)_OBJ) $$($(1)_CUOBJ) $(LDFLAGS_NVCXX) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(NVCXX) $$($(1)_OBJ) $$($(1)_CUOBJ) $(LDFLAGS_NVCXX) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template_NVHPC,$(lib),$(TARGET_NAME)/$(lib))))
@@ -168,7 +167,7 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cc
 
 $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(NVCXX) $< $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(NVCXX) $< $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cu
 	@[ -d $(@D) ] || mkdir -p $(@D)
@@ -176,4 +175,4 @@ $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o: $(SRC_DIR)/$(TARGET_NAME)/test/%.cu
 
 $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(NVCXX) $^ $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(NVCXX) $^ $(LDFLAGS_NVCXX) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))

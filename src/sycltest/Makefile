@@ -23,8 +23,7 @@ EXE_DEP := $(EXE_OBJ:$.o=$.d)
 LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
-MY_LDFLAGS := -ldl -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME)
-LIB_LDFLAGS := -L$(LIB_DIR)/$(TARGET_NAME)
+MY_LDFLAGS := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME)
 
 ALL_DEPENDS := $(EXE_DEP)
 # Files for libraries
@@ -79,7 +78,7 @@ $(LIB_DIR)/$(TARGET_NAME)/plugins.txt: $(PLUGINS)
 	nm -A -C -D -P --defined-only $(PLUGINS) | sed -n -e"s#$(LIB_DIR)/$(TARGET_NAME)/\(plugin\w\+\.so\): typeinfo for edm::\(PluginFactory\|ESPluginFactory\)::impl::Maker<\([A-Za-z0-9_:]\+\)> V .* .*#\3 \1#p" | sort > $@
 
 $(TARGET): $(EXE_OBJ) $(LIBS) $(PLUGINS) $(LIB_DIR)/$(TARGET_NAME)/plugins.txt | $(TESTS_EXE)
-	$(SYCL_CXX) $(SYCL_CXXFLAGS) $(EXE_OBJ) $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(SYCL_CXX) $(SYCL_CXXFLAGS) $(EXE_OBJ) $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 define BUILD_template
 $(OBJECT_DIR)/$(2)/%.cc.o: $(TARGET_DIR)/$(2)/%.cc
@@ -93,7 +92,7 @@ $(OBJECT_DIR)/$(2)/%.cc.o: $(TARGET_DIR)/$(2)/%.cc
 
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(SYCL_CXX) $(SYCL_CXXFLAGS) $$($(1)_OBJ) $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -shared $(SO_LDFLAGS) $(LIB_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
+	$(SYCL_CXX) $(SYCL_CXXFLAGS) $$($(1)_OBJ) $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(lib))))
@@ -120,4 +119,4 @@ $(OBJECT_DIR)/test/%.cc.o: $(TARGET_DIR)/test/%.cc
 
 $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJECT_DIR)/test/%.cc.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
-	$(SYCL_CXX) $(SYCL_CXXFLAGS) $< $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -o $@ -L$(LIB_DIR)/$(TARGET_NAME) $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
+	$(SYCL_CXX) $(SYCL_CXXFLAGS) $< $(LDFLAGS) $(SYCL_LDFLAGS) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
