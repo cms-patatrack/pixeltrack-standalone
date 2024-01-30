@@ -1,4 +1,4 @@
-sycl_EXTERNAL_DEPENDS := TBB EIGEN
+sycl_EXTERNAL_DEPENDS := TBB EIGEN INTELOCLCPU
 BeamSpotProducer_DEPENDS := Framework SYCLCore SYCLDataFormats
 CondFormats_DEPENDS := SYCLCore
 SYCLCore_DEPENDS := Framework
