@@ -13,19 +13,21 @@
 #include <sycl/sycl.hpp>
 
 #include "SYCLCore/chooseDevice.h"
+#include "SYCLCore/verbose.h"
 #include "EventProcessor.h"
 #include "PosixClockGettime.h"
 
 namespace {
   void print_help(std::string const& name) {
     std::cout << "Usage: " << name
-              << " [--device BACKEND:DEVICE] [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE]"
+              << " [--verbose] [--device BACKEND:DEVICE] [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE]"
               << " [--maxEvents ME] [--runForMinutes RM] [--data PATH] [--transfer] [--validation] [--empty]\n";
     std::cout << R"(
 Options:
   --device BACKEND:DEVICE       Specifies which device(s) to use (default all).
                                 See https://intel.github.io/llvm-docs/EnvironmentVariables.html#oneapi-device-selector
                                 for the accepted syntax.
+  --verbose                     Write information about the devices found on the system and used by each stream.
   --numberOfThreads             Number of threads to use (default 1, use 0 to use all CPU cores).
   --numberOfStreams             Number of concurrent events (default 0 = numberOfThreads).
   --warmupEvents                Number of events to process before starting the benchmark (default 0).
@@ -43,6 +45,7 @@ Options:
 int main(int argc, char** argv) try {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  std::string deviceSelection;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int warmupEvents = 0;
@@ -56,10 +59,12 @@ int main(int argc, char** argv) try {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+    } else if (*i == "--verbose") {
+      verbose = true;
     } else if (*i == "--device") {
       ++i;
-      std::string device = *i;
-      setenv("ONEAPI_DEVICE_SELECTOR", device.c_str(), true);
+      deviceSelection = *i;
+      setenv("ONEAPI_DEVICE_SELECTOR", deviceSelection.c_str(), true);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -110,7 +115,14 @@ int main(int argc, char** argv) try {
   }
 
   // Initialise the SYCL runtime
-  cms::sycltools::enumerateDevices(true);
+  if (cms::sycltools::enumerateDevices(verbose).empty()) {
+    if (deviceSelection.empty()) {
+      std::cerr << "Error: no SYCL devices found.\n";
+    } else {
+      std::cerr << "Error: no SYCL devices matching the selection \"" << deviceSelection << "\" found.\n";
+    }
+    exit(EXIT_FAILURE);
+  }
 
   // Initialise the EventProcessor
   std::vector<std::string> edmodules;

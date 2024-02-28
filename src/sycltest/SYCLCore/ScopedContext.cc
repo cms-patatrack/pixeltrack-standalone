@@ -4,14 +4,15 @@
 #include <sycl/sycl.hpp>
 
 #include "SYCLCore/ScopedContext.h"
-#include "chooseDevice.h"
+#include "SYCLCore/chooseDevice.h"
+#include "SYCLCore/verbose.h"
 
 namespace cms::sycltools {
 
   namespace impl {
 
     ScopedContextBase::ScopedContextBase(edm::StreamID streamID)
-        : stream_(getStreamCache().get(chooseDevice(streamID))) {}
+        : stream_(getStreamCache().get(chooseDevice(streamID, ::verbose))) {}
 
     ScopedContextBase::ScopedContextBase(ProductBase const &data)
         : stream_(data.mayReuseStream() ? data.streamPtr() : getStreamCache().get(data.device())) {}

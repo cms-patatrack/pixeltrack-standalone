@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include <sycl/sycl.hpp>
@@ -43,7 +44,13 @@ namespace cms::sycltools {
     static const std::vector<sycl::device> devices = discoverDevices();
 
     if (verbose) {
-      std::cerr << "Found " << devices.size() << " SYCL devices:" << std::endl;
+      if (devices.size() == 0) {
+        std::cerr << "Found 0 SYCL devices\n";
+      } else if (devices.size() == 1) {
+        std::cerr << "Found 1 SYCL device:\n";
+      } else {
+        std::cerr << "Found " << devices.size() << " SYCL devices:\n";
+      }
       for (auto const& device : devices)
         std::cerr << "  - " << device.get_backend() << ' ' << device.get_info<sycl::info::device::name>() << " ["
                   << device.get_info<sycl::info::device::driver_version>() << "]" << std::endl;
@@ -80,8 +87,10 @@ namespace cms::sycltools {
     auto const& devices = enumerateDevices();
     auto const& device = devices[id % devices.size()];
     if (verbose) {
-      std::cerr << "EDM stream " << id << " offload to " << device.get_info<sycl::info::device::name>()
-                << " on backend " << device.get_backend() << std::endl;
+      std::ostringstream out;
+      out << "EDM stream " << id << " offload to " << device.get_info<sycl::info::device::name>()
+          << " on backend " << device.get_backend() << '\n';
+      std::cerr << out.str();
     }
     return device;
   }
