@@ -30,10 +30,6 @@ namespace cms {
         const std::shared_ptr<sycl::queue>& streamPtr() const { return stream_; }
 
       protected:
-        // The constructors set the current device, but the device
-        // is not set back to the previous value at the destructor.
-        // The current device doesn't
-        // really matter between modules (or across TBB tasks).
         explicit ScopedContextBase(edm::StreamID streamID);
 
         explicit ScopedContextBase(ProductBase const& data);

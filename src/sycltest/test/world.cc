@@ -21,7 +21,7 @@ void print(sycl::nd_item<1> item, sycl::stream out) {
 int main() {
   std::cout << "World from" << std::endl;
 
-  sycl::queue queue{sycl::default_selector(), sycl_exception_handler, sycl::property::queue::in_order()};
+  sycl::queue queue{sycl::default_selector_v, sycl_exception_handler, sycl::property::queue::in_order()};
   queue.submit([&](sycl::handler &cgh) {
     sycl::stream out(64 * 1024, 80, cgh);
 

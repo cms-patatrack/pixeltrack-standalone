@@ -46,7 +46,7 @@ export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
 GCC_TOOLCHAIN := $(abspath $(dir $(shell which $(CXX)))/..)
 GCC_TARGET    := $(shell $(CXX) -dumpmachine)
 
-CLANG_FORMAT := clang-format-10
+CLANG_FORMAT := clang-format-16
 CMAKE := cmake
 
 # Source code
@@ -125,10 +125,10 @@ export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # SYCL and Intel oneAPI
-SYCL_USE_INTEL_ONEAPI :=
+SYCL_USE_INTEL_ONEAPI := true
 
 # Intel GPU ids
-OCLOC_IDS := pvc    # tgllp acm_g10 pvc
+OCLOC_IDS := tgllp acm_g10 pvc
 
 ifdef SYCL_USE_INTEL_ONEAPI
   ONEAPI_BASE := /opt/intel/oneapi
@@ -139,19 +139,19 @@ ifdef SYCL_USE_INTEL_ONEAPI
 
   # Intel oneTBB
   TBB_BASE      := $(ONEAPI_BASE)/tbb/latest
-  TBB_LIBDIR    := $(TBB_BASE)/lib/intel64/gcc4.8
+  TBB_LIBDIR    := $(TBB_BASE)/lib
 
   # use Intel oneAPI DPC++/C++ Compiler
-  SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest/linux
-  SYCL_PATH     := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin-llvm
-  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/lib/x64:$(SYCL_BASE)/compiler/lib/intel64_lin
+  SYCL_BASE     := $(ONEAPI_BASE)/compiler/latest
+  SYCL_PATH     := $(SYCL_BASE)/bin:$(SYCL_BASE)/bin/compiler
+  SYCL_LDPATH   := $(SYCL_BASE)/lib:$(SYCL_BASE)/opt/compiler/lib
   SYCL_LIBDIR   := $(SYCL_BASE)/lib
   # use ICPX:       $(SYCL_BASE)/bin/icpx
   # use clang++:    $(SYCL_BASE)/bin-llvm/clang++
   SYCL_CXX      := $(SYCL_BASE)/bin/icpx
 
   # use the oneAPI CPU OpenCL runtime
-  export OCL_ICD_FILENAMES := $(SYCL_BASE)/lib/x64/libintelocl.so
+  export OCL_ICD_FILENAMES := $(SYCL_BASE)/lib/libintelocl.so
 else
   # use clang++
   # latest release: /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/release/2022-12
@@ -172,22 +172,26 @@ ifneq ($(wildcard $(SYCL_BASE)),)
   #JIT_TARGETS      := spir64
   #JIT_FLAGS        :=
   # compile AOT for x86_64 CPUs, targetting the Intel OpenCL runtime
-  #AOT_CPU_TARGETS  := spir64_x86_64        # or x86_64
-  #AOT_CPU_FLAGS    :=
+  AOT_CPU_TARGETS  := spir64_x86_64
+  AOT_CPU_FLAGS    :=
   # compile AOT for the Intel GPUs identified by the $(OCLOC_IDS) architectures
   AOT_INTEL_TARGETS := $(foreach ARCH,$(OCLOC_IDS),intel_gpu_$(ARCH))
-  AOT_INTEL_FLAGS   := -Xsycl-target-backend=intel_gpu_pvc '-q -options -ze-intel-enable-auto-large-GRF-mode'
+  AOT_INTEL_FLAGS   := -Xsycl-target-backend=spir64_gen '-q -options -ze-intel-enable-auto-large-GRF-mode'
   # compile AOT for the NVIDIA GPUs identified by the $(CUDA_ARCH) CUDA architectures
   #AOT_CUDA_TARGETS := $(foreach ARCH,$(CUDA_ARCH),nvidia_gpu_sm_$(ARCH))
-  #AOT_CUDA_FLAGS   := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version # -Wno-linker-warnings # -fno-bundle-offload-arch
+  # currently supports a single CUDA arch, use the lowest architecture for forward compatibility
+  AOT_CUDA_TARGETS := nvidia_gpu_sm_$(firstword $(CUDA_ARCH))
+  AOT_CUDA_FLAGS   := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
   # compile AOT for the AMD GPUs identified by the $(ROCM_ARCH) ROCm architectures
   #AOT_ROCM_TARGETS := $(foreach ARCH,$(ROCM_ARCH),amd_gpu_$(ARCH))
-  #AOT_ROCM_FLAGS   := --rocm-path=$(ROCM_BASE) # -Wno-linker-warnings
+  # currently supports a single ROCm arch
+  AOT_ROCM_TARGETS := amd_gpu_$(firstword $(ROCM_ARCH))
+  AOT_ROCM_FLAGS   := --rocm-path=$(ROCM_BASE)
 
   # compile JIT and AOT for all the targets
   SYCL_TARGETS      := $(subst $(SPACE),$(COMMA),$(strip $(JIT_TARGETS) $(AOT_CPU_TARGETS) $(AOT_INTEL_TARGETS) $(AOT_CUDA_TARGETS) $(AOT_ROCM_TARGETS)))
-  SYCL_FLAGS        := -fsycl -fsycl-targets=$(SYCL_TARGETS)
-  SYCL_LDFLAGS      := -fsycl-fp32-prec-sqrt -fsycl-link-huge-device-code $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
+  SYCL_FLAGS        := -fsycl -fsycl-targets=$(SYCL_TARGETS) -Xclang -opaque-pointers
+  SYCL_LDFLAGS      := -fsycl-fp32-prec-sqrt -flink-huge-device-code $(JIT_FLAGS) $(AOT_CPU_FLAGS) $(AOT_INTEL_FLAGS) $(AOT_CUDA_FLAGS) $(AOT_ROCM_FLAGS)
 
   # other SYCL options
   #  -fsycl-device-code-split=per_kernel
@@ -229,6 +233,18 @@ ifneq ($(wildcard $(SYCL_BASE)),)
   #      a single hardware thread in an EU can access 128 GRF registers, each of which is 64B wide. In this mode,
   #      8 hardware threads are available per EU. In Large GRF mode, a single hardware thread in an EU can access
   #      256 GRF registers, each of which is 64B wide. In this mode, 4 hardware threads are available per EU.
+  #    Note: using `-Xsycl-target-backend=intel_gpu_pvc` confuses the frontend, and ends up passing the flags also
+  #    to the CPU AOT compiler, which does not understand them and fails with an error.
+  #    Using `-Xsycl-target-backend=spir64_gen` seems to work better, at least in some cases.
+  #
+  #  -fno-bundle-offload-arch
+  #    from https://intel.github.io/llvm-docs/clang/ClangCommandLineReference.html
+  #      Specify that the offload bundler should not identify a bundle with specific arch.
+  #      For example, the bundle for `nvptx64-nvidia-cuda-sm_80` uses the bundle tag `nvptx64-nvidia-cuda` when used.
+  #      This allows .o files to contain .bc bundles that are unspecific to a particular arch version.
+  #
+  #  -Wno-linker-warnings
+  #    ...
 
   export SYCL_CXX
   export SYCL_CXXFLAGS := $(filter-out $(LLVM_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(SYCL_FLAGS) $(USER_SYCLFLAGS)
