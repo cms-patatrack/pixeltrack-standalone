@@ -9,6 +9,7 @@
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskList.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
+#include "Framework/Profile.h"
 
 namespace edm {
   class Event;
@@ -17,7 +18,7 @@ namespace edm {
 
   class Worker {
   public:
-    Worker() : prefetchRequested_{false} {}
+    Worker(const std::string& name) : name_(name), prefetchRequested_{false} {}
     virtual ~Worker() = default;
 
     // not thread safe
@@ -43,6 +44,7 @@ namespace edm {
 
   protected:
     virtual void doReset() = 0;
+    std::string name_;
 
   private:
     std::vector<Worker*> itemsToGet_;
@@ -52,7 +54,8 @@ namespace edm {
   template <typename T>
   class WorkerT : public Worker {
   public:
-    explicit WorkerT(ProductRegistry& reg) : producer_(reg), workStarted_{false} {}
+    explicit WorkerT(ProductRegistry& reg, const std::string& name)
+        : Worker(name), producer_(reg), workStarted_{false} {}
 
     void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
       waitingTasksWork_.add(task);
@@ -69,7 +72,9 @@ namespace edm {
                 std::exception_ptr exceptionPtr;
                 try {
                   //std::cout << "calling doProduce " << this << std::endl;
+                  beginProduce(name_, event);
                   producer_.doProduce(event, eventSetup);
+                  endProduce(name_, event);
                 } catch (...) {
                   exceptionPtr = std::current_exception();
                 }
@@ -87,7 +92,9 @@ namespace edm {
             } else {
               std::exception_ptr exceptionPtr;
               try {
+                beginAcquire(name_, event);
                 producer_.doAcquire(event, eventSetup, runProduceHolder);
+                endAcquire(name_, event);
               } catch (...) {
                 exceptionPtr = std::current_exception();
               }
@@ -106,7 +113,9 @@ namespace edm {
         tbb::task_group group;
         {
           WaitingTaskWithArenaHolder runProducerHolder{group, &waitTask};
+          beginAcquire(name_, event);
           producer_.doAcquire(event, eventSetup, runProducerHolder);
+          endAcquire(name_, event);
         }
         do {
           group.wait();
@@ -115,7 +124,9 @@ namespace edm {
           std::rethrow_exception(*(waitTask.exceptionPtr()));
         }
       }
+      beginProduce(name_, event);
       producer_.doProduce(event, eventSetup);
+      endProduce(name_, event);
     }
 
     void doEndJob() override { producer_.doEndJob(); }
