@@ -68,7 +68,7 @@ public:
 
 template <typename T>
 constexpr void CircleEq<T>::compute(T x1, T y1, T x2, T y2, T x3, T y3) {
-  bool noflip = sycl::abs(x3 - x1) < sycl::abs(y3 - y1);
+  bool noflip = sycl::fabs(x3 - x1) < sycl::fabs(y3 - y1);
 
   auto x1p = noflip ? x1 - x2 : y1 - y2;
   auto y1p = noflip ? y1 - y2 : x1 - x2;

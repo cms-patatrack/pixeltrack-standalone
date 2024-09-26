@@ -99,7 +99,7 @@ void CountValidator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
       }
     }
 
-    auto rel = sycl::abs(float(nTracks - int(count.nTracks())) / count.nTracks());
+    auto rel = sycl::fabs(float(nTracks - int(count.nTracks())) / count.nTracks());
     if (static_cast<unsigned int>(nTracks) != count.nTracks()) {
       std::lock_guard<std::mutex> guard(sumTrackDifferenceMutex);
       sumTrackDifference += rel;

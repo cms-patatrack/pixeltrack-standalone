@@ -162,7 +162,7 @@ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultipl
     BrokenLine::BL_Circle_fit(hits, hits_ge, fast_fit, B, data, circle);
 
     results->stateAtBS.copyFromCircle(circle.par, circle.cov, line.par, line.cov, 1.f / float(B), tkid);
-    results->pt(tkid) = float(B) / float(sycl::abs(circle.par(2)));
+    results->pt(tkid) = float(B) / float(sycl::fabs(circle.par(2)));
     results->eta(tkid) = asinhf(line.par(0));
     results->chi2(tkid) = (circle.chi2 + line.chi2) / (2 * N - 5);
 

@@ -23,7 +23,6 @@
 
 namespace gpuPixelDoublets {
 
-  using sycl::abs;
   using CellNeighbors = CAConstants::CellNeighbors;
   using CellTracks = CAConstants::CellTracks;
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
@@ -169,7 +168,7 @@ namespace gpuPixelDoublets {
         auto zo = hh.zGlobal(j);
         auto ro = hh.rGlobal(j);
         auto dr = ro - mer;
-        return dr > maxr[pairLayerId] || dr < 0 || abs((mez * ro - mer * zo)) > z0cut * dr;
+        return dr > maxr[pairLayerId] || dr < 0 || sycl::fabs((mez * ro - mer * zo)) > z0cut * dr;
       };
 
       auto zsizeCut = [&](int j) {
@@ -181,9 +180,9 @@ namespace gpuPixelDoublets {
         // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
         auto zo = hh.zGlobal(j);
         auto ro = hh.rGlobal(j);
-        return onlyBarrel ? mes > 0 && so > 0 && int(abs(so - mes)) > dy
+        return onlyBarrel ? mes > 0 && so > 0 && int(sycl::abs(so - mes)) > dy
                           : (inner < 4) && mes > 0 &&
-                                abs(mes - int(abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
+                                sycl::abs(mes - int(sycl::fabs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
       };
 
       auto iphicut = phicuts[pairLayerId];
@@ -191,7 +190,7 @@ namespace gpuPixelDoublets {
       auto kl = Hist::bin(int16_t(mep - iphicut));
       auto kh = Hist::bin(int16_t(mep + iphicut));
       auto incr = [](auto& k) { return k = (k + 1) % Hist::nbins(); };
-      // bool piWrap = abs(kh-kl) > Hist::nbins()/2;
+      // bool piWrap = sycl::abs(kh-kl) > Hist::nbins()/2;
       // if (item.get_local_id(1)==0)
       //   printf("%d %d %d %d\n", kl, kh, mep, iphicut);
 
@@ -222,7 +221,7 @@ namespace gpuPixelDoublets {
           if (doZ0Cut && z0cutoff(oi))
             continue;
           auto mop = hh.iphi(oi);
-          uint16_t idphi = abs(static_cast<int16_t>(mep - mop));  // different from the original CUDA version
+          uint16_t idphi = sycl::abs(static_cast<int16_t>(mep - mop));  // different from the original CUDA version
           if (idphi > iphicut)
             continue;
 
