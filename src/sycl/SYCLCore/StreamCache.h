@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <sstream>
 
 #include "SYCLCore/chooseDevice.h"
 #include "SYCLCore/getDeviceIndex.h"

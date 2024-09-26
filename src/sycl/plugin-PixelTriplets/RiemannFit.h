@@ -11,7 +11,6 @@
 
 namespace Rfit {
 
-  using sycl::abs;
   using sycl::atan;
   using sycl::atan2;
   using sycl::cos;
@@ -48,7 +47,7 @@ namespace Rfit {
     u_int n = length_values.rows();
     rad_lengths(0) = length_values(0) * XX_0_inv;
     for (u_int j = 1; j < n; ++j) {
-      rad_lengths(j) = abs(length_values(j) - length_values(j - 1)) * XX_0_inv;
+      rad_lengths(j) = sycl::fabs(length_values(j) - length_values(j - 1)) * XX_0_inv;
     }
   }
 
@@ -106,7 +105,7 @@ namespace Rfit {
     for (u_int k = 0; k < n; ++k) {
       for (u_int l = k; l < n; ++l) {
         for (u_int i = 0; i < sycl::min(k, l); ++i) {
-          tmp(k + n, l + n) += abs(S_values(k) - S_values(i)) * abs(S_values(l) - S_values(i)) * sig2_S(i);
+          tmp(k + n, l + n) += sycl::fabs(S_values(k) - S_values(i)) * sycl::fabs(S_values(l) - S_values(i)) * sig2_S(i);
         }
         tmp(l + n, k + n) = tmp(k + n, l + n);
       }
@@ -149,7 +148,7 @@ namespace Rfit {
       const double cross = cross2D(-o, p);
       const double dot = (-o).dot(p);
       const double atan2_ = atan2(cross, dot);
-      s_values(i) = abs(atan2_ * fast_fit(2));
+      s_values(i) = sycl::fabs(atan2_ * fast_fit(2));
     }
     computeRadLenUniformMaterial(s_values * sqrt(1. + 1. / (fast_fit(3) * fast_fit(3))), rad_lengths);
     MatrixNd<N> scatter_cov_rad = MatrixNd<N>::Zero();
@@ -398,7 +397,7 @@ namespace Rfit {
     // * build orthogonal lines through mid points
     // * make a system and solve for X0 and Y0.
     // * add the initial point
-    bool flip = abs(b.x()) < abs(b.y());
+    bool flip = sycl::fabs(b.x()) < sycl::fabs(b.y());
     auto bx = flip ? b.y() : b.x();
     auto by = flip ? b.x() : b.y();
     auto cx = flip ? c.y() : c.x();
@@ -582,7 +581,7 @@ namespace Rfit {
     circle_fit circle;
     circle.par << par_uvr_(0) * s_inv + h_(0), par_uvr_(1) * s_inv + h_(1), par_uvr_(2) * s_inv;
     circle.q = Charge(hits2D, circle.par);
-    circle.chi2 = abs(chi2) * renorm * 1. / sqr(2 * v(2) * par_uvr_(2) * s);
+    circle.chi2 = sycl::fabs(chi2) * renorm * 1. / sqr(2 * v(2) * par_uvr_(2) * s);
     printIt(&circle.par, "circle_fit - CIRCLE PARAMETERS:");
     printIt(&circle.cov, "circle_fit - CIRCLE COVARIANCE:");
 #ifdef RFIT_DEBUG
@@ -723,7 +722,7 @@ namespace Rfit {
       for (u_int a = 0; a < 6; ++a) {
         const u_int i = nu[a][0], j = nu[a][1];
         Matrix3d Delta = Matrix3d::Zero();
-        Delta(i, j) = Delta(j, i) = abs(A(i, j) * d);
+        Delta(i, j) = Delta(j, i) = sycl::fabs(A(i, j) * d);
         J2.col(a) = min_eigen3D_fast(A + Delta);
         const int sign = (J2.col(a)(2) > 0) ? 1 : -1;
         J2.col(a) = (J2.col(a) * sign - v) / Delta(i, j);

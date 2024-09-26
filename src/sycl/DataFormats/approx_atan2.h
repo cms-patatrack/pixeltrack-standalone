@@ -33,7 +33,6 @@ end;
 #include <algorithm>
 
 #include <sycl/sycl.hpp>
-using sycl::abs;
 
 template <int DEGREE>
 constexpr float approx_atan2f_P(float x);
@@ -105,7 +104,7 @@ constexpr float unsafe_atan2f_impl(float y, float x) {
   constexpr float pi4f = 3.1415926535897932384626434 / 4;
   constexpr float pi34f = 3.1415926535897932384626434 * 3 / 4;
 
-  auto r = (abs(x) - abs(y)) / (abs(x) + abs(y));
+  auto r = (sycl::fabs(x) - sycl::fabs(y)) / (sycl::fabs(x) + sycl::fabs(y));
   if (x < 0)
     r = -r;
 
@@ -195,7 +194,7 @@ constexpr int unsafe_atan2i_impl(float y, float x) {
   constexpr int pi4 = int(maxint / 4LL);
   constexpr int pi34 = int(3LL * maxint / 4LL);
 
-  auto r = (abs(x) - abs(y)) / (abs(x) + abs(y));
+  auto r = (sycl::fabs(x) - sycl::fabs(y)) / (sycl::fabs(x) + sycl::fabs(y));
   if (x < 0)
     r = -r;
 
@@ -248,7 +247,7 @@ constexpr short unsafe_atan2s_impl(float y, float x) {
   constexpr short pi4 = short(maxshort / 4);
   constexpr short pi34 = short(3 * maxshort / 4);
 
-  auto r = (abs(x) - abs(y)) / (abs(x) + abs(y));
+  auto r = (sycl::fabs(x) - sycl::fabs(y)) / (sycl::fabs(x) + sycl::fabs(y));
   if (x < 0)
     r = -r;
 

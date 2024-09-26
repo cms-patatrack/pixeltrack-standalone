@@ -9,7 +9,6 @@
 
 namespace BrokenLine {
 
-  using sycl::abs;
   using sycl::atan;
   using sycl::atan2;
   using sycl::cos;
@@ -64,8 +63,8 @@ namespace BrokenLine {
     constexpr double geometry_factor =
         0.7;  //!< number between 1/3 (uniform material) and 1 (thin scatterer) to be manually tuned
     constexpr double fact = geometry_factor * Rfit::sqr(13.6 / 1000.);
-    return fact / (pt2 * (1. + Rfit::sqr(slope))) * (abs(length) * XXI_0) *
-           Rfit::sqr(1. + 0.038 * log(abs(length) * XXI_0));
+    return fact / (pt2 * (1. + Rfit::sqr(slope))) * (sycl::fabs(length) * XXI_0) *
+           Rfit::sqr(1. + 0.038 * log(sycl::fabs(length) * XXI_0));
   }
 
   /*!
@@ -236,7 +235,7 @@ namespace BrokenLine {
     result(1) = hits(1, 0) + (a(0) * c.squaredNorm() + c(0) * a.squaredNorm()) * tmp;
     // check Wikipedia for these formulas
 
-    result(2) = sqrt(a.squaredNorm() * b.squaredNorm() * c.squaredNorm()) / (2. * abs(Rfit::cross2D(b, a)));
+    result(2) = sqrt(a.squaredNorm() * b.squaredNorm() * c.squaredNorm()) / (2. * sycl::fabs(Rfit::cross2D(b, a)));
     // Using Math Olympiad's formula R=abc/(4A)
 
     const Rfit::Vector2d d = hits.block(0, 0, 2, 1) - result.head(2);
@@ -551,8 +550,8 @@ namespace BrokenLine {
     BL_Circle_fit(hits, hits_ge, fast_fit, B, data, circle);
 
     // the circle fit gives k, but here we want p_t, so let's change the parameter and the covariance matrix
-    jacobian << 1., 0, 0, 0, 1., 0, 0, 0, -abs(circle.par(2)) * B / (Rfit::sqr(circle.par(2)) * circle.par(2));
-    circle.par(2) = B / abs(circle.par(2));
+    jacobian << 1., 0, 0, 0, 1., 0, 0, 0, -sycl::fabs(circle.par(2)) * B / (Rfit::sqr(circle.par(2)) * circle.par(2));
+    circle.par(2) = B / sycl::fabs(circle.par(2));
     circle.cov = jacobian * circle.cov * jacobian.transpose();
 
     helix.par << circle.par, line.par;

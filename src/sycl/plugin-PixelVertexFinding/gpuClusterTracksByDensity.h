@@ -16,8 +16,6 @@
 
 namespace gpuVertexFinder {
 
-  using sycl::abs;
-
   using Hist = cms::sycltools::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
 
   // this algo does not really scale as it works in a single block...
@@ -110,7 +108,7 @@ namespace gpuVertexFinder {
       auto loop = [&](uint32_t j) {
         if (i == j)
           return;
-        auto dist = abs(zt[i] - zt[j]);
+        auto dist = sycl::fabs(zt[i] - zt[j]);
         if (dist > eps)
           return;
         if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
@@ -131,7 +129,7 @@ namespace gpuVertexFinder {
           return;
         if (nn[j] == nn[i] && zt[j] >= zt[i])
           return;  // if equal use natural order...
-        auto dist = abs(zt[i] - zt[j]);
+        auto dist = sycl::fabs(zt[i] - zt[j]);
         if (dist > mdist)
           return;
         if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
@@ -180,7 +178,7 @@ namespace gpuVertexFinder {
           return;
         if (nn[j] == nn[i] && zt[j] >= zt[i])
           return;  // if equal use natural order...
-        auto dist = abs(zt[i] - zt[j]);
+        auto dist = sycl::fabs(zt[i] - zt[j]);
         if (dist > mdist)
           return;
         if (dist * dist > chi2max * (ezt2[i] + ezt2[j]))
