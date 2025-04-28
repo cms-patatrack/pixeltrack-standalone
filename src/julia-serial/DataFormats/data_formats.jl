@@ -17,12 +17,8 @@ module dataFormats
     const MAX_FED_ID = 4096
 
     function inrange(fed_id::Int)
-        if fed_id >= MIN_SiPixel_uTCA_FED_ID && Fed_id <= MAX_SiPixel_uTCA_FED_ID
-            return true 
-        end
-        return false 
+        return fed_id >= MIN_SiPixel_uTCA_FED_ID && fed_id <= MAX_SiPixel_uTCA_FED_ID
     end
-
 
     """
     FedRawData struct
@@ -33,7 +29,7 @@ module dataFormats
     - data::Vector{UInt8}: The raw data buffer.
 
     Constructor:
-    - FedRawData(newsize::Int): Constructs a FedRawData object with a preallocated size in bytes. 
+    - FedRawData(newsize::Int): Constructs a FedRawData object with a preallocated size in bytes.
       The size must be a multiple of 8 bytes.
     - FedRawData(in::FedRawData): Copy constructor.
     """
@@ -43,8 +39,8 @@ module dataFormats
         data::Vector{UInt8}
 
         function FedRawData(new_size::Int)
-            if newsize % 8 != 0
-                throw(ArgumentError("FedRawData: newsize $newsize is not a multiple of 8 bytes."))
+            if new_size % 8 != 0
+                throw(ArgumentError("FedRawData: newsize $new_size is not a multiple of 8 bytes."))
             end
             new(Vector{UInt8}(undef, new_size))
         end
@@ -113,31 +109,31 @@ module dataFormats
     function swap(a::FedRawDataCollection, b::FedRawDataCollection)
         a.data, b.data = b.data, a.data
     end
-    """ 
+
+    """
     function for getting FedRawData
     """
     function FedData(self::FedRawDataCollection,Fedid :: Integer)
         return self.data[Fedid]
     end
 
-    
     mutable struct SiPixelRawDataError
         errorWord32::UInt32
         errorWord64::UInt64
         errorType::Int
         FedId::Int
         errorMessage::String
+
         """
         Constructor for 32-bit error word
         """
-        
         function SiPixelRawDataError(errorWord32::UInt32, errorType::Int, FedId::Int)
             new(errorWord32, UInt64(0), errorType, FedId, "")
         end
+
         """
         Constructor with 64-bit error word and type included (header or trailer word)
         """
-        
         function SiPixelRawDataError(errorWord64::UInt64, errorType::Int, FedId::Int)
             new(UInt32(0), errorWord64, errorType, FedId, "")
         end
@@ -152,8 +148,9 @@ module dataFormats
     function setMessage!(error::SiPixelRawDataError)
         error.errorMessage = errorTypeMessage(error.errorType)
     end
+
     function errorTypeMessage(errorType::Int)::String
-        return Dict(
+        err_dict = Dict(
             25 => "Error: Disabled Fed channel (ROC=25)",
             26 => "Error: Gap word",
             27 => "Error: Dummy word",
@@ -167,7 +164,8 @@ module dataFormats
             35 => "Error: Invalid channel",
             36 => "Error: Invalid ROC number",
             37 => "Error: Invalid dcol/pixel address",
-        )[errorType, "Error: Unknown error type"]
+        )
+        return get(err_dict, errorType, "Error: Unknown error type")
     end
 
 end # module DataFormats
