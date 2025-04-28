@@ -125,7 +125,7 @@ export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
 # SYCL and Intel oneAPI
-SYCL_USE_INTEL_ONEAPI := true
+SYCL_USE_INTEL_ONEAPI :=
 
 # Intel GPU ids
 OCLOC_IDS := tgllp acm_g10 pvc
@@ -433,6 +433,10 @@ ifdef KOKKOS_HOST_PARALLEL
 endif
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 
+# Julia
+JULIA_BASE := $(EXTERNAL_BASE)/julia
+export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot:
+export JULIA_DEPS := $(JULIA_BASE)
 
 # OpenMP target offload
 
@@ -585,6 +589,9 @@ endif
 ifneq ($(SYCL_BASE),)
 	@echo -n '$(SYCL_PATH):'                                                >> $@
 endif
+ifneq ($(JULIA_BASE),)
+	@echo -n '$(JULIA_BASE)/bin:'                                           >> $@
+endif
 	@echo '$$PATH'                                                          >> $@
 ifneq ($(SYCL_BASE),)
 	@# load the CPU OpenCL runtime
@@ -593,6 +600,10 @@ ifneq ($(SYCL_BASE),)
 	@# see https://github.com/intel/compute-runtime/blob/master/opencl/doc/FAQ.md#feature-double-precision-emulation-fp64
 	@echo 'export IGC_EnableDPEmulation=1'                                  >> $@
 	@echo 'export OverrideDefaultFP64Settings=1'                            >> $@
+endif
+ifneq ($(JULIA_BASE),)
+	@echo '# override the Julia depot path'					>> $@
+	@echo -n 'export JULIA_DEPOT_PATH=$(JULIA_BASE)/depot:'                 >> $@
 endif
 
 define TARGET_template
@@ -792,3 +803,10 @@ $(KOKKOS_LIB): $(KOKKOS_MAKEFILE)
 
 external_kokkos_clean:
 	rm -fR $(KOKKOS_BUILD) $(KOKKOS_INSTALL)
+
+# Julia
+.PHONY: external_julia
+external_julia: $(JULIA_BASE)
+
+$(JULIA_BASE):
+	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.11/julia-1.11.5-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@ && mkdir -p $(JULIA_DEPOT_PATH)
