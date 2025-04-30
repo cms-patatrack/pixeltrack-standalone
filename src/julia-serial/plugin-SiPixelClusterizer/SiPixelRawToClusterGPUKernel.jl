@@ -92,7 +92,7 @@ module pixelGPUDetails
         """
         const ROW_SHIFT::UInt32 = ADC_SHIFT + ADC_BITS
         const COL_SHIFT::UInt32 = ROW_SHIFT + ROW_BITS_L1
-        const OMIT_ERR_shift::UInt32 = 20 # ?
+        const OMIT_ERR_SHIFT::UInt32 = 20 # ?
 
         const LINK_MASK::UInt32 = ~(~UInt32(0) << LINK_BITS_L1)
         const ROC_MASK::UInt32 = ~(~UInt32(0) << ROC_BITS_L1)
@@ -432,7 +432,7 @@ module pixelGPUDetails
             if debug
                 printf("Timeout on a channel (error_type = 29) \n")
             end
-            if ((error_word >> OMIT_ERR_shift) & OMIT_ERR_MASK)
+            if ((error_word >> OMIT_ERR_SHIFT) & OMIT_ERR_MASK)
                 if debug 
                     printf("...first error_type=29 error, this gets masked out \n")
                 end
