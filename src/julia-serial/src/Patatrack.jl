@@ -6,30 +6,11 @@ using LinearAlgebra
 # using Gtk4
 using Base
 using Base.Threads
-export FED_SLINK_END_MARKER, FED_SLINK_ERROR_WIDTH, FED_TCTRLID_EXTRACT,
-    FED_EVSZ_EXTRACT, FED_CRCS_EXTRACT, FED_STAT_EXTRACT, FED_TTSI_EXTRACT,
-    FED_MORE_TRAILERS_EXTRACT, FED_CRC_MODIFIED_EXTRACT, FED_SLINK_ERROR_EXTRACT,
-    FED_WRONG_FEDID_EXTRACT
 
 export FedRawDataCollection, FedRawData
 
 export SiPixelFedCablingMapGPU
-export MAX_SIZE, MAX_FED, MAX_ROC, MAX_SIZE, MAX_SIZE_BYTE_BOOL
 
-export CRC_bits, LINK_bits, ROC_bits, DCOL_bits, PXID_bits, ADC_bits, OMIT_ERR_bits
-export CRC_shift, ADC_shift, PXID_shift, DCOL_shift, ROC_shift, LINK_shift, OMIT_ERR_shift
-export dummyDetId, CRC_mask, ERROR_mask, LINK_mask, ROC_mask, OMIT_ERR_mask
-
-export LAYER_START_BIT, LADDER_START_BIT, MODULE_START_BIT, PANEL_START_BIT,
-    DISK_START_BIT, BLADE_START_BIT, LAYER_MASK, LADDER_MASK,
-    MODULE_MASK, PANEL_MASK, DISK_MASK, BLADE_MASK, LINK_BITS, ROC_BITS,
-    DCOL_BITS, PXID_BITS, ADC_BITS, LINK_BITS_L1, ROC_BITS_L1,
-    COL_BITS_L1, ROW_BITS_L1, OMIT_ERR_BITS, MAX_ROC_INDEX,
-    NUM_ROWS_IN_ROC, NUM_COL_IN_ROC, MAX_WORD, ADC_SHIFT, PXID_SHIFT,
-    DCOL_SHIFT, ROC_SHIFT, LINK_SHIFT, ROW_SHIFT, COL_SHIFT,
-    OMIT_ERR_SHIFT, LINK_MASK, ROC_MASK, COL_MASK, ROW_MASK, DCOL_MASK,
-    PXID_MASK, ADC_MASK, ERROR_MASK, OMIT_ERR_MASK, MAX_FED, MAX_LINK,
-    MAX_FED_WORDS
 export readall, readevent, readfed
 export EventSetup
 export SiPixelFedCablingMapGPUWrapperESProducer
@@ -40,7 +21,6 @@ export MAX_SIZE
 export RANGE_COUNT
 export RangeAndCols, DecodingStructure
 export SiPixelRawToClusterCUDA
-export MAX_NUM_MODULES
 export PixelErrorCompact, PixelFormatterErrors
 export has_quality, SiPixelFedCablingMapGPUWrapper
 export get_cpu_product
@@ -52,16 +32,8 @@ export get_results
 export FedData
 export data
 export check_crc
-export FedHeader
-export FedTrailer
-export check
 export check_trailer
-export fragment_length, more_trailers
 export initialize_word_fed
-export calib_digis
-export count_modules, find_clus
-export HisToContainer
-export MAX_NUM_CLUSTERS
 export AverageGeometry
 export ProductRegistry
 export Event, EDPutTokenT, produces, emplace, begin_module_construction
@@ -98,8 +70,6 @@ export z_global
 export set_x_global
 export set_y_global
 export set_z_global
-
-export toGlobal_special
 
 export CAHitNtuplet
 
