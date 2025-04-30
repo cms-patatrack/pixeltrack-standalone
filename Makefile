@@ -435,7 +435,7 @@ export KOKKOS_DEPS := $(KOKKOS_LIB)
 
 # Julia
 JULIA_BASE := $(EXTERNAL_BASE)/julia
-export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot:
+export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot
 export JULIA_DEPS := $(JULIA_BASE)
 
 # OpenMP target offload
@@ -603,7 +603,7 @@ ifneq ($(SYCL_BASE),)
 endif
 ifneq ($(JULIA_BASE),)
 	@echo '# override the Julia depot path'					>> $@
-	@echo -n 'export JULIA_DEPOT_PATH=$(JULIA_BASE)/depot:'                 >> $@
+	@echo -n 'export JULIA_DEPOT_PATH=$(JULIA_BASE)/depot'                 >> $@
 endif
 
 define TARGET_template
