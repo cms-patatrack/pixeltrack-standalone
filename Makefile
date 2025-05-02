@@ -435,7 +435,7 @@ export KOKKOS_DEPS := $(KOKKOS_LIB)
 
 # Julia
 JULIA_BASE := $(EXTERNAL_BASE)/julia
-export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot
+export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot:
 export JULIA_DEPS := $(JULIA_BASE)
 
 # OpenMP target offload
@@ -603,7 +603,7 @@ ifneq ($(SYCL_BASE),)
 endif
 ifneq ($(JULIA_BASE),)
 	@echo '# override the Julia depot path'					>> $@
-	@echo -n 'export JULIA_DEPOT_PATH=$(JULIA_BASE)/depot'                 >> $@
+	@echo -n 'export JULIA_DEPOT_PATH=$(JULIA_BASE)/depot:'                 >> $@
 endif
 
 define TARGET_template
@@ -809,4 +809,4 @@ external_kokkos_clean:
 external_julia: $(JULIA_BASE)
 
 $(JULIA_BASE):
-	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.11/julia-1.11.5-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@ && mkdir -p $(JULIA_DEPOT_PATH)
+	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.11/julia-1.11.5-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@
