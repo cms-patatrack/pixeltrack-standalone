@@ -181,4 +181,5 @@ include("../plugin-PixelVertexFinding/gpu_vertex_finder.jl")
 include("../plugin-PixelVertexFinding/pixel_vertex_producer_cuda.jl")
 
 include("../plugin-Validation/count_to_validator.jl")
+include("entrypoints.jl")
 end
