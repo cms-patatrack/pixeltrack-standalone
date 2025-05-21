@@ -1,5 +1,4 @@
 module Geometry_TrackerGeometryBuilder_phase1PixelTopology_h
-export number_of_module_in_barrel, AverageGeometry, find_max_module_stride, local_x, local_y, is_big_pix_y, is_big_pix_x, number_of_ladders_in_barrel
 module phase1PixelTopology
 export AverageGeometry, number_of_module_in_barrel, number_of_layers, layer_index_size, find_max_module_stride, local_x, local_y, is_big_pix_y, is_big_pix_x, number_of_ladders_in_barrel, last_row_in_module, last_col_in_module, x_offset, y_offset
     # Constants defining the dimensions of ROCs and modules

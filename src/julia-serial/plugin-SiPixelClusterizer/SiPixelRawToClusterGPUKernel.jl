@@ -33,7 +33,7 @@ module pixelGPUDetails
             LINK_BITS, ROC_BITS, DCOL_BITS, PXID_BITS, ADC_BITS, LINK_BITS_L1, ROC_BITS_L1, COL_BITS_L1, ROW_BITS_L1, OMIT_ERR_BITS,
             MAX_ROC_INDEX, NUM_ROWS_IN_ROC, NUM_COL_IN_ROC, MAX_WORD, ADC_SHIFT, PXID_SHIFT, DCOL_SHIFT, ROC_SHIFT, LINK_SHIFT,
             ROW_SHIFT, COL_SHIFT, OMIT_ERR_SHIFT, LINK_MASK, ROC_MASK, COL_MASK, ROW_MASK, DCOL_MASK, PXID_MASK, ADC_MASK,
-            ERROR_MASK, OMIT_ERR_MASK, MAX_FED, MAX_FED_WORDS, initialize_word_fed
+            ERROR_MASK, OMIT_ERR_MASK, MAX_FED
         const LAYER_START_BIT::UInt32 = 20 # 4 layers
         const LADDER_START_BIT::UInt32 = 12 # 148 ladders
         const MODULE_START_BIT::UInt32 = 2 # 1856 silicon modules each with 160 x 416 pixels connected to 16 ReadOut Chips (ROC) Used to determine on which side of the z-axis the pixel is on
@@ -92,7 +92,7 @@ module pixelGPUDetails
         """
         const ROW_SHIFT::UInt32 = ADC_SHIFT + ADC_BITS
         const COL_SHIFT::UInt32 = ROW_SHIFT + ROW_BITS_L1
-        const OMIT_ERR_shift::UInt32 = 20 # ?
+        const OMIT_ERR_SHIFT::UInt32 = 20 # ?
 
         const LINK_MASK::UInt32 = ~(~UInt32(0) << LINK_BITS_L1)
         const ROC_MASK::UInt32 = ~(~UInt32(0) << ROC_BITS_L1)
@@ -432,7 +432,7 @@ module pixelGPUDetails
             if debug
                 printf("Timeout on a channel (error_type = 29) \n")
             end
-            if ((error_word >> OMIT_ERR_shift) & OMIT_ERR_MASK)
+            if ((error_word >> OMIT_ERR_SHIFT) & OMIT_ERR_MASK)
                 if debug 
                     printf("...first error_type=29 error, this gets masked out \n")
                 end
