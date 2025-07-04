@@ -60,7 +60,7 @@ namespace cms {
 
 #endif  // (defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && defined(__CUDA_ARCH__)) || (defined(ALPAKA_ACC_GPU_HIP_ENABLED) && defined(__HIP_DEVICE_COMPILE__))
 
-    // limited to warpSize² elements
+    // limited to warpSize elements
     template <typename TAcc, typename T>
     ALPAKA_FN_ACC ALPAKA_FN_INLINE void blockPrefixScan(
         const TAcc& acc, T const* ci, T* co, uint32_t size, T* ws = nullptr) {
@@ -157,7 +157,7 @@ namespace cms {
 #endif  // (defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && defined(__CUDA_ARCH__)) || (defined(ALPAKA_ACC_GPU_HIP_ENABLED) && defined(__HIP_DEVICE_COMPILE__))
     }
 
-    // limited to warpSize⁴ elements
+    // limited to warpSize elements
     template <typename T>
     struct multiBlockPrefixScanFirstStep {
       template <typename TAcc>
@@ -194,7 +194,7 @@ namespace cms {
 
         T* const psum = alpaka::getDynSharedMem<T>(acc);
 
-        // first each block does a scan of size warpSize² (better be enough blocks)
+        // first each block does a scan of size warpSize (better be enough blocks)
         ALPAKA_ASSERT_OFFLOAD(static_cast<int32_t>(blockDimension * threadDimension) >= numBlocks);
         for (int elemId = 0; elemId < static_cast<int>(threadDimension); ++elemId) {
           int index = +threadIdx * threadDimension + elemId;
