@@ -78,8 +78,15 @@ export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_TEST_CXXFLAGS := -DGPU_DEBUG
 export CUDA_LDFLAGS := -L$(CUDA_LIBDIR) -lcudart -lcudadevrt
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
+CUDA_VERSION := $(shell $(CUDA_NVCC) --version | grep release | sed -e's/.*release //' -e's/,.*//' -e's/\.//')
+# CUDA 12.8 and newer does not support non-ASCII characters in PTX, including in comments
+ifeq ($(shell test $(CUDA_VERSION) -ge 128 && echo 'buggy'),buggy)
+CUDA_DEBUG_FLAGS := --generate-line-info
+else
+CUDA_DEBUG_FLAGS := --generate-line-info --source-in-ptx
+endif
 define CUFLAGS_template
-$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=[sm_$$(ARCH),compute_$$(ARCH)]) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda --generate-line-info --source-in-ptx --display-error-number --threads $$(words $(1)) --cudart=shared
+$(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=[sm_$$(ARCH),compute_$$(ARCH)]) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda $(CUDA_DEBUG_FLAGS) --display-error-number --threads $$(words $(1)) --cudart=shared
 $(2)NVCC_COMMON := -std=c++17 -O3 -g $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
