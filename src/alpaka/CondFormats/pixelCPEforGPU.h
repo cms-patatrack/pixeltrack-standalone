@@ -197,8 +197,8 @@ namespace pixelCPEforGPU {
 
     auto xsize = int(urxl) + 2 - int(llxl);
     auto ysize = int(uryl) + 2 - int(llyl);
-    ALPAKA_ASSERT_OFFLOAD(xsize >= 0);  // 0 if bixpix...
-    ALPAKA_ASSERT_OFFLOAD(ysize >= 0);
+    ALPAKA_ASSERT_ACC(xsize >= 0);  // 0 if bixpix...
+    ALPAKA_ASSERT_ACC(ysize >= 0);
 
     if (phase1PixelTopology::isBigPixX(cp.minRow[ic]))
       ++xsize;

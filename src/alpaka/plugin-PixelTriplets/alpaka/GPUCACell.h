@@ -63,8 +63,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // link to default empty
       theOuterNeighbors = &cellNeighbors[0];
       theTracks = &cellTracks[0];
-      ALPAKA_ASSERT_OFFLOAD(outerNeighbors().empty());
-      ALPAKA_ASSERT_OFFLOAD(tracks().empty());
+      ALPAKA_ASSERT_ACC(outerNeighbors().empty());
+      ALPAKA_ASSERT_ACC(tracks().empty());
     }
 
     template <typename TAcc>
@@ -340,7 +340,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                       bool startAt0) const {
       if constexpr (DEPTH == 0) {
         printf("ERROR: GPUCACell::find_ntuplets reached full depth!\n");
-        ALPAKA_ASSERT_OFFLOAD(false);
+        ALPAKA_ASSERT_ACC(false);
       } else {
         // the building process for a track ends if:
         // it has no right neighbor
@@ -349,7 +349,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // than a threshold
 
         tmpNtuplet.push_back_unsafe(theDoubletId);
-        ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() <= 4);
+        ALPAKA_ASSERT_ACC(tmpNtuplet.size() <= 4);
 
         bool last = true;
         for (int j = 0; j < outerNeighbors().size(); ++j) {
@@ -384,7 +384,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           }
         }
         tmpNtuplet.pop_back();
-        ALPAKA_ASSERT_OFFLOAD(tmpNtuplet.size() < 4);
+        ALPAKA_ASSERT_ACC(tmpNtuplet.size() < 4);
       }
     }
 

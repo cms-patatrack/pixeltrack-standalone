@@ -19,8 +19,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           error_h{cms::alpakatools::make_host_buffer<cms::alpakatools::SimpleVector<PixelErrorCompact>>(queue)},
           formatterErrors_h{std::move(errors)} {
       error_h->construct(maxFedWords, data_d.data());
-      ALPAKA_ASSERT_OFFLOAD(error_h->empty());
-      ALPAKA_ASSERT_OFFLOAD(error_h->capacity() == static_cast<int>(maxFedWords));
+      ALPAKA_ASSERT_ACC(error_h->empty());
+      ALPAKA_ASSERT_ACC(error_h->capacity() == static_cast<int>(maxFedWords));
 
       alpaka::memcpy(queue, error_d, error_h);
     }

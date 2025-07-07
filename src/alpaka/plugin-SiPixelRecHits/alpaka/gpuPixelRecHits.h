@@ -31,8 +31,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         // The whole gimnastic here of copying or not is a pure heuristic exercise that seems to produce the fastest code with the above signature
         // not using views (passing a gazzilion of array pointers) seems to produce the fastest code (but it is harder to mantain)
 
-        ALPAKA_ASSERT_OFFLOAD(phits);
-        ALPAKA_ASSERT_OFFLOAD(cpeParams);
+        ALPAKA_ASSERT_ACC(phits);
+        ALPAKA_ASSERT_ACC(cpeParams);
 
         auto& hits = *phits;
 
@@ -79,7 +79,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           auto k = clusters.moduleStart(1 + blockIdx);
           while (digis.moduleInd(k) == InvId)
             ++k;
-          ALPAKA_ASSERT_OFFLOAD(digis.moduleInd(k) == me);
+          ALPAKA_ASSERT_ACC(digis.moduleInd(k) == me);
         }
 #endif
 
@@ -94,10 +94,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
           int nClusInIter = std::min(MaxHitsInIter, endClus - startClus);
           int lastClus = startClus + nClusInIter;
-          ALPAKA_ASSERT_OFFLOAD(nClusInIter <= nclus);
-          ALPAKA_ASSERT_OFFLOAD(nClusInIter > 0);
-          ALPAKA_ASSERT_OFFLOAD(lastClus <= nclus);
-          ALPAKA_ASSERT_OFFLOAD(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
+          ALPAKA_ASSERT_ACC(nClusInIter <= nclus);
+          ALPAKA_ASSERT_ACC(nClusInIter > 0);
+          ALPAKA_ASSERT_ACC(lastClus <= nclus);
+          ALPAKA_ASSERT_ACC(nclus > MaxHitsInIter || (0 == startClus && nClusInIter == nclus && lastClus == nclus));
 
           // init
           cms::alpakatools::for_each_element_in_block_strided(acc, nClusInIter, [&](uint32_t ic) {
@@ -135,8 +135,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             cl -= startClus;
-            ALPAKA_ASSERT_OFFLOAD(cl >= 0);
-            ALPAKA_ASSERT_OFFLOAD(cl < MaxHitsInIter);
+            ALPAKA_ASSERT_ACC(cl >= 0);
+            ALPAKA_ASSERT_ACC(cl < MaxHitsInIter);
             alpaka::atomicMin(acc, &clusParams.minRow[cl], x, alpaka::hierarchy::Threads{});
             alpaka::atomicMax(acc, &clusParams.maxRow[cl], x, alpaka::hierarchy::Threads{});
             alpaka::atomicMin(acc, &clusParams.minCol[cl], y, alpaka::hierarchy::Threads{});
@@ -163,8 +163,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             if (cl < startClus || cl >= lastClus)
               continue;
             cl -= startClus;
-            ALPAKA_ASSERT_OFFLOAD(cl >= 0);
-            ALPAKA_ASSERT_OFFLOAD(cl < MaxHitsInIter);
+            ALPAKA_ASSERT_ACC(cl >= 0);
+            ALPAKA_ASSERT_ACC(cl < MaxHitsInIter);
             const uint32_t x = digis.xx(i);
             const uint32_t y = digis.yy(i);
             const int32_t ch = std::min(digis.adc(i), pixmx);
@@ -192,8 +192,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             if (h >= TrackingRecHit2DSoAView::maxHits()) {
               return;  // overflow...
             }
-            ALPAKA_ASSERT_OFFLOAD(h < hits.nHits());
-            ALPAKA_ASSERT_OFFLOAD(h < clusters.clusModuleStart(me + 1));
+            ALPAKA_ASSERT_ACC(h < hits.nHits());
+            ALPAKA_ASSERT_ACC(h < clusters.clusModuleStart(me + 1));
 
             pixelCPEforGPU::position(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);
             pixelCPEforGPU::errorFromDB(cpeParams->commonParams(), cpeParams->detParams(me), clusParams, ic);

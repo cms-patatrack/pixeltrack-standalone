@@ -84,8 +84,8 @@ namespace cms::alpakatools {
     auto& ibs = alpaka::declareSharedVar<int, __COUNTER__>(acc);
     auto& p = alpaka::declareSharedVar<int, __COUNTER__>(acc);
 
-    ALPAKA_ASSERT_OFFLOAD(size > 0);
-    ALPAKA_ASSERT_OFFLOAD(blockDimension >= sb);
+    ALPAKA_ASSERT_ACC(size > 0);
+    ALPAKA_ASSERT_ACC(blockDimension >= sb);
 
     p = ps;
 
@@ -191,7 +191,7 @@ namespace cms::alpakatools {
       */
 
       alpaka::syncBlockThreads(acc);
-      ALPAKA_ASSERT_OFFLOAD(c[0] == 0);
+      ALPAKA_ASSERT_ACC(c[0] == 0);
 
       // swap (local, ok)
       auto t = j;
@@ -205,7 +205,7 @@ namespace cms::alpakatools {
     }
 
     if ((w != 8) && (0 == (NS & 1)))
-      ALPAKA_ASSERT_OFFLOAD(j == ind);  // w/d is even so ind is correct
+      ALPAKA_ASSERT_ACC(j == ind);  // w/d is even so ind is correct
 
     if (j != ind)  // odd...
       for_each_element_in_block_strided(acc, size, [&](uint32_t idx) { ind[idx] = ind2[idx]; });

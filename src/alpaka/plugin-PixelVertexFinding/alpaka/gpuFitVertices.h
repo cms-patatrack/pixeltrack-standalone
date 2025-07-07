@@ -33,10 +33,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       int32_t* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-      ALPAKA_ASSERT_OFFLOAD(pdata);
-      ALPAKA_ASSERT_OFFLOAD(zt);
+      ALPAKA_ASSERT_ACC(pdata);
+      ALPAKA_ASSERT_ACC(zt);
 
-      ALPAKA_ASSERT_OFFLOAD(nvFinal <= nvIntermediate);
+      ALPAKA_ASSERT_ACC(nvFinal <= nvIntermediate);
       nvFinal = nvIntermediate;
       auto foundClusters = nvFinal;
 
@@ -61,8 +61,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           if (verbose)
             alpaka::atomicAdd(acc, &noise, 1, alpaka::hierarchy::Threads{});
         } else {
-          ALPAKA_ASSERT_OFFLOAD(iv[i] >= 0);
-          ALPAKA_ASSERT_OFFLOAD(iv[i] < int(foundClusters));
+          ALPAKA_ASSERT_ACC(iv[i] >= 0);
+          ALPAKA_ASSERT_ACC(iv[i] < int(foundClusters));
           auto w = 1.f / ezt2[i];
           alpaka::atomicAdd(acc, &zv[iv[i]], zt[i] * w, alpaka::hierarchy::Blocks{});
           alpaka::atomicAdd(acc, &wv[iv[i]], w, alpaka::hierarchy::Blocks{});
@@ -72,7 +72,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       alpaka::syncBlockThreads(acc);
       // reuse nn
       cms::alpakatools::for_each_element_in_block_strided(acc, foundClusters, [&](uint32_t i) {
-        ALPAKA_ASSERT_OFFLOAD(wv[i] > 0.f);
+        ALPAKA_ASSERT_ACC(wv[i] > 0.f);
         zv[i] /= wv[i];
         nn[i] = -1;  // ndof
       });

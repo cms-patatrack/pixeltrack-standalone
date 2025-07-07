@@ -347,7 +347,7 @@ export BACKTRACE_SYCL_CXXFLAGS :=
 
 ALPAKA_BASE := $(EXTERNAL_BASE)/alpaka
 export ALPAKA_DEPS := $(ALPAKA_BASE)
-export ALPAKA_CXXFLAGS := -isystem $(ALPAKA_BASE)/include
+export ALPAKA_CXXFLAGS := -isystem $(ALPAKA_BASE)/include -DALPAKA_DISABLE_ASSERT_ACC
 
 KOKKOS_BASE := $(EXTERNAL_BASE)/kokkos
 KOKKOS_SRC := $(KOKKOS_BASE)/source
@@ -786,7 +786,7 @@ external_alpaka: $(ALPAKA_BASE)
 
 $(ALPAKA_BASE):
 	git clone https://github.com/alpaka-group/alpaka.git -b develop $@
-	cd $@ && git checkout bb74c9129e8761cb74b9733b034eec62f7c0f600
+	cd $@ && git checkout 1.3.0
 
 # Kokkos
 external_kokkos: $(KOKKOS_LIB)

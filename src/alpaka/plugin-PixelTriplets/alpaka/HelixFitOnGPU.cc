@@ -9,9 +9,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     tupleMultiplicity_d = tupleMultiplicity;
     outputSoa_d = helix_fit_results;
 
-    ALPAKA_ASSERT_OFFLOAD(tuples_d);
-    ALPAKA_ASSERT_OFFLOAD(tupleMultiplicity_d);
-    ALPAKA_ASSERT_OFFLOAD(outputSoa_d);
+    ALPAKA_ASSERT_ACC(tuples_d);
+    ALPAKA_ASSERT_ACC(tupleMultiplicity_d);
+    ALPAKA_ASSERT_ACC(outputSoa_d);
   }
 
   void HelixFitOnGPU::deallocateOnGPU() {}

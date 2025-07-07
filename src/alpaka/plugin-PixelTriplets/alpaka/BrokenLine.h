@@ -351,7 +351,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           -circle_results.q * (fast_fit(2) - sqrt(Rfit::sqr(fast_fit(2)) - 0.25 * (e - d).squaredNorm())),
           circle_results.q * (1. / fast_fit(2) + u(n));
 
-      ALPAKA_ASSERT_OFFLOAD(circle_results.q * circle_results.par(1) <= 0);
+      ALPAKA_ASSERT_ACC(circle_results.q * circle_results.par(1) <= 0);
 
       Rfit::Vector2d eMinusd = e - d;
       double tmp1 = eMinusd.squaredNorm();

@@ -30,9 +30,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto offset =
           range.first + col * lengthOfColumnData + lengthOfAveragedDataInEachColumn * numberOfDataBlocksToSkip;
 
-      ALPAKA_ASSERT_OFFLOAD(offset < range.second);
-      ALPAKA_ASSERT_OFFLOAD(offset < 3088384);
-      ALPAKA_ASSERT_OFFLOAD(0 == offset % 2);
+      ALPAKA_ASSERT_ACC(offset < range.second);
+      ALPAKA_ASSERT_ACC(offset < 3088384);
+      ALPAKA_ASSERT_ACC(0 == offset % 2);
 
       DecodingStructure const* __restrict__ lp = pedestals_;
       auto s = lp[offset / 2];
