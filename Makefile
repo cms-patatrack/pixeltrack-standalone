@@ -321,10 +321,14 @@ NEED_BOOST := $(shell awk '/.define *BOOST_VERSION\>/ { if ($$3 < $(BOOST_MIN_VE
 endif
 ifeq ($(NEED_BOOST),true)
 BOOST_BASE := $(EXTERNAL_BASE)/boost
-endif
 export BOOST_DEPS := $(BOOST_BASE)
 export BOOST_CXXFLAGS := -isystem $(BOOST_BASE)/include
 export BOOST_LDFLAGS := -L$(BOOST_BASE)/lib
+else
+export BOOST_DEPS :=
+export BOOST_CXXFLAGS :=
+export BOOST_LDFLAGS :=
+endif
 export BOOST_NVCC_CXXFLAGS :=
 export BOOST_SYCL_CXXFLAGS :=
 
