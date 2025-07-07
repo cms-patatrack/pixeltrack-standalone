@@ -204,6 +204,37 @@ int main(int argc, char** argv) {
     std::cout << "Data directory '" << datadir << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
+  if (backends.empty()) {
+    std::cout << "No back-ends specified, please choose one or more among ";
+    bool first = true;
+#ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
+    std::cout << "--serial";
+    first = false;
+#endif
+#ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
+    if (not first) {
+      std::cout << ", ";
+    }
+    std::cout << "--tbb";
+    first = false;
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
+    if (not first) {
+      std::cout << ", ";
+    }
+    std::cout << "--cuda";
+    first = false;
+#endif
+#ifdef ALPAKA_ACC_GPU_HIP_PRESENT
+    if (not first) {
+      std::cout << ", ";
+    }
+    std::cout << "--hip";
+    first = false;
+#endif
+    std::cout << ".\n";
+    return EXIT_FAILURE;
+  }
 
   // Initialiase the selected backends
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
