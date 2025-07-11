@@ -35,7 +35,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::launchZero<Acc1D>(tuples_d, queue);
 
     auto nhits = hh.nHits();
-    ALPAKA_ASSERT_OFFLOAD(nhits <= pixelGPUConstants::maxNumberOfHits);
+    ALPAKA_ASSERT_ACC(nhits <= pixelGPUConstants::maxNumberOfHits);
 
     // std::cout << "N hits " << nhits << std::endl;
     // if (nhits<2) std::cout << "too few hits " << nhits << std::endl;
@@ -51,8 +51,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const uint32_t rescale = numberOfBlocks / 65536;
     blockSize *= (rescale + 1);
     numberOfBlocks = cms::alpakatools::divide_up_by(3 * m_params.maxNumberOfDoublets_ / 4, blockSize);
-    ALPAKA_ASSERT_OFFLOAD(numberOfBlocks < 65536);
-    ALPAKA_ASSERT_OFFLOAD(blockSize > 0 && 0 == blockSize % 16);
+    ALPAKA_ASSERT_ACC(numberOfBlocks < 65536);
+    ALPAKA_ASSERT_ACC(blockSize > 0 && 0 == blockSize % 16);
     const Vec2D blks(numberOfBlocks, 1u);
     const Vec2D thrs(blockSize, stride);
     const auto kernelConnectWorkDiv = cms::alpakatools::make_workdiv<Acc2D>(blks, thrs);
@@ -208,7 +208,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::wait(queue);
 #endif
 
-    ALPAKA_ASSERT_OFFLOAD(device_isOuterHitOfCell_.data());
+    ALPAKA_ASSERT_ACC(device_isOuterHitOfCell_.data());
 
     {
       int threadsPerBlock = 128;
@@ -241,7 +241,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       nActualPairs = 13;
     }
 
-    ALPAKA_ASSERT_OFFLOAD(nActualPairs <= gpuPixelDoublets::nPairs);
+    ALPAKA_ASSERT_ACC(nActualPairs <= gpuPixelDoublets::nPairs);
     const uint32_t stride = 4;
     const uint32_t threadsPerBlock = gpuPixelDoublets::getDoubletsFromHistoMaxBlockSize / stride;
     const uint32_t blocks = cms::alpakatools::divide_up_by(4 * nhits, threadsPerBlock);

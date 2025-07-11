@@ -10,7 +10,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                               uint32_t hitsInFit,
                                               uint32_t maxNumberOfTuples,
                                               Queue& queue) {
-    ALPAKA_ASSERT_OFFLOAD(tuples_d);
+    ALPAKA_ASSERT_ACC(tuples_d);
 
     const auto blockSize = 64;
     const auto numberOfBlocks = cms::alpakatools::divide_up_by(maxNumberOfConcurrentFits_, blockSize);

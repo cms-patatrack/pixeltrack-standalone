@@ -59,7 +59,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       auto const& __restrict__ hist = hh.phiBinner();
       uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
-      ALPAKA_ASSERT_OFFLOAD(offsets);
+      ALPAKA_ASSERT_ACC(offsets);
 
       auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
 
@@ -67,7 +67,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       // If it should be much bigger, consider using a block-wide parallel prefix scan,
       // e.g. see  https://nvlabs.github.io/cub/classcub_1_1_warp_scan.html
       const int nPairsMax = CAConstants::maxNumberOfLayerPairs();  // add constexpr?
-      ALPAKA_ASSERT_OFFLOAD(nPairs <= nPairsMax);
+      ALPAKA_ASSERT_ACC(nPairs <= nPairsMax);
       auto& innerLayerCumulativeSize = alpaka::declareSharedVar<uint32_t[nPairsMax], __COUNTER__>(acc);
       auto& ntot = alpaka::declareSharedVar<uint32_t, __COUNTER__>(acc);
 
@@ -106,13 +106,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           ;
         --pairLayerId;  // move to lower_bound ??
 
-        ALPAKA_ASSERT_OFFLOAD(pairLayerId < nPairs);
-        ALPAKA_ASSERT_OFFLOAD(j < innerLayerCumulativeSize[pairLayerId]);
-        ALPAKA_ASSERT_OFFLOAD(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
+        ALPAKA_ASSERT_ACC(pairLayerId < nPairs);
+        ALPAKA_ASSERT_ACC(j < innerLayerCumulativeSize[pairLayerId]);
+        ALPAKA_ASSERT_ACC(0 == pairLayerId || j >= innerLayerCumulativeSize[pairLayerId - 1]);
 
         uint8_t inner = layerPairs[2 * pairLayerId];
         uint8_t outer = layerPairs[2 * pairLayerId + 1];
-        ALPAKA_ASSERT_OFFLOAD(outer > inner);
+        ALPAKA_ASSERT_ACC(outer > inner);
 
         auto hoff = Hist::histOff(outer);
 
@@ -121,8 +121,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         // printf("Hit in Layer %d %d %d %d\n", i, inner, pairLayerId, j);
 
-        ALPAKA_ASSERT_OFFLOAD(i >= offsets[inner]);
-        ALPAKA_ASSERT_OFFLOAD(i < offsets[inner + 1]);
+        ALPAKA_ASSERT_ACC(i >= offsets[inner]);
+        ALPAKA_ASSERT_ACC(i < offsets[inner + 1]);
 
         // found hit corresponding to our cuda thread, now do the job
         auto mi = hh.detectorIndex(i);
@@ -144,7 +144,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (doClusterCut) {
           // if ideal treat inner ladder as outer
           if (inner == 0)
-            ALPAKA_ASSERT_OFFLOAD(mi < 96);
+            ALPAKA_ASSERT_ACC(mi < 96);
           isOuterLadder = ideal_cond ? true : 0 == (mi / 8) % 2;  // only for B1/B2/B3 B4 is opposite, FPIX:noclue...
 
           // in any case we always test mes>0 ...
@@ -228,8 +228,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               break;
 
             auto oi = p[pIndex];  // auto oi = __ldg(p); is not allowed since __ldg is device-only
-            ALPAKA_ASSERT_OFFLOAD(oi >= offsets[outer]);
-            ALPAKA_ASSERT_OFFLOAD(oi < offsets[outer + 1]);
+            ALPAKA_ASSERT_ACC(oi >= offsets[outer]);
+            ALPAKA_ASSERT_ACC(oi < offsets[outer + 1]);
             auto mo = hh.detectorIndex(oi);
             if (mo > 2000)
               continue;  //    invalid

@@ -20,8 +20,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       template <typename TAcc>
       ALPAKA_FN_ACC void operator()(
           const TAcc& acc, TkSoA const* ptracks, ZVertexSoA* soa, WorkSpace* pws, float ptMin) const {
-        ALPAKA_ASSERT_OFFLOAD(ptracks);
-        ALPAKA_ASSERT_OFFLOAD(soa);
+        ALPAKA_ASSERT_ACC(ptracks);
+        ALPAKA_ASSERT_ACC(soa);
         auto const& tracks = *ptracks;
         auto const& fit = tracks.stateAtBS;
         auto const* quality = tracks.qualityData();
@@ -108,11 +108,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ZVertexAlpaka Producer::makeAsync(TkSoA const* tksoa, float ptMin, Queue& queue) const {
       // std::cout << "producing Vertices on GPU" << std::endl;
-      ALPAKA_ASSERT_OFFLOAD(tksoa);
+      ALPAKA_ASSERT_ACC(tksoa);
 
       ZVertexAlpaka vertices = cms::alpakatools::make_device_buffer<ZVertexSoA>(queue);
       auto* soa = vertices.data();
-      ALPAKA_ASSERT_OFFLOAD(soa);
+      ALPAKA_ASSERT_ACC(soa);
 
       auto ws_dBuf{cms::alpakatools::make_device_buffer<WorkSpace>(queue)};
       auto ws_d = ws_dBuf.data();

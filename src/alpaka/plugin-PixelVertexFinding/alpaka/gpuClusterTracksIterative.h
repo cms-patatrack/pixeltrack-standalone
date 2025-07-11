@@ -46,8 +46,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         int32_t* __restrict__ nn = data.ndof;
         int32_t* __restrict__ iv = ws.iv;
 
-        ALPAKA_ASSERT_OFFLOAD(pdata);
-        ALPAKA_ASSERT_OFFLOAD(zt);
+        ALPAKA_ASSERT_ACC(pdata);
+        ALPAKA_ASSERT_ACC(zt);
 
         using Hist = cms::alpakatools::HistoContainer<uint8_t, 256, 16000, 8, uint16_t>;
         auto& hist = alpaka::declareSharedVar<Hist, __COUNTER__>(acc);
@@ -58,17 +58,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (verbose && 0 == threadIdxLocal)
           printf("booked hist with %d bins, size %d for %d tracks\n", hist.nbins(), hist.capacity(), nt);
 
-        ALPAKA_ASSERT_OFFLOAD(nt <= hist.capacity());
+        ALPAKA_ASSERT_ACC(nt <= hist.capacity());
 
         // fill hist  (bin shall be wider than "eps")
         cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {
-          ALPAKA_ASSERT_OFFLOAD(i < ZVertices::MAXTRACKS);
+          ALPAKA_ASSERT_ACC(i < ZVertices::MAXTRACKS);
           int iz = int(zt[i] * 10.);  // valid if eps<=0.1
           // iz = std::clamp(iz, INT8_MIN, INT8_MAX);  // sorry c++17 only
           iz = std::min(std::max(iz, INT8_MIN), INT8_MAX);
           izt[i] = iz - INT8_MIN;
-          ALPAKA_ASSERT_OFFLOAD(iz - INT8_MIN >= 0);
-          ALPAKA_ASSERT_OFFLOAD(iz - INT8_MIN < 256);
+          ALPAKA_ASSERT_ACC(iz - INT8_MIN >= 0);
+          ALPAKA_ASSERT_ACC(iz - INT8_MIN < 256);
           hist.count(acc, izt[i]);
           iv[i] = i;
           nn[i] = 0;
@@ -82,7 +82,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         alpaka::syncBlockThreads(acc);
         hist.finalize(acc, hws);
         alpaka::syncBlockThreads(acc);
-        ALPAKA_ASSERT_OFFLOAD(hist.size() == nt);
+        ALPAKA_ASSERT_ACC(hist.size() == nt);
         cms::alpakatools::for_each_element_in_block_strided(
             acc, nt, [&](uint32_t i) { hist.fill(acc, izt[i], uint16_t(i)); });
         alpaka::syncBlockThreads(acc);
@@ -128,7 +128,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               auto be = std::min(Hist::bin(izt[i]) + 1, int(hist.nbins() - 1));
               if (nn[i] >= minT) {  // DBSCAN core rule
                 auto loop = [&](uint32_t j) {
-                  ALPAKA_ASSERT_OFFLOAD(i != j);
+                  ALPAKA_ASSERT_ACC(i != j);
                   if (nn[j] < minT)
                     return;  // DBSCAN core rule
                   auto dist = std::abs(zt[i] - zt[j]);
@@ -192,7 +192,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         });
         alpaka::syncBlockThreads(acc);
 
-        ALPAKA_ASSERT_OFFLOAD(foundClusters < ZVertices::MAXVTX);
+        ALPAKA_ASSERT_ACC(foundClusters < ZVertices::MAXVTX);
 
         // propagate the negative id to all the tracks in the cluster.
         cms::alpakatools::for_each_element_in_block_strided(acc, nt, [&](uint32_t i) {

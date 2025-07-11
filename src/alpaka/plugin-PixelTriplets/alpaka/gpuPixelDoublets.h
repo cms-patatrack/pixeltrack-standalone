@@ -3,7 +3,11 @@
 
 #include "gpuPixelDoubletsAlgos.h"
 
-#define CONSTANT_VAR ALPAKA_STATIC_ACC_MEM_CONSTANT
+#if defined(__CUDA_ARCH__) or defined(__HIP_DEVICE_COMPILE__)
+#define CONSTANT_VAR __device__ constexpr
+#else
+#define CONSTANT_VAR constexpr
+#endif
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
   namespace gpuPixelDoublets {
@@ -73,7 +77,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     CellNeighbors* cellNeighborsContainer,
                                     CellTracksVector* cellTracks,
                                     CellTracks* cellTracksContainer) const {
-        ALPAKA_ASSERT_OFFLOAD(isOuterHitOfCell);
+        ALPAKA_ASSERT_ACC(isOuterHitOfCell);
         cms::alpakatools::for_each_element_in_grid_strided(
             acc, nHits, [&](uint32_t i) { isOuterHitOfCell[i].reset(); });
 
@@ -83,11 +87,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
           // NB: Increases cellNeighbors size by 1, returns previous size which should be 0.
           [[maybe_unused]] auto i = cellNeighbors->extend(acc);
-          ALPAKA_ASSERT_OFFLOAD(0 == i);
+          ALPAKA_ASSERT_ACC(0 == i);
           (*cellNeighbors)[0].reset();
           // NB: Increases cellTracks size by 1, returns previous size which should be 0
           [[maybe_unused]] auto ii = cellTracks->extend(acc);
-          ALPAKA_ASSERT_OFFLOAD(0 == ii);
+          ALPAKA_ASSERT_ACC(0 == ii);
           (*cellTracks)[0].reset();
         }
       }  // initDoublets kernel operator()

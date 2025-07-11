@@ -32,8 +32,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       int32_t const* __restrict__ nn = data.ndof;
       int32_t* __restrict__ iv = ws.iv;
 
-      ALPAKA_ASSERT_OFFLOAD(pdata);
-      ALPAKA_ASSERT_OFFLOAD(zt);
+      ALPAKA_ASSERT_ACC(pdata);
+      ALPAKA_ASSERT_ACC(zt);
 
       // NB: Shared memory size? Is it enough?
       constexpr uint32_t MAXTK = 512;
@@ -59,7 +59,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         if (chi2[kv] < maxChi2 * float(nn[kv]))
           continue;
 
-        ALPAKA_ASSERT_OFFLOAD((uint32_t)nn[kv] < MAXTK);
+        ALPAKA_ASSERT_ACC((uint32_t)nn[kv] < MAXTK);
 
         if ((uint32_t)nn[kv] >= MAXTK)
           continue;
@@ -84,7 +84,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         auto& wnew = alpaka::declareSharedVar<float[2], __COUNTER__>(acc);
         alpaka::syncBlockThreads(acc);
 
-        ALPAKA_ASSERT_OFFLOAD(int(nq) == nn[kv] + 1);
+        ALPAKA_ASSERT_ACC(int(nq) == nn[kv] + 1);
 
         int maxiter = 20;
         // kt-min....

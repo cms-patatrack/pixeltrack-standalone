@@ -18,7 +18,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                     uint32_t const* __restrict__ hitsModuleStart,
                                     pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                     uint32_t* hitsLayerStart) const {
-        ALPAKA_ASSERT_OFFLOAD(0 == hitsModuleStart[0]);
+        ALPAKA_ASSERT_ACC(0 == hitsModuleStart[0]);
 
         cms::alpakatools::for_each_element_in_grid(acc, 11, [&](uint32_t i) {
           hitsLayerStart[i] = hitsModuleStart[cpeParams->layerGeometry().layerStart[i]];

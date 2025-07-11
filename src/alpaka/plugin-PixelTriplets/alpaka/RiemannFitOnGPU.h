@@ -35,11 +35,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   uint32_t offset) const {
       constexpr uint32_t hitsInFit = N;
 
-      ALPAKA_ASSERT_OFFLOAD(hitsInFit <= nHits);
+      ALPAKA_ASSERT_ACC(hitsInFit <= nHits);
 
-      ALPAKA_ASSERT_OFFLOAD(pfast_fit);
-      ALPAKA_ASSERT_OFFLOAD(foundNtuplets);
-      ALPAKA_ASSERT_OFFLOAD(tupleMultiplicity);
+      ALPAKA_ASSERT_ACC(pfast_fit);
+      ALPAKA_ASSERT_ACC(foundNtuplets);
+      ALPAKA_ASSERT_ACC(tupleMultiplicity);
 
       // look in bin for this hit multiplicity
 
@@ -57,9 +57,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
         // get it from the ntuple container (one to one to helix)
         auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
-        ALPAKA_ASSERT_OFFLOAD(tkid < foundNtuplets->nbins());
+        ALPAKA_ASSERT_ACC(tkid < foundNtuplets->nbins());
 
-        ALPAKA_ASSERT_OFFLOAD(foundNtuplets->size(tkid) == nHits);
+        ALPAKA_ASSERT_ACC(foundNtuplets->size(tkid) == nHits);
 
         Rfit::Map3xNd<N> hits(phits + local_idx);
         Rfit::Map4d fast_fit(pfast_fit + local_idx);
@@ -82,10 +82,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         Rfit::Fast_fit(hits, fast_fit);
 
         // no NaN here....
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(0) == fast_fit(0));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(1) == fast_fit(1));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(2) == fast_fit(2));
-        ALPAKA_ASSERT_OFFLOAD(fast_fit(3) == fast_fit(3));
+        ALPAKA_ASSERT_ACC(fast_fit(0) == fast_fit(0));
+        ALPAKA_ASSERT_ACC(fast_fit(1) == fast_fit(1));
+        ALPAKA_ASSERT_ACC(fast_fit(2) == fast_fit(2));
+        ALPAKA_ASSERT_ACC(fast_fit(3) == fast_fit(3));
       });
 
     }  // kernel operator()
@@ -103,8 +103,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   double *__restrict__ pfast_fit_input,
                                   Rfit::circle_fit *circle_fit,
                                   uint32_t offset) const {
-      ALPAKA_ASSERT_OFFLOAD(circle_fit);
-      ALPAKA_ASSERT_OFFLOAD(N <= nHits);
+      ALPAKA_ASSERT_ACC(circle_fit);
+      ALPAKA_ASSERT_ACC(N <= nHits);
 
       // same as above...
 
@@ -149,9 +149,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   double *__restrict__ pfast_fit_input,
                                   Rfit::circle_fit *__restrict__ circle_fit,
                                   uint32_t offset) const {
-      ALPAKA_ASSERT_OFFLOAD(results);
-      ALPAKA_ASSERT_OFFLOAD(circle_fit);
-      ALPAKA_ASSERT_OFFLOAD(N <= nHits);
+      ALPAKA_ASSERT_ACC(results);
+      ALPAKA_ASSERT_ACC(circle_fit);
+      ALPAKA_ASSERT_ACC(N <= nHits);
 
       // same as above...
 

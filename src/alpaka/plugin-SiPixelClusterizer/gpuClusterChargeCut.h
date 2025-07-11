@@ -27,8 +27,8 @@ namespace gpuClustering {
 
       auto firstPixel = moduleStart[1 + blockIdx];
       auto thisModuleId = id[firstPixel];
-      ALPAKA_ASSERT_OFFLOAD(thisModuleId < MaxNumModules);
-      ALPAKA_ASSERT_OFFLOAD(thisModuleId == moduleId[blockIdx]);
+      ALPAKA_ASSERT_ACC(thisModuleId < MaxNumModules);
+      ALPAKA_ASSERT_ACC(thisModuleId == moduleId[blockIdx]);
 
       auto nclus = nClustersInModule[thisModuleId];
       if (nclus == 0)
@@ -79,7 +79,7 @@ namespace gpuClustering {
       auto& ok = alpaka::declareSharedVar<uint8_t[MaxNumClustersPerModules], __COUNTER__>(acc);
       auto& newclusId = alpaka::declareSharedVar<uint16_t[MaxNumClustersPerModules], __COUNTER__>(acc);
 
-      ALPAKA_ASSERT_OFFLOAD(nclus <= MaxNumClustersPerModules);
+      ALPAKA_ASSERT_ACC(nclus <= MaxNumClustersPerModules);
       cms::alpakatools::for_each_element_in_block_strided(acc, nclus, [&](uint32_t i) { charge[i] = 0; });
       alpaka::syncBlockThreads(acc);
 
@@ -106,7 +106,7 @@ namespace gpuClustering {
       auto& ws = alpaka::declareSharedVar<uint16_t[32], __COUNTER__>(acc);
       cms::alpakatools::blockPrefixScan(acc, newclusId, nclus, ws);
 
-      ALPAKA_ASSERT_OFFLOAD(nclus >= newclusId[nclus - 1]);
+      ALPAKA_ASSERT_ACC(nclus >= newclusId[nclus - 1]);
 
       if (nclus == newclusId[nclus - 1])
         return;
