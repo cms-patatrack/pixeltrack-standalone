@@ -13,7 +13,7 @@ function parse_args(args)
         "--output-dir", "-o"
         help = "Directory to save the compiled library"
         arg_type = String
-        default = joinpath(splitdir(@__DIR__) |> first, "JuliaSerialCompiled")
+        default = "JuliaSerialCompiled"
 
         "--juliac"
         help = "Use juliac compiler"
