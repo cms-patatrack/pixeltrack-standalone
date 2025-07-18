@@ -157,6 +157,7 @@ function julia_serial_main(raw_args)::Cint
     if args["warmupEvents"] > 0
         println("Warming up...")
         @time warm_up(ev, args["maxEvents"])
+        GC.gc() # garbage collect so main processing starts without garbage from warmup
     end
 
     # Main processing
