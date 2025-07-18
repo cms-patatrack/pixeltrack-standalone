@@ -36,7 +36,7 @@ end
 
 function juliac_compile(source_dir, output_dir)
     julia_path = joinpath(Sys.BINDIR, Base.julia_exename())
-    juliac_path = joinpath(Sys.BINDIR, "..", "share", "julia", "juliac.jl")
+    juliac_path = joinpath(Sys.BINDIR, "..", "share", "julia", "juliac", "juliac.jl")
     main_path = joinpath(source_dir, "bin", "main.jl")
     bin_dir = joinpath(output_dir, "bin")
     mkpath(bin_dir)
