@@ -1,5 +1,13 @@
-# include("Patatrack.jl")
-using Patatrack
+# The main function is artificially split into several parts to accommodate 
+# for lack of common entrypoint for julia and julia compilers:
+# - bin/main.jl is a script for running the application and defines
+#   - `@main(args)::Cint` - the entrypoint for julia
+#   - `main(argc, argv)::Cint` - the entrypoint for the juliac compiler
+# src/entrypoints.jl defines the main logic and entrypoint for PackageCompiler:
+# - `julia_serial_main()::Cint` - the entrypoint for PackageCompiler, must be part of a module
+# - `julia_serial_main(raw_args)::Cint` - is the main logic called by all the entrypoints
+
+
 using BenchmarkTools
 using ArgParse
 using Printf
@@ -23,7 +31,7 @@ function print_help()
     """)
 end
 
-function parse_commandline()
+function parse_commandline(args)
     s = ArgParseSettings(description="CMS Julia Event Processing")
     s.add_help = false  # Disable the default --help option
 
@@ -62,12 +70,13 @@ function parse_commandline()
         action = :store_true
     end
 
-    return parse_args(s)
+    return parse_args(args, s)
 end
 
-function julia_main()::Cint
+# Main logic used by the entrypoints
+function julia_serial_main(raw_args)::Cint
     # println("Hello from julia_main()!")
-    args = parse_commandline()
+    args = parse_commandline(raw_args)
 
     if args["help"]
         print_help()
@@ -148,6 +157,7 @@ function julia_main()::Cint
     if args["warmupEvents"] > 0
         println("Warming up...")
         @time warm_up(ev, args["maxEvents"])
+        GC.gc() # garbage collect so main processing starts without garbage from warmup
     end
 
     # Main processing
@@ -181,3 +191,9 @@ function julia_main()::Cint
 
     return 0
 end
+
+# Entrypoint for PackageCompiler compiler
+function julia_serial_main()::Cint
+    return julia_serial_main(ARGS)
+end
+

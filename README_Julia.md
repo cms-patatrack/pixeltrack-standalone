@@ -82,10 +82,28 @@ Run for 5 minutes with 8 streams:
 
 ## Building a Standalone Application - Work in progress
 
-To create a standalone application:
-```bash
-cd src/julia-serial
-julia --project=. compile_app.jl
-```
-The executable will be created in `src/julia-serial/compile/bin/julia_main.exe`.
 
+Instantiate julia enviroments if needed:
+
+```bash
+julia --project=src/julia-serial/ -e "import Pkg; Pkg.instantiate()"
+julia --project=src/julia-serial/compile -e "import Pkg; Pkg.instantiate()"
+```
+
+To compile a standalone application in `output_dir`:
+
+```bash
+julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir>
+```
+
+In Julia 1.12 `--juliac` option can be added to compile with `juliac` instead of `PackageCompiler`, e.g.:
+
+```
+julia +1.12 --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir> --juliac
+```
+
+The application can be run with:
+
+```
+<output_dir>/bin/julia-serial
+```
