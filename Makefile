@@ -437,6 +437,7 @@ export KOKKOS_DEPS := $(KOKKOS_LIB)
 JULIA_BASE := $(EXTERNAL_BASE)/julia
 export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot:
 export JULIA_DEPS := $(JULIA_BASE)
+export PATH := $(JULIA_BASE)/bin:$(PATH)
 
 # OpenMP target offload
 
