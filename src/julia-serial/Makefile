@@ -14,4 +14,4 @@ $(TARGET): julia-serial-build
 .PHONY: julia-serial-build
 julia-serial-build:
 	@echo "Installing required packages..."
-	@julia --project=$(TARGET_DIR) -e 'using Pkg; Pkg.instantiate()'
+	@julia --project=$(TARGET_DIR) -e 'using Pkg; isfile("$(TARGET_DIR)/Manifest.toml") ? Pkg.resolve() : Pkg.instantiate()' 
