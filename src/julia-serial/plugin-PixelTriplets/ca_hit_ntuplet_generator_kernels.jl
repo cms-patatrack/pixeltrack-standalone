@@ -103,11 +103,11 @@ mutable struct CAHitNTupletGeneratorKernels
     counters::Counters
     function CAHitNTupletGeneratorKernels(params::Params)
         # is_outer_hit_of_cell = [OuterHitOfCell() for _ ∈ 1:15e4]
-        is_outer_hit_of_cell = OuterHitOfCellVector(MAX_CELLS_PER_HIT,24000)
+        is_outer_hit_of_cell = OuterHitOfCellVector(0,0)
         # the_cell_neighbors_container = [CellNeighbors() for _ ∈ 1:MAX_NUM_OF_ACTIVE_DOUBLETS]# Vector of CellNeighbors
-        the_cell_neighbors_container = CellNeighborsVector(64,MAX_NUM_OF_ACTIVE_DOUBLETS)
+        the_cell_neighbors_container = CellNeighborsVector(36,MAX_NUM_OF_ACTIVE_DOUBLETS)
         # the_cell_tracks_container = [CellTracks() for _ ∈ 1:MAX_NUM_OF_ACTIVE_DOUBLETS]# Vector of CellTracks
-        the_cell_tracks_container = CellTracksVector(64,MAX_NUM_OF_ACTIVE_DOUBLETS)
+        the_cell_tracks_container = CellTracksVector(48,MAX_NUM_OF_ACTIVE_DOUBLETS)
         the_cells = Vector{GPUCACell}(undef, params.max_num_of_doublets)
         device_hit_to_tuple = HitToTuple()
         device_tuple_multiplicity = TupleMultiplicity()

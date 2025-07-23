@@ -7,7 +7,7 @@ using ..CUDADataFormatsSiPixelClusterInterfaceGPUClusteringConstants: MAX_NUMBER
 using ..Patatrack: VecArray
 using ..Patatrack: SimpleVector
 using ..Patatrack: PreAllocMatrix
-const MAX_NUM_TUPLES = 48 * 1024
+const MAX_NUM_TUPLES = 24 * 1024
 const MAX_NUM_QUADRUPLETS = MAX_NUM_TUPLES
 const MAX_NUM_OF_DOUBLETS = 512* 1024
 const MAX_CELLS_PER_HIT = 128
@@ -18,8 +18,8 @@ const MAX_TUPLES = MAX_NUM_TUPLES
 const MAX_NUM_OF_CONCURRENT_FITS = 24 * 1024
 const hindex_type = UInt16
 const tindex_type = UInt16
-const CellNeighbors = VecArray{UInt32,64}
-const CellTracks = VecArray{tindex_type,64}
+const CellNeighbors = VecArray{UInt32,36}
+const CellTracks = VecArray{tindex_type,48}
 const CellNeighborsVector = PreAllocMatrix{UInt32}
 const CellTracksVector = PreAllocMatrix{tindex_type}
 const OuterHitOfCell = VecArray{UInt32,MAX_CELLS_PER_HIT}
