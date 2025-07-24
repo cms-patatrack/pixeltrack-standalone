@@ -535,7 +535,7 @@ Note that this program does not honor CUDA_VISIBLE_DEVICES, use --cudaDevices in
     if opts.tasksetCores != "":
         opts.tasksetCores = opts.tasksetCores.split(",")
     if len(opts.tasksetCores) > 0 and opts.fill != -1 and len(opts.tasksetCores) != opts.fill:
-        parser.error("When both --tasksetCores and --fill are given, --fill must match to the number of elements in --tasksetCores. No got --fill {} and {} elements in --tasksetCores {}".format(opts.fill, len(opts.tasksetCores)))
+        parser.error("When both --tasksetCores and --fill are given, --fill must match to the number of elements in --tasksetCores. No got --fill {} and {} elements in --tasksetCores".format(opts.fill, len(opts.tasksetCores)))
     if opts.runForMinutes >= 0:
         if opts.eventsPerStream is not None:
             parser.error("--runForMinutes and --eventsPerStream can not be used together")
