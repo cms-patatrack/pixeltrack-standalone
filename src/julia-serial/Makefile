@@ -7,7 +7,7 @@ EXTERNAL_DEPENDS := $(alpaka_EXTERNAL_DEPENDS)
 # julia-serial target
 $(TARGET): julia-serial-build
 	@echo "Setup complete. Run with ./$(TARGET_NAME)"
-	@echo -e '#! /bin/bash\njulia --project=$(TARGET_DIR) $(TARGET_DIR)/run_main.jl "$$@"' > $@
+	@echo -e '#! /bin/bash\njulia --project=$(TARGET_DIR) $(TARGET_DIR)/bin/main.jl "$$@"' > $@
 	@chmod +x $@
 
 # Prepare dependencies
