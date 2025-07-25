@@ -54,7 +54,7 @@ function produce(src::Source, streamId::Int, reg::ProductRegistry)
         return nothing
     end
 
-    iev = atomic_add!(src.numEvents, 1)
+    iev = (atomic_add!(src.numEvents, 1) - 1) % length(src.raw_events) + 1
     # println("Taking an Event ", iev)
     # print(src.raw_events)
 
