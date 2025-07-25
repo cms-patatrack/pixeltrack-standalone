@@ -36,7 +36,7 @@ function produce(self::SiPixelRecHitCUDA,iEvent::Event, es::EventSetup)
     if nHits >= max_hits()
         println("Clusters/Hits Overflow ",nHits," >= ", TrackingRecHit2DSOAView::maxHits())
     end
-    makeHits(digis, clusters, bs, getCPUProduct(fcpe))
+    #makeHits(digis, clusters, bs, getCPUProduct(fcpe))
     emplace(iEvent, self.tokenHit, makeHits(digis, clusters, bs, getCPUProduct(fcpe)))
     
 end

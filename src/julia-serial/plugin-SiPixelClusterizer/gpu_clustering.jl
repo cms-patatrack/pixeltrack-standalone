@@ -120,7 +120,7 @@ function find_clus(id, x, y, module_start, n_clusters_in_module, moduleId, clust
         
         
         hist = CACHED_HIST[]
-        # hist = HisToContainer{Int16, 418, 4000, 9, UInt16, 1}()
+        #hist = HisToContainer{Int16, 418, 4000, 9, UInt16, 1}()
         zero(hist)
         
         @assert msize == num_elements || (msize < num_elements && id[msize] != this_module_id)
@@ -156,10 +156,10 @@ function find_clus(id, x, y, module_start, n_clusters_in_module, moduleId, clust
         max_neighbours = 10
         
         # nearest neighbour 
-        # nn = Matrix{UInt16}(undef,max_iter, max_neighbours) # m
-        # nnn = zeros(UInt8, max_iter) # m
-        nn = CACHED_NN[]
-        nnn = CACHED_NNN[]
+        nn = Matrix{UInt16}(undef,max_iter, max_neighbours) # m
+        nnn = zeros(UInt8, max_iter) # m
+        # nn = CACHED_NN[]
+        # nnn = CACHED_NNN[]
         fill!(nnn,UInt8(0))
         # fill NN
         # testing = 0 
