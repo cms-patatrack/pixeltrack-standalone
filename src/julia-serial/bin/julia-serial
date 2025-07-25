@@ -1,0 +1,35 @@
+#! /bin/bash
+
+# Julia needs the number of threads to be set in the environment, so parse the --numberOfThreads option here
+THREADS=
+
+# Other arguments, passed to main.jl
+ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --numberOfThreads)
+            # Handle: --numberOfThreads NN
+            THREADS="$2"
+            shift 2
+            ;;
+        --numberOfThreads=*)
+            # Handle: --numberOfThreads=NN
+            THREADS="${1#*=}"
+            shift
+            ;;
+        *)
+            # Keep all other arguments
+            ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Set the number of threads, if requested
+if [ "$THREADS" ]; then
+    export JULIA_NUM_THREADS=$THREADS
+fi
+
+# Call julia: execute main.jl with the remaining options
+julia --project=!TARGET_DIR !TARGET_DIR/bin/main.jl "${ARGS[@]}"

@@ -5,10 +5,10 @@ include Makefile.deps
 EXTERNAL_DEPENDS := $(alpaka_EXTERNAL_DEPENDS)
 
 # julia-serial target
-$(TARGET): julia-serial-build
-	@echo "Setup complete. Run with ./$(TARGET_NAME)"
-	@echo -e '#! /bin/bash\njulia --project=$(TARGET_DIR) $(TARGET_DIR)/bin/main.jl "$$@"' > $@
+$(TARGET): julia-serial-build bin/julia-serial
+	@cat $(TARGET_DIR)/bin/julia-serial | sed -e"s#!TARGET_DIR#$(TARGET_DIR)#g" > $@
 	@chmod +x $@
+	@echo "Setup complete. Run with ./$(TARGET_NAME)"
 
 # Prepare dependencies
 .PHONY: julia-serial-build
