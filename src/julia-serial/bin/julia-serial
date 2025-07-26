@@ -29,6 +29,7 @@ done
 # Set the number of threads, if requested
 if [ "$THREADS" ]; then
     export JULIA_NUM_THREADS=$THREADS
+    export JULIA_NUM_GC_THREADS=$(((THREADS + 1) / 2)),1
 fi
 
 # Call julia: execute main.jl with the remaining options
