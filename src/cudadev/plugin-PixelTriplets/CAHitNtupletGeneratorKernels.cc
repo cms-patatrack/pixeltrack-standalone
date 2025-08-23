@@ -107,7 +107,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
                  params_.dcaCutOuterTriplet_);
 
   if (nhits > 1 && params_.earlyFishbone_) {
-    gpuPixelDoublets::fishbone(
+    gpuPixelDoublets::fishbone<1, 1>(
         hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, false);
   }
 
@@ -132,7 +132,7 @@ void CAHitNtupletGeneratorKernelsCPU::launchKernels(HitsOnCPU const &hh, TkSoA *
   kernel_fillMultiplicity(tuples_d, quality_d, device_tupleMultiplicity_.get());
 
   if (nhits > 1 && params_.lateFishbone_) {
-    gpuPixelDoublets::fishbone(
+    gpuPixelDoublets::fishbone<1, 1>(
         hh.view(), device_theCells_.get(), device_nCells_, device_isOuterHitOfCell_.get(), nhits, true);
   }
 

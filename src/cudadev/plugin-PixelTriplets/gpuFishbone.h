@@ -7,6 +7,9 @@
 #include <cstdio>
 #include <limits>
 
+#include <cooperative_groups.h>
+namespace cg = cooperative_groups;
+
 #include "DataFormats/approx_atan2.h"
 #include "Geometry/phase1PixelTopology.h"
 #include "CUDACore/VecArray.h"
@@ -16,76 +19,108 @@
 
 namespace gpuPixelDoublets {
 
-  //  __device__
-  //  __forceinline__
-  __global__ void fishbone(GPUCACell::Hits const* __restrict__ hhp,
-                           GPUCACell* cells,
-                           uint32_t const* __restrict__ nCells,
-                           GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
-                           uint32_t nHits,
-                           bool checkTrack) {
+  template <int hitsPerBlock, int threadsPerHit>
+  __global__ __launch_bounds__(hitsPerBlock* threadsPerHit) void fishbone(
+      GPUCACell::Hits const* __restrict__ hits_p,
+      GPUCACell* cells,
+      uint32_t const* __restrict__ nCells,
+      GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
+      uint32_t nHits,
+      bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
 
-    auto const& hh = *hhp;
+    auto const& hits = *hits_p;
 
-    // x run faster...
-    auto firstY = threadIdx.y + blockIdx.y * blockDim.y;
-    auto firstX = threadIdx.x;
+    // blockDim must be hitsPerBlock times threadsPerHit
+    assert(blockDim.x == hitsPerBlock * threadsPerHit);
 
-    float x[maxCellsPerHit], y[maxCellsPerHit], z[maxCellsPerHit], n[maxCellsPerHit];
-    uint16_t d[maxCellsPerHit];  // uint8_t l[maxCellsPerHit];
-    uint32_t cc[maxCellsPerHit];
+    // partition the thread block into threadsPerHit-sized tiles
+    auto tile = cg::tiled_partition<threadsPerHit>(cg::this_thread_block());
+    assert(hitsPerBlock == tile.meta_group_size());
 
-    for (int idy = firstY, nt = nHits; idy < nt; idy += gridDim.y * blockDim.y) {
-      auto const& vc = isOuterHitOfCell[idy];
+    auto numberOfBlocks = gridDim.x;
+    auto hitsPerGrid = numberOfBlocks * hitsPerBlock;
+    auto hitInBlock = tile.meta_group_rank();  // 0 .. hitsPerBlock-1
+    auto innerThread = tile.thread_rank();
+    auto firstHit = hitInBlock + blockIdx.x * hitsPerBlock;
+
+    // hitsPerBlock buffers in shared memory
+    __shared__ float s_x[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_y[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_z[hitsPerBlock][maxCellsPerHit];
+    __shared__ float s_length2[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint32_t s_cc[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint16_t s_detId[hitsPerBlock][maxCellsPerHit];
+    __shared__ uint32_t s_doublets[hitsPerBlock];
+
+    // buffer used by the current thread
+    float(&x)[maxCellsPerHit] = s_x[hitInBlock];
+    float(&y)[maxCellsPerHit] = s_y[hitInBlock];
+    float(&z)[maxCellsPerHit] = s_z[hitInBlock];
+    float(&length2)[maxCellsPerHit] = s_length2[hitInBlock];
+    uint32_t(&cc)[maxCellsPerHit] = s_cc[hitInBlock];
+    uint16_t(&detId)[maxCellsPerHit] = s_detId[hitInBlock];
+    uint32_t& doublets = s_doublets[hitInBlock];
+
+    // outer loop: parallelize over the hits
+    for (int hit = firstHit; hit < (int)nHits; hit += hitsPerGrid) {
+      auto const& vc = isOuterHitOfCell[hit];
       auto size = vc.size();
       if (size < 2)
         continue;
+
       // if alligned kill one of the two.
       // in principle one could try to relax the cut (only in r-z?) for jumping-doublets
       auto const& c0 = cells[vc[0]];
-      auto xo = c0.outer_x(hh);
-      auto yo = c0.outer_y(hh);
-      auto zo = c0.outer_z(hh);
-      auto sg = 0;
-      for (int32_t ic = 0; ic < size; ++ic) {
-        auto& ci = cells[vc[ic]];
-        if (ci.unused())
-          continue;  // for triplets equivalent to next
-        if (checkTrack && ci.tracks().empty())
-          continue;
-        cc[sg] = vc[ic];
-        d[sg] = ci.inner_detIndex(hh);
-        x[sg] = ci.inner_x(hh) - xo;
-        y[sg] = ci.inner_y(hh) - yo;
-        z[sg] = ci.inner_z(hh) - zo;
-        n[sg] = x[sg] * x[sg] + y[sg] * y[sg] + z[sg] * z[sg];
-        ++sg;
+      auto xo = c0.outer_x(hits);
+      auto yo = c0.outer_y(hits);
+      auto zo = c0.outer_z(hits);
+      if (innerThread == 0) {
+        doublets = 0;
       }
-      if (sg < 2)
+      tile.sync();
+      for (int32_t i = innerThread; i < size; i += threadsPerHit) {
+        auto& cell = cells[vc[i]];
+        if (cell.unused())
+          continue;  // for triplets equivalent to next
+        if (checkTrack && cell.tracks().empty())
+          continue;
+        auto index = atomicInc(&doublets, 0xFFFFFFFF);
+        cc[index] = vc[i];
+        detId[index] = cell.inner_detIndex(hits);
+        x[index] = cell.inner_x(hits) - xo;
+        y[index] = cell.inner_y(hits) - yo;
+        z[index] = cell.inner_z(hits) - zo;
+        length2[index] = x[index] * x[index] + y[index] * y[index] + z[index] * z[index];
+      }
+
+      tile.sync();
+      if (doublets < 2)
         continue;
-      // here we parallelize
-      for (int32_t ic = firstX; ic < sg - 1; ic += blockDim.x) {
-        auto& ci = cells[cc[ic]];
-        for (auto jc = ic + 1; jc < sg; ++jc) {
-          auto& cj = cells[cc[jc]];
-          // must be different detectors (in the same layer)
-          //        if (d[ic]==d[jc]) continue;
-          // || l[ic]!=l[jc]) continue;
-          auto cos12 = x[ic] * x[jc] + y[ic] * y[jc] + z[ic] * z[jc];
-          if (d[ic] != d[jc] && cos12 * cos12 >= 0.99999f * n[ic] * n[jc]) {
-            // alligned:  kill farthest  (prefer consecutive layers)
-            if (n[ic] > n[jc]) {
-              ci.kill();
+
+      // inner loop: parallelize over the doublets
+      for (uint32_t i = innerThread; i < doublets - 1; i += threadsPerHit) {
+        auto& cell_i = cells[cc[i]];
+        for (uint32_t j = i + 1; j < doublets; ++j) {
+          // must be different detectors (potentially in the same layer)
+          if (detId[i] == detId[j])
+            continue;
+          auto& cell_j = cells[cc[j]];
+          auto cos12 = x[i] * x[j] + y[i] * y[j] + z[i] * z[j];
+          if (cos12 * cos12 >= 0.99999f * length2[i] * length2[j]) {
+            // alligned: kill farthest (prefer consecutive layers)
+            if (length2[i] > length2[j]) {
+              cell_i.kill();
               break;
             } else {
-              cj.kill();
+              cell_j.kill();
             }
           }
-        }  //cj
-      }    // ci
-    }      // hits
+        }  // j
+      }    // i
+    }      // hit
   }
+
 }  // namespace gpuPixelDoublets
 
 #endif  // RecoPixelVertexing_PixelTriplets_plugins_gpuFishbone_h
