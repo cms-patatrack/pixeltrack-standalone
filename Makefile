@@ -396,8 +396,7 @@ KOKKOS_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(KOKKOS_INSTALL) \
                      -DKokkos_CXX_STANDARD=14 \
                      -DKokkos_ENABLE_SERIAL=On \
                      -DKokkos_ENABLE_LIBDL=On \
-                     -DKokkos_ENABLE_PROFILING_LOAD_PRINT=On \
-                     -DKokkos_ENABLE_IMPL_DESUL_ATOMICS=Off
+                     -DKokkos_ENABLE_PROFILING_LOAD_PRINT=On
 KOKKOS_IS_SHARED :=
 ifndef KOKKOS_DEVICE_PARALLEL
   KOKKOS_CMAKEFLAGS += -DCMAKE_CXX_COMPILER=g++
