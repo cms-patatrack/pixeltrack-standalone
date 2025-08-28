@@ -159,7 +159,7 @@ void WaitingTaskList::add(tbb::task_group* iGroup, WaitingTask* iTask) {
 
 void WaitingTaskList::presetTaskAsFailed(std::exception_ptr iExcept) {
   if (iExcept and m_waiting) {
-    WaitNode* node = m_head.load();
+    WaitNode* node = m_head;
     while (node) {
       WaitNode* next;
       while (node == (next = node->nextNode())) {

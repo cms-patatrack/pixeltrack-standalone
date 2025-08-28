@@ -42,7 +42,7 @@ namespace edm {
 
   private:
     std::vector<Worker*> itemsToGet_;
-    std::atomic<bool> prefetchRequested_ = false;
+    bool prefetchRequested_ = false;
   };
 
   template <typename T>
@@ -53,14 +53,14 @@ namespace edm {
     void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
       waitingTasksWork_.add(task);
       //std::cout << "doWorkAsync for " << this << " with iTask " << iTask << std::endl;
-      bool expected = false;
-      if (workStarted_.compare_exchange_strong(expected, true)) {
+      if (workStarted_ == false) {
+        workStarted_ = true;
         //std::cout << "first doWorkAsync call" << std::endl;
 
         WaitingTask* moduleTask =
-            make_waiting_task([this, &event, &eventSetup](std::exception_ptr const* iPtr) mutable {
+            make_waiting_task([this, &event, &eventSetup](std::exception_ptr iPtr) mutable {
               if (iPtr) {
-                waitingTasksWork_.doneWaiting(*iPtr);
+                waitingTasksWork_.doneWaiting(iPtr);
               } else {
                 std::exception_ptr exceptionPtr;
                 try {
@@ -77,9 +77,9 @@ namespace edm {
         if (producer_.hasAcquire()) {
           WaitingTaskWithArenaHolder runProduceHolder{*group, moduleTask};
           moduleTask = make_waiting_task([this, &event, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
-                                             std::exception_ptr const* iPtr) mutable {
+                                             std::exception_ptr iPtr) mutable {
             if (iPtr) {
-              runProduceHolder.doneWaiting(*iPtr);
+              runProduceHolder.doneWaiting(iPtr);
             } else {
               std::exception_ptr exceptionPtr;
               try {
@@ -106,7 +106,7 @@ namespace edm {
 
     T producer_;
     WaitingTaskList waitingTasksWork_;
-    std::atomic<bool> workStarted_ = false;
+    bool workStarted_ = false;
   };
 }  // namespace edm
 #endif

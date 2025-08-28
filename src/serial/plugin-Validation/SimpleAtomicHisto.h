@@ -48,7 +48,7 @@ public:
   };
 
 private:
-  std::vector<std::atomic<int>> data_;
+  std::vector<int> data_;
   float min_, max_;
 };
 

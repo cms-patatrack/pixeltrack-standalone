@@ -56,7 +56,7 @@ namespace edm {
     group.wait();
     assert(globalWaitTask.done());
     if (globalWaitTask.exceptionPtr()) {
-      std::rethrow_exception(*(globalWaitTask.exceptionPtr()));
+      std::rethrow_exception(globalWaitTask.exceptionPtr());
     }
   }
 

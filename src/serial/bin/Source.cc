@@ -103,7 +103,7 @@ namespace edm {
       return nullptr;
     }
 
-    const int old = numEvents_.fetch_add(1);
+    const int old = numEvents_++;
     const int iev = old + 1;
     if (runForMinutes_ < 0) {
       if (old >= maxEvents_) {

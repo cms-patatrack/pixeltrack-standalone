@@ -156,7 +156,7 @@ namespace edm {
     std::exception_ptr m_exceptionPtr;
     unsigned int m_nodeCacheSize;
     std::atomic<unsigned int> m_lastAssignedCacheIndex;
-    std::atomic<bool> m_waiting;
+    bool m_waiting;
   };
 }  // namespace edm
 

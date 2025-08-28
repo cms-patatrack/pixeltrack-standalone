@@ -181,7 +181,7 @@ void CAHitNtupletGeneratorKernelsCPU::classifyTuples(HitsOnCPU const &hh, TkSoA 
   }
 
 #ifdef DUMP_GPU_TK_TUPLES
-  static std::atomic<int> iev(0);
+  static int iev(0);
   ++iev;
   kernel_print_found_ntuplets(hh.view(), tuples_d, tracks_d, quality_d, device_hitToTuple_.get(), 100, iev);
 #endif

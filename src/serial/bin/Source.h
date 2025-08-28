@@ -36,10 +36,10 @@ namespace edm {
     int runForMinutes_;
     std::chrono::steady_clock::time_point startTime_;
     std::mutex timeMutex_;
-    std::atomic<int> numEventsTimeLastCheck_ = 0;
-    std::atomic<bool> shouldStop_ = false;
+    int numEventsTimeLastCheck_ = 0;
+    bool shouldStop_ = false;
 
-    std::atomic<int> numEvents_ = 0;
+    int numEvents_ = 0;
     EDPutTokenT<FEDRawDataCollection> const rawToken_;
     EDPutTokenT<DigiClusterCount> digiClusterToken_;
     EDPutTokenT<TrackCount> trackToken_;

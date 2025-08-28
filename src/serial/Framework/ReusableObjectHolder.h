@@ -160,7 +160,7 @@ namespace edm {
     }
 
     tbb::concurrent_queue<std::unique_ptr<T, Deleter>> m_availableQueue;
-    std::atomic<size_t> m_outstandingObjects;
+    size_t m_outstandingObjects;
   };
 
 }  // namespace edm

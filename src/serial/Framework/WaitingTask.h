@@ -40,15 +40,15 @@ namespace edm {
     friend class WaitingTaskWithArenaHolder;
 
     ///Constructor
-    WaitingTask() : m_ptr{nullptr} {}
-    ~WaitingTask() override { delete m_ptr.load(); };
+    WaitingTask() : m_ptr{} {}
+    ~WaitingTask() override {};
 
     // ---------- const member functions ---------------------------
 
     ///Returns exception thrown by dependent task
     /** If the value is non-null then the dependent task failed.
     */
-    std::exception_ptr const* exceptionPtr() const { return m_ptr.load(); }
+    std::exception_ptr exceptionPtr() const { return m_ptr; }
 
   private:
     ///Called if waited for task failed
@@ -58,15 +58,11 @@ namespace edm {
      */
     void dependentTaskFailed(std::exception_ptr iPtr) {
       if (iPtr and not m_ptr) {
-        auto temp = std::make_unique<std::exception_ptr>(iPtr);
-        std::exception_ptr* expected = nullptr;
-        if (m_ptr.compare_exchange_strong(expected, temp.get())) {
-          temp.release();
-        }
+        m_ptr = iPtr;
       }
     }
 
-    std::atomic<std::exception_ptr*> m_ptr;
+    std::exception_ptr m_ptr;
   };
 
   /** Use this class on the stack to signal the final task to be run.
@@ -79,11 +75,11 @@ namespace edm {
 
     void execute() final { m_done = true; }
 
-    bool done() const { return m_done.load(); }
+    bool done() const { return m_done; }
 
   private:
     void recycle() final {}
-    std::atomic<bool> m_done;
+    bool m_done;
   };
 
   template <typename F>

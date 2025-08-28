@@ -67,10 +67,10 @@ namespace edm {
       auto eventPtr = event.get();
       auto* group = h.group();
       auto nextEventTask =
-          make_waiting_task([this, h = std::move(h), ev = std::move(event)](std::exception_ptr const* iPtr) mutable {
+          make_waiting_task([this, h = std::move(h), ev = std::move(event)](std::exception_ptr iPtr) mutable {
             ev.reset();
             if (iPtr) {
-              h.doneWaiting(*iPtr);
+              h.doneWaiting(iPtr);
             } else {
               for (auto const& worker : path_) {
                 worker->reset();

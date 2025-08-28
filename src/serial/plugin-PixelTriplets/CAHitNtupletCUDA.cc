@@ -2,7 +2,6 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
-#include "Framework/RunningAverage.h"
 
 #include "CAHitNtupletGeneratorOnGPU.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"

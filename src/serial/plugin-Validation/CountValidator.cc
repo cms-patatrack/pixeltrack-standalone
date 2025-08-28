@@ -16,9 +16,9 @@
 #include <sstream>
 
 namespace {
-  std::atomic<int> allEvents = 0;
-  std::atomic<int> goodEvents = 0;
-  std::atomic<int> sumVertexDifference = 0;
+  int allEvents = 0;
+  int goodEvents = 0;
+  int sumVertexDifference = 0;
 
   std::mutex sumTrackDifferenceMutex;
   float sumTrackDifference = 0;
@@ -129,11 +129,11 @@ void CountValidator::endJob() {
   if (allEvents == goodEvents) {
     std::cout << "CountValidator: all " << allEvents << " events passed validation\n";
     if (sumTrackDifference != 0.f) {
-      std::cout << " Average relative track difference " << sumTrackDifference / allEvents.load()
+      std::cout << " Average relative track difference " << sumTrackDifference / allEvents
                 << " (all within tolerance)\n";
     }
     if (sumVertexDifference != 0) {
-      std::cout << " Average absolute vertex difference " << float(sumVertexDifference.load()) / allEvents.load()
+      std::cout << " Average absolute vertex difference " << float(sumVertexDifference) / allEvents
                 << " (all within tolerance)\n";
     }
   } else {
