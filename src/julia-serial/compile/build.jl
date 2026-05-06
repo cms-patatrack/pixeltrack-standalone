@@ -1,6 +1,7 @@
 using PackageCompiler
 using ArgParse
 import Pkg
+import JuliaC
 
 function parse_args(args)
     s = ArgParse.ArgParseSettings()
@@ -35,18 +36,33 @@ function packagecompiler_compile(source_dir, output_dir)
 end
 
 function juliac_compile(source_dir, output_dir)
-    julia_path = joinpath(Sys.BINDIR, Base.julia_exename())
-    juliac_path = joinpath(Sys.BINDIR, "..", "share", "julia", "juliac", "juliac.jl")
-    main_path = joinpath(source_dir, "bin", "main.jl")
-    bin_dir = joinpath(output_dir, "bin")
-    mkpath(bin_dir)
-    output_bin = joinpath(bin_dir, "julia-serial")
-    cmd = "$(julia_path) --project=$(source_dir) $(juliac_path) --experimental --trim=no --output-exe $(output_bin) $(main_path)"
-    @info "Running command: $cmd"
-    return @elapsed run(`$(split(cmd))`)
+    img = JuliaC.ImageRecipe(
+        output_type="--output-exe",
+        file=joinpath(source_dir, "bin", "main.jl"),
+        project=source_dir,
+        trim_mode="no",
+        add_ccallables=false,
+        verbose=false
+    )
+
+    link = JuliaC.LinkRecipe(
+        image_recipe=img,
+        outname="julia-serial",
+    )
+
+    bun = JuliaC.BundleRecipe(
+        link_recipe=link,
+        output_dir=output_dir, # or `nothing` to skip bundling
+    )
+
+    return @elapsed begin
+        JuliaC.compile_products(img)
+        JuliaC.link_products(link)
+        JuliaC.bundle_products(bun)
+    end
 end
 
-function (@main)(args)
+function @main(args)
     parsed_args = parse_args(args)
     source_dir = parsed_args["source-dir"]
     output_dir = parsed_args["output-dir"]
@@ -55,10 +71,10 @@ function (@main)(args)
     @info "Creating output in $output_dir"
 
     compilation_time = if parsed_args["juliac"]
-        @info "Compiling with juliac"
+        @info "Compiling with JuliaC.jl"
         juliac_compile(source_dir, output_dir)
     else
-        @info "Compiling with PackageCompiler"
+        @info "Compiling with PackageCompiler.jl"
         packagecompiler_compile(source_dir, output_dir)
     end
     @info "Compiled in $(compilation_time) seconds"

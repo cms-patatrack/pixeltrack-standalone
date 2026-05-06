@@ -96,10 +96,10 @@ To compile a standalone application in `output_dir`:
 julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir>
 ```
 
-In Julia 1.12 `--juliac` option can be added to compile with `juliac` instead of `PackageCompiler`, e.g.:
+`--juliac` option can be added to compile with `Juliac.jl` instead of `PackageCompiler.jl`, e.g.:
 
 ```
-julia +1.12 --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir> --juliac
+julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir> --juliac
 ```
 
 The application can be run with:
