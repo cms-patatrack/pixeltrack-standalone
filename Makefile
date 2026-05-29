@@ -682,7 +682,7 @@ clean:
 	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL) $(TARGET_NAME)
 
 distclean: | clean
-	rm -fR $(EXTERNAL_BASE) .original_env
+	rm -fR $(EXTERNAL_BASE) .original_env src/julia-serial/Manifest.toml
 
 dataclean:
 	rm -fR $(DATA_BASE)/*.tar.gz $(DATA_BASE)/*.bin $(DATA_BASE)/data_ok
@@ -821,4 +821,4 @@ external_kokkos_clean:
 external_julia: $(JULIA_BASE)
 
 $(JULIA_BASE):
-	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.0-rc1-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@
+	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.6-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@
