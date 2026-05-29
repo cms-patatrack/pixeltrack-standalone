@@ -5,7 +5,7 @@ This is a Julia implementation of the Patatrack benchmark for CMS pixel reconstr
 
 ## Prerequisites
 
-- Julia 1.11.5 or later  (installed automatically)
+- Julia 1.12.6 or later (installed automatically)
 - Required Julia packages (installed automatically)
 - Data files (downloaded automatically)
 
@@ -23,7 +23,7 @@ This is a Julia implementation of the Patatrack benchmark for CMS pixel reconstr
    ```
 
    This will:
-   - download and install Julia 1.11.5 from [the official website](https://julialang.org/downloads/)
+   - download and install Julia 1.12.6 from [the official website](https://julialang.org/downloads/)
    - download and install required Julia packages
    - download and extract the necessary data files
 
@@ -42,7 +42,7 @@ Usage: ./julia-serial [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME
        [--data PATH] [--validation] [--histogram] [--empty]
 ```
 
-For more information, run `./julia-seria --help`. 
+For more information, run `./julia-serial --help`.
 
 
 ## Examples
@@ -93,13 +93,13 @@ julia --project=src/julia-serial/compile -e "import Pkg; Pkg.instantiate()"
 To compile a standalone application in `output_dir`:
 
 ```bash
-julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir>
+julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o <output_dir>
 ```
 
 `--juliac` option can be added to compile with `Juliac.jl` instead of `PackageCompiler.jl`, e.g.:
 
 ```
-julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o  <output_dir> --juliac
+julia --project=src/julia-serial/compile src/julia-serial/compile/build.jl -o <output_dir> --juliac
 ```
 
 The application can be run with:
