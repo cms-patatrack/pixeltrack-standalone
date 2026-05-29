@@ -682,7 +682,7 @@ clean:
 	rm -fR $(LIB_DIR) $(OBJ_DIR) $(TEST_DIR) $(TARGETS_ALL) $(TARGET_NAME)
 
 distclean: | clean
-	rm -fR $(EXTERNAL_BASE) .original_env
+	rm -fR $(EXTERNAL_BASE) .original_env src/julia-serial/Manifest.toml
 
 dataclean:
 	rm -fR $(DATA_BASE)/*.tar.gz $(DATA_BASE)/*.bin $(DATA_BASE)/data_ok
