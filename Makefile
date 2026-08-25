@@ -35,10 +35,13 @@ HOST_CXXFLAGS := -O2 -fPIC -fdiagnostics-show-option -felide-constructors -fmess
 # Compiler flags supported by GCC but not by the LLVM-based compilers (clang, hipcc, icpx, etc.)
 LLVM_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Werror=format-contains-nul -Wno-non-template-friend -Werror=return-local-addr -Werror=unused-but-set-variable
 
+# In case nvcc uses a different compiler than CXX
+CUDA_NVCC_HOST_COMPILER := $(if $(NVCC_CCBIN),$(NVCC_CCBIN),$(CXX))
+
 export CXXFLAGS := -std=c++20 $(HOST_CXXFLAGS) $(USER_CXXFLAGS) -g
 export NVCXX_CXXFLAGS := -std=c++20 -O0 -cuda -gpu=managed -stdpar -fpic -gopt $(USER_CXXFLAGS)
 export LDFLAGS := -O2 -fPIC -pthread -Wl,-E -lstdc++fs -ldl
-export LDFLAGS_NVCC := -ccbin $(CXX) --linker-options '-E' --linker-options '-lstdc++fs'
+export LDFLAGS_NVCC := -ccbin $(CUDA_NVCC_HOST_COMPILER) --linker-options '-E' --linker-options '-lstdc++fs'
 export LDFLAGS_NVCXX := -cuda -Wl,-E -ldl -gpu=managed -stdpar
 export SO_LDFLAGS := -Wl,-z,defs
 export SO_LDFLAGS_NVCC := --linker-options '-z,defs'
@@ -87,7 +90,7 @@ CUDA_DEBUG_FLAGS := --generate-line-info --source-in-ptx
 endif
 define CUFLAGS_template
 $(2)NVCC_FLAGS := $$(foreach ARCH,$(1),-gencode arch=compute_$$(ARCH),code=[sm_$$(ARCH),compute_$$(ARCH)]) -Wno-deprecated-gpu-targets -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored --expt-relaxed-constexpr --expt-extended-lambda $(CUDA_DEBUG_FLAGS) --display-error-number --threads $$(words $(1)) --cudart=shared
-$(2)NVCC_COMMON := -std=c++20 -O3 -g $$($(2)NVCC_FLAGS) -ccbin $(CXX) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
+$(2)NVCC_COMMON := -std=c++20 -O3 -g $$($(2)NVCC_FLAGS) -ccbin $(CUDA_NVCC_HOST_COMPILER) --compiler-options '$(HOST_CXXFLAGS) $(USER_CXXFLAGS)'
 $(2)CUDA_CUFLAGS := -dc $$($(2)NVCC_COMMON) $(USER_CUDAFLAGS)
 $(2)CUDA_DLINKFLAGS := -dlink $$($(2)NVCC_COMMON)
 endef
@@ -374,6 +377,10 @@ else ifeq ($(KOKKOS_CUDA_ARCH),80)
   KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_AMPERE80=On
 else ifeq ($(KOKKOS_CUDA_ARCH),86)
   KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_AMPERE86=On
+else ifeq ($(KOKKOS_CUDA_ARCH),90)
+  KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_HOPPER90=On
+else ifeq ($(KOKKOS_CUDA_ARCH),120)
+  KOKKOS_CMAKE_CUDA_ARCH := -DKokkos_ARCH_BLACKWELL120=On
 else
   $(error Unsupported KOKKOS_CUDA_ARCH $(KOKKOS_CUDA_ARCH). Likely it is sufficient just add another case in the Makefile)
 endif

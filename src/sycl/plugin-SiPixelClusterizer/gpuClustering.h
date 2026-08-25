@@ -226,7 +226,7 @@ namespace gpuClustering {
 
     while ((sycl::group_barrier(item.get_group()), sycl::any_of_group(item.get_group(), more))) {
       if (1 == nloops % 2) {
-        for (unsigned int j = item.get_local_id(0), k = 0U; j < hist->size(); j += item.get_local_range(0), ++k) {
+        for (unsigned int j = item.get_local_id(0); j < hist->size(); j += item.get_local_range(0)) {
           auto p = hist->begin() + j;
           auto i = *p + firstPixel;
           auto m = clusterId[i];

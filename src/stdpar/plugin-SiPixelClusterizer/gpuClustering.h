@@ -188,7 +188,7 @@ namespace gpuClustering {
       int nloops = 0;
       while (more) {
         if (1 == nloops % 2) {
-          for (uint32_t j = 0, k = 0U; j < hist->size(); ++j, ++k) {
+          for (uint32_t j = 0; j < hist->size(); ++j) {
             auto p = hist->begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];

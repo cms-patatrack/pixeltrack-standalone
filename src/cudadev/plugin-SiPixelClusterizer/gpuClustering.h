@@ -201,7 +201,7 @@ namespace gpuClustering {
       int nloops = 0;
       while (__syncthreads_or(more)) {
         if (1 == nloops % 2) {
-          for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+          for (auto j = threadIdx.x; j < hist.size(); j += blockDim.x) {
             auto p = hist.begin() + j;
             auto i = *p + firstPixel;
             auto m = clusterId[i];
