@@ -76,7 +76,7 @@ export CUDA_DEPS := $(CUDA_LIBDIR)/libcudart.so
 export CUDA_ARCH := 50 60 70
 export CUDA_CXXFLAGS := -I$(CUDA_BASE)/include
 export CUDA_TEST_CXXFLAGS := -DGPU_DEBUG
-export CUDA_LDFLAGS := -L$(CUDA_LIBDIR) -lcudart -lcudadevrt
+export CUDA_LDFLAGS := -L$(CUDA_LIBDIR) -lcudart -lcudadevrt 
 export CUDA_NVCC := $(CUDA_BASE)/bin/nvcc
 CUDA_VERSION := $(shell $(CUDA_NVCC) --version | grep release | sed -e's/.*release //' -e's/,.*//' -e's/\.//')
 # CUDA 12.8 and newer does not support non-ASCII characters in PTX, including in comments
