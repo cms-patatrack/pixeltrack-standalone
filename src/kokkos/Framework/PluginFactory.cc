@@ -28,7 +28,7 @@ namespace edm {
     };  // namespace impl
 
     std::unique_ptr<Worker> create(std::string const& name, ProductRegistry& reg) {
-      return impl::getGlobalRegistry().get(name)->create(reg);
+      return impl::getGlobalRegistry().get(name)->create(reg, name);
     }
   }  // namespace PluginFactory
 }  // namespace edm
