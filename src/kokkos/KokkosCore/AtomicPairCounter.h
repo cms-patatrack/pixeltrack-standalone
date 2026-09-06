@@ -9,7 +9,10 @@ namespace cms {
   namespace kokkos {
     class AtomicPairCounter {
     public:
-      using c_type = unsigned long long int;
+      // unsigned long long caused performance issue with Desul atomics in Kokkos 3.5
+      //using c_type = unsigned long long int;
+      using c_type = unsigned long int;
+      static_assert(sizeof(unsigned long int) == sizeof(unsigned long long int));
 
       KOKKOS_INLINE_FUNCTION AtomicPairCounter() { counter.ac = 0; }
       KOKKOS_INLINE_FUNCTION AtomicPairCounter(c_type i) { counter.ac = i; }
