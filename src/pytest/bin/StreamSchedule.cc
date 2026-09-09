@@ -23,7 +23,11 @@ namespace edm {
     int modInd = 1;
     for (auto const& name : path) {
       pluginManager.load(name);
-      registry_.beginModuleConstruction(modInd);
+      // Products are keyed by the label of the module that publishes them.
+      // Until there is a configuration language a module has no label of its
+      // own, so the plugin's name serves as one; that is already enough to
+      // tell apart two different plugins publishing the same type.
+      registry_.beginModuleConstruction(modInd, name);
       path_.emplace_back(PluginFactory::create(name, registry_));
       //std::cout << "module " << modInd << " " << path_.back().get() << std::endl;
       std::vector<Worker*> consumes;
