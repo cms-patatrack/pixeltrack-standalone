@@ -5,26 +5,27 @@
 #include <string>
 #include <unordered_map>
 
+#include "Framework/Configuration.h"
 #include "Framework/Worker.h"
-
-class ProductRegistry;
 
 // Nothing here is thread safe
 namespace edm {
+  class ProductRegistry;
+
   namespace PluginFactory {
     namespace impl {
       class MakerBase {
       public:
         virtual ~MakerBase() = default;
 
-        virtual std::unique_ptr<Worker> create(ProductRegistry& reg) const = 0;
+        virtual std::unique_ptr<Worker> create(ModuleConfig const& config, ProductRegistry& reg) const = 0;
       };
 
       template <typename T>
       class Maker : public MakerBase {
       public:
-        virtual std::unique_ptr<Worker> create(ProductRegistry& reg) const override {
-          return std::make_unique<WorkerT<T>>(reg);
+        virtual std::unique_ptr<Worker> create(ModuleConfig const& config, ProductRegistry& reg) const override {
+          return std::make_unique<WorkerT<T>>(config, reg);
         };
       };
 
@@ -46,7 +47,7 @@ namespace edm {
       };
     }  // namespace impl
 
-    std::unique_ptr<Worker> create(std::string const& name, ProductRegistry& reg);
+    std::unique_ptr<Worker> create(std::string const& name, ModuleConfig const& config, ProductRegistry& reg);
   }  // namespace PluginFactory
 }  // namespace edm
 

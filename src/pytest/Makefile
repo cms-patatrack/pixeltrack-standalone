@@ -20,7 +20,10 @@ EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
 EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
 EXE_DEP := $(EXE_OBJ:$.o=$.d)
 
-LIBNAMES := $(filter-out plugin-% bin test Makefile% plugins.txt%,$(wildcard *))
+# A library is a directory that holds C++ sources.  Selecting on the sources
+# rather than on the directory name keeps the .ini configurations from being
+# built into empty libraries and linked against.
+LIBNAMES := $(filter-out plugin-% bin test,$(sort $(patsubst %/,%,$(dir $(wildcard */*.cc)))))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 MY_CXXFLAGS := -I$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME)
 MY_LDFLAGS := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME)

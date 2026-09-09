@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Framework/Configuration.h"
 #include "Framework/EventSetup.h"
 
 #include "PluginManager.h"
@@ -18,8 +19,7 @@ namespace edm {
                             int maxEvents,
                             int runForMinutes,
                             int numberOfStreams,
-                            std::vector<std::string> const& path,
-                            std::vector<std::string> const& esproducers,
+                            Configuration const& configuration,
                             std::filesystem::path const& datadir,
                             bool validation);
 

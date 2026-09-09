@@ -13,6 +13,7 @@
 namespace edm {
   class Event;
   class EventSetup;
+  class ModuleConfig;
   class ProductRegistry;
 
   class Worker {
@@ -45,10 +46,18 @@ namespace edm {
     std::atomic<bool> prefetchRequested_ = false;
   };
 
+  /// Every module is constructed the same way, whether or not it reads any
+  /// parameter of its own:
+  ///
+  ///     Module(edm::ModuleConfig const& config, edm::ProductRegistry& reg);
+  ///
+  /// One spelling rather than two costs an ignored argument in the modules that
+  /// take no parameters, and buys a single signature to write a plugin against
+  /// and a compiler error, rather than a silent fallback, when one is wrong.
   template <typename T>
   class WorkerT : public Worker {
   public:
-    explicit WorkerT(ProductRegistry& reg) : producer_(reg) {}
+    WorkerT(ModuleConfig const& config, ProductRegistry& reg) : producer_(config, reg) {}
 
     void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
       waitingTasksWork_.add(task);

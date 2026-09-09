@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 
+#include "Framework/Configuration.h"
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
@@ -14,7 +15,7 @@ namespace {
 
 class TestProducer2 : public edm::EDProducerExternalWork {
 public:
-  explicit TestProducer2(edm::ProductRegistry& reg);
+  TestProducer2(edm::ModuleConfig const& config, edm::ProductRegistry& reg);
 
 private:
   void acquire(edm::Event const& event,
@@ -28,7 +29,8 @@ private:
   std::future<int> future_;
 };
 
-TestProducer2::TestProducer2(edm::ProductRegistry& reg) : getToken_(reg.consumes<unsigned int>()) {}
+TestProducer2::TestProducer2(edm::ModuleConfig const& config, edm::ProductRegistry& reg)
+    : getToken_(reg.consumes<unsigned int>(config.required<std::string>("input"))) {}
 
 void TestProducer2::acquire(edm::Event const& event,
                             edm::EventSetup const& eventSetup,
@@ -43,14 +45,14 @@ void TestProducer2::acquire(edm::Event const& event,
     return 42;
   });
 
-#ifndef FWTEST_SILENT
+#ifndef PYTEST_SILENT
   std::cout << "TestProducer2::acquire Event " << event.eventID() << " stream " << event.streamID() << " value "
             << value << std::endl;
 #endif
 }
 
 void TestProducer2::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
-#ifndef FWTEST_SILENT
+#ifndef PYTEST_SILENT
   std::cout << "TestProducer2::produce Event " << event.eventID() << " stream " << event.streamID() << " from future "
             << future_.get() << std::endl;
 #endif

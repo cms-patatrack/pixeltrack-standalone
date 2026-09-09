@@ -10,6 +10,8 @@
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
 
+#include "Framework/Configuration.h"
+
 #include "EventProcessor.h"
 #include "PosixClockGettime.h"
 
@@ -17,13 +19,19 @@ namespace {
   void print_help(std::string const& name) {
     std::cout
         << "Usage: " << name
-        << " [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME] [--runForMinutes RM]"
-        << " [--data PATH] [--transfer] [--validation] [--empty]\n";
+        << " CONFIG.ini [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME]"
+        << " [--runForMinutes RM] [--data PATH] [--transfer] [--validation] [--empty]\n";
     std::cout << R"(
+Arguments:
+  CONFIG.ini                    Configuration file: the module path in [options],
+                                one section per module giving its '@type' and
+                                parameters.  See test.ini.
+
 Options:
   --numberOfThreads             Number of threads to use (default 1, use 0 to use all CPU cores).
   --numberOfStreams             Number of concurrent events (default 0 = numberOfThreads).
   --warmupEvents                Number of events to process before starting the benchmark (default 0).
+                                These four override the matching keys in [options].
   --maxEvents                   Number of events to process (default -1 for all events in the input file).
   --runForMinutes               Continue processing the set of 1000 events until this many minutes have passed
                                 (default -1 for disabled; conflicts with --maxEvents).
@@ -38,11 +46,12 @@ Options:
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
-  int numberOfThreads = 1;
-  int numberOfStreams = 0;
-  int warmupEvents = 0;
+  int numberOfThreads = -1;
+  int numberOfStreams = -1;
+  int warmupEvents = -1;
   int maxEvents = -1;
   int runForMinutes = -1;
+  std::filesystem::path configFile;
   std::filesystem::path datadir;
   bool transfer = false;
   bool validation = false;
@@ -76,11 +85,49 @@ int main(int argc, char** argv) {
       validation = true;
     } else if (*i == "--empty") {
       empty = true;
-    } else {
+    } else if (i->size() > 2 and i->substr(0, 2) == "--") {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
       return EXIT_FAILURE;
+    } else if (configFile.empty()) {
+      configFile = *i;
+    } else {
+      std::cout << "More than one configuration file given" << std::endl << std::endl;
+      print_help(args.front());
+      return EXIT_FAILURE;
     }
+  }
+  if (configFile.empty()) {
+    std::cout << "No configuration file given" << std::endl << std::endl;
+    print_help(args.front());
+    return EXIT_FAILURE;
+  }
+
+  edm::Configuration configuration;
+  try {
+    configuration = edm::readConfiguration(configFile);
+  } catch (std::exception& e) {
+    std::cout << "error: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // The command line wins over [options]; [options] wins over the built-in
+  // default.  run-scan.py and the test targets drive the command line, so the
+  // configuration must not take those away from them.
+  auto resolve = [](int cmdline, int fromConfig, int fallback) {
+    return cmdline >= 0 ? cmdline : (fromConfig >= 0 ? fromConfig : fallback);
+  };
+  numberOfThreads = resolve(numberOfThreads, configuration.numberOfThreads, 1);
+  numberOfStreams = resolve(numberOfStreams, configuration.numberOfStreams, 0);
+  warmupEvents = resolve(warmupEvents, configuration.warmupEvents, 0);
+  if (maxEvents < 0) {
+    maxEvents = configuration.maxEvents;
+  }
+  validation = validation or configuration.validation;
+  transfer = transfer or configuration.transfer or validation;
+  if (empty) {
+    configuration.path.clear();
+    configuration.esmodules.clear();
   }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
@@ -100,24 +147,9 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // Initialize EventProcessor
-  std::vector<std::string> edmodules;
-  std::vector<std::string> esmodules;
-  if (not empty) {
-    edmodules = {"TestProducer", "TestProducer3", "TestProducer2"};
-    esmodules = {"IntESProducer"};
-    if (transfer) {
-      // add modules for transfer
-    }
-  }
-  edm::EventProcessor processor(warmupEvents,
-                                maxEvents,
-                                runForMinutes,
-                                numberOfStreams,
-                                std::move(edmodules),
-                                std::move(esmodules),
-                                datadir,
-                                validation);
+  // Initialize EventProcessor.
+  edm::EventProcessor processor(
+      warmupEvents, maxEvents, runForMinutes, numberOfStreams, configuration, datadir, validation);
 
   if (runForMinutes < 0) {
     std::cout << "Processing " << processor.maxEvents() << " events,";

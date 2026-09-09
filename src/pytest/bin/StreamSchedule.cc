@@ -17,18 +17,18 @@ namespace edm {
                                  Source* source,
                                  EventSetup const* eventSetup,
                                  int streamId,
-                                 std::vector<std::string> const& path)
+                                 Configuration const& configuration)
       : registry_(std::move(reg)), source_(source), eventSetup_(eventSetup), streamId_(streamId) {
-    path_.reserve(path.size());
+    path_.reserve(configuration.path.size());
     int modInd = 1;
-    for (auto const& name : path) {
-      pluginManager.load(name);
-      // Products are keyed by the label of the module that publishes them.
-      // Until there is a configuration language a module has no label of its
-      // own, so the plugin's name serves as one; that is already enough to
-      // tell apart two different plugins publishing the same type.
-      registry_.beginModuleConstruction(modInd, name);
-      path_.emplace_back(PluginFactory::create(name, registry_));
+    for (auto const& label : configuration.path) {
+      auto const& moduleConfig = configuration.module(label);
+      auto const type = moduleConfig.type();
+      pluginManager.load(type);
+      // Products are keyed by the module's label, so the label -- not the
+      // plugin type -- is what the registry records as this module's own.
+      registry_.beginModuleConstruction(modInd, label);
+      path_.emplace_back(PluginFactory::create(type, moduleConfig, registry_));
       //std::cout << "module " << modInd << " " << path_.back().get() << std::endl;
       std::vector<Worker*> consumes;
       for (unsigned int depInd : registry_.consumedModules()) {

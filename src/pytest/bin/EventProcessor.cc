@@ -9,15 +9,14 @@ namespace edm {
                                  int maxEvents,
                                  int runForMinutes,
                                  int numberOfStreams,
-                                 std::vector<std::string> const& path,
-                                 std::vector<std::string> const& esproducers,
+                                 Configuration const& configuration,
                                  std::filesystem::path const& datadir,
                                  bool validation)
       : source_(maxEvents, runForMinutes, registry_, datadir, validation),
         warmupEvents_(warmupEvents),
         maxEvents_(source_.maxEvents()),
         runForMinutes_(runForMinutes) {
-    for (auto const& name : esproducers) {
+    for (auto const& name : configuration.esmodules) {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
       esp->produce(eventSetup_);
@@ -25,7 +24,7 @@ namespace edm {
 
     schedules_.reserve(numberOfStreams);
     for (int i = 0; i < numberOfStreams; ++i) {
-      schedules_.emplace_back(registry_, pluginManager_, &source_, &eventSetup_, i, path);
+      schedules_.emplace_back(registry_, pluginManager_, &source_, &eventSetup_, i, configuration);
     }
   }
 

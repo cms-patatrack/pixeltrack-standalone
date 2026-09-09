@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Framework/Configuration.h"
 #include "Framework/ProductRegistry.h"
 #include "Framework/WaitingTaskHolder.h"
 
@@ -26,7 +27,7 @@ namespace edm {
                             Source* source,
                             EventSetup const* eventSetup,
                             int streamId,
-                            std::vector<std::string> const& path);
+                            Configuration const& configuration);
     ~StreamSchedule();
     StreamSchedule(StreamSchedule const&) = delete;
     StreamSchedule& operator=(StreamSchedule const&) = delete;

@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "DataFormats/FEDRawDataCollection.h"
+#include "Framework/Configuration.h"
 #include "Framework/EDProducer.h"
 #include "Framework/Event.h"
 #include "Framework/EventSetup.h"
@@ -9,7 +10,7 @@
 
 class TestProducer : public edm::EDProducer {
 public:
-  explicit TestProducer(edm::ProductRegistry& reg);
+  TestProducer(edm::ModuleConfig const& config, edm::ProductRegistry& reg);
 
 private:
   void produce(edm::Event& event, edm::EventSetup const& eventSetup) override;
@@ -18,12 +19,12 @@ private:
   edm::EDPutTokenT<unsigned int> putToken_;
 };
 
-TestProducer::TestProducer(edm::ProductRegistry& reg)
+TestProducer::TestProducer(edm::ModuleConfig const& config, edm::ProductRegistry& reg)
     : rawGetToken_(reg.consumes<FEDRawDataCollection>()), putToken_(reg.produces<unsigned int>()) {}
 
 void TestProducer::produce(edm::Event& event, edm::EventSetup const& eventSetup) {
   auto const value = event.get(rawGetToken_).FEDData(1200).size();
-#ifndef FWTEST_SILENT
+#ifndef PYTEST_SILENT
   std::cout << "TestProducer  Event " << event.eventID() << " stream " << event.streamID() << " ES int "
             << eventSetup.get<int>() << " FED 1200 size " << value << std::endl;
 #endif
