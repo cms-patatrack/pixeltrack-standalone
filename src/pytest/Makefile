@@ -20,7 +20,7 @@ PY_DEFINES := -DEDM_PYTHON_HOME='"$(PY_HOME)"' \
               -DEDM_PYTHON_DIR='"$(PYTHON_DIR)"' \
               -DEDM_PYTHON_PYCACHE='"$(PYCACHE_DIR)"'
 
-REFLECT_PRODUCTS := int std::vector<float> pytest::Comparison
+REFLECT_PRODUCTS := int std::vector<float> pytest::Comparison pytest::Calibration pytest::Samples
 REFLECT_INCLUDES := -I$(TARGET_DIR)
 
 GEN_DIR        := $(OBJ_DIR)/$(TARGET_NAME)/generated
@@ -42,10 +42,17 @@ MY_CXXFLAGS := -I$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME) $(PY_CXXFLAGS
 MY_LDFLAGS  := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME) $(PY_LDFLAGS)
 
 $(TARGET):
+# The configurations are the tests: each one runs a Python module against the
+# C++ module that does the same thing and fails the job on the first
+# difference.  A bare $(TARGET) has nothing to run since the schedule comes
+# from a configuration file, so every one of them is named here.
 test_cpu: $(TARGET)
 	@echo
 	@echo "Testing $(TARGET)"
-	$(TARGET) --maxEvents 2
+	$(TARGET) $(TARGET_DIR)/test.ini --maxEvents 2
+	$(TARGET) $(TARGET_DIR)/square.ini --maxEvents 10
+	$(TARGET) $(TARGET_DIR)/emplace.ini --maxEvents 10
+	$(TARGET) $(TARGET_DIR)/bindings.ini --maxEvents 10 --numberOfThreads 4
 	@echo "Succeeded"
 test_nvidiagpu:
 test_amdgpu:
