@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <malloc.h>
+
 #include <tbb/global_control.h>
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
@@ -18,11 +20,20 @@
 #include "PosixClockGettime.h"
 
 namespace {
+  // The event data products and the per-event working buffers are large (up to ~20 MB each) and are allocated
+  // and freed for every event. By default glibc serves such blocks with mmap() and returns them to the system
+  // with munmap() on free, so every event pays for page faults and for the kernel zeroing the new pages.
+  // Keep these blocks in the malloc heaps instead, and do not trim the heaps, so that the memory is reused.
+  void configureMalloc() {
+    mallopt(M_MMAP_THRESHOLD, 32 * 1024 * 1024);  // the maximum value allowed by glibc on 64-bit systems
+    mallopt(M_TRIM_THRESHOLD, 1024 * 1024 * 1024);
+  }
+
   void print_help(std::string const& name) {
     std::cout
         << "Usage: " << name
         << " CONFIG.ini [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME]"
-        << " [--runForMinutes RM] [--data PATH] [--transfer] [--validation] [--empty] [--resources FILE.json]\n";
+        << " [--runForMinutes RM] [--data PATH] [--validation] [--histogram] [--empty] [--resources FILE.json]\n";
     std::cout << R"(
 Arguments:
   CONFIG.ini                    Configuration file: the module path in [options],
@@ -38,8 +49,9 @@ Options:
   --runForMinutes               Continue processing the set of 1000 events until this many minutes have passed
                                 (default -1 for disabled; conflicts with --maxEvents).
   --data                        Path to the 'data' directory (default 'data' in the directory of the executable).
-  --transfer                    Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-  --validation                  Run (rudimentary) validation at the end (implies --transfer)\n"
+  --validation                  Run (rudimentary) validation at the end.
+  --histogram                   Produce histograms at the end.
+                                Each appends its module to the configured path.
   --empty                       Ignore all producers (for testing only).
   --resources                   Write the real and CPU time spent in each module, in the source, in the EventSetup,
                                 elsewhere in the framework and idle, summed over the measured events, to FILE.json.
@@ -48,6 +60,8 @@ Options:
 }  // namespace
 
 int main(int argc, char** argv) {
+  configureMalloc();
+
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = -1;
@@ -57,8 +71,8 @@ int main(int argc, char** argv) {
   int runForMinutes = -1;
   std::filesystem::path configFile;
   std::filesystem::path datadir;
-  bool transfer = false;
   bool validation = false;
+  bool histogram = false;
   bool empty = false;
   std::string resources;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
@@ -83,11 +97,10 @@ int main(int argc, char** argv) {
     } else if (*i == "--data") {
       ++i;
       datadir = *i;
-    } else if (*i == "--transfer") {
-      transfer = true;
     } else if (*i == "--validation") {
-      transfer = true;
       validation = true;
+    } else if (*i == "--histogram") {
+      histogram = true;
     } else if (*i == "--empty") {
       empty = true;
     } else if (*i == "--resources") {
@@ -132,10 +145,34 @@ int main(int argc, char** argv) {
     maxEvents = configuration.maxEvents;
   }
   validation = validation or configuration.validation;
-  transfer = transfer or configuration.transfer or validation;
+  histogram = histogram or configuration.histogram;
   if (empty) {
     configuration.path.clear();
     configuration.esmodules.clear();
+  }
+
+  // --validation and --histogram append their module to the path, so that the
+  // existing test targets and run-scan.py keep working now that the schedule
+  // comes from the configuration.  The label has to exist in the file: adding
+  // a module the configuration says nothing about would be a schedule nobody
+  // wrote down.
+  auto const appendModule = [&](bool wanted, char const* label, char const* option) {
+    if (not wanted or empty) {
+      return true;
+    }
+    if (not configuration.modules.count(label)) {
+      std::cout << "error: " << option << " needs a '[" << label << "]' section in the configuration"
+                << std::endl;
+      return false;
+    }
+    if (std::find(configuration.path.begin(), configuration.path.end(), label) == configuration.path.end()) {
+      configuration.path.emplace_back(label);
+    }
+    return true;
+  };
+  if (not appendModule(validation, "countValidator", "--validation") or
+      not appendModule(histogram, "histoValidator", "--histogram")) {
+    return EXIT_FAILURE;
   }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;

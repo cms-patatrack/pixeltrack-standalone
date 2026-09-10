@@ -6,22 +6,47 @@ EXTERNAL_DEPENDS := $(pyserial_EXTERNAL_DEPENDS)
 
 # ------------------------------------------------------------------ Python
 #
-# The interpreter's own flags cannot be known until it has been bootstrapped,
-# so they come from a generated makefile.  Including it here rather than in the
-# top-level Makefile means building a non-Python backend never triggers the
-# bootstrap.  $(PYTHON_DEPS) makes it exist before this make runs.
+# The interpreter's own flags come from a generated makefile; including it here
+# rather than at the top level means building a non-Python backend never
+# triggers the bootstrap.  $(PYTHON_DEPS) makes it exist before this make runs.
 include $(BASE_DIR)/external/python-config.mk
 
-PYTHON_DIR   := $(TARGET_DIR)/python
-PYCACHE_DIR  := $(OBJ_DIR)/$(TARGET_NAME)/pycache
+PYTHON_DIR  := $(TARGET_DIR)/python
+PYCACHE_DIR := $(OBJ_DIR)/$(TARGET_NAME)/pycache
 
 PY_DEFINES := -DEDM_PYTHON_HOME='"$(PY_HOME)"' \
               -DEDM_PYTHON_SITE='"$(PY_SITE)"' \
               -DEDM_PYTHON_DIR='"$(PYTHON_DIR)"' \
               -DEDM_PYTHON_PYCACHE='"$(PYCACHE_DIR)"'
 
-REFLECT_PRODUCTS := std::vector<float>
-REFLECT_INCLUDES := -I$(TARGET_DIR)
+$(TARGET):
+# As in pytest, the schedule comes from a configuration file, so the tests are
+# the configurations: the two validated ones check that C++ and Python
+# reconstruct the same thing, and reco-compare.ini that they build it out of
+# the same numbers.
+test_cpu: $(TARGET)
+	@echo
+	@echo "Testing $(TARGET)"
+	$(TARGET) $(TARGET_DIR)/reco-validate.ini --maxEvents 10
+	$(TARGET) $(TARGET_DIR)/reco-python-validate.ini --maxEvents 10
+	$(TARGET) $(TARGET_DIR)/reco-compare.ini --maxEvents 10
+	@echo "Succeeded"
+test_nvidiagpu: $(TARGET)
+test_intelagpu:
+test_auto:
+.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
+
+EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
+EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
+EXE_DEP := $(EXE_OBJ:$.o=$.d)
+
+# A library is a directory that holds C++ sources.  Selecting on the sources
+# rather than on the directory name keeps python/ and tools/, and the .ini
+# configurations, from being built into empty libraries and linked against.
+LIBNAMES := $(filter-out plugin-% bin test bindings,$(sort $(patsubst %/,%,$(dir $(wildcard */*.cc)))))
+PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
+REFLECT_PRODUCTS := PixelTrackHeterogeneous ZVertexHeterogeneous
+REFLECT_INCLUDES := -I$(TARGET_DIR) $(EIGEN_CXXFLAGS)
 
 GEN_DIR        := $(OBJ_DIR)/$(TARGET_NAME)/generated
 REFLECT_HEADER := $(TARGET_DIR)/DataFormats/Products.h
@@ -39,29 +64,7 @@ MY_CXXFLAGS := -I$(TARGET_DIR) -DLIB_DIR=$(LIB_DIR)/$(TARGET_NAME) $(PY_CXXFLAGS
                -DNB_SHARED \
                -DEDM_NB_COMBINED='"$(NB_COMBINED)"' \
                -DEDM_REFLECTED_BINDINGS='"$(REFLECTED)"'
-MY_LDFLAGS  := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME) $(PY_LDFLAGS)
-
-$(TARGET):
-test_cpu: $(TARGET)
-	@echo
-	@echo "Testing $(TARGET)"
-	$(TARGET) --maxEvents 2
-	@echo "Succeeded"
-test_nvidiagpu:
-test_amdgpu:
-test_intelagpu:
-test_auto:
-.PHONY: test_cpu test_nvidiagpu test_intelgpu test_auto
-
-EXE_SRC := $(wildcard $(TARGET_DIR)/bin/*.cc)
-EXE_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(EXE_SRC:%=%.o))
-EXE_DEP := $(EXE_OBJ:$.o=$.d)
-
-# A library is a directory that holds C++ sources.  Selecting on the sources
-# rather than on the directory name keeps python/ and tools/, and the .ini
-# configurations, from being built into empty libraries and linked against.
-LIBNAMES := $(filter-out plugin-% bin test bindings,$(sort $(patsubst %/,%,$(dir $(wildcard */*.cc)))))
-PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
+MY_LDFLAGS := -Wl,-rpath,$(LIB_DIR)/$(TARGET_NAME) -L$(LIB_DIR)/$(TARGET_NAME) $(PY_LDFLAGS)
 
 ALL_DEPENDS := $(EXE_DEP)
 # Files for libraries
@@ -93,7 +96,8 @@ $(foreach lib,$(PLUGINNAMES),$(eval $(call PLUGIN_template,$(lib))))
 TESTS_SRC := $(wildcard $(TARGET_DIR)/test/*.cc)
 TESTS_OBJ := $(patsubst $(SRC_DIR)%,$(OBJ_DIR)%,$(TESTS_SRC:%=%.o))
 TESTS_DEP := $(TESTS_OBJ:$.o=$.d)
-TESTS_EXE := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_SRC))
+TESTS_EXE_CPU := $(patsubst $(SRC_DIR)/$(TARGET_NAME)/test/%.cc,$(TEST_DIR)/$(TARGET_NAME)/%,$(TESTS_SRC))
+TESTS_EXE := $(TESTS_EXE_CPU)
 ALL_DEPENDS += $(TESTS_DEP)
 # Needed to keep the unit test object files after building $(TARGET)
 .SECONDARY: $(TESTS_OBJ)
@@ -104,9 +108,9 @@ run_$(1): $(1)
 	@echo "Running test $(1)"
 	@$(1)
 	@echo "Succeeded"
-test_cpu: run_$(1)
+test_$(2): run_$(1)
 endef
-$(foreach test,$(TESTS_EXE),$(eval $(call RUNTEST_template,$(test))))
+$(foreach test,$(TESTS_EXE_CPU),$(eval $(call RUNTEST_template,$(test),cpu)))
 
 -include $(ALL_DEPENDS)
 
@@ -151,9 +155,14 @@ $(OBJ_DIR)/$(2)/%.cc.o: $(SRC_DIR)/$(2)/%.cc
 	      -e '/^$$$$/ d' -e 's/$$$$/ :/' -e 's/ *//' < $(OBJ_DIR)/$(2)/$$*.cc.d.tmp >> $(OBJ_DIR)/$(2)/$$*.cc.d; \
 	  rm $(OBJ_DIR)/$(2)/$$*.cc.d.tmp
 
+$(OBJ_DIR)/$(2)/%.cc.i: $(SRC_DIR)/$(2)/%.cc
+	@[ -d $$(@D) ] || mkdir -p $$(@D)
+	$(CXX) $(CXXFLAGS) $(MY_CXXFLAGS) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_CXXFLAGS)) -E $$< -o $$@
+
+
 $$($(1)_LIB): $$($(1)_OBJ) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_DEPS)) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LIB))
 	@[ -d $$(@D) ] || mkdir -p $$(@D)
-	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) $(MY_LDFLAGS) -o $$@
+	$(CXX) $$($(1)_OBJ) $(LDFLAGS) -shared $(SO_LDFLAGS) $(MY_LDFLAGS) $$(foreach lib,$$($(1)_DEPENDS),$$($$(lib)_LDFLAGS)) $$(foreach dep,$(EXTERNAL_DEPENDS),$$($$(dep)_LDFLAGS)) -o $$@
 endef
 
 $(foreach lib,$(LIBNAMES),$(eval $(call BUILD_template,$(lib),$(TARGET_NAME)/$(lib))))
@@ -182,6 +191,9 @@ $(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cc.o | $(LIBS)
 	@[ -d $(@D) ] || mkdir -p $(@D)
 	$(CXX) $< $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
+$(TEST_DIR)/$(TARGET_NAME)/%: $(OBJ_DIR)/$(TARGET_NAME)/test/%.cu.o $(OBJ_DIR)/$(TARGET_NAME)/test/%.cudadlink.o | $(LIBS)
+	@[ -d $(@D) ] || mkdir -p $(@D)
+	$(CXX) $^ $(LDFLAGS) $(MY_LDFLAGS) -o $@ $(patsubst %,-l%,$(LIBNAMES)) $(foreach dep,$(EXTERNAL_DEPENDS),$($(dep)_LDFLAGS))
 
 # --------------------------------------------------- generated bindings
 #
