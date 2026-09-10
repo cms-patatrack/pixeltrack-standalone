@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <span>
+
 class SiPixelClustersSoA {
 public:
   SiPixelClustersSoA() = default;
@@ -53,6 +55,14 @@ public:
     uint32_t const *clusModuleStart_;
   };
 
+  // The columns as spans; see the note in SiPixelDigisSoA.  These are indexed
+  // by module rather than by cluster, and moduleStart and clusModuleStart are
+  // prefix sums, so they carry one more entry than there are modules.
+  std::span<const uint32_t> moduleStartSpan() const { return {moduleStart_d.get(), maxModules_ + 1}; }
+  std::span<const uint32_t> clusInModuleSpan() const { return {clusInModule_d.get(), maxModules_}; }
+  std::span<const uint32_t> moduleIdSpan() const { return {moduleId_d.get(), maxModules_}; }
+  std::span<const uint32_t> clusModuleStartSpan() const { return {clusModuleStart_d.get(), maxModules_ + 1}; }
+
   DeviceConstView *view() const { return view_d.get(); }
 
 private:
@@ -66,6 +76,10 @@ private:
   std::unique_ptr<DeviceConstView> view_d;  // "me" pointer
 
   uint32_t nClusters_h;
+
+  // How long the per-module columns are; the constructor is given it, and a
+  // span cannot be formed without it.
+  size_t maxModules_ = 0;
 };
 
 #endif

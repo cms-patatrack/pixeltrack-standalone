@@ -569,3 +569,40 @@ attribute goes through nanobind's attribute protocol on every read and write.
 That is why bulk data has to cross as a view rather than as attributes: a
 module that touched 10^4 hits one field at a time would spend its time on the
 attribute protocol rather than on Python.
+
+## D21. The rec hits: a big payload
+
+`pixel_rechits.py` is a port of `gpuPixelRecHits.h`: it reads five columns of
+digis and four of clusters and writes thirteen of rec hits.
+
+| product | per event |
+|---|---|
+| digis in | 48,000–67,000 |
+| clusters in | 12,000–21,000 |
+| rec hits out | 12,000–21,000 |
+
+That is three orders of magnitude more objects than the vertex finder sees.
+
+**It is bit-exact.** Over 200 events and 3,045,548 hits, no hit differs in any
+of the thirteen columns and the worst absolute difference is 0 — position,
+error, global coordinates, cluster sizes, charge, and the packed phi. The full
+chain built on the Python hits passes `CountValidator` for tracks and
+vertices. That is worth stating plainly because the port had every opportunity
+to drift: the CPE position is a charge-weighted correction with branches on
+cluster size and edge pixels, and phi is a degree-7 polynomial approximation
+of `atan2` rather than `atan2`, so the port had to be the same polynomial.
+
+**What made it possible.** Every column crosses as a numpy view over the C++
+storage — nothing is copied in either direction — which took `std::span`
+accessors on three formats and a span rule in the generator. The detector
+geometry is different in kind: it comes from the EventSetup and does not
+change, so the module gathers 1856 modules' worth of CPE parameters into numpy
+arrays once per stream, rather than re-reading 37,000 scalar attributes (D20)
+on every event.
+
+**Where D12's rule earned its keep.** The rec-hit product is constructed
+around the *address* of the CPE parameters. Had `view()` or `detParams()` been
+bound by value, that address would have belonged to a Python temporary: a
+segmentation fault at 16 streams and nothing at all at one, because the freed
+memory is not reused quickly enough to notice. `decltype(auto)` is what keeps
+the reference a reference.

@@ -2,6 +2,10 @@
 #define DataFormats_Products_h
 
 #include "DataFormats/BeamSpotPOD.h"
+#include "CUDADataFormats/SiPixelDigisSoA.h"
+#include "CUDADataFormats/SiPixelClustersSoA.h"
+#include "CUDADataFormats/TrackingRecHit2DCUDA.h"
+#include "CondFormats/PixelCPEFast.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/ZVertexHeterogeneous.h"
 

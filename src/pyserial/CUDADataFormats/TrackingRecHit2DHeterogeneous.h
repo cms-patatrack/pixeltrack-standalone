@@ -1,6 +1,8 @@
 #ifndef CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 #define CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 
+#include <span>
+
 #include "CUDADataFormats/TrackingRecHit2DSOAView.h"
 #include "CUDADataFormats/HeterogeneousSoA.h"
 
@@ -14,12 +16,36 @@ public:
 
   TrackingRecHit2DHeterogeneous() = default;
 
+  // The same thing, said in types a caller can hold without holding a raw
+  // pointer: the CPE parameters by reference, and the module offsets as a
+  // column.  A generated binding can call this one; it cannot call the one
+  // below, because nothing it has is a uint32_t const*.
+  TrackingRecHit2DHeterogeneous(uint32_t nHits,
+                                pixelCPEforGPU::ParamsOnGPU const& cpeParams,
+                                std::span<const uint32_t> hitsModuleStart)
+      : TrackingRecHit2DHeterogeneous(nHits, &cpeParams, hitsModuleStart.data(), nullptr) {}
+
   explicit TrackingRecHit2DHeterogeneous(uint32_t nHits,
                                          pixelCPEforGPU::ParamsOnGPU const* cpeParams,
                                          uint32_t const* hitsModuleStart,
                                          cudaStream_t stream);
 
   ~TrackingRecHit2DHeterogeneous() = default;
+
+  // Finish the product once the hit columns are filled: the per-layer offsets,
+  // and the phi index the track finder searches.  Both are bookkeeping over
+  // hits that already exist rather than physics, and the phi index is a
+  // bucketed structure -- so this stays in C++ and a producer, in whatever
+  // language, calls it when its hits are in place.
+  void buildIndex() {
+    if (0 == m_nHits)
+      return;
+    auto const& cpeParams = m_view->cpeParams();
+    for (int layer = 0, layers = 11; layer < layers; ++layer) {
+      m_hitsLayerStart[layer] = m_hitsModuleStart[cpeParams.layerGeometry().layerStart[layer]];
+    }
+    cms::cuda::fillManyFromVector(m_hist, 10, m_iphi, m_hitsLayerStart, m_nHits);
+  }
 
   TrackingRecHit2DHeterogeneous(const TrackingRecHit2DHeterogeneous&) = delete;
   TrackingRecHit2DHeterogeneous& operator=(const TrackingRecHit2DHeterogeneous&) = delete;

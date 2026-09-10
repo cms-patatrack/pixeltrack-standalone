@@ -160,13 +160,18 @@ namespace cms {
 
       static inline uint32_t atomicDecrement(Counter &x) { return x--; }
 
+      // The cast is not decoration: T is signed for the phi binner, and
+      // comparing it against an unsigned nbins() is a -Werror=sign-compare.
+      // These methods were never instantiated for a signed T until the
+      // generated bindings called them, so the warning had nowhere to appear.
+      // A negative bin wraps to something huge and still fails the assert.
       inline void countDirect(T b) {
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         atomicIncrement(off[b]);
       }
 
       inline void fillDirect(T b, index_type j) {
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         auto w = atomicDecrement(off[b]);
         assert(w > 0);
         bins[w - 1] = j;
@@ -199,13 +204,13 @@ namespace cms {
 
       inline void count(T t) {
         uint32_t b = bin(t);
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         atomicIncrement(off[b]);
       }
 
       inline void fill(T t, index_type j) {
         uint32_t b = bin(t);
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         auto w = atomicDecrement(off[b]);
         assert(w > 0);
         bins[w - 1] = j;
@@ -213,7 +218,7 @@ namespace cms {
 
       inline void count(T t, uint32_t nh) {
         uint32_t b = bin(t);
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         b += histOff(nh);
         assert(b < totbins());
         atomicIncrement(off[b]);
@@ -221,7 +226,7 @@ namespace cms {
 
       inline void fill(T t, index_type j, uint32_t nh) {
         uint32_t b = bin(t);
-        assert(b < nbins());
+        assert(static_cast<uint32_t>(b) < nbins());
         b += histOff(nh);
         assert(b < totbins());
         auto w = atomicDecrement(off[b]);

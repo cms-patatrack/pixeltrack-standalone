@@ -248,25 +248,26 @@ same thing. `make test_pytest_cpu` runs all four.
 
 #### `pyserial`
 
-A fork of `serial` with the same framework changes, and two of its modules --
-the beam spot and the vertex finding -- rewritten in Python.
+A fork of `serial` with the same framework changes, and three of its modules --
+the beam spot, the pixel local reconstruction and the vertex finding -- rewritten
+in Python. Only the clusterizer and the track finder are still necessarily C++.
 
 Five configurations, differing only in what runs in Python and what is checked:
 
 ```
 ./pyserial src/pyserial/reco.ini                   # everything in C++
 ./pyserial src/pyserial/reco-validate.ini          # the same, validated
-./pyserial src/pyserial/reco-python.ini            # the beam spot and the vertices in Python
+./pyserial src/pyserial/reco-python.ini            # every ported module in Python
 ./pyserial src/pyserial/reco-python-validate.ini   # the same, validated
 ./pyserial src/pyserial/reco-compare.ini           # both, compared object by object
 ```
 
 `reco.ini` and `reco-python.ini` run the same schedule on the same events, so
-the difference between them is the two Python modules and nothing else. `reco-
-compare.ini` runs both implementations side by side and compares their products
-field by field: both Python modules reproduce their C++ counterparts exactly.
-`EDM_PYTHON_GIL=1` forces the GIL back on, to measure what free-threading is
-worth.
+the difference between them is the three Python modules and nothing else.
+`reco-compare.ini` runs both implementations of each of them side by side and
+compares their products field by field: the Python modules reproduce the C++
+ones exactly. `EDM_PYTHON_GIL=1` forces the GIL back on, to measure what
+free-threading is worth.
 
 Both backends and the decisions behind them are described in
 [doc/pyserial/README.md](doc/pyserial/README.md).

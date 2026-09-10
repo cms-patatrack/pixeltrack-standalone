@@ -5,6 +5,7 @@
 
 #include "CUDADataFormats/gpuClusteringConstants.h"
 #include "CUDACore/HistoContainer.h"
+#include <span>
 #include "CUDACore/cudaCompat.h"
 #include "Geometry/phase1PixelTopology.h"
 
@@ -21,6 +22,25 @@ public:
       cms::cuda::HistoContainer<int16_t, 128, gpuClustering::MaxNumClusters, 8 * sizeof(int16_t), uint16_t, 10>;
 
   using AverageGeometry = phase1PixelTopology::AverageGeometry;
+
+  // The columns, whole.  The per-element accessors above are what device code
+  // wants; a caller holding only the view -- a generated binding, say -- needs
+  // the pointer and the length together, which is what a span is.  All of them
+  // are nHits long, and they are mutable because filling them is what a
+  // producer does.
+  std::span<float> xLocalSpan() { return {m_xl, m_nHits}; }
+  std::span<float> yLocalSpan() { return {m_yl, m_nHits}; }
+  std::span<float> xerrLocalSpan() { return {m_xerr, m_nHits}; }
+  std::span<float> yerrLocalSpan() { return {m_yerr, m_nHits}; }
+  std::span<float> xGlobalSpan() { return {m_xg, m_nHits}; }
+  std::span<float> yGlobalSpan() { return {m_yg, m_nHits}; }
+  std::span<float> zGlobalSpan() { return {m_zg, m_nHits}; }
+  std::span<float> rGlobalSpan() { return {m_rg, m_nHits}; }
+  std::span<int16_t> iphiSpan() { return {m_iphi, m_nHits}; }
+  std::span<int32_t> chargeSpan() { return {m_charge, m_nHits}; }
+  std::span<int16_t> clusterSizeXSpan() { return {m_xsize, m_nHits}; }
+  std::span<int16_t> clusterSizeYSpan() { return {m_ysize, m_nHits}; }
+  std::span<uint16_t> detectorIndexSpan() { return {m_detInd, m_nHits}; }
 
   template <typename>
   friend class TrackingRecHit2DHeterogeneous;

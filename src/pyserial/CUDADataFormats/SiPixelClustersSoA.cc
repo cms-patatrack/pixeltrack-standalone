@@ -1,6 +1,6 @@
 #include "CUDADataFormats/SiPixelClustersSoA.h"
 
-SiPixelClustersSoA::SiPixelClustersSoA(size_t maxClusters) {
+SiPixelClustersSoA::SiPixelClustersSoA(size_t maxClusters) : maxModules_(maxClusters) {
   moduleStart_d = std::make_unique_for_overwrite<uint32_t[]>(maxClusters + 1);
   clusInModule_d = std::make_unique_for_overwrite<uint32_t[]>(maxClusters);
   moduleId_d = std::make_unique_for_overwrite<uint32_t[]>(maxClusters);

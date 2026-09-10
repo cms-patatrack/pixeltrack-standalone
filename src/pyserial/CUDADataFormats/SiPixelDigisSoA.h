@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <span>
+
 class SiPixelDigisSoA {
 public:
   SiPixelDigisSoA() = default;
@@ -67,6 +69,17 @@ public:
     uint16_t const *moduleInd_;
     int32_t const *clus_;
   };
+
+  // The columns as spans.  A pointer and a length in separate members is
+  // enough for C++, which knows from context how far the column runs, but it
+  // is not enough for a caller that has only the object: a span says both, so
+  // a binding generator can hand the column out whole without being told
+  // anything about this class.  All of them are nDigis long.
+  std::span<const uint16_t> xxSpan() const { return {xx_d.get(), nDigis_h}; }
+  std::span<const uint16_t> yySpan() const { return {yy_d.get(), nDigis_h}; }
+  std::span<const uint16_t> adcSpan() const { return {adc_d.get(), nDigis_h}; }
+  std::span<const uint16_t> moduleIndSpan() const { return {moduleInd_d.get(), nDigis_h}; }
+  std::span<const int32_t> clusSpan() const { return {clus_d.get(), nDigis_h}; }
 
   const DeviceConstView *view() const { return view_d.get(); }
 
