@@ -26,8 +26,12 @@ namespace eigenSoA {
     constexpr Scalar* data() { return data_; }
     constexpr Scalar const* data() const { return data_; }
 
-  private:
+    // Public so that the generated bindings can take a zero-copy numpy view of
+    // it: the generator reflects public data members, and an accessor
+    // returning a bare pointer carries no extent for it to use.
     Scalar data_[S];
+
+  private:
     static_assert(isPowerOf2(S), "SoA stride not a power of 2");
     static_assert(sizeof(data_) % 128 == 0, "SoA size not a multiple of 128");
   };
@@ -44,8 +48,12 @@ namespace eigenSoA {
     constexpr Map operator[](int32_t i) { return Map(data_ + i); }
     constexpr CMap operator[](int32_t i) const { return CMap(data_ + i); }
 
-  private:
+    // Public for the same reason as ScalarSoA::data_.  Component k of element i
+    // is at data_[k * S + i], so a view of the whole block is what a caller
+    // needs in order to slice a component out of it.
     Scalar data_[S * M::RowsAtCompileTime * M::ColsAtCompileTime];
+
+  private:
     static_assert(isPowerOf2(S), "SoA stride not a power of 2");
     static_assert(sizeof(data_) % 128 == 0, "SoA size not a multiple of 128");
   };
