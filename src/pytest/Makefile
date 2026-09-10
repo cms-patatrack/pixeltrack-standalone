@@ -20,7 +20,7 @@ PY_DEFINES := -DEDM_PYTHON_HOME='"$(PY_HOME)"' \
               -DEDM_PYTHON_DIR='"$(PYTHON_DIR)"' \
               -DEDM_PYTHON_PYCACHE='"$(PYCACHE_DIR)"'
 
-REFLECT_PRODUCTS := std::vector<float>
+REFLECT_PRODUCTS := int std::vector<float> pytest::Comparison
 REFLECT_INCLUDES := -I$(TARGET_DIR)
 
 GEN_DIR        := $(OBJ_DIR)/$(TARGET_NAME)/generated

@@ -1,6 +1,7 @@
 #ifndef DataFormats_Products_h
 #define DataFormats_Products_h
 
+#include <cstddef>
 #include <vector>
 
 namespace pytest {
@@ -9,6 +10,20 @@ namespace pytest {
   /// that produced them -- which is what the (type, label) key in
   /// ProductRegistry is for.
   using Floats = std::vector<float>;
+
+  /// The result of comparing two Floats products element by element.
+  ///
+  /// A user-defined class rather than a tuple of scalars on purpose: it is what
+  /// the rootcling/TClass step reflects into nanobind bindings, so the
+  /// generator is exercised by this backend and not only by pyserial.
+  struct Comparison {
+    std::size_t size = 0;          ///< number of elements compared
+    std::size_t mismatches = 0;    ///< elements differing by more than the tolerance
+    float maxDeviation = 0.0f;     ///< largest absolute difference seen
+    float tolerance = 0.0f;        ///< what counted as equal
+
+    bool agree() const { return mismatches == 0; }
+  };
 }  // namespace pytest
 
 // The header rootcling parses to build the dictionaries for this backend's
