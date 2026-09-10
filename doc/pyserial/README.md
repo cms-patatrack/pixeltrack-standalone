@@ -357,6 +357,85 @@ is still being learnt; and its algorithm is genuinely non-trivial — density
 clustering, weighted fits, two-means splitting, sorting — so what is measured is
 real per-event work rather than call overhead.
 
+**A scalar product crosses by value.** `pytest` inherits an EventSetup from
+`fwtest`: `IntESProducer` puts a bare `int` there and `TestProducer` reads it.
+Nothing on the Python side had ever touched it, and it could not have: the
+generator is built on `TClass`, and a fundamental type has none --
+
+    $ rootcling ... '#pragma link C++ class int+;'
+    Warning: Unused class rule: int
+
+The fix is not to change the data format but to notice that scalars were
+already crossing by value everywhere else. Every `def_rw` on an `int` or a
+`float` member of a product uses nanobind's own caster and involves no
+dictionary at all; only a product that *is* a scalar fell through, and only in
+the dispatch. It now emits `nb::cast(eventSetup.get<int>())` by value, and the
+same for the Event; the `Makefile` keeps scalars out of the LinkDef, since
+rootcling has nothing to generate for them. `square.py` reads the `int` every
+event, which is what exercises the path.
+
+This looked like an asymmetry -- a class product is filled in place, a scalar
+arrives as a value -- and the first version papered over it by calling both
+`emplace`. Naming the two operations for what they actually do removes it:
+
+| | | returns |
+|---|---|---|
+| `event.allocate(token)` | constructs the product in the Event, nothing set | a reference to fill |
+| `event.put(token, value)` | copies a product you already have | nothing |
+| `event.emplace(token, *values)` | builds the product from Python values, moves it in | nothing |
+
+`allocate` is what every Python module here uses: it is the zero-copy path, and
+the reference it hands back is the product's own storage. `put` is for what has
+nothing to fill -- a scalar -- and for any other product that can be copied,
+which is a real operation with a real cost, named so that the cost is visible.
+A product that can be neither says so at run time: the SoA wrappers hold a
+`unique_ptr` and are move-only, so `put` on one reports that rather than
+failing to compile the generated file.
+
+`emplace` is the one that *constructs*, which is why `put(token, [1.0])` does
+not work and `emplace(token, [1.0])` does: `put` copies a product that already
+exists, and a Python list is not one. Making the list work in `put` would mean
+including nanobind's `std::vector` type caster, which would then shadow the
+class binding for `std::vector<float>` and copy on every crossing -- losing the
+zero-copy view that is the reason it is bound as a class at all.
+
+What `emplace` can build is decided per product by the generator, from the
+dictionary, and nothing else is guessed at:
+
+| product shape | arguments |
+|---|---|
+| a scalar | one value |
+| `std::vector<T>` of scalars | one sequence |
+| an aggregate whose members are all scalars | one value per member, in declaration order |
+| anything else | an error naming `allocate` |
+
+Binding the dictionary's own constructors was tried first and abandoned: ROOT
+reports `std::vector<float>`'s as taking a
+`vector<ROOT::Internal::RPageSource::RActivePhysicalColumns::RColumnInfo>::size_type`
+and a defaulted allocator, so the signatures would have to be parsed and
+repaired before they could be bound. Building from the values is both simpler
+and closer to what a module wants to say. The aggregate case carries a
+`static_assert(std::is_aggregate_v<T>)` into the generated file, so a product
+that stops being an aggregate breaks the build rather than the results.
+
+Neither returns the value put in. Returning it would read as a reference to the
+product and cannot be one -- a Python `int` is immutable, so
+`v = event.put(tok, 1); v += 1` would leave the product at 1 while looking as
+though it had changed it.
+
+**Could a scalar be a reference?** Yes -- not as a Python scalar, which is
+immutable, but as a bound object wrapping the `int*`, with the numeric protocol
+forwarded to it. It was measured before being rejected. A read through a
+nanobind-bound attribute costs **35 ns** here and a write **31 ns**, against
+~16 ns of bare loop overhead for a plain Python int; so every *use* of a
+wrapped scalar would pay ~35 ns where a value pays nothing after the one cast
+at the boundary. The complexity is worse than the cost: to behave like an
+integer rather than merely convert to one, a wrapper needs the whole numeric
+protocol -- some twenty-five dunders plus their reflected and in-place forms --
+and anything short of that is a trap, where `x + 1` works and `math.sqrt(x)` or
+a numpy call does not. For a payload of one scalar, `put` says what is
+happening and costs less.
+
 **What this does not measure.** A module with large payloads —
 `SiPixelRawToClusterCUDA`, with ~10^4-10^5 digis — would test the *boundary*
 rather than the compute: view construction cost and memory traffic. That is a
@@ -477,3 +556,16 @@ time. Making `eigenSoA`'s storage public and rebuilding produced exactly that --
 `'ScalarSoA_unsigned_char_32768' object has no attribute 'data_'` against a
 dictionary generated before the change. The header list now comes from the
 compiler, the way it does for every object file here.
+
+## D20. The beam spot
+
+`beam_spot.py` is a port of `BeamSpotToPOD`, which is one line of C++: it moves
+eleven floats from the EventSetup into the Event, and computes nothing.
+
+What it shows is the difference between crossing into Python and reading a
+scalar attribute.  Attaching a thread state, building the `Event` and
+`EventSetup` argument objects and calling into Python are cheap; a scalar
+attribute goes through nanobind's attribute protocol on every read and write.
+That is why bulk data has to cross as a view rather than as attributes: a
+module that touched 10^4 hits one field at a time would spend its time on the
+attribute protocol rather than on Python.

@@ -1,6 +1,7 @@
 #ifndef DataFormats_Products_h
 #define DataFormats_Products_h
 
+#include "DataFormats/BeamSpotPOD.h"
 #include "CUDADataFormats/PixelTrackHeterogeneous.h"
 #include "CUDADataFormats/ZVertexHeterogeneous.h"
 
