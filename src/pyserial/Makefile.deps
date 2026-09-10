@@ -1,0 +1,3 @@
+pyserial_EXTERNAL_DEPENDS := TBB BOOST PYTHON
+Framework_DEPENDS := nanobind
+Python_DEPENDS := Framework

@@ -35,7 +35,7 @@ namespace pytest {
   // pyserial's products are the pixel formats, which no test can stand in for;
   // what a test *can* stand in for is their shape.  Between them these two have
   // one of everything the generator emits and every way a Python module reaches
-  // the Event -- see D23 in doc/PythonBackends.md for the list -- with
+  // the Event -- see D23 in doc/pyserial/README.md for the list -- with
   // arithmetic simple enough that C++ and numpy agree bit for bit.
   //
   // Nothing here is defined out of line: libFramework holds the generated
