@@ -1,3 +1,5 @@
-pytest_EXTERNAL_DEPENDS := TBB BOOST
+pytest_EXTERNAL_DEPENDS := TBB BOOST PYTHON
+Framework_DEPENDS := nanobind
 Test1_DEPENDS := Framework DataFormats
 Test2_DEPENDS := Framework
+Demo_DEPENDS := Framework

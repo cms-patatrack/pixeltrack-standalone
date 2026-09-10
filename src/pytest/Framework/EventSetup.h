@@ -30,6 +30,15 @@ namespace edm {
   public:
     explicit EventSetup() {}
 
+    // Copyable in declaration only, exactly as the Event was: it owns its
+    // products through unique_ptr, so the implicit copy constructor existed
+    // but could never compile.  Nothing copied one, so nothing noticed until
+    // nanobind tried to instantiate it.
+    EventSetup(EventSetup const&) = delete;
+    EventSetup& operator=(EventSetup const&) = delete;
+    EventSetup(EventSetup&&) = default;
+    EventSetup& operator=(EventSetup&&) = default;
+
     template <typename T>
     void put(std::unique_ptr<T> prod) {
       auto succeeded =

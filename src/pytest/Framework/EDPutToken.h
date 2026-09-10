@@ -23,6 +23,8 @@ The templated form, EDPutTokenT<T>, is the same as EDPutToken except when used t
 //
 
 // system include files
+#include <string>
+#include <utility>
 
 // user include files
 
@@ -32,6 +34,7 @@ namespace edm {
   class EDPutTokenT;
   class ProductRegistry;
 
+  /// The type-erased token.  See EDGetToken for why it carries a type name.
   class EDPutToken {
     friend class ProductRegistry;
 
@@ -46,6 +49,7 @@ namespace edm {
     // ---------- const member functions ---------------------
     value_type index() const { return m_value; }
     bool isUninitialized() const { return m_value == s_uninitializedValue; }
+    std::string const& typeName() const { return m_typeName; }
 
   private:
     //for testing
@@ -54,9 +58,11 @@ namespace edm {
     static const unsigned int s_uninitializedValue = 0xFFFFFFFF;
 
     explicit EDPutToken(unsigned int iValue) : m_value(iValue) {}
+    EDPutToken(unsigned int iValue, std::string iTypeName) : m_value(iValue), m_typeName(std::move(iTypeName)) {}
 
     // ---------- member data --------------------------------
     value_type m_value;
+    std::string m_typeName;
   };
 
   template <typename T>

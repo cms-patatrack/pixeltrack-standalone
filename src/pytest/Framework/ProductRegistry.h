@@ -10,6 +10,7 @@
 
 #include "Framework/EDGetToken.h"
 #include "Framework/EDPutToken.h"
+#include "Framework/PayloadTypes.h"
 
 namespace edm {
   // A product is identified by its C++ type *and* the label of the module that
@@ -67,6 +68,37 @@ namespace edm {
     template <typename T>
     EDGetTokenT<T> consumes() {
       return EDGetTokenT<T>{uniqueProductIndex(std::type_index(typeid(T)), typeid(T).name())};
+    }
+
+    // The type-erased forms, for the Python layer.  The registry only ever
+    // stores a std::type_index, so these need no template: the payload name is
+    // resolved to that index through the EDM_PAYLOAD_TYPES table.  They hand
+    // back the same EDPutToken / EDGetToken a C++ module would end up with,
+    // carrying the type name so the generated dispatch can find the bindings.
+    EDPutToken produces(std::string const& typeName) {
+      const Key key{payloadTypeIndex(typeName), currentLabel_};
+      const unsigned int ind = productToIndex_.size();
+      auto succeeded = productToIndex_.try_emplace(key, currentModuleIndex_, ind);
+      if (not succeeded.second) {
+        throw std::runtime_error("Product of type " + typeName + " with label '" + currentLabel_ +
+                                 "' already exists");
+      }
+      return EDPutToken{ind, typeName};
+    }
+
+    EDGetToken consumes(std::string const& typeName, std::string const& label) {
+      const std::type_index type = payloadTypeIndex(typeName);
+      if (label.empty()) {
+        return EDGetToken{uniqueProductIndex(type, typeName), typeName};
+      }
+      const Key key{type, label};
+      const auto found = productToIndex_.find(key);
+      if (found == productToIndex_.end()) {
+        throw std::runtime_error("Product of type " + typeName + " with label '" + label +
+                                 "' is not produced by the source or any preceding module");
+      }
+      consumedModules_.insert(found->second.moduleIndex());
+      return EDGetToken{found->second.productIndex(), typeName};
     }
 
     auto size() const { return productToIndex_.size(); }

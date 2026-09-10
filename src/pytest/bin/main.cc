@@ -11,6 +11,7 @@
 #include <tbb/task_arena.h>
 
 #include "Framework/Configuration.h"
+#include "Framework/PythonRuntime.h"
 
 #include "EventProcessor.h"
 #include "PosixClockGettime.h"
@@ -147,9 +148,22 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  // Initialize EventProcessor.
+  // Initialize EventProcessor.  Constructing the modules is what starts the
+  // interpreter, if any module is implemented in Python.
   edm::EventProcessor processor(
       warmupEvents, maxEvents, runForMinutes, numberOfStreams, configuration, datadir, validation);
+
+  // Say plainly whether the GIL is on.  With it enabled the Python modules of
+  // every stream serialise, and any throughput compared against an all-C++ run
+  // measures that rather than anything about Python -- so it is reported next
+  // to the stream count rather than left to be inferred.
+  if (edm::PythonRuntime::running()) {
+    auto const& python = edm::PythonRuntime::instance();
+    std::cout << "Python " << python.version().substr(0, python.version().find(' ')) << ", GIL "
+              << (python.gilEnabled() ? "ENABLED -- Python modules will serialise across streams"
+                                      : "disabled")
+              << std::endl;
+  }
 
   if (runForMinutes < 0) {
     std::cout << "Processing " << processor.maxEvents() << " events,";

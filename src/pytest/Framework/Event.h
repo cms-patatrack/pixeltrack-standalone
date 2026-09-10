@@ -11,6 +11,8 @@
 namespace edm {
   using StreamID = int;
 
+  class Event;
+
   class WrapperBase {
   public:
     virtual ~WrapperBase() = default;
@@ -36,6 +38,18 @@ namespace edm {
     T const& product() const { return obj_; }
 
   private:
+    friend class Event;
+
+    /// The deliberately narrow escape hatch behind the zero-copy bindings: a
+    /// Python module allocates its output here and then fills it in place,
+    /// before any other module can observe it.  Only the contents may be
+    /// written -- anything that reallocates invalidates the view handed out.
+    ///
+    /// Private, with Event the only friend, so that the hatch cannot be opened
+    /// from anywhere else: the sole caller is emplaceByIndex, which hands the
+    /// reference out before the product is reachable by any other module.
+    T& mutableProduct() { return obj_; }
+
     T obj_;
   };
 
@@ -46,7 +60,8 @@ namespace edm {
 
     // An Event owns its products through unique_ptr, so it was only ever
     // copyable in declaration: the copy constructor existed but would not
-    // compile.  Saying so explicitly says what was always true.
+    // compile.  Saying so explicitly keeps nanobind from trying to instantiate
+    // it when Event is bound, and says what was always true.
     Event(Event const&) = delete;
     Event& operator=(Event const&) = delete;
     Event(Event&&) = default;
@@ -64,6 +79,29 @@ namespace edm {
     void emplace(EDPutTokenT<T> const& token, Args&&... args) {
       products_[token.index()] = std::make_unique<Wrapper<T>>(std::forward<Args>(args)...);
     }
+
+    // The index-addressed forms, for the Python bindings, which resolve the
+    // type by name at run time and so cannot use the typed tokens.  The index
+    // is the one the erased token carries, and the type has already been
+    // checked against the product registry when the token was handed out.
+
+    template <typename T>
+    T const& getByIndex(unsigned int index) const {
+      return static_cast<Wrapper<T> const&>(*products_[index]).product();
+    }
+
+    /// Constructs the product in place and returns a mutable reference, so
+    /// Python fills the final buffer rather than building something C++ then
+    /// has to copy.
+    template <typename T, typename... Args>
+    T& emplaceByIndex(unsigned int index, Args&&... args) {
+      auto wrapper = std::make_unique<Wrapper<T>>(InPlace{}, std::forward<Args>(args)...);
+      T& product = wrapper->mutableProduct();
+      products_[index] = std::move(wrapper);
+      return product;
+    }
+
+    bool has(unsigned int index) const { return products_[index] != nullptr; }
 
   private:
     StreamID streamId_;
