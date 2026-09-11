@@ -2,6 +2,9 @@
 #define DataFormats_Products_h
 
 #include "DataFormats/BeamSpotPOD.h"
+#include "DataFormats/DigiClusterCount.h"
+#include "DataFormats/TrackCount.h"
+#include "DataFormats/VertexCount.h"
 #include "DataFormats/FEDRawDataCollection.h"
 #include "CondFormats/SiPixelFedIds.h"
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"

@@ -663,3 +663,33 @@ length".  Nothing else had to change for these formats — their constructors an
 their destructors stay in the `.cc` files they were always in, because the
 bindings are compiled into `edm_core`, which links against the product
 libraries (D8).
+
+## D24. The validation, in Python, and what a module needs at the end of a job
+
+CountValidator is not a reconstruction module: it publishes nothing, it reads
+the counts the source carries next to the raw data and checks the chain against
+them, and what it reports is the whole job rather than one event.  That makes
+it the first module whose state does not belong to a stream.
+
+A C++ module says so with a `static` counter and an `endJob()`.  A Python
+module now says the same thing the same way: module-level names are shared by
+every stream's instance -- the script is imported once -- and `endJob()` is
+called on the first stream's module only, exactly as it is for a C++ module.
+The runner calls it if the object has one, so a module with nothing to do at
+the end of the job simply does not define it.
+
+The one thing that is genuinely different is the locking.  A C++ module gets
+`std::atomic` counters; on a free-threaded interpreter `+=` on a module-level
+integer is not atomic either, so the updates go under a `threading.Lock`.  It
+is held for the counter update and nothing else -- the work of the event
+happens outside it -- which is the same discipline the C++ module follows with
+its one mutex around the track-difference sum.
+
+`validation = true` in `[options]` is what puts it in the path, and it does two
+things: the source starts producing the counts, and the label `countValidator`
+is scheduled.  The label is what matters, not the plugin behind it, so
+reco-python-validate.ini names a PythonProducer there and the same flag runs
+the Python validator.
+
+Over the same events it reports the same verdict and the same average
+difference as the C++ one, to the digit.

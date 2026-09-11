@@ -35,6 +35,11 @@ namespace edm {
 
     void produce(Event& event, EventSetup const& eventSetup);
 
+    /// Calls the object's endJob(), if it has one.  Optional because most
+    /// modules have nothing to do at the end of the job, and a C++ module says
+    /// so by not overriding it.
+    void endJob();
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl_;

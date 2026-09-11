@@ -66,6 +66,18 @@ namespace edm {
     impl_->worker.reset();
   }
 
+  void PythonModuleRunner::endJob() {
+    nb::gil_scoped_acquire guard;
+    if (not nb::hasattr(impl_->worker, "endJob")) {
+      return;
+    }
+    try {
+      impl_->worker.attr("endJob")();
+    } catch (nb::python_error const& e) {
+      throw std::runtime_error(script_ + ".endJob() failed: " + e.what());
+    }
+  }
+
   void PythonModuleRunner::produce(Event& event, EventSetup const& eventSetup) {
     keepThreadState();
     // On a free-threaded interpreter this attaches a thread state rather than

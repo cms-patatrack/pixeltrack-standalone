@@ -49,6 +49,11 @@ private:
     runner_.produce(event, eventSetup);
   }
 
+  /// Only the first stream's modules are asked, as for a C++ module, so a
+  /// script that accumulates over the whole job keeps its counters at module
+  /// level and shares them across streams.
+  void endJob() override { runner_.endJob(); }
+
   edm::PythonModuleRunner runner_;
 };
 

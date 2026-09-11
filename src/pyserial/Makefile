@@ -47,7 +47,8 @@ LIBNAMES := $(filter-out plugin-% bin test bindings,$(sort $(patsubst %/,%,$(dir
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
 REFLECT_PRODUCTS := FEDRawDataCollection BeamSpotPOD SiPixelDigisSoA SiPixelClustersSoA TrackingRecHit2DCPU \
                     PixelCPEFast PixelTrackHeterogeneous ZVertexHeterogeneous \
-                    SiPixelFedIds SiPixelFedCablingMapGPUWrapper SiPixelGainCalibrationForHLTGPU
+                    SiPixelFedIds SiPixelFedCablingMapGPUWrapper SiPixelGainCalibrationForHLTGPU \
+                    DigiClusterCount TrackCount VertexCount
 REFLECT_INCLUDES := -I$(TARGET_DIR) $(EIGEN_CXXFLAGS)
 
 GEN_DIR        := $(OBJ_DIR)/$(TARGET_NAME)/generated
