@@ -44,6 +44,13 @@ public:
     return std::make_pair(decodePed(s.ped & 0xFF), decodeGain(s.gain & 0xFF));
   }
 
+  /// The per-module decoding range, one scalar at a time.  rangeAndCols is an
+  /// array of nested std::pairs, which neither ROOT nor a numpy view can
+  /// describe; a module reads these once and keeps the columns itself.
+  uint32_t rangeFirst(uint32_t moduleInd) const { return rangeAndCols[moduleInd].first.first; }
+  uint32_t rangeLast(uint32_t moduleInd) const { return rangeAndCols[moduleInd].first.second; }
+  int numberOfCols(uint32_t moduleInd) const { return rangeAndCols[moduleInd].second; }
+
   constexpr float decodeGain(unsigned int gain) const { return gain * gainPrecision + minGain_; }
   constexpr float decodePed(unsigned int ped) const { return ped * pedPrecision + minPed_; }
 

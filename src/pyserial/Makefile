@@ -45,7 +45,9 @@ EXE_DEP := $(EXE_OBJ:$.o=$.d)
 # configurations, from being built into empty libraries and linked against.
 LIBNAMES := $(filter-out plugin-% bin test bindings,$(sort $(patsubst %/,%,$(dir $(wildcard */*.cc)))))
 PLUGINNAMES := $(patsubst plugin-%,%,$(filter plugin-%,$(wildcard *)))
-REFLECT_PRODUCTS := BeamSpotPOD SiPixelDigisSoA SiPixelClustersSoA TrackingRecHit2DCPU PixelCPEFast PixelTrackHeterogeneous ZVertexHeterogeneous
+REFLECT_PRODUCTS := FEDRawDataCollection BeamSpotPOD SiPixelDigisSoA SiPixelClustersSoA TrackingRecHit2DCPU \
+                    PixelCPEFast PixelTrackHeterogeneous ZVertexHeterogeneous \
+                    SiPixelFedIds SiPixelFedCablingMapGPUWrapper SiPixelGainCalibrationForHLTGPU
 REFLECT_INCLUDES := -I$(TARGET_DIR) $(EIGEN_CXXFLAGS)
 
 GEN_DIR        := $(OBJ_DIR)/$(TARGET_NAME)/generated

@@ -606,3 +606,60 @@ bound by value, that address would have belonged to a Python temporary: a
 segmentation fault at 16 streams and nothing at all at one, because the freed
 memory is not reused quickly enough to notice. `decltype(auto)` is what keeps
 the reference a reference.
+
+## D23. The clusterizer: raw bytes, and a graph
+
+The one module whose input is not already a column.  SiPixelRawToClusterCUDA
+reads the FED buffers as bytes, decodes 32-bit words into pixel coordinates
+through the cabling map, calibrates each pixel with the gain conditions, groups
+the pixels of each module into clusters and cuts the clusters that carry too
+little charge.  The first three of those are bit fields, table lookups and
+arithmetic — numpy does them over the whole event at once, the way every module
+before this one did.
+
+The clustering is different in kind, and it is the reason this module was left
+until last.  The C++ kernel walks one module at a time: it bins the pixels by
+column into a histogram, builds a neighbour list from the bins, iterates `min`
+over that list until nothing changes — alternating with a pass that follows
+every label to its root — and finally numbers the clusters by scanning the
+pixels in order and counting the ones that are their own label.
+
+Translating that is not the same as rethinking it, and this module does the
+first.  The algorithm is the kernel's; what changes is that each of its steps
+is a column.  The histogram is a sort by (module, column, row), one for the
+whole event rather than one per module.  The neighbour list is two
+`searchsorted` ranges per pixel — the rest of its own column, and all of the
+next one, both within a row.  The `min` iteration is a reduction over every
+neighbour pair at once.  The numbering is a cumulative sum over the pixels that
+are their own label.  Nothing about which pixels end up in which cluster is
+decided differently, which is what makes the products identical rather than
+merely close.
+
+Whether the kernel's algorithm is the right one to give numpy is a separate
+question, and one this port deliberately does not answer here; D27 does.
+
+**It agrees exactly.**  Over 200 events, with no difference in any of the seven
+digi columns — x, y, charge, module, cluster, the packed digi and the raw
+detector id — and none in the four per-module columns.
+`reco-python-validate.ini` then reconstructs the whole chain from the Python
+clusters and CountValidator passes, which is the check that matters: the digi,
+cluster, track and vertex counts all come out of a Python chain that now starts
+at the raw data.
+
+**What it needed.**  Four conditions and one event product had to become
+reachable: FEDRawDataCollection and the cabling map, the gains and the FED list
+from the EventSetup.  Between them they wanted the same three things the
+formats wanted in D21 — a column as a pointer and a length rather than a bare
+pointer, a reference rather than a pointer to a class, and a scalar accessor
+where the declaration is something reflection cannot describe (`rangeAndCols`
+is an array of nested `std::pair`s).
+
+One build-level detail came with them.  `allocate()` learned to call a
+constructor that takes only a size: the digis and the clusters are sized for
+the largest event the detector can produce and then filled, which is the other
+half of the wiring constructor D21 added, so the rule is now "the constructor
+with the most arguments, and a wiring one over a sizing one of the same
+length".  Nothing else had to change for these formats — their constructors and
+their destructors stay in the `.cc` files they were always in, because the
+bindings are compiled into `edm_core`, which links against the product
+libraries (D8).

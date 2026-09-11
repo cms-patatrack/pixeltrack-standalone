@@ -13,8 +13,9 @@
  *                      Refactoring and Modifications to fit into CMSSW
  */
 
-#include <vector>
 #include <cstddef>
+#include <span>
+#include <vector>
 
 class FEDRawData {
 public:
@@ -43,6 +44,10 @@ public:
 
   /// Lenght of the data buffer in bytes
   size_t size() const { return data_.size(); }
+
+  /// The buffer as a pointer and a length together, which is what a zero-copy
+  /// view needs: data() alone cannot say how far it runs.
+  std::span<const unsigned char> dataSpan() const { return {data_.data(), data_.size()}; }
 
   /// Resize to the specified size in bytes. It is required that
   /// the size is a multiple of the size of a FED word (8 bytes)

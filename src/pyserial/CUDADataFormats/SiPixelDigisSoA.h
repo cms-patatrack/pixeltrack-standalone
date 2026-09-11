@@ -80,6 +80,8 @@ public:
   std::span<const uint16_t> adcSpan() const { return {adc_d.get(), nDigis_h}; }
   std::span<const uint16_t> moduleIndSpan() const { return {moduleInd_d.get(), nDigis_h}; }
   std::span<const int32_t> clusSpan() const { return {clus_d.get(), nDigis_h}; }
+  std::span<const uint32_t> pdigiSpan() const { return {pdigi_d.get(), nDigis_h}; }
+  std::span<const uint32_t> rawIdArrSpan() const { return {rawIdArr_d.get(), nDigis_h}; }
 
   const DeviceConstView *view() const { return view_d.get(); }
 

@@ -2,6 +2,10 @@
 #define DataFormats_Products_h
 
 #include "DataFormats/BeamSpotPOD.h"
+#include "DataFormats/FEDRawDataCollection.h"
+#include "CondFormats/SiPixelFedIds.h"
+#include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
+#include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CUDADataFormats/SiPixelDigisSoA.h"
 #include "CUDADataFormats/SiPixelClustersSoA.h"
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"

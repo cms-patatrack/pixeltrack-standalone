@@ -248,9 +248,9 @@ same thing. `make test_pytest_cpu` runs all four.
 
 #### `pyserial`
 
-A fork of `serial` with the same framework changes, and three of its modules --
-the beam spot, the pixel local reconstruction and the vertex finding -- rewritten
-in Python. Only the clusterizer and the track finder are still necessarily C++.
+A fork of `serial` with the same framework changes, and four of its modules --
+the clusterizer, the beam spot, the pixel local reconstruction and the vertex
+finding -- rewritten in Python. Only the track finder is still C++.
 
 Five configurations, differing only in what runs in Python and what is checked:
 
@@ -263,7 +263,7 @@ Five configurations, differing only in what runs in Python and what is checked:
 ```
 
 `reco.ini` and `reco-python.ini` run the same schedule on the same events, so
-the difference between them is the three Python modules and nothing else.
+the difference between them is the four Python modules and nothing else.
 `reco-compare.ini` runs both implementations of each of them side by side and
 compares their products field by field: the Python modules reproduce the C++
 ones exactly. `EDM_PYTHON_GIL=1` forces the GIL back on, to measure what

@@ -332,6 +332,7 @@ namespace {
     if (!cls || !cls->GetListOfMethods())
       return {};
     std::vector<std::string> best;
+    std::pair<std::size_t, int> bestScore{0, 0};
     for (auto* entry : *cls->GetListOfMethods()) {
       auto* method = static_cast<TMethod*>(entry);
       if (!(method->Property() & kIsPublic))
@@ -361,12 +362,18 @@ namespace {
           break;
         }
       }
-      // At least one argument has to be another product or a column.  A
-      // constructor taking only numbers is sizing the product, which
-      // allocate() and a fill already do; the constructors that matter here
-      // wire one product to another.
-      if (usable && wiring && arguments.size() > best.size())
+      // Prefer the constructor with the most arguments, and a wiring one over a
+      // sizing one of the same length.  Both are useful: a product may have to
+      // be wired to another product before it can be filled, or merely sized.
+      //
+      // Whichever is chosen may be defined wherever the class keeps its other
+      // definitions: the generated bindings are compiled into edm_core, which
+      // links against the product libraries.
+      const auto score = std::make_pair(arguments.size(), wiring ? 1 : 0);
+      if (usable && score > bestScore) {
+        bestScore = score;
         best = std::move(arguments);
+      }
     }
     return best;
   }
