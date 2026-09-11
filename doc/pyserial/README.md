@@ -717,3 +717,57 @@ filled by every stream.
 Neither validator is on the measured path — reco.ini and reco-python.ini run no
 validation, which is what keeps a throughput difference between them the
 reconstruction and nothing else.
+
+## D27. The same module twice, differing only in the algorithm
+
+The clusterizer is the only module whose C++ is plain loops over pixels rather
+than a call into somebody else's library, so it is where the way a port is
+written matters most.
+
+Writing a column where the C++ writes a loop over pixels is *translation*: the
+quantities, their order and the branches are all still the C++'s, and no other
+module in this backend was written any other way.  Choosing a different way to
+arrive at the same labelling is not.
+
+So there are two modules, and they differ in one method.
+`python/pixel_clusters.py` is the translation of D23, findClus included: the
+pixels themselves as nodes, every pair within a column and across two adjacent
+columns as an edge, the minimum propagated over all of them every round with
+the odd rounds following each label to its root.  `python/pixel_clusters_optimised.py`
+replaces that labelling with two ideas of its own:
+
+- a run of touching pixels within one column is one cluster by construction, so
+  the labelling can take runs as its nodes.  There are only about a quarter
+  fewer of them -- 1.38 pixels to a run, since a cluster is longer along the
+  column than across it -- but what they remove is exactly the chains the
+  minimum would otherwise walk one edge at a time;
+- the rounds are wildly uneven: a few of them settle all but a few dozen runs
+  of forty thousand, and a stubborn cluster drags the rest out, each round
+  still reducing over every edge.  A run's label can change only if a
+  neighbour's did, so each round hands the next one only the runs next to those
+  that moved.
+
+Everything else -- the FED walk, the decoding, the calibration, the module
+boundaries, the charge cut, the numbering, the products -- is one copy of the
+code, in `python/pixel_clusters_common.py`, so that the two differ in the
+algorithm and nothing else, and so that a fix to any of it cannot reach one
+module and not the other.  Neither module is written in terms of the other:
+what they share is a third file, not a base class.
+
+Both are exact against SiPixelRawToClusterCUDA.
+
+Both modules put every module's pixels into one graph, because a loop over 1856
+modules in Python would pay the interpreter 1856 times an event; batching them
+is not an optimisation but the only way to write the thing in numpy at all.
+That batching is also what creates the long tail the active set then removes:
+the round count of one big graph is set by the worst cluster anywhere in the
+event, while the C++ kernel, working one module at a time, stops as soon as
+*that* module settles and never sees a tail.  So the same two ideas are worth
+much less in C++ than they are here.
+
+Both modules are configured, not switched: `reco-python.ini`,
+`reco-python-validate.ini` and `reco-compare.ini` run the translation, and
+`reco-optimised.ini`, `reco-optimised-validate.ini` and
+`reco-optimised-compare.ini` are the same three files with the other module.
+The comparison configurations check either of them against the C++ module the
+same way.

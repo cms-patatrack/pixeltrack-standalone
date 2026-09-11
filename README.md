@@ -252,7 +252,7 @@ A fork of `serial` with the same framework changes, and four of its modules --
 the clusterizer, the beam spot, the pixel local reconstruction and the vertex
 finding -- rewritten in Python. Only the track finder is still C++.
 
-Five configurations, differing only in what runs in Python and what is checked:
+Configurations, differing only in what runs in Python and what is checked:
 
 ```
 ./pyserial src/pyserial/reco.ini                   # everything in C++
@@ -261,6 +261,12 @@ Five configurations, differing only in what runs in Python and what is checked:
 ./pyserial src/pyserial/reco-python-validate.ini   # the same, validated
 ./pyserial src/pyserial/reco-compare.ini           # both, compared object by object
 ```
+
+The clusterizer comes in two: `python/pixel_clusters.py` translates the C++
+kernels, and `python/pixel_clusters_optimised.py` groups the pixels into
+clusters a different way -- same products, faster. The
+three `reco-optimised*.ini` are the three above with that one in place of the
+other.
 
 `reco.ini` and `reco-python.ini` run the same schedule on the same events, so
 the difference between them is the four Python modules and nothing else.
