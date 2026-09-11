@@ -693,3 +693,27 @@ the Python validator.
 
 Over the same events it reports the same verdict and the same average
 difference as the C++ one, to the digit.
+
+## D25. The histograms, byte for byte
+
+HistoValidator is the last of them: thirty-three histograms of the digis,
+clusters, hits, tracks and vertices, written to a file at the end of the job.
+The interesting part is that the file is a *format*, so this port either
+reproduces it exactly or it is no use — and reproducing it means reproducing
+SimpleAtomicHisto's binning, which has two quirks worth keeping: `nbins + 2`
+bins with underflow and overflow at the ends, and a value that scales exactly
+to `nbins` folded back into the last real bin rather than into the overflow.
+
+Both are one line of numpy over a whole column at a time, and `np.bincount` is
+what turns a column of bin indices into counts — the fill loop of the C++
+module, which is per value, does not appear at all.  The output format is
+`ostream`'s default for a float, which `%g` matches.
+
+The two files are byte for byte identical.
+
+The counters are the job's, as in D24, and for the same reason: a histogram is
+filled by every stream.
+
+Neither validator is on the measured path — reco.ini and reco-python.ini run no
+validation, which is what keeps a throughput difference between them the
+reconstruction and nothing else.
