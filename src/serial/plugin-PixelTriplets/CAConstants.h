@@ -59,6 +59,27 @@ namespace CAConstants {
   using CellTracksVector = cms::cuda::SimpleVector<CellTracks>;
 
   using OuterHitOfCell = cms::cuda::VecArray<uint32_t, maxCellsPerHit()>;
+
+  // Compact (CSR) storage of the cells whose outer hit is each hit, used instead of an array of OuterHitOfCell to
+  // reduce the memory footprint: the cells of hit i are cells[offsets[i]], ..., cells[offsets[i + 1] - 1], in
+  // increasing order, with at most maxCellsPerHit() cells per hit (like OuterHitOfCell::push_back()).
+  struct OuterHitOfCellContainer {
+    struct Range {
+      uint32_t const* begin_;
+      uint32_t const* end_;
+
+      constexpr int size() const { return end_ - begin_; }
+      constexpr bool empty() const { return begin_ == end_; }
+      constexpr bool full() const { return size() == static_cast<int>(maxCellsPerHit()); }
+      constexpr uint32_t const* data() const { return begin_; }
+      constexpr uint32_t operator[](int i) const { return begin_[i]; }
+    };
+
+    Range operator[](uint32_t hit) const { return Range{cells + offsets[hit], cells + offsets[hit + 1]}; }
+
+    uint32_t* offsets = nullptr;  // nHits + 1 elements
+    uint32_t* cells = nullptr;    // up to maxNumberOfDoublets() elements
+  };
   using TuplesContainer = cms::cuda::OneToManyAssoc<hindex_type, maxTuples(), 5 * maxTuples()>;
   using HitToTuple =
       cms::cuda::OneToManyAssoc<tindex_type, pixelGPUConstants::maxNumberOfHits, 4 * maxTuples()>;  // 3.5 should be enough
