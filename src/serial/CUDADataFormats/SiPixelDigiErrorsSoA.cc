@@ -6,7 +6,7 @@
 SiPixelDigiErrorsSoA::SiPixelDigiErrorsSoA(size_t maxFedWords, PixelFormatterErrors errors)
     : formatterErrors_h(std::move(errors)) {
   error_d = std::make_unique<cms::cuda::SimpleVector<PixelErrorCompact>>();
-  data_d = std::make_unique<PixelErrorCompact[]>(maxFedWords);
+  data_d = std::make_unique_for_overwrite<PixelErrorCompact[]>(maxFedWords);
 
   std::memset(data_d.get(), 0x00, maxFedWords);
 

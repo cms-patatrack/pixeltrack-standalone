@@ -1,14 +1,14 @@
 #include "CUDADataFormats/SiPixelDigisSoA.h"
 
 SiPixelDigisSoA::SiPixelDigisSoA(size_t maxFedWords) {
-  xx_d = std::make_unique<uint16_t[]>(maxFedWords);
-  yy_d = std::make_unique<uint16_t[]>(maxFedWords);
-  adc_d = std::make_unique<uint16_t[]>(maxFedWords);
-  moduleInd_d = std::make_unique<uint16_t[]>(maxFedWords);
-  clus_d = std::make_unique<int32_t[]>(maxFedWords);
+  xx_d = std::make_unique_for_overwrite<uint16_t[]>(maxFedWords);
+  yy_d = std::make_unique_for_overwrite<uint16_t[]>(maxFedWords);
+  adc_d = std::make_unique_for_overwrite<uint16_t[]>(maxFedWords);
+  moduleInd_d = std::make_unique_for_overwrite<uint16_t[]>(maxFedWords);
+  clus_d = std::make_unique_for_overwrite<int32_t[]>(maxFedWords);
 
-  pdigi_d = std::make_unique<uint32_t[]>(maxFedWords);
-  rawIdArr_d = std::make_unique<uint32_t[]>(maxFedWords);
+  pdigi_d = std::make_unique_for_overwrite<uint32_t[]>(maxFedWords);
+  rawIdArr_d = std::make_unique_for_overwrite<uint32_t[]>(maxFedWords);
 
   auto view = std::make_unique<DeviceConstView>();
   view->xx_ = xx_d.get();
