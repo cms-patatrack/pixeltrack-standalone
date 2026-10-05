@@ -83,12 +83,12 @@ namespace gpuVertexFinder {
 
   ZVertexHeterogeneous Producer::make(TkSoA const* tksoa, float ptMin) const {
     // std::cout << "producing Vertices on  CPU" <<    std::endl;
-    ZVertexHeterogeneous vertices(std::make_unique<ZVertexSoA>());
+    ZVertexHeterogeneous vertices(std::make_unique_for_overwrite<ZVertexSoA>());
     assert(tksoa);
     auto* soa = vertices.get();
     assert(soa);
 
-    auto ws_d = std::make_unique<WorkSpace>();
+    auto ws_d = std::make_unique_for_overwrite<WorkSpace>();
 
     init(soa, ws_d.get());
     loadTracks(tksoa, soa, ws_d.get(), ptMin);

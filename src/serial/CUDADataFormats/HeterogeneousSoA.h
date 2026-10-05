@@ -36,33 +36,34 @@ private:
 namespace cms {
   namespace cudacompat {
 
+    // The memory is not initialised, as for the CUDA device and host allocations.
     struct CPUTraits {
       template <typename T>
       using unique_ptr = std::unique_ptr<T>;
 
       template <typename T>
       static auto make_unique(cudaStream_t) {
-        return std::make_unique<T>();
+        return std::make_unique_for_overwrite<T>();
       }
 
       template <typename T>
       static auto make_unique(size_t size, cudaStream_t) {
-        return std::make_unique<T>(size);
+        return std::make_unique_for_overwrite<T>(size);
       }
 
       template <typename T>
       static auto make_host_unique(cudaStream_t) {
-        return std::make_unique<T>();
+        return std::make_unique_for_overwrite<T>();
       }
 
       template <typename T>
       static auto make_device_unique(cudaStream_t) {
-        return std::make_unique<T>();
+        return std::make_unique_for_overwrite<T>();
       }
 
       template <typename T>
       static auto make_device_unique(size_t size, cudaStream_t) {
-        return std::make_unique<T>(size);
+        return std::make_unique_for_overwrite<T>(size);
       }
     };
 
