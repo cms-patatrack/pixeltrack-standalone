@@ -96,8 +96,6 @@ namespace gpuPixelDoublets {
 
     // x runs faster
     auto idy = 0;
-    uint32_t first = 0;
-    auto stride = 1;
 
     uint32_t pairLayerId = 0;  // cannot go backward
     for (uint32_t j = idy; j < ntot; j += 1) {
@@ -214,40 +212,55 @@ namespace gpuPixelDoublets {
         if (kk != kl && kk != kh)
           nmin += hist.size(kk + hoff);
 #endif
-        PackedHit const* __restrict__ p = packedHits + hist.off[kk + hoff];
-        PackedHit const* __restrict__ e = packedHits + hist.off[kk + hoff + 1];
-        p += first;
-        for (; p < e; p += stride) {
-          PackedHit const& oh = *p;
-          auto oi = oh.index;
-          assert(oi >= offsets[outer]);
-          assert(oi < offsets[outer + 1]);
-          // evaluate the cheaper cuts without branching, and check them all at once,
-          // to limit the number of mispredicted branches
-          auto mo = oh.detIndex;
-          bool const invalid = mo > 2000;
+        uint32_t const b = hist.off[kk + hoff];
+        uint32_t const e = hist.off[kk + hoff + 1];
+        bool full = false;
+        // Process the candidates in chunks: first select the candidates that pass the cheaper cuts, without
+        // branching, then apply the other cuts and create the doublets, in the original order.
+        // This reduces significantly the number of mispredicted branches.
+        constexpr uint32_t chunkSize = 64;
+        for (uint32_t cb = b; cb < e and not full; cb += chunkSize) {
+          uint32_t const n = std::min(chunkSize, e - cb);
+          uint32_t selected[chunkSize];
+          uint32_t m = 0;
+          for (uint32_t k = 0; k < n; ++k) {
+            PackedHit const& oh = packedHits[cb + k];
+            auto mo = oh.detIndex;
+            bool const invalid = mo > 2000;
 
-          auto mop = oh.iphi;
-          uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
+            auto mop = oh.iphi;
+            uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
 
-          if (invalid | (doZ0Cut & z0cutoff(oh)) | (idphi > iphicut))
-            continue;
+            selected[m] = cb + k;
+            m += not(invalid | (doZ0Cut & z0cutoff(oh)) | (idphi > iphicut));
+          }
 
-          if (doClusterCut && zsizeCut(oh))
-            continue;
-          if (doPtCut && ptcut(oh, idphi))
-            continue;
+          for (uint32_t k = 0; k < m; ++k) {
+            PackedHit const& oh = packedHits[selected[k]];
+            auto oi = oh.index;
+            assert(oi >= offsets[outer]);
+            assert(oi < offsets[outer + 1]);
 
-          auto ind = atomicAdd(nCells, 1);
-          if (ind >= maxNumOfDoublets) {
-            atomicSub(nCells, 1);
-            break;
-          }  // move to SimpleVector??
-          // int layerPairId, int doubletId, int innerHitId, int outerHitId)
-          cells[ind].init(*cellNeighbors, *cellTracks, hh, pairLayerId, ind, i, oi);
+            auto mop = oh.iphi;
+            uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
+
+            if (doClusterCut && zsizeCut(oh))
+              continue;
+            if (doPtCut && ptcut(oh, idphi))
+              continue;
+
+            auto ind = atomicAdd(nCells, 1);
+            if (ind >= maxNumOfDoublets) {
+              atomicSub(nCells, 1);
+              full = true;
+              break;
+            }  // move to SimpleVector??
+            // int layerPairId, int doubletId, int innerHitId, int outerHitId)
+            cells[ind].init(*cellNeighbors, *cellTracks, hh, pairLayerId, ind, i, oi);
 #ifdef GPU_DEBUG
-          ++tot;
+            ++tot;
 #endif
+          }
         }
       }
 #ifdef GPU_DEBUG
