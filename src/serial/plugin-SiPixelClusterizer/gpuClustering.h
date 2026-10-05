@@ -124,40 +124,20 @@ namespace gpuClustering {
         hist.fill(y[i], i - firstPixel);
       }
 
-      auto maxiter = hist.size();
-      // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
-      constexpr int maxNeighbours = 10;
-      assert((hist.size() / 1) <= maxiter);
-      // nearest neighbour
-      uint16_t nn[maxiter][maxNeighbours];
-      uint8_t nnn[maxiter];  // number of nn
-      for (uint32_t k = 0; k < maxiter; ++k)
-        nnn[k] = 0;
+      // Serial connected-component labelling with a union-find:
+      //   - the root of each set is always its pixel with the smallest index, so the final labels are the same
+      //     as those produced by the iterative min-propagation used by the parallel (GPU) implementation;
+      //   - the neighbours are merged as soon as they are found, without storing them.
+      auto findRoot = [clusterId](int i) {
+        while (clusterId[i] != i) {
+          // path halving
+          clusterId[i] = clusterId[clusterId[i]];
+          i = clusterId[i];
+        }
+        return i;
+      };
 
-        // for hit filling!
-
-#ifdef GPU_DEBUG
-      // look for anomalous high occupancy
-      uint32_t n40, n60;
-      n40 = n60 = 0;
-
-      for (uint32_t j = 0; j < Hist::nbins(); j++) {
-        if (hist.size(j) > 60)
-          atomicAdd(&n60, 1);
-        if (hist.size(j) > 40)
-          atomicAdd(&n40, 1);
-      }
-
-      if (n60 > 0)
-        printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
-      else if (n40 > 0)
-        printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
-
-#endif
-
-      // fill NN
-      for (uint32_t j = 0, k = 0U; j < hist.size(); j++, ++k) {
-        assert(k < maxiter);
+      for (uint32_t j = 0; j < hist.size(); j++) {
         auto p = hist.begin() + j;
         auto i = *p + firstPixel;
         assert(id[i] != InvId);
@@ -165,7 +145,6 @@ namespace gpuClustering {
         int be = Hist::bin(y[i] + 1);
         auto e = hist.end(be);
         ++p;
-        assert(0 == nnn[k]);
         for (; p < e; ++p) {
           auto m = (*p) + firstPixel;
           assert(m != i);
@@ -173,55 +152,21 @@ namespace gpuClustering {
           assert(int(y[m]) - int(y[i]) <= 1);
           if (std::abs(int(x[m]) - int(x[i])) > 1)
             continue;
-          auto l = nnn[k]++;
-          assert(l < maxNeighbours);
-          nn[k][l] = *p;
-        }
-      }
-
-      // for each pixel, look at all the pixels until the end of the module;
-      // when two valid pixels within +/- 1 in x or y are found, set their id to the minimum;
-      // after the loop, all the pixel in each cluster should have the id equeal to the lowest
-      // pixel in the cluster ( clus[i] == i ).
-      bool more = true;
-      int nloops = 0;
-      while (more) {
-        if (1 == nloops % 2) {
-          for (uint32_t j = 0; j < hist.size(); j++) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            auto m = clusterId[i];
-            while (m != clusterId[m])
-              m = clusterId[m];
-            clusterId[i] = m;
+          auto ri = findRoot(i);
+          auto rm = findRoot(m);
+          if (ri < rm) {
+            clusterId[rm] = ri;
+          } else if (rm < ri) {
+            clusterId[ri] = rm;
           }
-        } else {
-          more = false;
-          for (uint32_t j = 0, k = 0U; j < hist.size(); j++, ++k) {
-            auto p = hist.begin() + j;
-            auto i = *p + firstPixel;
-            for (int kk = 0; kk < nnn[k]; ++kk) {
-              auto l = nn[k][kk];
-              auto m = l + firstPixel;
-              assert(m != i);
-              auto old = atomicMin(&clusterId[m], clusterId[i]);
-              if (old != clusterId[i]) {
-                // end the loop only if no changes were applied
-                more = true;
-              }
-              atomicMin(&clusterId[i], old);
-            }  // nnloop
-          }    // pixel loop
         }
-        ++nloops;
-      }  // end while
-
-#ifdef GPU_DEBUG
-      {
-        if (thisModuleId % 100 == 1)
-          printf("# loops %d\n", nloops);
       }
-#endif
+
+      // point every pixel directly to the root of its cluster
+      for (uint32_t j = 0; j < hist.size(); j++) {
+        auto i = hist.begin()[j] + firstPixel;
+        clusterId[i] = findRoot(i);
+      }
 
       unsigned int foundClusters = 0;
 
