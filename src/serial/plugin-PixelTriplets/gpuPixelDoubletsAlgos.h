@@ -173,11 +173,12 @@ namespace gpuPixelDoublets {
         auto dphi = short2phi(idphi);
         return dphi * dphi * (r2t4 - ri * ro) > (ro - ri) * (ro - ri);
       };
+      auto const maxdr = maxr[pairLayerId];
       auto z0cutoff = [&](PackedHit const& oh) {
         auto zo = oh.z;
         auto ro = oh.r;
         auto dr = ro - mer;
-        return dr > maxr[pairLayerId] || dr < 0 || std::abs((mez * ro - mer * zo)) > z0cut * dr;
+        return (dr > maxdr) | (dr < 0) | (std::abs((mez * ro - mer * zo)) > z0cut * dr);
       };
 
       auto zsizeCut = [&](PackedHit const& oh) {
@@ -222,16 +223,15 @@ namespace gpuPixelDoublets {
           auto oi = oh.index;
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
+          // evaluate the cheaper cuts without branching, and check them all at once,
+          // to limit the number of mispredicted branches
           auto mo = oh.detIndex;
-          if (mo > 2000)
-            continue;  //    invalid
-
-          if (doZ0Cut && z0cutoff(oh))
-            continue;
+          bool const invalid = mo > 2000;
 
           auto mop = oh.iphi;
           uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
-          if (idphi > iphicut)
+
+          if (invalid | (doZ0Cut & z0cutoff(oh)) | (idphi > iphicut))
             continue;
 
           if (doClusterCut && zsizeCut(oh))
