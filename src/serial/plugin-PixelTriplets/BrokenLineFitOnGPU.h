@@ -180,3 +180,68 @@ void kernelBLFit(CAConstants::TupleMultiplicity const *__restrict__ tupleMultipl
 #endif
   }
 }
+
+// Serial version of kernelBLFastFit followed by kernelBLFit: each n-tuplet is fitted using local matrices for
+// its hits, instead of the strided buffers used to coalesce the memory accesses on GPUs. This avoids allocating
+// and initialising the buffers, and accessing them with a stride of many memory pages.
+template <int N>
+void kernelBLFastFitAndFit(Tuples const *__restrict__ foundNtuplets,
+                           CAConstants::TupleMultiplicity const *__restrict__ tupleMultiplicity,
+                           HitsOnGPU const *__restrict__ hhp,
+                           double B,
+                           OutputSoA *results,
+                           uint32_t nHits,
+                           uint32_t maxNumberOfTuples) {
+  constexpr uint32_t hitsInFit = N;
+
+  assert(hitsInFit <= nHits);
+  assert(hhp);
+  assert(foundNtuplets);
+  assert(tupleMultiplicity);
+  assert(results);
+
+  for (uint32_t tuple_idx = 0, nt = std::min(tupleMultiplicity->size(nHits), maxNumberOfTuples); tuple_idx < nt;
+       ++tuple_idx) {
+    // get it from the ntuple container (one to one to helix)
+    auto tkid = *(tupleMultiplicity->begin(nHits) + tuple_idx);
+    assert(tkid < foundNtuplets->nbins());
+    assert(foundNtuplets->size(tkid) == nHits);
+
+    Rfit::Matrix3xNd<N> hits;
+    Rfit::Vector4d fast_fit;
+    Rfit::Matrix6xNf<N> hits_ge;
+
+    // Prepare data structure
+    auto const *hitId = foundNtuplets->begin(tkid);
+    for (unsigned int i = 0; i < hitsInFit; ++i) {
+      auto hit = hitId[i];
+      float ge[6];
+      hhp->cpeParams()
+          .detParams(hhp->detectorIndex(hit))
+          .frame.toGlobal(hhp->xerrLocal(hit), 0, hhp->yerrLocal(hit), ge);
+
+      hits.col(i) << hhp->xGlobal(hit), hhp->yGlobal(hit), hhp->zGlobal(hit);
+      hits_ge.col(i) << ge[0], ge[1], ge[2], ge[3], ge[4], ge[5];
+    }
+    BrokenLine::BL_Fast_fit(hits, fast_fit);
+
+    // no NaN here....
+    assert(fast_fit(0) == fast_fit(0));
+    assert(fast_fit(1) == fast_fit(1));
+    assert(fast_fit(2) == fast_fit(2));
+    assert(fast_fit(3) == fast_fit(3));
+
+    BrokenLine::PreparedBrokenLineData<N> data;
+    BrokenLine::karimaki_circle_fit circle;
+    Rfit::line_fit line;
+
+    BrokenLine::prepareBrokenLineData(hits, fast_fit, B, data);
+    BrokenLine::BL_Line_fit(hits_ge, fast_fit, B, data, line);
+    BrokenLine::BL_Circle_fit(hits, hits_ge, fast_fit, B, data, circle);
+
+    results->stateAtBS.copyFromCircle(circle.par, circle.cov, line.par, line.cov, 1.f / float(B), tkid);
+    results->pt(tkid) = float(B) / float(std::abs(circle.par(2)));
+    results->eta(tkid) = asinhf(line.par(0));
+    results->chi2(tkid) = (circle.chi2 + line.chi2) / (2 * N - 5);
+  }
+}
