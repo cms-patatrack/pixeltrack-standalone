@@ -151,20 +151,14 @@ namespace cms {
 
       inline void add(CountersOnly const &co) {
         for (uint32_t i = 0; i < totbins(); ++i) {
-          auto &a = (std::atomic<Counter> &)(off[i]);
-          a += co.off[i];
+          off[i] += co.off[i];
         }
       }
 
-      static inline uint32_t atomicIncrement(Counter &x) {
-        auto &a = (std::atomic<Counter> &)(x);
-        return a++;
-      }
+      // each HistoContainer is filled by a single thread, so there is no need for atomic operations
+      static inline uint32_t atomicIncrement(Counter &x) { return x++; }
 
-      static inline uint32_t atomicDecrement(Counter &x) {
-        auto &a = (std::atomic<Counter> &)(x);
-        return a--;
-      }
+      static inline uint32_t atomicDecrement(Counter &x) { return x--; }
 
       inline void countDirect(T b) {
         assert(b < nbins());
