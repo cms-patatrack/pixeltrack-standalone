@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <vector>
 
 #include "CUDADataFormats/TrackingRecHit2DCUDA.h"
 #include "DataFormats/approx_atan2.h"
@@ -21,6 +22,18 @@ namespace gpuPixelDoublets {
   using CellTracks = CAConstants::CellTracks;
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
+
+  // The quantities of the outer hits used by the doublet search, stored in the same order as the hits in the
+  // phi histogram, so that the search window of each inner hit is scanned contiguously in memory.
+  struct alignas(16) PackedHit {
+    float z;
+    float r;
+    int16_t iphi;
+    int16_t sizeY;
+    uint16_t detIndex;
+    TrackingRecHit2DSOAView::hindex_type index;
+  };
+  static_assert(sizeof(PackedHit) == 16);
 
   void doubletsFromHisto(uint8_t const* __restrict__ layerPairs,
                          uint32_t nPairs,
@@ -55,6 +68,16 @@ namespace gpuPixelDoublets {
     auto const& __restrict__ hist = hh.phiBinner();
     uint32_t const* __restrict__ offsets = hh.hitsLayerStart();
     assert(offsets);
+
+    // per-thread buffer, reused across events to avoid reallocating it
+    thread_local std::vector<PackedHit> packedHitsBuffer;
+    packedHitsBuffer.resize(hist.size());
+    PackedHit* __restrict__ packedHits = packedHitsBuffer.data();
+    for (uint32_t q = 0; q < hist.size(); ++q) {
+      auto oi = hist.begin()[q];
+      packedHits[q] = PackedHit{
+          hh.zGlobal(oi), hh.rGlobal(oi), hh.iphi(oi), hh.clusterSizeY(oi), hh.detectorIndex(oi), oi};
+    }
 
     auto layerSize = [=](uint8_t li) { return offsets[li + 1] - offsets[li]; };
 
@@ -143,29 +166,29 @@ namespace gpuPixelDoublets {
       constexpr float minRadius =
           hardPtCut * 87.78f;  // cm (1 GeV track has 1 GeV/c / (e * 3.8T) ~ 87 cm radius in a 3.8T field)
       constexpr float minRadius2T4 = 4.f * minRadius * minRadius;
-      auto ptcut = [&](int j, int16_t idphi) {
+      auto ptcut = [&](PackedHit const& oh, int16_t idphi) {
         auto r2t4 = minRadius2T4;
         auto ri = mer;
-        auto ro = hh.rGlobal(j);
+        auto ro = oh.r;
         auto dphi = short2phi(idphi);
         return dphi * dphi * (r2t4 - ri * ro) > (ro - ri) * (ro - ri);
       };
-      auto z0cutoff = [&](int j) {
-        auto zo = hh.zGlobal(j);
-        auto ro = hh.rGlobal(j);
+      auto z0cutoff = [&](PackedHit const& oh) {
+        auto zo = oh.z;
+        auto ro = oh.r;
         auto dr = ro - mer;
         return dr > maxr[pairLayerId] || dr < 0 || std::abs((mez * ro - mer * zo)) > z0cut * dr;
       };
 
-      auto zsizeCut = [&](int j) {
+      auto zsizeCut = [&](PackedHit const& oh) {
         auto onlyBarrel = outer < 4;
-        auto so = hh.clusterSizeY(j);
+        auto so = oh.sizeY;
         auto dy = inner == 0 ? maxDYsize12 : maxDYsize;
         // in the barrel cut on difference in size
         // in the endcap on the prediction on the first layer (actually in the barrel only: happen to be safe for endcap as well)
         // FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
-        auto zo = hh.zGlobal(j);
-        auto ro = hh.rGlobal(j);
+        auto zo = oh.z;
+        auto ro = oh.r;
         return onlyBarrel ? mes > 0 && so > 0 && std::abs(so - mes) > dy
                           : (inner < 4) && mes > 0 &&
                                 std::abs(mes - int(std::abs((mez - zo) / (mer - ro)) * dzdrFact + 0.5f)) > maxDYPred;
@@ -191,28 +214,29 @@ namespace gpuPixelDoublets {
         if (kk != kl && kk != kh)
           nmin += hist.size(kk + hoff);
 #endif
-        auto const* __restrict__ p = hist.begin(kk + hoff);
-        auto const* __restrict__ e = hist.end(kk + hoff);
+        PackedHit const* __restrict__ p = packedHits + hist.off[kk + hoff];
+        PackedHit const* __restrict__ e = packedHits + hist.off[kk + hoff + 1];
         p += first;
         for (; p < e; p += stride) {
-          auto oi = *(p);
+          PackedHit const& oh = *p;
+          auto oi = oh.index;
           assert(oi >= offsets[outer]);
           assert(oi < offsets[outer + 1]);
-          auto mo = hh.detectorIndex(oi);
+          auto mo = oh.detIndex;
           if (mo > 2000)
             continue;  //    invalid
 
-          if (doZ0Cut && z0cutoff(oi))
+          if (doZ0Cut && z0cutoff(oh))
             continue;
 
-          auto mop = hh.iphi(oi);
+          auto mop = oh.iphi;
           uint16_t idphi = std::min(std::abs(int16_t(mop - mep)), std::abs(int16_t(mep - mop)));
           if (idphi > iphicut)
             continue;
 
-          if (doClusterCut && zsizeCut(oi))
+          if (doClusterCut && zsizeCut(oh))
             continue;
-          if (doPtCut && ptcut(oi, idphi))
+          if (doPtCut && ptcut(oh, idphi))
             continue;
 
           auto ind = atomicAdd(nCells, 1);
