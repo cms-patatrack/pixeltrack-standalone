@@ -29,7 +29,7 @@ closest denser track, the percolation, the weighted fits, the pt2 sums -- is
 vectorised, over all the track pairs within eps in z at once.
 """
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 

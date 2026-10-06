@@ -31,11 +31,14 @@ reco-optimised*.ini that already do:
     script = pixel_clusters_optimised
 """
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 
-import pixel_clusters_common as common
+import pixel_clusters_common
+from namespaces import namespace
+
+common = namespace(pixel_clusters_common)
 
 
 class PixelClustersOptimised:

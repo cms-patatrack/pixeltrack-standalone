@@ -13,7 +13,7 @@ labelling, the one place where the two modules make different choices.  D27
 measures what each of the two is worth.
 """
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 
