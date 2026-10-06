@@ -54,8 +54,8 @@ class Calibrate:
     def _check_conditions(calibration: edm_core.Calibration) -> None:
         """Reads the calibration both ways and checks it against its literals.
 
-        Once per stream: these are conditions, and D20 measured a bound scalar
-        read at ~35 ns, which is a Python-level loop nobody wants per event.
+        Once per stream: these are conditions, and reading them one bound scalar
+        at a time (D20) is a Python-level loop nobody wants per event.
         """
         channels = calibration.channels()
         if channels != edm_core.Calibration.kChannels:
