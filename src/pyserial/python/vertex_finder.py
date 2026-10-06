@@ -15,21 +15,18 @@ of element i of a MatrixSoA at data_[k * S + i], so the track z at the beam
 spot is component 4 of `stateAtBS.state` and its variance is component 14 of
 `stateAtBS.covariance`.
 
-On fidelity: the two loops that are inherently sequential are written as loops
-here too, because their results depend on the order in which they scan.
+On fidelity: "find closest above me" keeps a running `mdist` in the C++ and
+overwrites its answer each time it finds something nearer, so which of two
+equally distant candidates wins depends on the scan order.  The C++ scans the
+three histogram bins around each track; this takes the first candidate in z
+order.  Ties are broken differently, but a tie needs two tracks at exactly
+equal float distance, and the assignment is then percolated to the same seed
+anyway in all but pathological cases.  splitVertices is a two-means iteration
+per vertex, and its per-vertex work is small, so it stays a loop.
 
-  - "find closest above me" keeps a running `mdist` and overwrites its answer
-    each time it finds something nearer, so which of two equally distant
-    candidates wins depends on the scan order.  The C++ scans the three
-    histogram bins around each track; this scans candidates in track order.
-    Ties are broken differently, but a tie needs two tracks at exactly equal
-    float distance, and the assignment is then percolated to the same seed
-    anyway in all but pathological cases.
-  - splitVertices is a two-means iteration per vertex, and its per-vertex work
-    is small, so it stays a loop.
-
-Everything else -- the selection, the neighbour counting, the weighted fits,
-the pt2 sums -- is vectorised.
+Everything else -- the selection, the neighbour counting, the search for the
+closest denser track, the percolation, the weighted fits, the pt2 sums -- is
+vectorised, over all the track pairs within eps in z at once.
 """
 
 import numpy as np
@@ -101,7 +98,6 @@ class VertexFinder:
         nt = zt.size
         er2mx = self.errmax * self.errmax
 
-        nn = np.zeros(nt, dtype=np.int32)
         iv = np.arange(nt, dtype=np.int32)
 
         # Candidate neighbours.  The C++ scans the three histogram bins around
@@ -117,36 +113,44 @@ class VertexFinder:
         lo = np.searchsorted(zsorted, zt - self.eps, side="left")
         hi = np.searchsorted(zsorted, zt + self.eps, side="right")
 
+        # Every (track, candidate) pair in the windows, in window order: the
+        # candidates of track i are order[lo[i]:hi[i]], so pair k belongs to
+        # track pi[k] and its candidate is order[lo[pi[k]] + k - first[pi[k]]].
+        counts = (hi - lo).astype(np.int64)
+        first = np.cumsum(counts) - counts
+        pi = np.repeat(np.arange(nt, dtype=np.int32), counts)
+        pj = order[np.repeat(lo, counts) + np.arange(pi.size) - np.repeat(first, counts)]
+        dist = np.abs(zt[pi] - zt[pj])
+        close = (dist <= self.eps) & (dist * dist <= self.chi2max * (ezt2[pi] + ezt2[pj]))
+
+        # The number of neighbours of each seed.
         seeds = ezt2 <= er2mx
-        for i in range(nt):
-            if not seeds[i]:
-                continue
-            js = order[lo[i] : hi[i]]
-            dist = np.abs(zt[i] - zt[js])
-            ok = (js != i) & (dist <= self.eps) & (dist * dist <= self.chi2max * (ezt2[i] + ezt2[js]))
-            nn[i] = int(np.count_nonzero(ok))
+        counted = close & (pj != pi) & seeds[pi]
+        nn = np.bincount(pi[counted], minlength=nt).astype(np.int32)
 
         # "find closest above me": the nearest track that is denser, or equally
-        # dense and lower in z.
-        for i in range(nt):
-            js = order[lo[i] : hi[i]]
-            better = (nn[js] > nn[i]) | ((nn[js] == nn[i]) & (zt[js] < zt[i]))
-            js = js[better]
-            if js.size == 0:
-                continue
-            dist = np.abs(zt[i] - zt[js])
-            ok = (dist <= self.eps) & (dist * dist <= self.chi2max * (ezt2[i] + ezt2[js]))
-            js = js[ok]
-            if js.size == 0:
-                continue
-            iv[i] = js[np.argmin(np.abs(zt[i] - zt[js]))]
+        # dense and lower in z.  Among equally near candidates the first one in
+        # window order wins, as argmin over the window would choose.
+        better = (nn[pj] > nn[pi]) | ((nn[pj] == nn[pi]) & (zt[pj] < zt[pi]))
+        cand = np.flatnonzero(close & better)
+        if cand.size:
+            ci = pi[cand]
+            cd = dist[cand]
+            starts = np.flatnonzero(np.r_[True, ci[1:] != ci[:-1]])
+            nearest = np.minimum.reduceat(cd, starts)
+            at_min = cd == np.repeat(nearest, np.diff(np.r_[starts, ci.size]))
+            winners, firsts = np.unique(ci[at_min], return_index=True)
+            iv[winners] = pj[cand[at_min][firsts]]
 
-        # Consolidate the graph: percolate to the seed of each cluster.
-        for i in range(nt):
-            m = iv[i]
-            while m != iv[m]:
-                m = iv[m]
-            iv[i] = m
+        # Consolidate the graph: percolate to the seed of each cluster.  Each
+        # track points at a denser one, or an equally dense one lower in z, so
+        # there are no cycles and pointer jumping reaches the same seed as
+        # following the chain track by track.
+        while True:
+            jumped = iv[iv]
+            if np.array_equal(jumped, iv):
+                break
+            iv = jumped
 
         # A track that points at itself and is dense enough is a cluster; the
         # rest is noise.
