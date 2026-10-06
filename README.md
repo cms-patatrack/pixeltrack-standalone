@@ -9,6 +9,8 @@
   * [Test program specific notes (if any)](#test-program-specific-notes-if-any)
     * [`fwtest`](#fwtest)
     * [`serial`](#serial)
+    * [`pytest`](#pytest)
+    * [`pyserial`](#pyserial)
     * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
@@ -224,6 +226,57 @@ CUDA in order to be a "pure CPU" version. Note that the name refers to
 (the absence of) intra-algorithm parallelization and is thus
 comparable to the Serial backend of Alpaka or Kokkos. The event-level
 parallelism is implemented as in `fwtest`.
+
+#### `pytest`
+
+A fork of `fwtest` that runs modules written in Python, concurrently, on a
+free-threaded CPython 3.14 embedded through nanobind. It adds three things to
+the framework: products keyed by `(type, label)` so one event can hold several
+products of the same type, a simple INI configuration language, and Python
+modules.
+
+```
+make pytest && ./pytest src/pytest/square.ini --maxEvents 1000
+```
+
+`square.ini` squares the same vector in C++ and in Python and compares the two;
+`test.ini` is the `fwtest` schedule expressed as a configuration; `emplace.ini`
+builds products out of Python values; and `bindings.ini` exercises every
+binding the generator emits -- columns, views, conditions, all three ways of
+publishing a product -- and checks each one against the C++ module doing the
+same thing. `make test_pytest_cpu` runs all four.
+
+#### `pyserial`
+
+A fork of `serial` with the same framework changes, and four of its modules --
+the clusterizer, the beam spot, the pixel local reconstruction and the vertex
+finding -- rewritten in Python. Only the track finder is still C++.
+
+Configurations, differing only in what runs in Python and what is checked:
+
+```
+./pyserial src/pyserial/reco.ini                   # everything in C++
+./pyserial src/pyserial/reco-validate.ini          # the same, validated
+./pyserial src/pyserial/reco-python.ini            # every ported module in Python
+./pyserial src/pyserial/reco-python-validate.ini   # the same, validated
+./pyserial src/pyserial/reco-compare.ini           # both, compared object by object
+```
+
+The clusterizer comes in two: `python/pixel_clusters.py` translates the C++
+kernels, and `python/pixel_clusters_optimised.py` groups the pixels into
+clusters a different way -- same products, faster. The
+three `reco-optimised*.ini` are the three above with that one in place of the
+other.
+
+`reco.ini` and `reco-python.ini` run the same schedule on the same events, so
+the difference between them is the four Python modules and nothing else.
+`reco-compare.ini` runs both implementations of each of them side by side and
+compares their products field by field: the Python modules reproduce the C++
+ones exactly. `EDM_PYTHON_GIL=1` forces the GIL back on, to measure what
+free-threading is worth.
+
+Both backends and the decisions behind them are described in
+[doc/pyserial/README.md](doc/pyserial/README.md).
 
 #### `cudatest`
 

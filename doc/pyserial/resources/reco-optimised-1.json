@@ -1,0 +1,82 @@
+{
+  "modules": [
+    {
+      "events": 10000,
+      "label": "source",
+      "time_real": 330.172312,
+      "time_thread": 328.563165,
+      "type": "Source"
+    },
+    {
+      "events": 10000,
+      "label": "beamSpot",
+      "time_real": 85.576679,
+      "time_thread": 85.364094,
+      "type": "PythonProducer"
+    },
+    {
+      "events": 10000,
+      "label": "clusters",
+      "time_real": 95109.087621,
+      "time_thread": 94681.804227,
+      "type": "PythonProducer"
+    },
+    {
+      "events": 10000,
+      "label": "recHits",
+      "time_real": 36069.158760,
+      "time_thread": 35911.418520,
+      "type": "PythonProducer"
+    },
+    {
+      "events": 10000,
+      "label": "tracks",
+      "time_real": 78127.290217,
+      "time_thread": 77795.006451,
+      "type": "CAHitNtupletCUDA"
+    },
+    {
+      "events": 10000,
+      "label": "vertices",
+      "time_real": 7618.921659,
+      "time_thread": 7586.653159,
+      "type": "PythonProducer"
+    },
+    {
+      "events": 10000,
+      "label": "other",
+      "time_real": 245.389741,
+      "time_thread": 235.194621,
+      "type": "other"
+    },
+    {
+      "events": 10000,
+      "label": "eventsetup",
+      "time_real": 3.544553,
+      "time_thread": 1.071493,
+      "type": "eventsetup"
+    },
+    {
+      "events": 10000,
+      "label": "idle",
+      "time_real": 22.747818,
+      "time_thread": 22.529132,
+      "type": "idle"
+    }
+  ],
+  "resources": [
+    {
+      "time_real": "real time"
+    },
+    {
+      "time_thread": "cpu time"
+    }
+  ],
+  "total": {
+    "events": 10000,
+    "label": "reco-optimised",
+    "time_real": 217611.889360,
+    "time_thread": 216647.604862,
+    "type": "Job"
+  }
+}

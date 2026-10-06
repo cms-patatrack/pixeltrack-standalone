@@ -1,0 +1,82 @@
+{
+  "modules": [
+    {
+      "events": 16000,
+      "label": "source",
+      "time_real": 658.777919,
+      "time_thread": 655.935245,
+      "type": "Source"
+    },
+    {
+      "events": 16000,
+      "label": "beamSpot",
+      "time_real": 13.616305,
+      "time_thread": 13.510520,
+      "type": "BeamSpotToPOD"
+    },
+    {
+      "events": 16000,
+      "label": "clusters",
+      "time_real": 44725.870836,
+      "time_thread": 44523.199478,
+      "type": "SiPixelRawToClusterCUDA"
+    },
+    {
+      "events": 16000,
+      "label": "recHits",
+      "time_real": 18971.456783,
+      "time_thread": 18889.543846,
+      "type": "SiPixelRecHitCUDA"
+    },
+    {
+      "events": 16000,
+      "label": "tracks",
+      "time_real": 151756.136208,
+      "time_thread": 151036.529863,
+      "type": "CAHitNtupletCUDA"
+    },
+    {
+      "events": 16000,
+      "label": "vertices",
+      "time_real": 2507.272477,
+      "time_thread": 2495.666636,
+      "type": "PixelVertexProducerCUDA"
+    },
+    {
+      "events": 16000,
+      "label": "other",
+      "time_real": 567.187726,
+      "time_thread": 551.363109,
+      "type": "other"
+    },
+    {
+      "events": 16000,
+      "label": "eventsetup",
+      "time_real": 3.927975,
+      "time_thread": 1.255642,
+      "type": "eventsetup"
+    },
+    {
+      "events": 16000,
+      "label": "idle",
+      "time_real": 355.607698,
+      "time_thread": 288.639660,
+      "type": "idle"
+    }
+  ],
+  "resources": [
+    {
+      "time_real": "real time"
+    },
+    {
+      "time_thread": "cpu time"
+    }
+  ],
+  "total": {
+    "events": 16000,
+    "label": "reco",
+    "time_real": 219559.853927,
+    "time_thread": 218455.643999,
+    "type": "Job"
+  }
+}

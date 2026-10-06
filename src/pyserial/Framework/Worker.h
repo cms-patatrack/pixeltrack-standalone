@@ -1,0 +1,130 @@
+#ifndef Worker_h
+#define Worker_h
+
+#include <atomic>
+#include <vector>
+//#include <iostream>
+
+#include "Framework/ResourceMonitor.h"
+#include "Framework/WaitingTask.h"
+#include "Framework/WaitingTaskHolder.h"
+#include "Framework/WaitingTaskList.h"
+#include "Framework/WaitingTaskWithArenaHolder.h"
+
+namespace edm {
+  class Event;
+  class EventSetup;
+  class ModuleConfig;
+  class ProductRegistry;
+
+  class Worker {
+  public:
+    virtual ~Worker() = default;
+
+    // not thread safe
+    void setItemsToGet(std::vector<Worker*> workers) { itemsToGet_ = std::move(workers); }
+
+    // Where the time spent in this module is added up, shared by its instances in every stream.
+    void setResources(ResourceMonitor::Counters* resources) { resources_ = resources; }
+
+    // thread safe
+    void prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask);
+
+    // not thread safe
+    virtual void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask) = 0;
+
+    // not thread safe
+    virtual void doEndJob() = 0;
+
+    // not thread safe
+    void reset() {
+      prefetchRequested_ = false;
+      doReset();
+    }
+
+  protected:
+    virtual void doReset() = 0;
+
+    ResourceMonitor::Counters* resources_ = nullptr;
+
+  private:
+    std::vector<Worker*> itemsToGet_;
+    std::atomic<bool> prefetchRequested_ = false;
+  };
+
+  /// Every module is constructed the same way, whether or not it reads any
+  /// parameter of its own:
+  ///
+  ///     Module(edm::ModuleConfig const& config, edm::ProductRegistry& reg);
+  ///
+  /// One spelling rather than two costs an ignored argument in the modules that
+  /// take no parameters, and buys a single signature to write a plugin against
+  /// and a compiler error, rather than a silent fallback, when one is wrong.
+  template <typename T>
+  class WorkerT : public Worker {
+  public:
+    WorkerT(ModuleConfig const& config, ProductRegistry& reg) : producer_(config, reg) {}
+
+    void doWorkAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder task) override {
+      waitingTasksWork_.add(task);
+      //std::cout << "doWorkAsync for " << this << " with iTask " << iTask << std::endl;
+      bool expected = false;
+      if (workStarted_.compare_exchange_strong(expected, true)) {
+        //std::cout << "first doWorkAsync call" << std::endl;
+
+        WaitingTask* moduleTask =
+            make_waiting_task([this, &event, &eventSetup](std::exception_ptr const* iPtr) mutable {
+              if (iPtr) {
+                waitingTasksWork_.doneWaiting(*iPtr);
+              } else {
+                std::exception_ptr exceptionPtr;
+                try {
+                  //std::cout << "calling doProduce " << this << std::endl;
+                  ResourceMonitor::ScopedTiming timing(resources_);
+                  timing.countEvent();
+                  producer_.doProduce(event, eventSetup);
+                } catch (...) {
+                  exceptionPtr = std::current_exception();
+                }
+                //std::cout << "waitingTasksWork_.doneWaiting " << this << std::endl;
+                waitingTasksWork_.doneWaiting(exceptionPtr);
+              }
+            });
+        auto* group = task.group();
+        if (producer_.hasAcquire()) {
+          WaitingTaskWithArenaHolder runProduceHolder{*group, moduleTask};
+          moduleTask = make_waiting_task([this, &event, &eventSetup, runProduceHolder = std::move(runProduceHolder)](
+                                             std::exception_ptr const* iPtr) mutable {
+            if (iPtr) {
+              runProduceHolder.doneWaiting(*iPtr);
+            } else {
+              std::exception_ptr exceptionPtr;
+              try {
+                ResourceMonitor::ScopedTiming timing(resources_);
+                producer_.doAcquire(event, eventSetup, runProduceHolder);
+              } catch (...) {
+                exceptionPtr = std::current_exception();
+              }
+              runProduceHolder.doneWaiting(exceptionPtr);
+            }
+          });
+        }
+        //std::cout << "calling prefetchAsync " << this << " with moduleTask " << moduleTask << std::endl;
+        prefetchAsync(event, eventSetup, WaitingTaskHolder(*group, moduleTask));
+      }
+    }
+
+    void doEndJob() override { producer_.doEndJob(); }
+
+  private:
+    void doReset() override {
+      waitingTasksWork_.reset();
+      workStarted_ = false;
+    }
+
+    T producer_;
+    WaitingTaskList waitingTasksWork_;
+    std::atomic<bool> workStarted_ = false;
+  };
+}  // namespace edm
+#endif
