@@ -21,7 +21,7 @@ namespace gpuPixelDoublets {
   void fishbone(GPUCACell::Hits const* __restrict__ hhp,
                 GPUCACell* cells,
                 uint32_t const* __restrict__ nCells,
-                GPUCACell::OuterHitOfCell const* __restrict__ isOuterHitOfCell,
+                CAConstants::OuterHitOfCellContainer isOuterHitOfCell,
                 uint32_t nHits,
                 bool checkTrack) {
     constexpr auto maxCellsPerHit = GPUCACell::maxCellsPerHit;
@@ -38,7 +38,7 @@ namespace gpuPixelDoublets {
     uint32_t cc[maxCellsPerHit];
 
     for (int idy = firstY, nt = nHits; idy < nt; idy += 1) {
-      auto const& vc = isOuterHitOfCell[idy];
+      auto const vc = isOuterHitOfCell[idy];
       auto s = vc.size();
       if (s < 2)
         continue;

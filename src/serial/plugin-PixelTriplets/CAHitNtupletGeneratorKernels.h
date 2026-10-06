@@ -186,7 +186,8 @@ private:
   CAConstants::CellTracks* device_theCellTracksContainer_;
 
   unique_ptr<GPUCACell[]> device_theCells_;
-  unique_ptr<GPUCACell::OuterHitOfCell[]> device_isOuterHitOfCell_;
+  std::unique_ptr<uint32_t[]> device_isOuterHitOfCellStorage_;
+  CAConstants::OuterHitOfCellContainer device_isOuterHitOfCell_;
   uint32_t* device_nCells_ = nullptr;
 
   unique_ptr<HitToTuple> device_hitToTuple_;

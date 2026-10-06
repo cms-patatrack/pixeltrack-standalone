@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <malloc.h>
+
 #include <tbb/global_control.h>
 #include <tbb/info.h>
 #include <tbb/task_arena.h>
@@ -15,6 +17,15 @@
 #include "PosixClockGettime.h"
 
 namespace {
+  // The event data products and the per-event working buffers are large (up to ~20 MB each) and are allocated
+  // and freed for every event. By default glibc serves such blocks with mmap() and returns them to the system
+  // with munmap() on free, so every event pays for page faults and for the kernel zeroing the new pages.
+  // Keep these blocks in the malloc heaps instead, and do not trim the heaps, so that the memory is reused.
+  void configureMalloc() {
+    mallopt(M_MMAP_THRESHOLD, 32 * 1024 * 1024);  // the maximum value allowed by glibc on 64-bit systems
+    mallopt(M_TRIM_THRESHOLD, 1024 * 1024 * 1024);
+  }
+
   void print_help(std::string const& name) {
     std::cout
         << "Usage: " << name
@@ -37,6 +48,8 @@ Options:
 }  // namespace
 
 int main(int argc, char** argv) {
+  configureMalloc();
+
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;

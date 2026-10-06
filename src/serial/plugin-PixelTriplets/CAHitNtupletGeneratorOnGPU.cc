@@ -94,7 +94,7 @@ CAHitNtupletGeneratorOnGPU::~CAHitNtupletGeneratorOnGPU() {
 }
 
 PixelTrackHeterogeneous CAHitNtupletGeneratorOnGPU::makeTuples(TrackingRecHit2DCPU const& hits_d, float bfield) const {
-  PixelTrackHeterogeneous tracks(std::make_unique<pixelTrack::TrackSoA>());
+  PixelTrackHeterogeneous tracks(std::make_unique_for_overwrite<pixelTrack::TrackSoA>());
 
   auto* soa = tracks.get();
   assert(soa);

@@ -61,26 +61,50 @@ namespace gpuPixelDoublets {
   using CellNeighborsVector = CAConstants::CellNeighborsVector;
   using CellTracksVector = CAConstants::CellTracksVector;
 
-   void initDoublets(GPUCACell::OuterHitOfCell* isOuterHitOfCell,
-                               int nHits,
-                               CellNeighborsVector* cellNeighbors,
-                               CellNeighbors* cellNeighborsContainer,
-                               CellTracksVector* cellTracks,
-                               CellTracks* cellTracksContainer) {
-    assert(isOuterHitOfCell);
-    int first = 0;
-    for (int i = first; i < nHits; i++)
-      isOuterHitOfCell[i].reset();
+  void initDoublets(CellNeighborsVector* cellNeighbors,
+                    CellNeighbors* cellNeighborsContainer,
+                    CellTracksVector* cellTracks,
+                    CellTracks* cellTracksContainer) {
+    cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
+    cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
+    [[maybe_unused]] auto i = cellNeighbors->extend();
+    assert(0 == i);
+    (*cellNeighbors)[0].reset();
+    i = cellTracks->extend();
+    assert(0 == i);
+    (*cellTracks)[0].reset();
+  }
 
-    if (0 == first) {
-      cellNeighbors->construct(CAConstants::maxNumOfActiveDoublets(), cellNeighborsContainer);
-      cellTracks->construct(CAConstants::maxNumOfActiveDoublets(), cellTracksContainer);
-      auto i = cellNeighbors->extend();
-      assert(0 == i);
-      (*cellNeighbors)[0].reset();
-      i = cellTracks->extend();
-      assert(0 == i);
-      (*cellTracks)[0].reset();
+  // Fill the compact storage of the cells whose outer hit is each hit, from the cells found by getDoubletsFromHisto.
+  // The cells are added in increasing order, up to maxCellsPerHit() per hit, so the result is the same as calling
+  // OuterHitOfCell::push_back() for each cell as soon as it is created.
+  // `cursor` is a working area of nHits elements.
+  void fillOuterHitOfCell(GPUCACell const* __restrict__ cells,
+                          uint32_t nCells,
+                          uint32_t nHits,
+                          CAConstants::OuterHitOfCellContainer isOuterHitOfCell,
+                          uint32_t* __restrict__ cursor) {
+    constexpr uint32_t maxCellsPerHit = CAConstants::maxCellsPerHit();
+    uint32_t* __restrict__ offsets = isOuterHitOfCell.offsets;
+
+    // count the cells for each hit, in offsets[hit + 1]
+    for (uint32_t i = 0; i <= nHits; ++i)
+      offsets[i] = 0;
+    for (uint32_t c = 0; c < nCells; ++c) {
+      auto& count = offsets[cells[c].get_outer_hit_id() + 1];
+      count += (count < maxCellsPerHit);
+    }
+    // convert the counts to offsets
+    for (uint32_t i = 0; i < nHits; ++i) {
+      offsets[i + 1] += offsets[i];
+      cursor[i] = offsets[i];
+    }
+    // fill the cells
+    for (uint32_t c = 0; c < nCells; ++c) {
+      auto hit = cells[c].get_outer_hit_id();
+      if (cursor[hit] < offsets[hit + 1]) {
+        isOuterHitOfCell.cells[cursor[hit]++] = c;
+      }
     }
   }
 
@@ -96,7 +120,6 @@ namespace gpuPixelDoublets {
                                 CellNeighborsVector* cellNeighbors,
                                 CellTracksVector* cellTracks,
                                 TrackingRecHit2DSOAView const* __restrict__ hhp,
-                                GPUCACell::OuterHitOfCell* isOuterHitOfCell,
                                 int nActualPairs,
                                 bool ideal_cond,
                                 bool doClusterCut,
@@ -111,7 +134,6 @@ namespace gpuPixelDoublets {
                       cellNeighbors,
                       cellTracks,
                       hh,
-                      isOuterHitOfCell,
                       phicuts,
                       minz,
                       maxz,
