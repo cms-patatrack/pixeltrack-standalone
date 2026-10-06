@@ -66,24 +66,32 @@ class PixelClustersOptimised:
         return np.cumsum(new) - 1, np.flatnonzero(new), col, row
 
     @staticmethod
-    def _run_edges(runOf, key, col, row):
-        """Runs of adjacent columns that touch.
+    def _run_edges(runOf, runStart, key, col, row):
+        """Runs of adjacent columns that touch, each pair once.
 
-        For each pixel, the pixels of the next column with a row within one are
-        a contiguous stretch of the sorted order, which searchsorted finds at
-        both ends at once; the runs those two pixels belong to are connected.
+        A run covering rows r0 to r1 touches the pixels of the next column with
+        a row from r0 - 1 to r1 + 1: the union of what each of its pixels
+        touches, so the connectivity is the same as looking pixel by pixel.
+        They are a contiguous stretch of the sorted order, which searchsorted
+        finds at both ends at once, and the runs they belong to are contiguous
+        within it, so keeping the first pixel of each gives every pair once.
         """
-        nextCol = (col + 1) * common.ROW_STRIDE
-        lo = np.searchsorted(key, nextCol + row - 1, side="left")
-        hi = np.searchsorted(key, nextCol + row + 1, side="right")
+        runEnd = np.append(runStart[1:], key.size) - 1
+        nextCol = (col[runStart] + 1) * common.ROW_STRIDE
+        lo = np.searchsorted(key, nextCol + row[runStart] - 1, side="left")
+        hi = np.searchsorted(key, nextCol + row[runEnd] + 1, side="right")
         counts = np.maximum(hi - lo, 0)
         total = int(counts.sum())
         if total == 0:
             return np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64)
-        within = np.arange(total) - np.repeat(np.cumsum(counts) - counts, counts)
-        left = runOf[np.repeat(np.arange(runOf.size), counts)]
-        right = runOf[np.repeat(lo, counts) + within]
-        return left, right
+        offsets = np.cumsum(counts) - counts
+        pixel = np.repeat(lo - offsets, counts) + np.arange(total)
+        right = runOf[pixel]
+        first = np.ones(total, dtype=bool)
+        first[1:] = right[1:] != right[:-1]
+        first[offsets[counts > 0]] = True
+        left = np.repeat(np.arange(runStart.size), counts)
+        return left[first], right[first]
 
     @staticmethod
     def _gather(source, starts, lengths, nodes):
@@ -173,7 +181,7 @@ class PixelClustersOptimised:
         order, key = common.sorted_pixels(valid, moduleOf, xx, yy)
 
         runOf, runStart, col, row = self._runs(key)
-        component = self._label(*self._run_edges(runOf, key, col, row), runStart.size)
+        component = self._label(*self._run_edges(runOf, runStart, key, col, row), runStart.size)
 
         # which component each pixel belongs to, back in index order
         componentOf = np.empty(nWords, dtype=np.int64)
