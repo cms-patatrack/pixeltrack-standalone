@@ -75,7 +75,7 @@ namespace pytest {
     static constexpr std::int32_t kChannels = 8;
 
     /// The same numbers as columns.  Reading 1856 modules one scalar at a time
-    /// is what D20 measured at 35 ns per attribute; a Python module wants the
+    /// is a scalar attribute read each (D20); a Python module wants the
     /// columns, and a C++ one wants the objects, so a product offers both.
     class View {
     public:
@@ -148,7 +148,7 @@ namespace pytest {
 
     /// The columns.  This is returned by reference on purpose: a method bound
     /// by value hands Python a copy, and everything written through it -- here
-    /// `filled` -- is lost.  That bug cost D20 a segmentation fault, and
+    /// `filled` -- is lost.  That bug once caused a segmentation fault, and
     /// python/calibrate.py writing through this view is what would catch it.
     class View {
     public:
