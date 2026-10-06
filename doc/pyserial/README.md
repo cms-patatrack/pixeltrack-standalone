@@ -771,3 +771,60 @@ Both modules are configured, not switched: `reco-python.ini`,
 `reco-optimised-compare.ini` are the same three files with the other module.
 The comparison configurations check either of them against the C++ module the
 same way.
+
+## D30. From 1 to 190 threads
+
+**What is measured.**  The C++ modules are the serial backend's as of #438,
+with its optimisations, including the malloc configuration in `main.cc`.  That
+matters to the Python modules too: numpy's temporaries of a few hundred
+kilobytes are above glibc's default mmap threshold, so without it every array
+operation would pay for page faults.  rootcling parses `HeterogeneousSoA.h`
+with the system libstdc++, which may not have
+`std::make_unique_for_overwrite`, so the dictionary uses `std::make_unique`
+there; it only needs the declarations.
+
+**A thread state for every thread.**  The modules run on TBB's threads, which
+have no Python thread state of their own.  Without one, `nb::gil_scoped_acquire`
+would create a thread state on every call into Python and delete it on the way
+out, freeing the thread's mimalloc heap and mapping it back on the next call,
+through locks shared by the whole interpreter: invisible with one stream, and
+what the threads would do most of the time with 190.  So a thread gets a
+thread state the first time it runs a Python module and keeps it, detached,
+until it exits.  This is in `Framework/PythonModuleRunner.cc`, identical in
+both backends (D17).
+
+**Results.**  The protocol of the serial backend's scan: up to 190 threads over
+both sockets, N threads on the first N physical cores; see `scan.md`.
+
+| threads | C++ (`reco.ini`) | Python (`reco-optimised.ini`) | Python / C++ |
+|---|---|---|---|
+| 1 | 88.2 ev/s | 46.0 ev/s | 0.52 |
+| 8 | 621.8 | 305.3 | 0.49 |
+| 32 | 2344.0 | 1102.6 | 0.47 |
+| 95 | 5447.8 | 2472.1 | 0.45 |
+| 190 | 10526.7 | 3417.6 | 0.32 |
+
+Up to one socket the Python chain is about half the C++ throughput.  The C++
+arm is the serial backend's: 88.2 events/s at one thread against `serial`'s
+87.9.
+
+The Python chain keeps scaling across the second socket, to about 3500
+events/s at 160 threads, and then flattens: at 190 threads the threads are
+busy 85% of the time, against 96.5% in C++.  Measuring with `--resources`
+shows where: from 95 to 190 threads the C++ track finder stays on the CPU and
+its time per event does not grow, while the Python modules take 1.7 to 2.2
+times longer per event, and spend from 12% (the clusterizer) to 31% (the rec
+hits) of it off the CPU.  So the threads wait inside the Python modules; what
+they wait for has not been identified yet.
+
+**Validation.**  `reco.ini` gives histograms byte-for-byte identical to the
+serial backend's, also with `GLIBC_TUNABLES=glibc.malloc.perturb=165`, and the
+comparison configurations find no difference.  The Python and the C++ chains
+differ by one entry of `vertex_chi2`, one vertex in a thousand events moving
+to the next bin: `VertexCompare` compares the vertex positions only, which
+agree.
+
+- `throughput.png` -- throughput against threads
+- `ratio.png` -- Python / C++
+- `scan.csv` -- all 48 measurements
+- `scan.md` -- what was run, and how
