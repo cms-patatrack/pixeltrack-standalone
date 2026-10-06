@@ -12,6 +12,25 @@
 
 namespace nb = nanobind;
 
+namespace {
+  // The modules run on TBB's threads, which have no Python thread state of
+  // their own.  Without one, nb::gil_scoped_acquire creates a thread state on
+  // every call into Python and deletes it on the way out, freeing the thread's
+  // memory and mapping it back on the next call, through locks shared by the
+  // whole interpreter: with many streams the threads spend most of their time
+  // waiting on each other there.  So the first time a thread runs a Python
+  // module it gets a thread state that it keeps, detached, until it exits;
+  // from then on gil_scoped_acquire only attaches and detaches it.
+  void keepThreadState() {
+    thread_local bool kept = false;
+    if (not kept) {
+      PyGILState_Ensure();  // creates this thread's state and attaches it
+      PyEval_SaveThread();  // detaches it, but the thread keeps it
+      kept = true;
+    }
+  }
+}  // namespace
+
 namespace edm {
   struct PythonModuleRunner::Impl {
     nb::object worker;
@@ -48,6 +67,7 @@ namespace edm {
   }
 
   void PythonModuleRunner::produce(Event& event, EventSetup const& eventSetup) {
+    keepThreadState();
     // On a free-threaded interpreter this attaches a thread state rather than
     // taking a lock, so streams do not serialise here.
     nb::gil_scoped_acquire guard;
