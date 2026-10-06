@@ -25,7 +25,7 @@ sees, and indexed by module thereafter.  Reading them per event would cost
 is genuinely slow at.
 """
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 

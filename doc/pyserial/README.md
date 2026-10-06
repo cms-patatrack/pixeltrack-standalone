@@ -814,8 +814,8 @@ busy 85% of the time, against 96.5% in C++.  Measuring with `--resources`
 shows where: from 95 to 190 threads the C++ track finder stays on the CPU and
 its time per event does not grow, while the Python modules take 1.7 to 2.2
 times longer per event, and spend from 12% (the clusterizer) to 31% (the rec
-hits) of it off the CPU.  So the threads wait inside the Python modules; what
-they wait for has not been identified yet.
+hits) of it off the CPU.  So the threads wait inside the Python modules; D31
+finds why, and removes most of it.
 
 **Validation.**  `reco.ini` gives histograms byte-for-byte identical to the
 serial backend's, also with `GLIBC_TUNABLES=glibc.malloc.perturb=165`, and the
@@ -830,3 +830,111 @@ agree.
 - `scan.md` -- what was run, and how
 - `resources/` -- the `--resources` output of `reco.ini` and
   `reco-optimised.ini` at 1, 8, 32, 95 and 190 threads
+
+## D31. Many threads and the same names
+
+D30 left the Python chain flattening above one socket: from 95 to 190 threads
+the C++ track finder keeps its time per event, while the Python modules take
+1.7 to 2.2 times longer and spend part of it off the CPU.  This is what was
+found, in order of importance, and what was ruled out.
+
+**1. Module attribute lookups.**  A user-space profile of `reco-optimised.ini`
+at 95 and at 190 threads differs in three functions of the interpreter, and in
+nothing else:
+
+| function | 95 threads | 190 threads |
+|---|---|---|
+| `_PyObject_GenericGetAttrWithDict` | 0.8% | 10.6% |
+| `_Py_DecRefShared` | 0.7% | 8.1% |
+| `PyDict_GetItemRef` | 0.8% | 5.5% |
+
+Their callers are module attribute lookups -- `np.where`, `common.RAW` --
+through `_Py_module_getattro_impl`.  On the free-threaded interpreter such a
+lookup takes the generic path: it reads the module's dictionary and updates
+the reference count of the value it returns, and a reference count updated by
+a thread other than the one that created the object is an atomic operation on
+memory shared by every thread.  Every module uses the same few dozen numpy
+functions, so those counters move between the cores, and between the sockets,
+on every call.  A microbenchmark that only looks a name up, from 190 threads
+pinned to 190 cores, goes from 30 million lookups a second per thread on one
+thread to 30 thousand; a global name or a class attribute does three times
+better, 90 thousand.
+
+`namespaces.py` wraps a module into a plain class holding its names, and the
+modules import numpy and `pixel_clusters_common` through it (`from namespaces
+import np`); the code is otherwise unchanged and the results are identical.
+The class must be a plain one: a metaclass with a `__getattr__` falling back on
+the module, for the names it does not hold, made every lookup slower than the
+module's, and the chain slower than with no change at all (2761 against 3471
+events/s at 190 threads).  At 190 threads the modules then take:
+
+| module | 95 threads | 190 threads, before | 190 threads, with namespaces |
+|---|---|---|---|
+| clusters | 16.7 ms | 28.8 ms | 19.9 ms |
+| recHits | 5.9 ms | 9.6 ms | 7.6 ms |
+| vertices | 1.5 ms | 3.2 ms | 1.8 ms |
+| tracks (C++) | 14.1 ms | 12.9 ms | 14.9 ms |
+
+**2. numpy calls on small arrays.**  Calling a numpy function does not scale
+either, independently of how it is looked up: `np.minimum` on two arrays of 16
+elements runs 4.4 million times a second per thread on one thread, 208
+thousand on 32, 67 thousand on 95 and 33 thousand on 190.  The profile of that
+loop is reference counting again -- `_Py_DecRefShared` 26%, the interpreter's
+call 18%, `ufunc_generic_fastcall` 18%, the loop selection and the dispatch
+cache 15% -- on the objects every call shares: the ufunc, its cached loops,
+the dtypes.  It is inside numpy and the interpreter: the C API to defer the
+reference counting of an object, `PyUnstable_Object_EnableDeferredRefcount`,
+refuses the ufunc, its type and the dtype.  The modules here work on columns
+of tens of thousands of elements, so the per-call cost is a small part of each
+call, but it is paid a few hundred times an event; the only remedy on this
+side is fewer numpy calls.
+
+**3. numpy's temporary elision.**  For an expression like `a + b * c` over
+arrays larger than 256 kB numpy reuses the temporary instead of allocating a
+new array, after checking that the call comes straight from the interpreter:
+it walks the C stack with `backtrace()` and looks each frame up with
+`dladdr()`, which takes the dynamic loader's global lock (`_dl_load_lock`).
+The lock is the most frequent address that threads sleep on at 190 threads,
+but it costs little: making `backtrace()` return no frames, which turns the
+elision off, adds 2% at 190 threads and nothing at 95.  numpy has no switch for
+it, so nothing is changed here.
+
+**Ruled out.**
+
+- Page faults and kernel time: 70 and 67 page faults per event at 95 and 190
+  threads, and the kernel takes 1.0% and 1.3% of the CPU time.
+- The process memory map lock: sampling `/proc/<pid>/task/*/wchan`, threads
+  wait in `mmap`, `munmap` or `mprotect` less than 0.1% of the time; 9.4% is
+  `futex_wait_queue`, a lock in user space.
+- C++ exceptions, whose unwinding would take the loader's lock: none is
+  thrown, `__cxa_throw` is never reached.
+- The garbage collector: `gc.disable()` changed nothing (measured at 190
+  threads before the thread state of D30 was kept).
+- Oversubscription: the job runs exactly one thread per core.
+- NUMA placement: interleaving the memory, or binding it to both nodes, which
+  also stops the kernel from migrating pages, changed nothing (measured at the
+  same time).
+- The C++ track finder: its time per event does not grow from 95 to 190
+  threads.
+
+**What is left.**  With namespaces the chain reaches 4434 events/s at 190
+threads, against 3418 before, and is unchanged up to one socket; the threads
+are busy 93% of the time, against 96.5% in C++.  Part of the rest is numpy's
+own reference counting (2.) and the loader's lock (3.); a few of the remaining
+waits are on glibc's malloc arena locks, probably memory freed by a thread
+other than the one that allocated it, which was not followed further.
+
+| threads | C++ | Python, before | Python, with namespaces | with / before | Python / C++ |
+|---|---|---|---|---|---|
+| 1 | 88.2 ev/s | 46.0 ev/s | 45.8 ev/s | 0.99 | 0.52 |
+| 32 | 2344.0 | 1102.6 | 1105.4 | 1.00 | 0.47 |
+| 95 | 5447.8 | 2472.1 | 2497.8 | 1.01 | 0.46 |
+| 143 | 8463.6 | 3317.4 | 3678.6 | 1.11 | 0.43 |
+| 175 | 9871.7 | 3490.1 | 4087.4 | 1.17 | 0.41 |
+| 190 | 10526.7 | 3417.6 | 4434.2 | 1.30 | 0.42 |
+
+- `throughput-namespaces.png` -- throughput against threads: C++, Python
+  before and with namespaces
+- `scan-namespaces.csv` -- the Python modules with namespaces from 1 to 190
+  threads, and a few points of `scan.csv` measured again
+- `scan-namespaces.md` -- what was run, and how

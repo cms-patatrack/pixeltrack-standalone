@@ -16,7 +16,7 @@ are byte for byte the same.
 
 import threading
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 

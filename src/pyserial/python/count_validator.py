@@ -17,7 +17,7 @@ and prints what they add up to.
 
 import threading
 
-import numpy as np
+from namespaces import np
 
 import edm_core  # built into the executable
 
