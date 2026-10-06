@@ -339,6 +339,67 @@ endif
 export BOOST_NVCC_CXXFLAGS :=
 export BOOST_SYCL_CXXFLAGS :=
 
+# Python and nanobind, for the backends that run Python modules (pytest,
+# pyserial).  Free-threading is not optional here: with the GIL enabled the
+# Python modules of different streams serialise, and the whole point of these
+# backends is to measure them running concurrently.
+#
+# A free-threaded system interpreter is used when there is one; otherwise uv
+# installs CPython under external/python.  Either way a venv under
+# external/venv is what gets embedded, so the two paths differ only in where
+# the interpreter came from.
+PYTHON_TAG       := 3.14t
+UV_VERSION       := 0.12.10
+NANOBIND_VERSION := 3.0.1
+PYTHON_PACKAGES  := nanobind==$(NANOBIND_VERSION) numpy
+
+PYTHON_VENV      := $(EXTERNAL_BASE)/venv
+PYTHON_STAMPS    := $(EXTERNAL_BASE)/stamps
+PYTHON_VENV_PY   := $(PYTHON_VENV)/bin/python
+PYTHON_CONFIG_MK := $(EXTERNAL_BASE)/python-config.mk
+UV               := $(EXTERNAL_BASE)/bootstrap/bin/uv
+
+# Is there a system python3.14t, and is it actually free-threaded?
+SYSTEM_PYTHON := $(shell command -v python$(PYTHON_TAG) 2>/dev/null)
+ifneq ($(SYSTEM_PYTHON),)
+SYSTEM_PYTHON_FT := $(shell $(SYSTEM_PYTHON) -c \
+  'import sysconfig; print(1 if sysconfig.get_config_var("Py_GIL_DISABLED") else 0)' 2>/dev/null)
+endif
+
+# The flags come from external/python-config.mk, which cannot be read until the
+# interpreter exists.  The backend makefiles include it themselves, so that
+# building a non-Python backend never triggers the bootstrap.
+export PYTHON_DEPS := $(PYTHON_CONFIG_MK)
+export PYTHON_CXXFLAGS :=
+export PYTHON_LDFLAGS :=
+export PYTHON_NVCC_CXXFLAGS :=
+export PYTHON_SYCL_CXXFLAGS :=
+
+# uv and pip both reach for $$HOME and the XDG directories; keep everything they
+# write inside external/.
+export UV_PYTHON_INSTALL_DIR := $(EXTERNAL_BASE)/python
+export UV_PYTHON_BIN_DIR     := $(EXTERNAL_BASE)/bin
+export UV_CACHE_DIR          := $(EXTERNAL_BASE)/cache/uv
+export UV_TOOL_DIR           := $(EXTERNAL_BASE)/cache/uv-tools
+export UV_TOOL_BIN_DIR       := $(EXTERNAL_BASE)/bin
+export UV_NO_CONFIG          := 1
+export UV_NO_MODIFY_PATH     := 1
+export PIP_CACHE_DIR         := $(EXTERNAL_BASE)/cache/pip
+export PIP_DISABLE_PIP_VERSION_CHECK := 1
+export PYTHONNOUSERSITE      := 1
+
+# ROOT, used at build time only: rootcling reflects the product classes and a
+# macro turns that reflection into nanobind bindings.  Nothing links against
+# ROOT.  A system installation is used when there is one, since it is a large
+# download and only the tooling is needed.
+ROOTCLING := $(shell command -v rootcling 2>/dev/null)
+ROOT_EXE  := $(shell command -v root 2>/dev/null)
+export ROOT_DEPS :=
+export ROOT_CXXFLAGS :=
+export ROOT_LDFLAGS :=
+export ROOT_NVCC_CXXFLAGS :=
+export ROOT_SYCL_CXXFLAGS :=
+
 BACKTRACE_BASE := $(EXTERNAL_BASE)/libbacktrace
 export BACKTRACE_DEPS := $(BACKTRACE_BASE)
 export BACKTRACE_CXXFLAGS := -isystem $(BACKTRACE_BASE)/include
@@ -747,6 +808,49 @@ $(TBB_LIB):
 	$(eval undefine TBB_TMP_SRC)
 	$(eval undefine TBB_TMP_BUILD)
 endif
+
+# Python (free-threaded) and nanobind
+.PHONY: external_python
+external_python: $(PYTHON_CONFIG_MK)
+
+$(PYTHON_STAMPS):
+	mkdir -p $@
+
+# uv is only needed when there is no usable system interpreter.
+$(PYTHON_STAMPS)/uv: | $(PYTHON_STAMPS)
+	python3 -m venv $(EXTERNAL_BASE)/bootstrap
+	PIP_REQUIRE_VIRTUALENV=1 $(EXTERNAL_BASE)/bootstrap/bin/pip install --quiet uv==$(UV_VERSION)
+	touch $@
+
+ifneq ($(SYSTEM_PYTHON_FT),1)
+$(PYTHON_STAMPS)/venv: $(PYTHON_STAMPS)/uv
+	@echo "No free-threaded system python$(PYTHON_TAG); installing CPython $(PYTHON_TAG) under external/"
+	$(UV) python install --no-bin --no-registry $(PYTHON_TAG)
+	$(UV) venv --quiet --python $(PYTHON_TAG) --seed $(PYTHON_VENV)
+	touch $@
+else
+$(PYTHON_STAMPS)/venv: | $(PYTHON_STAMPS)
+	@echo "Using the free-threaded system interpreter $(SYSTEM_PYTHON)"
+	$(SYSTEM_PYTHON) -m venv $(PYTHON_VENV)
+	touch $@
+endif
+
+$(PYTHON_STAMPS)/nanobind: $(PYTHON_STAMPS)/venv
+	$(PYTHON_VENV)/bin/pip install --quiet $(PYTHON_PACKAGES)
+	touch $@
+
+# Every backend that embeds Python carries its own tools/, so that a backend is
+# self-contained; the flags pyconfig.py reports describe the one interpreter
+# they all link against, so the copies are interchangeable and the first one
+# found is used rather than privileging a particular backend.
+PYCONFIG := $(firstword $(wildcard $(SRC_DIR)/*/tools/pyconfig.py))
+
+# Refuses to go on with a GIL-enabled interpreter rather than produce a
+# measurement that silently means nothing.
+$(PYTHON_CONFIG_MK): $(PYTHON_STAMPS)/nanobind $(PYCONFIG)
+	@$(PYTHON_VENV_PY) -c 'import sys; sys.exit(0 if not sys._is_gil_enabled() else 1)' \
+	  || { echo "error: $(PYTHON_VENV_PY) has the GIL enabled; a free-threaded build is required"; exit 1; }
+	$(PYTHON_VENV_PY) $(PYCONFIG) > $@
 
 # Eigen
 external_eigen: $(EIGEN_BASE)
