@@ -14,6 +14,7 @@
 #include "Framework/PythonRuntime.h"
 
 #include "EventProcessor.h"
+#include "Framework/ResourceMonitor.h"
 #include "PosixClockGettime.h"
 
 namespace {
@@ -21,7 +22,7 @@ namespace {
     std::cout
         << "Usage: " << name
         << " CONFIG.ini [--numberOfThreads NT] [--numberOfStreams NS] [--warmupEvents WE] [--maxEvents ME]"
-        << " [--runForMinutes RM] [--data PATH] [--transfer] [--validation] [--empty]\n";
+        << " [--runForMinutes RM] [--data PATH] [--transfer] [--validation] [--empty] [--resources FILE.json]\n";
     std::cout << R"(
 Arguments:
   CONFIG.ini                    Configuration file: the module path in [options],
@@ -40,6 +41,8 @@ Options:
   --transfer                    Transfer results from GPU to CPU (default is to leave them on GPU)\n"
   --validation                  Run (rudimentary) validation at the end (implies --transfer)\n"
   --empty                       Ignore all producers (for testing only).
+  --resources                   Write the real and CPU time spent in each module, in the source, in the EventSetup,
+                                elsewhere in the framework and idle, summed over the measured events, to FILE.json.
 )";
   }
 }  // namespace
@@ -57,6 +60,7 @@ int main(int argc, char** argv) {
   bool transfer = false;
   bool validation = false;
   bool empty = false;
+  std::string resources;
   for (auto i = args.begin() + 1, e = args.end(); i != e; ++i) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
@@ -86,6 +90,9 @@ int main(int argc, char** argv) {
       validation = true;
     } else if (*i == "--empty") {
       empty = true;
+    } else if (*i == "--resources") {
+      ++i;
+      resources = *i;
     } else if (i->size() > 2 and i->substr(0, 2) == "--") {
       std::cout << "Invalid parameter " << *i << std::endl << std::endl;
       print_help(args.front());
@@ -148,6 +155,11 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+  // Before the modules are constructed, so that the EventSetup is measured too.
+  if (not resources.empty()) {
+    edm::ResourceMonitor::enable();
+  }
+
   // Initialize EventProcessor.  Constructing the modules is what starts the
   // interpreter, if any module is implemented in Python.
   edm::EventProcessor processor(
@@ -197,6 +209,7 @@ int main(int argc, char** argv) {
   }
 
   // Run work
+  edm::ResourceMonitor::instance().beginMeasurement(numberOfThreads);
   auto cpu_start = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();
   auto start = std::chrono::high_resolution_clock::now();
   try {
@@ -216,6 +229,7 @@ int main(int argc, char** argv) {
   }
   auto cpu_stop = PosixClockGettime<CLOCK_PROCESS_CPUTIME_ID>::now();
   auto stop = std::chrono::high_resolution_clock::now();
+  edm::ResourceMonitor::instance().endMeasurement(processor.processedEvents());
 
   // Run endJob
   try {
@@ -242,5 +256,14 @@ int main(int argc, char** argv) {
   std::cout << "Processed " << maxEvents << " events in " << std::scientific << time << " seconds, throughput "
             << std::defaultfloat << (maxEvents / time) << " events/s, CPU usage per thread: " << std::fixed
             << std::setprecision(1) << (cpu / time / numberOfThreads * 100) << "%" << std::endl;
+  if (not resources.empty()) {
+    try {
+      edm::ResourceMonitor::instance().writeJson(resources, configFile.stem().string());
+    } catch (std::exception& e) {
+      std::cout << "error: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
   return EXIT_SUCCESS;
 }

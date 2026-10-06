@@ -24,6 +24,7 @@
 #include <memory>
 
 // user include files
+#include "Framework/ResourceMonitor.h"
 
 // forward declarations
 
@@ -58,6 +59,8 @@ namespace edm {
     TaskSentry operator=(TaskSentry&&) = delete;
 
   private:
+    // Declared first, so that the time includes recycling the task.
+    ResourceMonitor::TaskTiming m_timing;
     TaskBase* m_task;
   };
 }  // namespace edm

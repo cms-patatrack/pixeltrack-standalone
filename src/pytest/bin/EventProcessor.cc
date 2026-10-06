@@ -1,4 +1,5 @@
 #include "Framework/ESPluginFactory.h"
+#include "Framework/ResourceMonitor.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
 
@@ -18,6 +19,7 @@ namespace edm {
         runForMinutes_(runForMinutes) {
     for (auto const& name : configuration.esmodules) {
       pluginManager_.load(name);
+      ResourceMonitor::ScopedTiming timing(&ResourceMonitor::instance().eventSetup());
       auto esp = ESPluginFactory::create(name, datadir);
       esp->produce(eventSetup_);
     }

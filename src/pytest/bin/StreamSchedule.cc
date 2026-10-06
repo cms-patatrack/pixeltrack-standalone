@@ -4,6 +4,7 @@
 
 #include "Framework/FunctorTask.h"
 #include "Framework/PluginFactory.h"
+#include "Framework/ResourceMonitor.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/Worker.h"
 
@@ -38,6 +39,7 @@ namespace edm {
         }
       }
       path_.back()->setItemsToGet(std::move(consumes));
+      path_.back()->setResources(ResourceMonitor::instance().module(label, type));
       ++modInd;
     }
   }
@@ -63,7 +65,14 @@ namespace edm {
   }
 
   void StreamSchedule::processOneEventAsync(WaitingTaskHolder h) {
-    auto event = source_->produce(streamId_, registry_);
+    std::unique_ptr<Event> event;
+    {
+      ResourceMonitor::ScopedTiming timing(&ResourceMonitor::instance().source());
+      event = source_->produce(streamId_, registry_);
+      if (event) {
+        timing.countEvent();
+      }
+    }
     if (event) {
       // Pass the event object ownership to the "end-of-event" task
       // Pass a non-owning pointer to the event to preceding tasks

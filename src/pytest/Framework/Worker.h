@@ -5,6 +5,7 @@
 #include <vector>
 //#include <iostream>
 
+#include "Framework/ResourceMonitor.h"
 #include "Framework/WaitingTask.h"
 #include "Framework/WaitingTaskHolder.h"
 #include "Framework/WaitingTaskList.h"
@@ -23,6 +24,9 @@ namespace edm {
     // not thread safe
     void setItemsToGet(std::vector<Worker*> workers) { itemsToGet_ = std::move(workers); }
 
+    // Where the time spent in this module is added up, shared by its instances in every stream.
+    void setResources(ResourceMonitor::Counters* resources) { resources_ = resources; }
+
     // thread safe
     void prefetchAsync(Event& event, EventSetup const& eventSetup, WaitingTaskHolder iTask);
 
@@ -40,6 +44,8 @@ namespace edm {
 
   protected:
     virtual void doReset() = 0;
+
+    ResourceMonitor::Counters* resources_ = nullptr;
 
   private:
     std::vector<Worker*> itemsToGet_;
@@ -74,6 +80,8 @@ namespace edm {
                 std::exception_ptr exceptionPtr;
                 try {
                   //std::cout << "calling doProduce " << this << std::endl;
+                  ResourceMonitor::ScopedTiming timing(resources_);
+                  timing.countEvent();
                   producer_.doProduce(event, eventSetup);
                 } catch (...) {
                   exceptionPtr = std::current_exception();
@@ -92,6 +100,7 @@ namespace edm {
             } else {
               std::exception_ptr exceptionPtr;
               try {
+                ResourceMonitor::ScopedTiming timing(resources_);
                 producer_.doAcquire(event, eventSetup, runProduceHolder);
               } catch (...) {
                 exceptionPtr = std::current_exception();
