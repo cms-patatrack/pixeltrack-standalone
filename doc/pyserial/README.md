@@ -828,3 +828,5 @@ agree.
 - `ratio.png` -- Python / C++
 - `scan.csv` -- all 48 measurements
 - `scan.md` -- what was run, and how
+- `resources/` -- the `--resources` output of `reco.ini` and
+  `reco-optimised.ini` at 1, 8, 32, 95 and 190 threads

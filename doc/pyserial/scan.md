@@ -32,3 +32,4 @@ per point; the run-to-run spread of this protocol is 1–3% up to 64 threads.
 | `scan.csv` | all 48 measurements |
 | `throughput.png` | throughput against threads |
 | `ratio.png` | Python / C++ |
+| `resources/<config>-<threads>.json` | the time spent in each module (`--resources`), for `reco` and `reco-optimised` at 1, 8, 32, 95 and 190 threads, measured separately with the same protocol |
