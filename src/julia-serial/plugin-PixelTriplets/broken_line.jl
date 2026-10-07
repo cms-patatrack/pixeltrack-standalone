@@ -128,7 +128,7 @@ end
 
     circle.par[1] = atan2(BB, C)
     circle.par[2] = A / (1.0 + U)
-    circle.cov = jacobian * circle.cov * jacobian'
+    circle.cov .= jacobian * circle.cov * jacobian'
 end
 
 # \brief Computes the data needed for the Broken Line fit procedure that are mainly common for the circle and the line fit.
@@ -214,7 +214,7 @@ end
 #     \param VarBeta kink angles' variance.
 
 #     \return the n-by-n matrix of the linear system
-@inline function matrixc_u(w::AbstractArray{Float64}, S::Vector{Float64}, VarBeta::Vector{Float64},::Val{N}) where N
+@inline function matrixc_u(w::AbstractArray{Float64}, S::AbstractVector{Float64}, VarBeta::AbstractVector{Float64},::Val{N}) where N
     n = N
     C_U = @MArray zeros(Float64, N, N)
     for i in 1:n
@@ -246,7 +246,8 @@ end
 
         C_U[i, i] *= 0.5
     end
-    return C_U + C_U'
+    # an immutable result, so that C_U does not escape and nothing is allocated
+    return SMatrix(C_U) + SMatrix(C_U)'
 end
 
 function squaredNorm(v::AbstractVector{T}) where {T}
@@ -339,7 +340,7 @@ end
         slope = -circle_results.q / fast_fit[4]
 
         # println(f, "VarBeta before mult with slope: ", VarBeta)
-        VarBeta = VarBeta * (1.0 + (slope)^2)
+        VarBeta = SVector{N}(VarBeta) * (1.0 + (slope)^2)
         # println(f, "VarBeta after mult with slope: ", VarBeta)
 
         for i in 1:n
@@ -463,7 +464,7 @@ end
         jacobian[3, 2] = 0
         jacobian[3, 3] = circle_results.q
         
-        circle_results.cov = @MArray [
+        circle_results.cov .= @SMatrix [
             I[1, 1] I[1, 2] I[1, n+1];
             I[2, 1] I[2, 2] I[2, n+1];
             I[n+1, 1] I[n+1, 2] I[n+1, n+1]
@@ -471,7 +472,7 @@ end
         # println("circle_cov 1: ", circle_results.cov)
         # println("jacobian: ", jacobian)
         
-        circle_results.cov = jacobian * circle_results.cov * jacobian'
+        circle_results.cov .= jacobian * circle_results.cov * jacobian'
         # println("circle_cov 2: ", circle_results.cov)
 
          translate_karimaki(circle_results, 0.5 * (e-d)[1], 0.5 * (e-d)[2], jacobian)
@@ -610,13 +611,13 @@ end
         u = I * r_u
         
         # println("u: ", u)
-        line_results.par =  @MArray [(u[2] - u[1]) / (S[2] - S[1]), u[1]]
+        line_results.par .= @SVector [(u[2] - u[1]) / (S[2] - S[1]), u[1]]
         
         # println("line_results.par: ", line_results.par)
         idiff = 1.0 / (S[2] - S[1])
         
 
-        line_results.cov = @MArray [
+        line_results.cov .= @SMatrix [
             (I[1, 1]-2*I[1, 2]+I[2, 2])*idiff^2+mult_scatt(S[2] - S[1], B, fast_fit[3], 2, slope) (I[1, 2]-I[1, 1])*idiff;
             (I[1, 2]-I[1, 1])*idiff I[1, 1]
         ]
@@ -630,7 +631,7 @@ end
         
         line_results.par[2] = line_results.par[2] - line_results.par[1] * S[1]
         # scratch = @MMatrix zeros(Float64, 2, 2)
-        line_results.cov = jacobian * line_results.cov * jacobian'
+        line_results.cov .= jacobian * line_results.cov * jacobian'
         # mul!(scratch, jacobian, line_results.cov)       
         # mul!(line_results.cov, scratch, transpose(jacobian))
         tmp = R[1, 1] - line_results.par[1] * R[1, 2]
@@ -640,7 +641,7 @@ end
         jacobian[2, 1] = line_results.par[2] * R[1, 2] * jacobian[1, 1]
         line_results.par[2] = line_results.par[2] * jacobian[2, 2]
         line_results.par[1] = (R[1, 2] + line_results.par[1] * R[1, 1]) * jacobian[2, 2]
-        line_results.cov = jacobian * line_results.cov * jacobian'
+        line_results.cov .= jacobian * line_results.cov * jacobian'
         # mul!(scratch, jacobian, line_results.cov)       
         # mul!(line_results.cov, scratch, transpose(jacobian))
         
@@ -762,7 +763,7 @@ end
         0 0 -abs(circle.par[3])*B/(circle.par[3]^2*circle.par[3])]
 
     circle.par[3] = B / abs(circle.par[3])
-    circle.cov = jacobian * circle.cov * jacobian'
+    circle.cov .= jacobian * circle.cov * jacobian'
 
     helix.par = vcat(circle.par, line.par)
     helix.cov = zeros(5, 5)
