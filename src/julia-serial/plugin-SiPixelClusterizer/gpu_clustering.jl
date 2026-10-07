@@ -156,11 +156,11 @@ function find_clus(id, x, y, module_start, n_clusters_in_module, moduleId, clust
         max_neighbours = 10
         
         # nearest neighbour 
-        nn = Matrix{UInt16}(undef,max_iter, max_neighbours) # m
-        nnn = zeros(UInt8, max_iter) # m
-        # nn = CACHED_NN[]
-        # nnn = CACHED_NNN[]
-        fill!(nnn,UInt8(0))
+        # kept across modules and events, one set for each task; only the first max_iter rows are used
+        nn = CACHED_NN[]
+        nnn = CACHED_NNN[]
+        @assert max_iter <= Base.size(nn, 1)
+        fill!(view(nnn, 1:max_iter), UInt8(0))
         # fill NN
         # testing = 0 
         for (j, k) in zip(0:size(hist)-1, 1:size(hist)) # j is the index of the digi within the hist
