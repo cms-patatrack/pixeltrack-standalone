@@ -128,7 +128,8 @@ end
 
     circle.par[1] = atan2(BB, C)
     circle.par[2] = A / (1.0 + U)
-    circle.cov .= jacobian * circle.cov * jacobian'
+    J = SMatrix{3,3,Float64}(jacobian)  # immutable copies, so that the products need no heap
+    circle.cov .= J * SMatrix{3,3,Float64}(circle.cov) * J'
 end
 
 # \brief Computes the data needed for the Broken Line fit procedure that are mainly common for the circle and the line fit.
@@ -472,7 +473,8 @@ end
         # println("circle_cov 1: ", circle_results.cov)
         # println("jacobian: ", jacobian)
         
-        circle_results.cov .= jacobian * circle_results.cov * jacobian'
+        J = SMatrix{3,3,Float64}(jacobian)
+        circle_results.cov .= J * SMatrix{3,3,Float64}(circle_results.cov) * J'
         # println("circle_cov 2: ", circle_results.cov)
 
          translate_karimaki(circle_results, 0.5 * (e-d)[1], 0.5 * (e-d)[2], jacobian)
@@ -631,7 +633,8 @@ end
         
         line_results.par[2] = line_results.par[2] - line_results.par[1] * S[1]
         # scratch = @MMatrix zeros(Float64, 2, 2)
-        line_results.cov .= jacobian * line_results.cov * jacobian'
+        J = SMatrix{2,2,Float64}(jacobian)
+        line_results.cov .= J * SMatrix{2,2,Float64}(line_results.cov) * J'
         # mul!(scratch, jacobian, line_results.cov)       
         # mul!(line_results.cov, scratch, transpose(jacobian))
         tmp = R[1, 1] - line_results.par[1] * R[1, 2]
@@ -641,7 +644,8 @@ end
         jacobian[2, 1] = line_results.par[2] * R[1, 2] * jacobian[1, 1]
         line_results.par[2] = line_results.par[2] * jacobian[2, 2]
         line_results.par[1] = (R[1, 2] + line_results.par[1] * R[1, 1]) * jacobian[2, 2]
-        line_results.cov .= jacobian * line_results.cov * jacobian'
+        J = SMatrix{2,2,Float64}(jacobian)
+        line_results.cov .= J * SMatrix{2,2,Float64}(line_results.cov) * J'
         # mul!(scratch, jacobian, line_results.cov)       
         # mul!(line_results.cov, scratch, transpose(jacobian))
         
@@ -763,7 +767,8 @@ end
         0 0 -abs(circle.par[3])*B/(circle.par[3]^2*circle.par[3])]
 
     circle.par[3] = B / abs(circle.par[3])
-    circle.cov .= jacobian * circle.cov * jacobian'
+    J = SMatrix{3,3,Float64}(jacobian)  # immutable copies, so that the products need no heap
+    circle.cov .= J * SMatrix{3,3,Float64}(circle.cov) * J'
 
     helix.par = vcat(circle.par, line.par)
     helix.cov = zeros(5, 5)
