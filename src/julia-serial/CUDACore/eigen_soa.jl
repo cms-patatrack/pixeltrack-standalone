@@ -19,7 +19,7 @@ module eigenSOA
     - The total size of the data (calculated as `sizeof(Scalar) * S`) must be a multiple of 128 bytes.
     """
     struct ScalarSOA{Scalar,S}
-        data::MArray{Tuple{S},Scalar}
+        data::MArray{Tuple{S},Scalar,1,S}  # fully specified, so that the field has a concrete type
         function ScalarSOA{Scalar,S}() where {Scalar,S}
             @assert typeof(S) <: Integer
             @assert is_power_2(S) "SOA Stride not power of 2"
