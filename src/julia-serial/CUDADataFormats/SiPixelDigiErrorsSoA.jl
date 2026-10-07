@@ -25,8 +25,10 @@ module cudaDataFormatsSiPixelDigiInterfaceSiPixelDigiErrorsSoA
             # data_d = Vector{PixelErrorCompact}(undef, maxFedWords)
             # fill!(data_d, PixelErrorCompact())  # Zero-initialize
 
-            error_d = Vector{PixelErrorCompact}(undef, maxFedWords)
-            fill!(error_d, PixelErrorCompact())
+            # The errors are appended to this vector as they are found, so it starts empty, as the SimpleVector of
+            # the C++ does; it used to start with maxFedWords default entries, which were allocated and filled for
+            # every event, and came before the errors.
+            error_d = Vector{PixelErrorCompact}()
 
             # @assert isempty(error_d)
             # @assert length(data_d) == maxFedWords
