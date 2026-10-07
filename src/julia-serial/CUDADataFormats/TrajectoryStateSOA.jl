@@ -13,8 +13,10 @@ struct TrajectoryStateSoA
       new(zeros(Float32, 0, 5), zeros(Float32, 0, 15))
    end
 
+   # Not initialised: the state of a track is written by its fit, and only read for the tracks that are fitted,
+   # as in the C++.
    function TrajectoryStateSoA(n::Int)
-      new(zeros(Float32, n, 5), zeros(Float32, n, 15))
+      new(Matrix{Float32}(undef, n, 5), Matrix{Float32}(undef, n, 15))
    end
 end
 function copyFromCircle!(trajectory::TrajectoryStateSoA,
