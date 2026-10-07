@@ -22,9 +22,10 @@ function copyFromCircle!(trajectory::TrajectoryStateSoA,
    lp::AbstractVector{Float64}, lcov::AbstractArray{Float64},
    b::Float64, i::UInt16)
 
-   trajectory.state[i, :] .= Float32.([cp[1], cp[2], cp[3] * b, lp[1], lp[2]])
+   # static vectors rather than arrays, so that nothing is allocated for each track
+   trajectory.state[i, :] .= Float32.(SVector(cp[1], cp[2], cp[3] * b, lp[1], lp[2]))
 
-   trajectory.covariance[i, :] .= Float32.([
+   trajectory.covariance[i, :] .= Float32.(SVector(
       ccov[1, 1],
       ccov[1, 2],
       b * ccov[1, 3],
@@ -40,7 +41,7 @@ function copyFromCircle!(trajectory::TrajectoryStateSoA,
       lcov[1, 1],
       lcov[1, 2],
       lcov[2, 2]
-   ])
+   ))
 end
 
 
