@@ -2,7 +2,7 @@ module gpuVertexFinder
 using ..VertexSOA: MAX_TRACKS, MAX_VTX, ZVertexSoA
 using ..Tracks:n_hits_track, stride_track, zip
 using ..Patatrack:Quality,loose
-using ..histogram:HisToContainer, capacity, count!, finalize!, fill!, for_each_in_bins, size
+using ..histogram:HisToContainer, capacity, count!, finalize!, fill!, for_each_in_bins, size, bin, n_bins, begin_h, end_h
 using StaticArrays
 using ..Patatrack:TrackSOA
 # A seed is a track that serves as the starting point for forming a cluster.
@@ -144,24 +144,29 @@ function cluster_tracks_by_density(vertices,ws,min_T,eps,err_max,chi2_max)
 
     for i in 1:n_tracks
         mdist = eps
-        loop = (j) -> begin
+        # The same scan as for_each_in_bins(hist, izt[i], 1, ...), written out: a closure updating mdist would box
+        # it, which allocates for every track and makes every access to it dynamic.
+        bs::Int = bin(hist, izt[i])
+        be::Int = min(Int(n_bins(hist)), bs + 1)
+        bs = max(1, bs - 1)
+        for pj ∈ begin_h(hist, bs):(end_h(hist, be)-1)
+            j = hist.bins[pj]
             if nn[j] < nn[i]
-                return
+                continue
             end
             if nn[j] == nn[i] && zt[j] >= zt[i]
-                return  # if equal, use natural order
+                continue  # if equal, use natural order
             end
             dist = abs(zt[i] - zt[j])
             if dist > mdist
-                return
+                continue
             end
             if dist^2 > chi2_max * (ezt2[i] + ezt2[j])
-                return  # break natural order
+                continue  # break natural order
             end
             mdist = dist
             iv[i] = j  # assign to cluster (should be unique)
         end
-        for_each_in_bins(hist,izt[i],1,loop)
     end
 
     for i ∈ 1:n_tracks # consolidate graph (percolate index of seed)
