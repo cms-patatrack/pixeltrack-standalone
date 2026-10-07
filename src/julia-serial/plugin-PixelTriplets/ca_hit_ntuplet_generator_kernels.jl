@@ -35,7 +35,7 @@ struct Region
 end
 struct QualityCuts
     # chi2 cut = chi2Scale * (chi2Coeff[0] + pT/GeV * (chi2Coeff[1] + pT/GeV * (chi2Coeff[2] + pT/GeV * chi2Coeff[3])))
-    chi2_coeff::MArray{Tuple{4},Float32}
+    chi2_coeff::MArray{Tuple{4},Float32,1,4}
     chi2_max_pt::Float32
     chi2_scale::Float32
     triplet::Region
