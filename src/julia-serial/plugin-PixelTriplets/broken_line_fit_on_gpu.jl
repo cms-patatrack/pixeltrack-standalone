@@ -1,5 +1,7 @@
 module BrokenLineFitOnGPU
 
+using TaskLocalValues: TaskLocalValue
+
 using ..CUDADataFormats_TrackingRecHit_interface_TrackingRecHit2DHeterogeneous_h
 using ..PixelGPU_h: ParamsOnGPU, detParams
 using ..RecoPixelVertexing_PixelTrackFitting_interface_BrokenLine_h
@@ -20,6 +22,11 @@ const HitsOnGPU = TrackingRecHit2DSOAView
 const Tuples = OneToManyAssoc{hindex_type,32 * 1024,32 * 1024 * 5}
 const OutputSoA = TrackSOA
 const maxTuples = 24 * 1024
+
+# the work buffers of the fits, one set for each task, that is for each stream
+const FIT_BUFFERS = TaskLocalValue(() -> (Vector{Float64}(undef, MAX_NUM_OF_CONCURRENT_FITS * 3 * 4),
+                                          Vector{Float32}(undef, MAX_NUM_OF_CONCURRENT_FITS * 6 * 4),
+                                          Vector{Float64}(undef, MAX_NUM_OF_CONCURRENT_FITS * 4)))
 
 function kernelBLFastFit(::Val{N},
     foundNtuplets::Tuples,
@@ -166,9 +173,8 @@ end
 function launchBrokenLineKernelsOnCPU(fitter::HelixFitOnGPU, hv::HitsOnGPU, hitsInFit::UInt32, maxNumberOfTuples::UInt32)
     tuples_d = get_tuples_d(fitter)
     @assert !isnothing(tuples_d)
-    hitsGPU = Vector{Float64}(undef, MAX_NUM_OF_CONCURRENT_FITS * 3 * 4)
-    hits_geGPU = Vector{Float32}(undef, MAX_NUM_OF_CONCURRENT_FITS * 6 * 4)
-    fast_fit = Vector{Float64}(undef, MAX_NUM_OF_CONCURRENT_FITS * 4)
+    # work buffers, kept across events: each fit writes them before reading them
+    hitsGPU, hits_geGPU, fast_fit = FIT_BUFFERS[]
     offset = 0
 
     kernelBLFastFit(Val(3), tuples_d, fitter.tuple_multiplicity_d, hv, hitsGPU, hits_geGPU, fast_fit, UInt32(3), UInt32(offset), nothing)
