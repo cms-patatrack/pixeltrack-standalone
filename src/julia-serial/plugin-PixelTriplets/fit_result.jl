@@ -12,7 +12,7 @@ Fields:
 """
 mutable struct circle_fit
     par  :: MVector{3,Float64}
-    cov  :: MMatrix{3,3,Float64}
+    cov  :: MMatrix{3,3,Float64,9}  # with the length, so that the field has a concrete type
     q    :: Int32
     chi2 :: Float64
 
@@ -33,7 +33,7 @@ end
 # Struct for line_fit with a default constructor
 mutable struct line_fit
     par  :: MVector{2,Float64}
-    cov  :: MMatrix{2,2,Float64}
+    cov  :: MMatrix{2,2,Float64,4}  # with the length, so that the field has a concrete type
     chi2 :: Float64
 
     # Default constructor
