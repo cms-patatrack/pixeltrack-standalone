@@ -8,6 +8,17 @@ from MojoSerial.CUDADataFormats.TrackingRecHit2DHeterogeneous import (
 )
 from MojoSerial.DataFormats.ApproxAtan2 import ApproxAtan2
 
+# The quantities of an outer hit used by the doublet search.
+@fieldwise_init
+struct PackedHit(TrivialRegisterPassable):
+    var z: Float32
+    var r: Float32
+    var iphi: Int16
+    var sizeY: Int16
+    var detIndex: UInt16
+    var index: UInt16
+
+
 comptime CellNeighbors = CAConstants.CellNeighbors
 comptime CellTracks = CAConstants.CellTracks
 comptime CellNeighborsVector = CAConstants.CellNeighborsVector
@@ -69,6 +80,25 @@ def doubletsFromHisto(
             + layerSize(layerPairs[2 * i])
         )
     ntot = innerLayerCumulativeSize[Int(nPairs) - 1]
+
+    # The quantities of the outer hits used by the doublet search, in the same order as the hits in the phi
+    # histogram, so that the search window of each inner hit is scanned contiguously in memory.
+    var nh = Int(hist.size())
+    var packedHits = List[PackedHit](capacity=nh)
+    for q in range(nh):
+        var oi = Int(hist.bins[q])
+        packedHits.append(
+            PackedHit(
+                Float32(hh.zGlobal(oi)),
+                Float32(hh.rGlobal(oi)),
+                Int16(hh.iphi(oi)),
+                Int16(hh.clusterSizeY(oi)),
+                UInt16(hh.detectorIndex(oi)),
+                UInt16(oi),
+            )
+        )
+    comptime chunkSize = 64
+    var selected = InlineArray[UInt32, chunkSize](uninitialized=True)
 
     # x runs faster
     var idy = 0
@@ -159,35 +189,36 @@ def doubletsFromHisto(
         comptime minRadius: Float32 = hardPtCut * 87.78  # cm
         comptime minRadius2T4: Float32 = 4.0 * minRadius * minRadius
 
-        # `hh` is passed in rather than captured: nested closures capture by
-        # copy, and the hit SoA is not Copyable.
+        var maxdr = maxr[Int(pairLayerId)]
+
+        @always_inline
         @parameter
-        def ptcut(
-            hh: TrackingRecHit2DHeterogeneous, j: Int, idphi: Int
-        ) -> Bool:
+        def ptcut(oh: PackedHit, idphi: Int) -> Bool:
             var r2t4 = minRadius2T4
             var ri = mer
-            var ro = hh.rGlobal(j)
+            var ro = oh.r
             var dphi = ApproxAtan2.short2phi(Int16(idphi))
             return dphi * dphi * (r2t4 - ri * ro) > (ro - ri) * (ro - ri)
 
+        @always_inline
         @parameter
-        def z0cutoff(hh: TrackingRecHit2DHeterogeneous, j: Int) -> Bool:
-            var zo = hh.zGlobal(j)
-            var ro = hh.rGlobal(j)
+        def z0cutoff(oh: PackedHit) -> Bool:
+            var zo = oh.z
+            var ro = oh.r
             var dr = ro - mer
-            return dr > maxr[Int(pairLayerId)] or dr < 0.0 or abs(mez * ro - mer * zo) > z0cut * dr
+            return (dr > maxdr) | (dr < 0.0) | (abs(mez * ro - mer * zo) > z0cut * dr)
 
+        @always_inline
         @parameter
-        def zsizeCut(hh: TrackingRecHit2DHeterogeneous, j: Int) -> Bool:
+        def zsizeCut(oh: PackedHit) -> Bool:
             var onlyBarrel = outer < 4
-            var so = hh.clusterSizeY(j)
+            var so = oh.sizeY
             var dy = maxDYsize12 if inner == 0 else maxDYsize
             # in the barrel cut on difference in size
             # in the endcap on the prediction on the first layer (actually in the barrel only: happen to be safe for endcap as well)
             # FIXME move pred cut to z0cutoff to optmize loading of and computaiton ...
-            var zo = hh.zGlobal(j)
-            var ro = hh.rGlobal(j)
+            var zo = oh.z
+            var ro = oh.r
             if onlyBarrel:
                 var mes_i = Int(mes)
                 var so_i = Int(so)
@@ -219,58 +250,56 @@ def doubletsFromHisto(
             comptime if is_defined["GPU_DEBUG"]():
                 if kk != kl and kk != kh:
                     nmin += Int(hist.size(kk + hoff))
-            var p = hist.begin(kk + hoff)
-            var e = hist.end(kk + hoff)
-            p += Int(first)
-            while p < e:
-                var oi = p[]
-                var oi_i = Int(oi)
-                var oi_u = UInt32(oi)
-                debug_assert(oi_u >= offsets[outer_idx])
-                debug_assert(oi_u < offsets[outer_idx + 1])
-                var mo = hh.detectorIndex(oi_i)
-                if mo > 2000:
-                    p += stride
-                    continue  # invalid
+            var b = hist.off[Int(kk + hoff)]
+            var e = hist.off[Int(kk + hoff + 1)]
+            var full = False
+            # Process the candidates in chunks: first select the candidates that pass the cheaper cuts, without
+            # branching, then apply the other cuts and create the doublets, in the original order.
+            # This reduces significantly the number of mispredicted branches.
+            var cb = b
+            while cb < e and not full:
+                var n = min(UInt32(chunkSize), e - cb)
+                var m = 0
+                for k in range(Int(n)):
+                    var oh = packedHits[Int(cb) + k]
+                    var invalid = oh.detIndex > 2000
+                    var idphi = min(abs(Int(oh.iphi - mep)), abs(Int(mep - oh.iphi)))
+                    selected[m] = cb + UInt32(k)
+                    m += Int(not (invalid | (doZ0Cut & z0cutoff(oh)) | (idphi > Int(iphicut))))
 
-                if doZ0Cut and z0cutoff(hh, oi_i):
-                        p += stride
+                for k in range(m):
+                    var oh = packedHits[Int(selected[k])]
+                    var oi = oh.index
+                    var oi_i = Int(oi)
+                    debug_assert(UInt32(oi) >= offsets[outer_idx])
+                    debug_assert(UInt32(oi) < offsets[outer_idx + 1])
+                    var idphi = min(abs(Int(oh.iphi - mep)), abs(Int(mep - oh.iphi)))
+
+                    if doClusterCut and zsizeCut(oh):
+                        continue
+                    if doPtCut and ptcut(oh, idphi):
                         continue
 
-                var mop = hh.iphi(oi_i)
-
-                var idphi = min(abs(Int((mop - mep))), abs(Int((mep - mop))))
-                if idphi > Int(iphicut):
-                    p += stride
-                    continue
-
-                if doClusterCut and zsizeCut(hh, oi_i):
-                        p += stride
-                        continue
-
-                if doPtCut and ptcut(hh, oi_i, idphi):
-                        p += stride
-                        continue
-
-                var ind = CUDACompat.atomicAdd(nCells, UInt32(1))
-                if ind >= maxNumOfDoublets:
-                    _ = CUDACompat.atomicSub(nCells, UInt32(1))
-                    break
-                cells[Int(ind)].init(
-                    cellNeighbors,
-                    cellTracks,
-                    hh,
-                    Int32(pairLayerId),
-                    Int32(ind),
-                    i.cast[DType.uint16](),
-                    oi.cast[DType.uint16](),
-                )
-                isOuterHitOfCell[oi_i].push_back(ind)
-                comptime if is_defined["GPU_DEBUG"]():
-                    if isOuterHitOfCell[oi_i].full():
-                        tooMany += 1
-                    tot += 1
-                p += stride
+                    var ind = CUDACompat.atomicAdd(nCells, UInt32(1))
+                    if ind >= maxNumOfDoublets:
+                        _ = CUDACompat.atomicSub(nCells, UInt32(1))
+                        full = True
+                        break
+                    cells[Int(ind)].init(
+                        cellNeighbors,
+                        cellTracks,
+                        hh,
+                        Int32(pairLayerId),
+                        Int32(ind),
+                        i.cast[DType.uint16](),
+                        oi,
+                    )
+                    isOuterHitOfCell[oi_i].push_back(ind)
+                    comptime if is_defined["GPU_DEBUG"]():
+                        if isOuterHitOfCell[oi_i].full():
+                            tooMany += 1
+                        tot += 1
+                cb += UInt32(chunkSize)
 
             _ = incr(kk)
 
