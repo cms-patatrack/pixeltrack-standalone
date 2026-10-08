@@ -118,15 +118,10 @@ comptime CellNeighborsVector = CAConstants.CellNeighborsVector
 comptime CellTracksVector = CAConstants.CellTracksVector
 
 def initDoublets(
-    isOuterHitOfCell: Span[mut=True, GPUCACell.OuterHitOfCell, _],
-    nHits: UInt32,
     mut cellNeighbors: CellNeighborsVector,
     mut cellTracks: CellTracksVector,
 ):
     var first: UInt32 = 0
-    for i in range(first, nHits):
-        isOuterHitOfCell[Int(i)].reset()
-
     if first == 0:
         # C++ also hands `construct` the container buffer; SimpleVector owns
         # its storage here.
@@ -138,6 +133,43 @@ def initDoublets(
         i = cellTracks.extend()
         debug_assert(i == 0)
         cellTracks[0].reset()
+
+
+# Fill the compact storage of the cells whose outer hit is each hit, from the cells found by getDoubletsFromHisto.
+# The cells are added in increasing order, up to maxCellsPerHit() per hit, so the result is the same as calling
+# OuterHitOfCell.push_back() for each cell as soon as it is created.
+def fillOuterHitOfCell(
+    cells: Span[GPUCACell, _],
+    nCells: UInt32,
+    nHits: UInt32,
+    mut isOuterHitOfCell: CAConstants.OuterHitOfCellContainer,
+):
+    comptime maxCellsPerHit = CAConstants.maxCellsPerHit()
+    var nh = Int(nHits)
+    var nc = Int(nCells)
+    var offsets = List[UInt32](unsafe_uninit_length=nh + 1)
+    var cursor = List[UInt32](unsafe_uninit_length=nh)
+    var outerCells = List[UInt32](unsafe_uninit_length=max(nc, 1))
+
+    # count the cells for each hit, in offsets[hit + 1]
+    for i in range(nh + 1):
+        offsets[i] = 0
+    for c in range(nc):
+        var k = Int(cells[c].get_outer_hit_id()) + 1
+        offsets[k] += UInt32(offsets[k] < maxCellsPerHit)
+    # convert the counts to offsets
+    for i in range(nh):
+        offsets[i + 1] += offsets[i]
+        cursor[i] = offsets[i]
+    # fill the cells
+    for c in range(nc):
+        var hit = Int(cells[c].get_outer_hit_id())
+        if cursor[hit] < offsets[hit + 1]:
+            outerCells[Int(cursor[hit])] = UInt32(c)
+            cursor[hit] += 1
+
+    isOuterHitOfCell.offsets = offsets^
+    isOuterHitOfCell.cells = outerCells^
 
 
 comptime getDoubletsFromHistoMaxBlockSize: Int = 64
@@ -152,7 +184,6 @@ def getDoubletsFromHisto(
     mut cellNeighbors: CellNeighborsVector,
     mut cellTracks: CellTracksVector,
     hh: TrackingRecHit2DHeterogeneous,
-    isOuterHitOfCell: Span[mut=True, GPUCACell.OuterHitOfCell, _],
     nActualPairs: Int,
     ideal_cond: Bool,
     doClusterCut: Bool,
@@ -179,7 +210,6 @@ def getDoubletsFromHisto(
         cellNeighbors,
         cellTracks,
         hh,
-        isOuterHitOfCell,
         Span(phicutsRT),
         Span(minzRT),
         Span(maxzRT),

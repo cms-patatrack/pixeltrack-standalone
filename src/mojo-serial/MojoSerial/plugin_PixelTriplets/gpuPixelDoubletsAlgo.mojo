@@ -33,7 +33,6 @@ def doubletsFromHisto(
     mut cellNeighbors: CellNeighborsVector,
     mut cellTracks: CellTracksVector,
     hh: TrackingRecHit2DHeterogeneous,
-    isOuterHitOfCell: Span[mut=True, GPUCACell.OuterHitOfCell, _],
     phicuts: Span[Int16, _],
     minz: Span[Float32, _],
     maxz: Span[Float32, _],
@@ -270,7 +269,6 @@ def doubletsFromHisto(
                 for k in range(m):
                     var oh = packedHits[Int(selected[k])]
                     var oi = oh.index
-                    var oi_i = Int(oi)
                     debug_assert(UInt32(oi) >= offsets[outer_idx])
                     debug_assert(UInt32(oi) < offsets[outer_idx + 1])
                     var idphi = min(abs(Int(oh.iphi - mep)), abs(Int(mep - oh.iphi)))
@@ -294,10 +292,7 @@ def doubletsFromHisto(
                         i.cast[DType.uint16](),
                         oi,
                     )
-                    isOuterHitOfCell[oi_i].push_back(ind)
                     comptime if is_defined["GPU_DEBUG"]():
-                        if isOuterHitOfCell[oi_i].full():
-                            tooMany += 1
                         tot += 1
                 cb += UInt32(chunkSize)
 

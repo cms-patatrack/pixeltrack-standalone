@@ -183,7 +183,7 @@ def Kernel_checkOverflows(
     nCells: UInt32,  # uint32_t const*
     cellNeighbors: gpuPixelDoublets.CellNeighborsVector,
     cellTracks: gpuPixelDoublets.CellTracksVector,
-    isOuterHitOfCell: Span[GPUCACell.OuterHitOfCell, _],
+    isOuterHitOfCell: CAConstants.OuterHitOfCellContainer,
     nHits: UInt32,
     maxNumberOfDoublets: UInt32,
     mut counters: Counters,
@@ -288,7 +288,7 @@ def Kernel_checkOverflows(
     nt = Int(nHits)
 
     while idx < nt :
-        if isOuterHitOfCell[idx].full():
+        if isOuterHitOfCell.full(idx):
             print("OuterHitOfCell ovberflow " , idx , "\n")
 
         idx += 1
@@ -385,7 +385,7 @@ def kernel_connect(
             cells: Span[mut=True, GPUCACell, _],
             nCells: UInt32,
             mut cellNeighbors: gpuPixelDoublets.CellNeighborsVector,
-            isOuterHitOfCell: Span[GPUCACell.OuterHitOfCell, _],
+            isOuterHitOfCell: CAConstants.OuterHitOfCellContainer,
             hardCurvCut: Float32,
             ptmin: Float32,
             CAThetaCutBarrel: Float32,
@@ -410,8 +410,9 @@ def kernel_connect(
         # mutates both; two live refs into one Span do not compose here, so
         # each access indexes afresh.
         var innerHitIdx = Int(cells[idx].get_inner_hit_id())
-        var numberOfPossibleNeighbors : Int = len(isOuterHitOfCell[innerHitIdx])
-        var vi = isOuterHitOfCell[innerHitIdx].data()
+        var numberOfPossibleNeighbors : Int = isOuterHitOfCell.size(innerHitIdx)
+        var vb = isOuterHitOfCell.begin(innerHitIdx)
+        ref vi = isOuterHitOfCell.cells
 
         var last_bpix1_detIndex: UInt32 = 96
         var last_barrel_detIndex: UInt32 = 1184
@@ -423,7 +424,7 @@ def kernel_connect(
         var isBarrel = cells[idx].get_inner_detIndex(hh) < Float32(last_barrel_detIndex)
         #loop on inner cells
         for j in range(Int(first), numberOfPossibleNeighbors, stride):
-            var otherCell = Int(vi[j])
+            var otherCell = Int(vi[vb + j])
 
             var r1 = cells[otherCell].get_inner_r(hh)
             var z1 = cells[otherCell].get_inner_z(hh)
@@ -892,7 +893,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
     var device_theCellTracks_: CAConstants.CellTracksVector
 
     var device_theCells_: List[GPUCACell]
-    var device_isOuterHitOfCell_: List[GPUCACell.OuterHitOfCell]
+    var device_isOuterHitOfCell_: CAConstants.OuterHitOfCellContainer
     # C++ carves these three out of one 3-slot allocation, punning the third
     # from AtomicPairCounter to uint32. Each is its own typed field here.
     var device_nCells_: UInt32
@@ -915,7 +916,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         self.device_theCellTracks_ = CAConstants.CellTracksVector()
 
         self.device_theCells_ = List[GPUCACell]()
-        self.device_isOuterHitOfCell_ = List[GPUCACell.OuterHitOfCell]()
+        self.device_isOuterHitOfCell_ = CAConstants.OuterHitOfCellContainer()
         self.device_nCells_ = 0
 
         self.device_hitToTuple_ = HitToTuple()
@@ -975,13 +976,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
 
         # in principle we can use "nhits" to heuristically dimension the
         # workspace... overkill to use template here (std::make_unique would suffice)
-        self.device_isOuterHitOfCell_ = List[GPUCACell.OuterHitOfCell](
-            length=Int(max(UInt32(1), nhits)), fill=GPUCACell.OuterHitOfCell()
-        )
-
         gpuPixelDoublets.initDoublets(
-            Span(self.device_isOuterHitOfCell_),
-            nhits,
             self.device_theCellNeighbors_,
             self.device_theCellTracks_,
         )
@@ -1007,13 +1002,19 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
             self.device_theCellNeighbors_,
             self.device_theCellTracks_,
             hh,
-            Span(self.device_isOuterHitOfCell_),
             nActualPairs,
             self.m_params.idealConditions,
             self.m_params.doClusterCut,
             self.m_params.doZ0Cut,
             self.m_params.doPtCut,
             self.m_params.maxNumberOfDoublets,
+        )
+
+        gpuPixelDoublets.fillOuterHitOfCell(
+            Span(self.device_theCells_),
+            self.device_nCells_,
+            nhits,
+            self.device_isOuterHitOfCell_,
         )
 
     # C++: CAHitNtupletGeneratorKernelsCPU::launchKernels (CAHitNtupletGeneratorKernels.cc)
@@ -1046,7 +1047,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
             Span(self.device_theCells_),
             self.device_nCells_,
             self.device_theCellNeighbors_,
-            Span(self.device_isOuterHitOfCell_),
+            self.device_isOuterHitOfCell_,
             self.m_params.hardCurvCut,
             self.m_params.ptmin,
             self.m_params.CAThetaCutBarrel,
@@ -1061,7 +1062,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
                 Span(self.device_theCells_),
                 self.device_nCells_,
                 self.device_theCellTracks_,
-                Span(self.device_isOuterHitOfCell_),
+                self.device_isOuterHitOfCell_,
                 nhits,
                 False,
             )
@@ -1110,7 +1111,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
                 Span(self.device_theCells_),
                 self.device_nCells_,
                 self.device_theCellTracks_,
-                Span(self.device_isOuterHitOfCell_),
+                self.device_isOuterHitOfCell_,
                 nhits,
                 True,
             )
@@ -1124,7 +1125,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
                 self.device_nCells_,
                 self.device_theCellNeighbors_,
                 self.device_theCellTracks_,
-                Span(self.device_isOuterHitOfCell_),
+                self.device_isOuterHitOfCell_,
                 nhits,
                 self.m_params.maxNumberOfDoublets,
                 counters,
