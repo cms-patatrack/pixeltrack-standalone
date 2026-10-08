@@ -982,8 +982,9 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         )
 
         # device_theCells_ = Traits:: template make_unique<GPUCACell[]>(cs, m_params.maxNumberOfDoublets_, stream);
+        # the cells are initialised by the doublet search, as they are created
         self.device_theCells_ = List[GPUCACell](
-            length=Int(self.m_params.maxNumberOfDoublets), fill=GPUCACell()
+            unsafe_uninit_length=Int(self.m_params.maxNumberOfDoublets)
         )
         if nhits == 0:
             return  # protect against empty events

@@ -125,8 +125,8 @@ def initDoublets(
     if first == 0:
         # C++ also hands `construct` the container buffer; SimpleVector owns
         # its storage here.
-        cellNeighbors.construct(Int32(CAConstants.maxNumOfActiveDoublets()))
-        cellTracks.construct(Int32(CAConstants.maxNumOfActiveDoublets()))
+        cellNeighbors.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
+        cellTracks.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
         var i = cellNeighbors.extend()
         debug_assert(i == 0)
         cellNeighbors[0].reset()
