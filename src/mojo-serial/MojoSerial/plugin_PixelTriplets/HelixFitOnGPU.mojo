@@ -15,8 +15,7 @@ from MojoSerial.plugin_PixelTriplets.RiemannFitOnGPU import (
     kernelLineFit,
 )
 from MojoSerial.plugin_PixelTriplets.BrokenLineFitOnGPU import (
-    kernelBLFastFit,
-    kernelBLFit,
+    kernelBLFastFitAndFit,
 )
 
 comptime cudaStream_t = CUDAStreamType
@@ -232,56 +231,26 @@ struct HelixFitOnGPU:
         nhits: UInt32,
         maxNumberOfTuples: UInt32
     ) raises:
-        var nConcurrent = Int(Self.maxNumberOfConcurrentFits_)
-        var hitsGPU_ = List[Float64](length=nConcurrent * 3 * 4, fill=0.0)
-        var hits_geGPU_ = List[Float32](length=nConcurrent * 6 * 4, fill=0.0)
-        var fast_fit_resultsGPU_ = List[Float64](length=nConcurrent * 4, fill=0.0)
+        # the GPU kernels process the n-tuplets in chunks of maxNumberOfConcurrentFits_, up to maxNumberOfTuples
+        var nConcurrent = Self.maxNumberOfConcurrentFits_
+        var maxTuples = (maxNumberOfTuples + nConcurrent - 1) // nConcurrent * nConcurrent
+        var B = Float64(self.bField_)
 
-        var phits = Span(hitsGPU_)
-        var phits_ge = Span(hits_geGPU_)
-        var pfast_fit = Span(fast_fit_resultsGPU_)
-
-        var offset: UInt32 = 0
-        while offset < maxNumberOfTuples:
-            # fit triplets
-            kernelBLFastFit[3](
-                outputSoa.hitIndices, tupleMultiplicity, hv, cpeParams,
-                phits, phits_ge, pfast_fit, 3, offset,
+        # fit triplets
+        kernelBLFastFitAndFit[3](
+            tupleMultiplicity, hv, cpeParams, B, outputSoa, 3, maxTuples
+        )
+        # fit quads
+        kernelBLFastFitAndFit[4](
+            tupleMultiplicity, hv, cpeParams, B, outputSoa, 4, maxTuples
+        )
+        if self.fit5as4_:
+            # fit penta (only first 4)
+            kernelBLFastFitAndFit[4](
+                tupleMultiplicity, hv, cpeParams, B, outputSoa, 5, maxTuples
             )
-            kernelBLFit[3](
-                tupleMultiplicity, Float64(self.bField_),
-                outputSoa, phits, phits_ge, pfast_fit, 3, offset,
+        else:
+            # fit penta (all 5)
+            kernelBLFastFitAndFit[5](
+                tupleMultiplicity, hv, cpeParams, B, outputSoa, 5, maxTuples
             )
-
-            # fit quads
-            kernelBLFastFit[4](
-                outputSoa.hitIndices, tupleMultiplicity, hv, cpeParams,
-                phits, phits_ge, pfast_fit, 4, offset,
-            )
-            kernelBLFit[4](
-                tupleMultiplicity, Float64(self.bField_),
-                outputSoa, phits, phits_ge, pfast_fit, 4, offset,
-            )
-
-            if self.fit5as4_:
-                # fit penta (only first 4)
-                kernelBLFastFit[4](
-                    outputSoa.hitIndices, tupleMultiplicity, hv, cpeParams,
-                    phits, phits_ge, pfast_fit, 5, offset,
-                )
-                kernelBLFit[4](
-                    tupleMultiplicity, Float64(self.bField_),
-                    outputSoa, phits, phits_ge, pfast_fit, 5, offset,
-                )
-            else:
-                # fit penta (all 5)
-                kernelBLFastFit[5](
-                    outputSoa.hitIndices, tupleMultiplicity, hv, cpeParams,
-                    phits, phits_ge, pfast_fit, 5, offset,
-                )
-                kernelBLFit[5](
-                    tupleMultiplicity, Float64(self.bField_),
-                    outputSoa, phits, phits_ge, pfast_fit, 5, offset,
-                )
-
-            offset += Self.maxNumberOfConcurrentFits_
