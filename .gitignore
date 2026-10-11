@@ -38,6 +38,7 @@ Manifest.toml
 /hip
 /hiptest
 /julia-serial
+/mojo-serial
 /kokkos
 /kokkostest
 /pyserial

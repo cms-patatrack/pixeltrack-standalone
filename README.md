@@ -11,6 +11,7 @@
     * [`serial`](#serial)
     * [`pytest`](#pytest)
     * [`pyserial`](#pyserial)
+    * [`mojo-serial`](#mojo-serial)
     * [`cudatest`](#cudatest)
     * [`cuda`](#cuda)
     * [`cudadev`](#cudadev)
@@ -277,6 +278,32 @@ free-threading is worth.
 
 Both backends and the decisions behind them are described in
 [doc/pyserial/README.md](doc/pyserial/README.md).
+
+#### `mojo-serial`
+
+A port of `serial` to [Mojo](https://www.modular.com/mojo) 1.0, with the
+framework, the data formats and conditions, all the producers, and the count
+validation.
+
+```
+make mojo-serial
+./mojo-serial --threads 8 --maxEvents 1000 --validation
+```
+
+The number of threads and of concurrent events is set with `--threads`. The
+plugins are linked statically, because Mojo cannot load libraries dynamically
+yet, and the events are split evenly among the threads before they start.
+
+The Mojo compiler is installed under `external/mojo` by `make`, which
+downloads the conda packages of the compiler and of the C++ runtime it needs
+with `curl` and unpacks them (this needs also `unzip`, `sha256sum` and a `tar`
+with `zstd` support), keeping from `max-core` only the `layout` and
+`max` Mojo packages and the library linked by the program. `pixi` is _not_
+used: `src/mojo-serial/pixi.toml` and `pixi.lock` are kept only as a
+reference for the versions of the packages.
+
+The migration of the port to Mojo 1.0 is described in
+[doc/mojo/MojoSerialPort10.md](doc/mojo/MojoSerialPort10.md).
 
 #### `cudatest`
 

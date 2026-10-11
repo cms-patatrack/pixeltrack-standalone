@@ -529,6 +529,19 @@ export JULIA_DEPOT_PATH := $(JULIA_BASE)/depot:
 export JULIA_DEPS := $(JULIA_BASE)
 export PATH := $(JULIA_BASE)/bin:$(PATH)
 
+# Mojo
+# The Mojo compiler and its runtime are installed from the conda packages listed in src/mojo-serial/pixi.lock, without
+# using pixi; from max-core only the layout and max Mojo packages and the runtime library linked by the programs are kept.
+export MOJO_BASE := $(EXTERNAL_BASE)/mojo
+export MOJO_DEPS := $(MOJO_BASE)/mojo_ok
+MOJO_TMP := $(EXTERNAL_BASE)/mojo-download
+MOJO_PACKAGES := \
+  https://conda.modular.com/max/linux-64/mojo-compiler-1.0.0-release.conda=4394c6146d47ec7794a9a3ed5775ae158f59f83f8e1aed59408b17c4909821b3 \
+  https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-15.2.0-h934c35e_16.conda=813427918316a00c904723f1dfc3da1bbc1974c5cfe1ed1e704c6f4e0798cbc6 \
+  https://conda.anaconda.org/conda-forge/linux-64/libgcc-15.2.0-he0feb66_16.conda=6eed58051c2e12b804d53ceff5994a350c61baf117ec83f5f10c953a3f311451
+MOJO_MAX_CORE := https://conda.modular.com/max/linux-64/max-core-26.5.0-release.conda=a2aca8a7dc43cdac10f286ba31a811468794631e514f0df2687464cba15deeb0
+MOJO_MAX_CORE_FILES := lib/mojo/layout.mojoc lib/mojo/max.mojoc lib/libAsyncRTMojoBindings.so
+
 # OpenMP target offload
 
 #OPENMP_COMPILER := LLVM
@@ -944,3 +957,27 @@ external_julia: $(JULIA_BASE)
 
 $(JULIA_BASE):
 	mkdir -p $@ && curl -L https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.6-linux-x86_64.tar.gz | tar xz --strip-components=1 -C $@
+
+# Mojo
+# download a conda package (url=sha256), check its checksum, and unpack its content into the directory $(2)
+define MOJO_UNPACK_template
+	curl -L -s -S $(firstword $(subst =, ,$(1))) -o $(MOJO_TMP)/package.conda
+	echo "$(lastword $(subst =, ,$(1)))  $(MOJO_TMP)/package.conda" | sha256sum --check --quiet
+	rm -fR $(MOJO_TMP)/package && unzip -q $(MOJO_TMP)/package.conda 'pkg-*.tar.zst' -d $(MOJO_TMP)/package
+	tar --zstd -xf $(MOJO_TMP)/package/pkg-*.tar.zst -C $(2)
+
+endef
+
+.PHONY: external_mojo
+external_mojo: $(MOJO_DEPS)
+
+$(MOJO_DEPS):
+	rm -fR $(MOJO_BASE) $(MOJO_TMP)
+	mkdir -p $(MOJO_BASE) $(MOJO_TMP)/max-core
+	$(foreach package,$(MOJO_PACKAGES),$(call MOJO_UNPACK_template,$(package),$(MOJO_BASE)))
+	$(call MOJO_UNPACK_template,$(MOJO_MAX_CORE),$(MOJO_TMP)/max-core)
+	cd $(MOJO_TMP)/max-core && cp --parents $(MOJO_MAX_CORE_FILES) $(MOJO_BASE)
+	# replace the installation path of the build machine with $(MOJO_BASE) in the configuration file
+	sed -i -e"s#$$(sed -n -e's/^package_root = //p' $(MOJO_BASE)/share/max/modular.cfg | head -n1)#$(MOJO_BASE)#g" $(MOJO_BASE)/share/max/modular.cfg
+	rm -fR $(MOJO_TMP)
+	touch $@
