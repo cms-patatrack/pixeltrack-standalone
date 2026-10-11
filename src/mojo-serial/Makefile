@@ -5,7 +5,9 @@ include Makefile.deps
 EXTERNAL_DEPENDS := $(mojo-serial_EXTERNAL_DEPENDS)
 
 MOJO := MODULAR_HOME=$(MOJO_BASE)/share/max $(MOJO_BASE)/bin/mojo
-MOJO_FLAGS := -D ASSERT=none -O3 -g0 --march=native
+# Do not fuse the multiply-adds across statements (the default is contract=fast), so that the results do not depend on how
+# the code is written, like -ffp-contract=off for the C++ back-ends.
+MOJO_FLAGS := -D ASSERT=none -O3 -g0 --march=native --fp-mode contract=off
 MOJO_SRC := $(shell find $(TARGET_DIR)/MojoSerial -name '*.mojo')
 
 # mojo-serial target
