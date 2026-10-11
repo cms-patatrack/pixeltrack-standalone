@@ -1,0 +1,13 @@
+[workspace]
+authors = ["Ahmad Bassam El Bizri <34858431+1ahmadbassam@users.noreply.github.com>"]
+channels = ["https://conda.modular.com/mojo", "https://conda.modular.com/max", "https://conda.modular.com/max-nightly", "conda-forge"]
+name = "mojo-serial"
+platforms = ["linux-64", "linux-aarch64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+mojo = "==1.0.0"
+# provides `layout` (LayoutTensor); not part of the stdlib, so imported unprefixed
+max = "==26.5.0"
