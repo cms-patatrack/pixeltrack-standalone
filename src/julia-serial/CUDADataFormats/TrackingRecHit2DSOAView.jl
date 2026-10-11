@@ -50,7 +50,7 @@ mutable struct TrackingRecHit2DSOAView
     m_cpe_params::ParamsOnGPU
     m_hits_module_start::Vector{Integer}
     m_hits_layer_start::Vector{Integer}
-    m_hist::HisToContainer
+    m_hist::Hist  # concrete, so that the accesses to the histogram are not dynamically dispatched
     m_nHits::UInt32
 
 
@@ -75,7 +75,7 @@ mutable struct TrackingRecHit2DSOAView
             ParamsOnGPU(),
             Vector{Integer}(),
             Vector{Integer}(),
-            HisToContainer{0,0,0,0,UInt32}(), #added dummy values 
+            Hist(), #added dummy values 
             zero(UInt32))
     end
 

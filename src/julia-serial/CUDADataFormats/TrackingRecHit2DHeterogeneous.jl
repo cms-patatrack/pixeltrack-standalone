@@ -31,7 +31,7 @@ mutable struct TrackingRecHit2DHeterogeneous
     n32::UInt32
     m_store16::Union{Nothing, Vector{Vector{Int16}}}
     m_store32::Union{Nothing, Vector{Vector{Float64}}}
-    m_HistStore::HisToContainer
+    m_HistStore::Hist  # concrete, so that the accesses to the histogram are not dynamically dispatched
     m_AverageGeometryStore::AverageGeometry
     m_view::TrackingRecHit2DSOAView
     m_nHits::UInt32
@@ -64,7 +64,7 @@ mutable struct TrackingRecHit2DHeterogeneous
     
         if nHits == 0
             return new(n16, n32, Vector{Vector{Int16}}()
-            , Vector{Vector{Float64}}(), HisToContainer{0,0,0,0,UInt32}(), AverageGeometry(), TrackingRecHit2DSOAView(), nHits, hitsModuleStart, Hist(), Vector{UInt32}(), Vector{Int16}()) #added dummy values for HisToContainer
+            , Vector{Vector{Float64}}(), Hist(), AverageGeometry(), TrackingRecHit2DSOAView(), nHits, hitsModuleStart, Hist(), Vector{UInt32}(), Vector{Int16}()) #added dummy values for HisToContainer
         end
     
         # Initialize storage vectors

@@ -227,7 +227,7 @@ function symmetrize66!(dst::AbstractArray{T}) where {T}
     dst[5, 6] = dst[6, 5]
 end
 
-function invert(src::M1, dst::M2) where {M1,M2}
+@inline function invert(src::M1, dst::M2) where {M1,M2}
     number_of_col = size(src, 2)
     if number_of_col == 1
         invert11(src, dst)

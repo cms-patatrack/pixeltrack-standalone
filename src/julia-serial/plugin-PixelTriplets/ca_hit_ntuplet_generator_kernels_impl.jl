@@ -87,9 +87,9 @@ function kernel_connect(hhp::TrackingRecHit2DSOAView, cells::Vector{GPUCACell}, 
             z1 = get_inner_z(other_cell, hhp)
 
 
-            aligned = are_aligned(r1, z1, ri, zi, ro, zo, pt_min, is_barrel ? ca_theta_cut_barrel : ca_theta_cut_forward)
-            cut = dca_cut(this_cell, other_cell, hhp, get_inner_det_index(other_cell, hhp) < last_bpix1_det_index ? dca_cut_inner_triplet : dca_cut_outer_triplet, hard_curv_cut, 0)
-            if aligned && cut
+            # the dca cut is only evaluated for the aligned pairs, as in the C++
+            if are_aligned(r1, z1, ri, zi, ro, zo, pt_min, is_barrel ? ca_theta_cut_barrel : ca_theta_cut_forward) &&
+               dca_cut(this_cell, other_cell, hhp, get_inner_det_index(other_cell, hhp) < last_bpix1_det_index ? dca_cut_inner_triplet : dca_cut_outer_triplet, hard_curv_cut, 0)
                 add_outer_neighbor(cells,other_cell_index,cell_index, cell_neighbors)
                 # triplet_info = @sprintf("%d %d\n",cell_index-1,other_cell_index-1)
                 # open("tripletsTestingJulia.txt","a") do file

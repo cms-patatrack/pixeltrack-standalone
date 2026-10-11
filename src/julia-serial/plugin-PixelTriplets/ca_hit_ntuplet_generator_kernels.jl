@@ -35,7 +35,7 @@ struct Region
 end
 struct QualityCuts
     # chi2 cut = chi2Scale * (chi2Coeff[0] + pT/GeV * (chi2Coeff[1] + pT/GeV * (chi2Coeff[2] + pT/GeV * chi2Coeff[3])))
-    chi2_coeff::MArray{Tuple{4},Float32}
+    chi2_coeff::MArray{Tuple{4},Float32,1,4}
     chi2_max_pt::Float32
     chi2_scale::Float32
     triplet::Region
@@ -143,7 +143,13 @@ function build_doublets(self::CAHitNTupletGeneratorKernels, hh::HitsOnCPU)
     # println("Building Doublets out of ", current_n_hits, " Hits")
     # cell_storage
     # @timev self.device_is_outer_hit_of_cell = [OuterHitOfCell() for _ ∈ 1:max(1,current_n_hits)]
-    self.device_is_outer_hit_of_cell = OuterHitOfCellVector(MAX_CELLS_PER_HIT,current_n_hits)
+    # the cells of each outer hit: keep the table across events, and allocate a larger one only when an event has
+    # more hits than any before; it is only accessed column by column, for the hits of the current event
+    if size(self.device_is_outer_hit_of_cell, 2) < current_n_hits
+        self.device_is_outer_hit_of_cell = OuterHitOfCellVector(MAX_CELLS_PER_HIT,current_n_hits)
+    else
+        reset!(self.device_is_outer_hit_of_cell)
+    end
     init_doublets(self.device_is_outer_hit_of_cell, current_n_hits, self.device_the_cell_neighbors, self.device_the_cell_tracks)
     if (current_n_hits == 0)
         return
