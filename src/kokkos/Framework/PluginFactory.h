@@ -17,14 +17,14 @@ namespace edm {
       public:
         virtual ~MakerBase() = default;
 
-        virtual std::unique_ptr<Worker> create(ProductRegistry& reg) const = 0;
+        virtual std::unique_ptr<Worker> create(ProductRegistry& reg, const std::string& name) const = 0;
       };
 
       template <typename T>
       class Maker : public MakerBase {
       public:
-        virtual std::unique_ptr<Worker> create(ProductRegistry& reg) const override {
-          return std::make_unique<WorkerT<T>>(reg);
+        virtual std::unique_ptr<Worker> create(ProductRegistry& reg, const std::string& name) const override {
+          return std::make_unique<WorkerT<T>>(reg, name);
         };
       };
 
