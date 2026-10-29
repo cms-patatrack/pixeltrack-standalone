@@ -29,7 +29,10 @@ from MojoSerial.plugin_SiPixelRecHits.PixelCPEFastESProducer import (
 from MojoSerial.plugin_SiPixelRecHits.SiPixelRecHitCUDA import (
     SiPixelRecHitCUDA,
 )
-from MojoSerial.plugin_Validation.CountValidator import CountValidator
+from MojoSerial.plugin_Validation.CountValidator import (
+    CountValidator,
+    CountValidatorCounters,
+)
 from MojoSerial.plugin_Validation.HistoValidator import (
     HistoValidator,
     HistoValidatorHistos,
@@ -42,10 +45,12 @@ from MojoSerial.plugin_Validation.HistoValidator import (
 # the copies share the state through the ArcPointers.
 @fieldwise_init
 struct PluginGlobals(Copyable):
+    var counters: ArcPointer[CountValidatorCounters]
     var histos: ArcPointer[HistoValidatorHistos]
 
     # `streams` is the number of streams that will call endJob.
     def __init__(out self, streams: Int = 1):
+        self.counters = ArcPointer(CountValidatorCounters(streams))
         self.histos = ArcPointer(HistoValidatorHistos(streams))
 
 
@@ -111,7 +116,7 @@ def make_ed(
     elif name == "PixelVertexProducerCUDA":
         return EDPlugin(PixelVertexProducerCUDA(reg))
     elif name == "CountValidator":
-        return EDPlugin(CountValidator(reg))
+        return EDPlugin(CountValidator(reg, globals.counters))
     elif name == "HistoValidator":
         return EDPlugin(HistoValidator(reg, globals.histos))
     raise "RuntimeError: unknown EDProducer " + name
