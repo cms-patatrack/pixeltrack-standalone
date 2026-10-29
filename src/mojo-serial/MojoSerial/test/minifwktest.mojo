@@ -12,6 +12,6 @@ def main() raises:
         var esp = make_es(esp_names[i], Path("data"))
         es_produce(esp, evt)
 
-    var ed_names = ed_path(False)
+    var ed_names = ed_path(False, False)
     for i in range(len(ed_names)):
         print(ed_names[i])

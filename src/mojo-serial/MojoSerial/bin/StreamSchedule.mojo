@@ -2,7 +2,13 @@ from MojoSerial.Framework.Event import Event
 from MojoSerial.Framework.EventSetup import EventSetup
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.MojoBridge.DTypes import Typeable
-from MojoSerial.bin.Plugins import EDPlugin, ed_end_job, ed_produce, make_ed
+from MojoSerial.bin.Plugins import (
+    EDPlugin,
+    PluginGlobals,
+    ed_end_job,
+    ed_produce,
+    make_ed,
+)
 from MojoSerial.bin.Source import Source
 
 
@@ -21,6 +27,7 @@ struct StreamSchedule(Defaultable, Movable, Typeable):
         out self,
         mut reg: ProductRegistry,
         path: List[String],
+        globals: PluginGlobals = PluginGlobals(),
         streamId: Int32 = 0,
     ):
         try:
@@ -33,7 +40,7 @@ struct StreamSchedule(Defaultable, Movable, Typeable):
             self._path = List[EDPlugin](capacity=len(path))
             for i in range(len(path)):
                 reg.beginModuleConstruction(Int32(i) + 1)
-                self._path.append(make_ed(path[i], reg))
+                self._path.append(make_ed(path[i], reg, globals))
         except e:
             print("Error occurred in bin/StreamSchedule.mojo,", e)
             return Self()

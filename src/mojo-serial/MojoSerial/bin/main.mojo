@@ -5,6 +5,7 @@ from std.time import perf_counter_ns
 from std.pathlib import Path
 
 from MojoSerial.bin.EventProcessor import EventProcessor
+from MojoSerial.bin.Plugins import PluginGlobals
 from MojoSerial.bin.PosixClockGettime import (
     PosixClockGettime,
     CLOCK_THREAD_CPUTIME_ID,
@@ -29,6 +30,7 @@ Options:
                                 (default -1 for disabled; conflicts with --maxEvents).
   --data                        Path to the 'data' directory (default 'data' in the directory of the executable).
   --validation                  Run (rudimentary) validation at the end.
+  --histogram                   Produce histograms at the end.
   --empty                       Ignore all producers (for testing only).
   --threads                     Number of streams/threads to run concurrently (default 1).
 )"""
@@ -58,6 +60,7 @@ def main() raises:
     var path = Path("")
     var empty = False
     var validation = False
+    var histogram = False
 
     var i = 1
     while i < args.__len__():
@@ -82,6 +85,8 @@ def main() raises:
             path = Path(args[i])
         elif args[i] == "--validation":
             validation = True
+        elif args[i] == "--histogram":
+            histogram = True
         elif args[i] == "--empty":
             empty = True
         else:
@@ -115,6 +120,10 @@ def main() raises:
         print(" after", warmupEvents, "events of warm up", end="")
     print(", with ", threads, " concurrent events and ", threads, " threads.", sep="")
 
+
+    # the state that the C++ plugins share across the streams in static or global
+    # variables
+    var globals = PluginGlobals(threads)
 
     var startEvent = List[Int](length=threads, fill=0)
     var endEvent = List[Int](length=threads, fill=0)
@@ -155,6 +164,8 @@ def main() raises:
             runForMinutes,
             path,
             validation,
+            histogram,
+            globals,
         )
 
         processor.warmUp()
@@ -177,6 +188,9 @@ def main() raises:
     for i in range(threads):
         tg.create_task(worker(i, startEvent[i], endEvent[i]))
     tg.wait()
+    # The tasks only capture `globals` by reference: without a use after wait(),
+    # it is destroyed as soon as the tasks are created, before they copy it.
+    _ = globals^
 
     var diff = end[0] - start[0]
     for i in range(threads):
