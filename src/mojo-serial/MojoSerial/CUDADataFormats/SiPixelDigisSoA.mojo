@@ -34,16 +34,17 @@ struct SiPixelDigisSoA(Defaultable, Movable, Typeable):
         self.nModules_h = 0
         self.nDigis_h = 0
 
+    # The buffers are fully written by the kernels before being read, as in the C++, so they are not initialised.
     @always_inline
     def __init__(out self, maxFedWords: SizeType):
-        self.xx_d = List[UInt16](length=Int(maxFedWords), fill=0)
-        self.yy_d = List[UInt16](length=Int(maxFedWords), fill=0)
-        self.adc_d = List[UInt16](length=Int(maxFedWords), fill=0)
-        self.moduleInd_d = List[UInt16](length=Int(maxFedWords), fill=0)
-        self.clus_d = List[Int32](length=Int(maxFedWords), fill=0)
+        self.xx_d = List[UInt16](unsafe_uninit_length=Int(maxFedWords))
+        self.yy_d = List[UInt16](unsafe_uninit_length=Int(maxFedWords))
+        self.adc_d = List[UInt16](unsafe_uninit_length=Int(maxFedWords))
+        self.moduleInd_d = List[UInt16](unsafe_uninit_length=Int(maxFedWords))
+        self.clus_d = List[Int32](unsafe_uninit_length=Int(maxFedWords))
 
-        self.pdigi_d = List[UInt32](length=Int(maxFedWords), fill=0)
-        self.rawIdArr_d = List[UInt32](length=Int(maxFedWords), fill=0)
+        self.pdigi_d = List[UInt32](unsafe_uninit_length=Int(maxFedWords))
+        self.rawIdArr_d = List[UInt32](unsafe_uninit_length=Int(maxFedWords))
 
         self.nModules_h = 0
         self.nDigis_h = 0

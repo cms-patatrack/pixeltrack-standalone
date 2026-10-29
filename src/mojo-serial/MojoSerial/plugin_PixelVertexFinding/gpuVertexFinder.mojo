@@ -40,12 +40,12 @@ struct WorkSpace(Copyable, Defaultable, Movable, Typeable):
     @always_inline
     def __init__(out self):
         self.ntrks = 0
-        self.itrk = List[UInt16](length=Int(Self.MAXTRACKS), fill=0)
-        self.zt = List[Float](length=Int(Self.MAXTRACKS), fill=0.0)
-        self.ezt2 = List[Float](length=Int(Self.MAXTRACKS), fill=0.0)
-        self.ptt2 = List[Float](length=Int(Self.MAXTRACKS), fill=0.0)
-        self.izt = List[UInt8](length=Int(Self.MAXTRACKS), fill=0)
-        self.iv = List[Int32](length=Int(Self.MAXTRACKS), fill=0)
+        self.itrk = List[UInt16](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.zt = List[Float](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.ezt2 = List[Float](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.ptt2 = List[Float](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.izt = List[UInt8](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.iv = List[Int32](unsafe_uninit_length=Int(Self.MAXTRACKS))
         self.nvIntermediate = 0
 
     @always_inline

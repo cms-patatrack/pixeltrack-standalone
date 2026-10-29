@@ -31,6 +31,13 @@ struct SimpleVector[
         self.m_size = 0
         self.m_data = List[Self.T](length=Int(capacity), fill=Self.T())
 
+    # Like construct(), without initialising the elements, as the C++ SimpleVector: only for types with no
+    # destructor, whose elements are written before they are read.
+    @always_inline
+    def construct_for_overwrite(mut self, var capacity: Int32):
+        self.m_size = 0
+        self.m_data = List[Self.T](unsafe_uninit_length=Int(capacity))
+
     @always_inline
     def push_back_unsafe(mut self, ref element: Self.T) -> Int32:
         var previousSize = self.m_size

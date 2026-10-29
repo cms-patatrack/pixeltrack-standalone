@@ -23,15 +23,16 @@ struct ZVertexSoA(Copyable, Defaultable, Movable, Typeable):
     var sortInd: List[UInt16]  # sorted index (by pt2)  ascending
     var nvFinal: UInt32  # the number of vertices
 
+    # not initialised, as in the C++: the vertices are written before they are read
     @always_inline
     def __init__(out self):
-        self.idv = List[Int16](length=Int(Self.MAXTRACKS), fill=0)
-        self.zv = List[Float](length=Int(Self.MAXVTX), fill=0.0)
-        self.wv = List[Float](length=Int(Self.MAXVTX), fill=0.0)
-        self.chi2 = List[Float](length=Int(Self.MAXVTX), fill=0.0)
-        self.ptv2 = List[Float](length=Int(Self.MAXVTX), fill=0.0)
-        self.ndof = List[Int32](length=Int(Self.MAXTRACKS), fill=0)
-        self.sortInd = List[UInt16](length=Int(Self.MAXVTX), fill=0)
+        self.idv = List[Int16](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.zv = List[Float](unsafe_uninit_length=Int(Self.MAXVTX))
+        self.wv = List[Float](unsafe_uninit_length=Int(Self.MAXVTX))
+        self.chi2 = List[Float](unsafe_uninit_length=Int(Self.MAXVTX))
+        self.ptv2 = List[Float](unsafe_uninit_length=Int(Self.MAXVTX))
+        self.ndof = List[Int32](unsafe_uninit_length=Int(Self.MAXTRACKS))
+        self.sortInd = List[UInt16](unsafe_uninit_length=Int(Self.MAXVTX))
         self.nvFinal = 0
 
     @always_inline

@@ -18,13 +18,14 @@ struct SiPixelClustersSoA(Defaultable, Movable, Typeable):
         self.clusModuleStart_d = List[UInt32]()
         self.nClusters_h = 0
 
+    # The buffers are fully written by the kernels before being read, as in the C++, so they are not initialised.
     def __init__(out self, maxClusters: SizeType):
         debug_assert(maxClusters >= 0)
-        self.moduleStart_d = List[UInt32](length=Int(maxClusters) + 1, fill=0)
-        self.clusInModule_d = List[UInt32](length=Int(maxClusters), fill=0)
-        self.moduleId_d = List[UInt32](length=Int(maxClusters), fill=0)
+        self.moduleStart_d = List[UInt32](unsafe_uninit_length=Int(maxClusters) + 1)
+        self.clusInModule_d = List[UInt32](unsafe_uninit_length=Int(maxClusters))
+        self.moduleId_d = List[UInt32](unsafe_uninit_length=Int(maxClusters))
         self.clusModuleStart_d = List[UInt32](
-            length=Int(maxClusters) + 1, fill=0
+            unsafe_uninit_length=Int(maxClusters) + 1
         )
         self.nClusters_h = 0
 

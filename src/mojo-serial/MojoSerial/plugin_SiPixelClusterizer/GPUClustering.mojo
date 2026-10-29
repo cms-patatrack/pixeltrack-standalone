@@ -62,12 +62,7 @@ struct GPUClustering:
             9,
             DType.uint16,
         ]
-        comptime maxNeighbours = 10
         var hist = Hist()
-        var nn = List[UInt16](
-            length=Int(maxPixInModule) * maxNeighbours, fill=0
-        )
-        var nnn = List[UInt8](length=Int(maxPixInModule), fill=0)
 
         var endModule = moduleStart[0]
         for module in range(endModule):
@@ -136,80 +131,44 @@ struct GPUClustering:
                     continue
                 hist.fill(y[i], UInt16(i - Int(firstPixel)))
 
-            var maxiter = hist.size()
-            debug_assert(maxiter <= maxPixInModule)
-            # nearest neighbour
-            for k in range(Int(maxiter)):
-                nnn[k] = 0
+            # Serial connected-component labelling with a union-find:
+            #   - the root of each set is always its pixel with the smallest index, so the final labels are the same
+            #     as those produced by the iterative min-propagation used by the parallel (GPU) implementation;
+            #   - the neighbours are merged as soon as they are found, without storing them.
+            @always_inline
+            @parameter
+            def findRoot(var i: Int) -> Int:
+                while Int(clusterId[i]) != i:
+                    # path halving
+                    clusterId[i] = clusterId[Int(clusterId[i])]
+                    i = Int(clusterId[i])
+                return i
 
-            # fill NN
-            var j: UInt32 = 0
-            var k: UInt32 = 0
-            while j < hist.size():
-                debug_assert(k < maxiter)
-                var p = hist.begin() + j
-                var i = p[].cast[DType.uint32]() + firstPixel
+            var nh = Int(hist.size())
+            for j in range(nh):
+                var i = Int(hist.bins[j]) + Int(firstPixel)
                 debug_assert(id[i] != GPUClusteringConstants.InvId)
                 debug_assert(id[i] == thisModuleId)  # same module
                 var be = Hist.bin(y[i] + 1).cast[DType.uint32]()
-                var e = hist.end(be)
-                p += 1
-                debug_assert(nnn[k] == 0)
-                while p < e:
-                    var m = p[].cast[DType.uint32]() + firstPixel
+                var e = Int(hist.off[Int(be) + 1])
+                for q in range(j + 1, e):
+                    var m = Int(hist.bins[q]) + Int(firstPixel)
                     debug_assert(m != i)
                     debug_assert(Int(y[m]) - Int(y[i]) >= 0)
                     debug_assert(Int(y[m]) - Int(y[i]) <= 1)
                     if abs(Int(x[m]) - Int(x[i])) > 1:
-                        p += 1
                         continue
-                    var l = nnn[k]
-                    nnn[k] += 1
-                    debug_assert(l < maxNeighbours)
-                    nn[Int(k) * maxNeighbours + Int(l)] = p[]
-                    p += 1
-                j += 1
-                k += 1
+                    var ri = findRoot(i)
+                    var rm = findRoot(m)
+                    if ri < rm:
+                        clusterId[rm] = Int32(ri)
+                    elif rm < ri:
+                        clusterId[ri] = Int32(rm)
 
-            # for each pixel, look at all the pixels until the end of the module;
-            # when two valid pixels within +/- 1 in x or y are found, set their id to the minimum;
-            # after the loop, all the pixel in each cluster should have the id equeal to the lowest
-            # pixel in the cluster ( clus[i] == i ).
-            var more = True
-            var nloops = 0
-            while more:
-                if nloops % 2 == 1:
-                    var j: UInt32 = 0
-                    var k: UInt32 = 0
-                    while j < hist.size():
-                        var p = hist.begin() + j
-                        var i = p[].cast[DType.uint32]() + firstPixel
-                        var m = clusterId[i]
-                        while m != clusterId[m]:
-                            m = clusterId[m]
-                        clusterId[i] = m
-                        j += 1
-                        k += 1
-                else:
-                    more = False
-                    var j: UInt32 = 0
-                    var k: UInt32 = 0
-                    while j < hist.size():
-                        var p = hist.begin() + j
-                        var i = p[].cast[DType.uint32]() + firstPixel
-                        for kk in range(nnn[k]):
-                            var l = nn[Int(k) * maxNeighbours + Int(kk)]
-                            var m = l.cast[DType.uint32]() + firstPixel
-                            debug_assert(m != i)
-                            var old = clusterId[m]
-                            clusterId[m] = min(clusterId[m], clusterId[i])
-                            if old != clusterId[i]:
-                                # end the loop only if no changes were applied
-                                more = True
-                            clusterId[i] = min(clusterId[i], old)
-                        j += 1
-                        k += 1
-                nloops += 1
+            # point every pixel directly to the root of its cluster
+            for j in range(nh):
+                var i = Int(hist.bins[j]) + Int(firstPixel)
+                clusterId[i] = Int32(findRoot(i))
 
             var foundClusters: UInt32 = 0
 

@@ -25,9 +25,9 @@ struct SiPixelDigiErrorsSoA(Defaultable, Movable, Typeable):
         out self, maxFedWords: SizeType, var errors: PixelFormatterErrors
     ):
         self.formatterErrors_h = errors^
-        self.error_d = make_SimpleVector[
-            PixelErrorCompact, PixelErrorCompact.dtype()
-        ](maxFedWords.cast[DType.int32]())
+        # the errors are written before they are read, as in the C++, so they are not initialised
+        self.error_d = Self._error_dtype()
+        self.error_d.construct_for_overwrite(maxFedWords.cast[DType.int32]())
         debug_assert(self.error_d.empty())
         debug_assert(self.error_d.capacity() == maxFedWords.cast[DType.int32]())
 

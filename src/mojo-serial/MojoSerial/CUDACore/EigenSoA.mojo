@@ -21,7 +21,8 @@ struct ScalarSoA[T: DType, S: Int](
         comptime assert (
             Self.S * size_of[Self.T]() % 128 == 0
         ), "SoA size not a multiple of 128"
-        self._data = InlineArray[Self.Scalar, Self.S](fill=0)
+        # not initialised, as the C++ Eigen types: the track SoA is written before it is read
+        self._data = InlineArray[Self.Scalar, Self.S](uninitialized=True)
 
     @always_inline
     def __init__(out self, var list: InlineArray[Self.Scalar, Self.S]):
@@ -84,7 +85,8 @@ struct MatrixSoA[T: DType, R: Int, C: Int, S: Int](
         comptime assert (
             Self.R * Self.C * Self.S * size_of[Self.T]() % 128 == 0
         ), "SoA size not a multiple of 128"
-        self._data = Self._D(fill=0)
+        # not initialised, as the C++ Eigen types: the track SoA is written before it is read
+        self._data = Self._D(uninitialized=True)
 
     @always_inline
     def __init__(out self, var list: Self._D):
