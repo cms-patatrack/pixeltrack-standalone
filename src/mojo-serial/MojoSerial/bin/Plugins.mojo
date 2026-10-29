@@ -1,3 +1,4 @@
+from std.memory import ArcPointer
 from std.pathlib import Path
 from std.utils import Variant
 
@@ -28,7 +29,29 @@ from MojoSerial.plugin_SiPixelRecHits.PixelCPEFastESProducer import (
 from MojoSerial.plugin_SiPixelRecHits.SiPixelRecHitCUDA import (
     SiPixelRecHitCUDA,
 )
-from MojoSerial.plugin_Validation.CountValidator import CountValidator
+from MojoSerial.plugin_Validation.CountValidator import (
+    CountValidator,
+    CountValidatorCounters,
+)
+from MojoSerial.plugin_Validation.HistoValidator import (
+    HistoValidator,
+    HistoValidatorHistos,
+)
+
+
+# The state that the C++ plugins keep in static or global variables, shared by
+# all the streams. Mojo has no global var, and each stream builds its own
+# EventProcessor, so main creates one of these and passes it to every stream:
+# the copies share the state through the ArcPointers.
+@fieldwise_init
+struct PluginGlobals(Copyable):
+    var counters: ArcPointer[CountValidatorCounters]
+    var histos: ArcPointer[HistoValidatorHistos]
+
+    # `streams` is the number of streams that will call endJob.
+    def __init__(out self, streams: Int = 1):
+        self.counters = ArcPointer(CountValidatorCounters(streams))
+        self.histos = ArcPointer(HistoValidatorHistos(streams))
 
 
 # C++ registers plugins by dlopen + a static `Registrar<T>` per module, and
@@ -41,6 +64,7 @@ comptime EDPlugin = Variant[
     CAHitNtupletCUDA,
     PixelVertexProducerCUDA,
     CountValidator,
+    HistoValidator,
 ]
 
 comptime ESPlugin = Variant[
@@ -52,7 +76,7 @@ comptime ESPlugin = Variant[
 
 
 # C++: main.cc `edmodules`. Order is the execution order.
-def ed_path(validation: Bool) -> List[String]:
+def ed_path(validation: Bool, histogram: Bool) -> List[String]:
     var p: List[String] = [
         String("BeamSpotToPOD"),
         String("SiPixelRawToClusterCUDA"),
@@ -62,6 +86,8 @@ def ed_path(validation: Bool) -> List[String]:
     ]
     if validation:
         p.append(String("CountValidator"))
+    if histogram:
+        p.append(String("HistoValidator"))
     return p^
 
 
@@ -76,7 +102,9 @@ def es_path() -> List[String]:
     return p^
 
 
-def make_ed(name: String, mut reg: ProductRegistry) raises -> EDPlugin:
+def make_ed(
+    name: String, mut reg: ProductRegistry, globals: PluginGlobals
+) raises -> EDPlugin:
     if name == "BeamSpotToPOD":
         return EDPlugin(BeamSpotToPOD(reg))
     elif name == "SiPixelRawToClusterCUDA":
@@ -88,7 +116,9 @@ def make_ed(name: String, mut reg: ProductRegistry) raises -> EDPlugin:
     elif name == "PixelVertexProducerCUDA":
         return EDPlugin(PixelVertexProducerCUDA(reg))
     elif name == "CountValidator":
-        return EDPlugin(CountValidator(reg))
+        return EDPlugin(CountValidator(reg, globals.counters))
+    elif name == "HistoValidator":
+        return EDPlugin(HistoValidator(reg, globals.histos))
     raise "RuntimeError: unknown EDProducer " + name
 
 
@@ -105,6 +135,8 @@ def ed_produce(mut p: EDPlugin, mut event: Event, ref es: EventSetup):
         p[PixelVertexProducerCUDA].produce(event, es)
     elif p.isa[CountValidator]():
         p[CountValidator].produce(event, es)
+    elif p.isa[HistoValidator]():
+        p[HistoValidator].produce(event, es)
 
 
 def ed_end_job(mut p: EDPlugin) raises:
@@ -120,6 +152,8 @@ def ed_end_job(mut p: EDPlugin) raises:
         p[PixelVertexProducerCUDA].endJob()
     elif p.isa[CountValidator]():
         p[CountValidator].endJob()
+    elif p.isa[HistoValidator]():
+        p[HistoValidator].endJob()
 
 
 def make_es(name: String, var data: Path) raises -> ESPlugin:

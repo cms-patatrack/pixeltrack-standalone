@@ -3,7 +3,13 @@ from std.pathlib import Path
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.Framework.EventSetup import EventSetup
 from MojoSerial.MojoBridge.DTypes import Typeable
-from MojoSerial.bin.Plugins import ed_path, es_path, es_produce, make_es
+from MojoSerial.bin.Plugins import (
+    PluginGlobals,
+    ed_path,
+    es_path,
+    es_produce,
+    make_es,
+)
 from MojoSerial.bin.Source import Source
 from MojoSerial.bin.StreamSchedule import StreamSchedule
 
@@ -38,6 +44,8 @@ struct EventProcessor(Defaultable, Typeable):
         var runForMinutes: Int,
         var path: Path,
         var validation: Bool,
+        var histogram: Bool,
+        globals: PluginGlobals,
     ):
         try:
             self._registry = ProductRegistry()
@@ -61,7 +69,9 @@ struct EventProcessor(Defaultable, Typeable):
                 es_produce(esp, self._eventSetup)
 
             self._schedule = StreamSchedule(
-                self._registry, ed_path(validation)
+                self._registry,
+                ed_path(validation, histogram),
+                globals,
             )
         except e:
             print("Error occurred in bin/EventProcessor.mojo,", e)

@@ -5,6 +5,7 @@ from std.time import perf_counter_ns
 from std.pathlib import Path
 
 from MojoSerial.bin.EventProcessor import EventProcessor
+from MojoSerial.bin.Plugins import PluginGlobals
 from MojoSerial.bin.PosixClockGettime import (
     PosixClockGettime,
     CLOCK_THREAD_CPUTIME_ID,
@@ -29,6 +30,7 @@ Options:
                                 (default -1 for disabled; conflicts with --maxEvents).
   --data                        Path to the 'data' directory (default 'data' in the directory of the executable).
   --validation                  Run (rudimentary) validation at the end.
+  --histogram                   Produce histograms at the end.
   --empty                       Ignore all producers (for testing only).
   --threads                     Number of streams/threads to run concurrently (default 1).
 )"""
@@ -58,6 +60,7 @@ def main() raises:
     var path = Path("")
     var empty = False
     var validation = False
+    var histogram = False
 
     var i = 1
     while i < args.__len__():
@@ -82,6 +85,8 @@ def main() raises:
             path = Path(args[i])
         elif args[i] == "--validation":
             validation = True
+        elif args[i] == "--histogram":
+            histogram = True
         elif args[i] == "--empty":
             empty = True
         else:
@@ -116,6 +121,10 @@ def main() raises:
     print(", with ", threads, " concurrent events and ", threads, " threads.", sep="")
 
 
+    # the state that the C++ plugins share across the streams in static or global
+    # variables
+    var globals = PluginGlobals(threads)
+
     var startEvent = List[Int](length=threads, fill=0)
     var endEvent = List[Int](length=threads, fill=0)
 
@@ -144,17 +153,16 @@ def main() raises:
 
     var processing_error = False
 
-    # The event range comes in as arguments: read through this closure's
-    # capture, startEvent[i]/endEvent[i] came back as heap addresses, so the
-    # Source never reached its end event.
-    async def worker(i: Int, stream_start: Int, stream_end: Int) capturing:
+    async def worker(i: Int) capturing:
         var processor = EventProcessor(
             warmupEvents,
-            stream_start,
-            stream_end,
+            startEvent[i],
+            endEvent[i],
             runForMinutes,
             path,
             validation,
+            histogram,
+            globals,
         )
 
         processor.warmUp()
@@ -175,8 +183,15 @@ def main() raises:
     # stream, scheduled across the async runtime's own pool.
     var tg = TaskGroup()
     for i in range(threads):
-        tg.create_task(worker(i, startEvent[i], endEvent[i]))
+        tg.create_task(worker(i))
     tg.wait()
+    # The tasks capture these by reference, but main does not use them after
+    # creating the tasks: Mojo would destroy them right there (ASAP destruction),
+    # while the tasks still read them. Keep them alive until the tasks are done.
+    _ = startEvent^
+    _ = endEvent^
+    _ = path^
+    _ = globals^
 
     var diff = end[0] - start[0]
     for i in range(threads):
