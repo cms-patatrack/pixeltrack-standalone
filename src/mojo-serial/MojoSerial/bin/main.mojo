@@ -153,14 +153,11 @@ def main() raises:
 
     var processing_error = False
 
-    # The event range comes in as arguments: read through this closure's
-    # capture, startEvent[i]/endEvent[i] came back as heap addresses, so the
-    # Source never reached its end event.
-    async def worker(i: Int, stream_start: Int, stream_end: Int) capturing:
+    async def worker(i: Int) capturing:
         var processor = EventProcessor(
             warmupEvents,
-            stream_start,
-            stream_end,
+            startEvent[i],
+            endEvent[i],
             runForMinutes,
             path,
             validation,
@@ -186,10 +183,14 @@ def main() raises:
     # stream, scheduled across the async runtime's own pool.
     var tg = TaskGroup()
     for i in range(threads):
-        tg.create_task(worker(i, startEvent[i], endEvent[i]))
+        tg.create_task(worker(i))
     tg.wait()
-    # The tasks only capture `globals` by reference: without a use after wait(),
-    # it is destroyed as soon as the tasks are created, before they copy it.
+    # The tasks capture these by reference, but main does not use them after
+    # creating the tasks: Mojo would destroy them right there (ASAP destruction),
+    # while the tasks still read them. Keep them alive until the tasks are done.
+    _ = startEvent^
+    _ = endEvent^
+    _ = path^
     _ = globals^
 
     var diff = end[0] - start[0]
