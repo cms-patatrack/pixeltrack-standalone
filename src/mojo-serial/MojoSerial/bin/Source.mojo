@@ -1,5 +1,6 @@
 from std.time import perf_counter_ns
 from std.pathlib import Path
+import std.os as os
 
 from MojoSerial.DataFormats.FEDRawDataCollection import FEDRawDataCollection
 from MojoSerial.DataFormats.DigiClusterCount import DigiClusterCount
@@ -19,6 +20,27 @@ def readRaw(mut file: FileHandle, nfeds: UInt32) raises -> FEDRawDataCollection:
         var fedSize = read_simd[DType.uint32](file)
         rawCollection.FEDData(Int(fedId))._data = file.read_bytes(Int(fedSize))
     return rawCollection^
+
+
+def countEvents(path: Path) raises -> Int:
+    """The number of events in raw.bin, skipping over the FED data.
+
+    C++ resolves --maxEvents -1 to the number of events read by the Source,
+    which all the streams share. Here each stream has its own Source and range
+    of events, so main needs the number of events to split them.
+    """
+    var n = 0
+    with open(path / "raw.bin", "r") as in_raw:
+        while True:
+            var eofEvent = read_simd_eof[DType.uint32](in_raw)
+            if eofEvent[0]:
+                break
+            for _ in range(eofEvent[1]):
+                _ = read_simd[DType.uint32](in_raw)  # fedId
+                var fedSize = read_simd[DType.uint32](in_raw)
+                _ = in_raw.seek(Int(fedSize), os.SEEK_CUR)
+            n += 1
+    return n
 
 
 struct Source(Defaultable, Movable, Typeable):
