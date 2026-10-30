@@ -1,7 +1,7 @@
 from std.atomic import Atomic
 from std.memory import ArcPointer
 
-from MojoSerial.Framework.EDProducer import EDProducer
+from MojoSerial.Framework.EDProducer import EDProducerWithGlobals
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.Framework.Event import Event
 from MojoSerial.Framework.EventSetup import EventSetup
@@ -16,13 +16,13 @@ from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import (
     TrackQuality,
 )
 from MojoSerial.CUDADataFormats.ZVertexHeterogeneous import ZVertexHeterogeneous
-from MojoSerial.MojoBridge.DTypes import Typeable
 from MojoSerial.plugin_Validation.SimpleAtomicHisto import SimpleAtomicHisto
 
 
 # C++: `static std::map<std::string, SimpleAtomicHisto> HistoValidator::histos`,
 # filled by the HistoValidator of every stream. Mojo has no global var: one of
-# these is shared by all the streams through PluginGlobals (bin/Plugins.mojo).
+# these is shared by all the streams, as the Globals of the plugin
+# (Framework/EDProducer.mojo).
 # The histograms are booked in the order of their names, which is the order in
 # which std::map iterates over them, and are addressed by index.
 struct HistoValidatorHistos(Movable):
@@ -129,7 +129,8 @@ struct HistoValidatorHistos(Movable):
         self.histos[index].fill(value)
 
 
-struct HistoValidator(Defaultable, EDProducer, Movable, Typeable):
+struct HistoValidator(EDProducerWithGlobals):
+    comptime Globals = HistoValidatorHistos
     comptime H = HistoValidatorHistos
 
     var digiToken_: EDGetTokenT[SiPixelDigisSoA]
@@ -147,6 +148,10 @@ struct HistoValidator(Defaultable, EDProducer, Movable, Typeable):
         self.trackToken_ = EDGetTokenT[PixelTrackHeterogeneous]()
         self.vertexToken_ = EDGetTokenT[ZVertexHeterogeneous]()
         self.histos_ = ArcPointer(HistoValidatorHistos(1))
+
+    @staticmethod
+    def makeGlobals(streams: Int) -> Self.Globals:
+        return HistoValidatorHistos(streams)
 
     # A HistoValidator with its own histograms, for a single stream.
     def __init__(out self, mut reg: ProductRegistry):

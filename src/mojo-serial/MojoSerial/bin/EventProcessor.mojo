@@ -3,19 +3,13 @@ from std.pathlib import Path
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.Framework.EventSetup import EventSetup
 from MojoSerial.MojoBridge.DTypes import Typeable
-from MojoSerial.bin.Plugins import (
-    PluginGlobals,
-    ed_path,
-    es_path,
-    es_produce,
-    make_es,
-)
+from MojoSerial.bin.PluginManager import PluginManager
 from MojoSerial.bin.Source import Source
 from MojoSerial.bin.StreamSchedule import StreamSchedule
 
 
 struct EventProcessor(Defaultable, Typeable):
-    # no pluginmanager
+    # C++ owns the PluginManager; here main does, see bin/PluginManager.mojo
     var _registry: ProductRegistry
     var _source: Source
     var _eventSetup: EventSetup
@@ -44,8 +38,9 @@ struct EventProcessor(Defaultable, Typeable):
         var runForMinutes: Int,
         var path: Path,
         var validation: Bool,
-        var histogram: Bool,
-        globals: PluginGlobals,
+        edmodules: List[String],
+        esmodules: List[String],
+        ref pluginManager: PluginManager,
     ):
         try:
             self._registry = ProductRegistry()
@@ -63,15 +58,12 @@ struct EventProcessor(Defaultable, Typeable):
             self._endEvent = Int32(endEvent)
             self._runForMinutes = Int32(runForMinutes)
 
-            var esp_names = es_path()
-            for i in range(len(esp_names)):
-                var esp = make_es(esp_names[i], path)
-                es_produce(esp, self._eventSetup)
+            for name in esmodules:
+                var esp = pluginManager.createES(name, path)
+                esp.produce(self._eventSetup)
 
             self._schedule = StreamSchedule(
-                self._registry,
-                ed_path(validation, histogram),
-                globals,
+                self._registry, pluginManager, edmodules
             )
         except e:
             print("Error occurred in bin/EventProcessor.mojo,", e)

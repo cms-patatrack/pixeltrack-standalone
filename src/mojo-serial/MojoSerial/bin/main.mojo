@@ -5,7 +5,7 @@ from std.time import perf_counter_ns
 from std.pathlib import Path
 
 from MojoSerial.bin.EventProcessor import EventProcessor
-from MojoSerial.bin.Plugins import PluginGlobals
+from MojoSerial.bin.PluginManager import PluginManager
 from MojoSerial.bin.PosixClockGettime import (
     PosixClockGettime,
     CLOCK_THREAD_CPUTIME_ID,
@@ -121,9 +121,34 @@ def main() raises:
     print(", with ", threads, " concurrent events and ", threads, " threads.", sep="")
 
 
-    # the state that the C++ plugins share across the streams in static or global
-    # variables
-    var globals = PluginGlobals(threads)
+    var edmodules = List[String]()
+    var esmodules = List[String]()
+    if not empty:
+        edmodules = [
+            "BeamSpotToPOD",
+            "SiPixelRawToClusterCUDA",
+            "SiPixelRecHitCUDA",
+            "CAHitNtupletCUDA",
+            "PixelVertexProducerCUDA",
+        ]
+        esmodules = [
+            "BeamSpotESProducer",
+            "SiPixelFedCablingMapGPUWrapperESProducer",
+            "SiPixelGainCalibrationForHLTGPUESProducer",
+            "PixelCPEFastESProducer",
+        ]
+        if validation:
+            edmodules.append("CountValidator")
+        if histogram:
+            edmodules.append("HistoValidator")
+
+    # Load the plugin libraries before starting the streams, which share them,
+    # and the globals of the plugins: see bin/PluginManager.mojo.
+    var pluginManager = PluginManager(threads)
+    for name in esmodules:
+        pluginManager.load(name)
+    for name in edmodules:
+        pluginManager.load(name)
 
     var startEvent = List[Int](length=threads, fill=0)
     var endEvent = List[Int](length=threads, fill=0)
@@ -161,8 +186,9 @@ def main() raises:
             runForMinutes,
             path,
             validation,
-            histogram,
-            globals,
+            edmodules,
+            esmodules,
+            pluginManager,
         )
 
         processor.warmUp()
@@ -191,7 +217,9 @@ def main() raises:
     _ = startEvent^
     _ = endEvent^
     _ = path^
-    _ = globals^
+    _ = edmodules^
+    _ = esmodules^
+    _ = pluginManager^
 
     var diff = end[0] - start[0]
     for i in range(threads):

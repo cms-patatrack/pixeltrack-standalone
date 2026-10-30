@@ -1,7 +1,7 @@
 from std.atomic import Atomic
 from std.memory import ArcPointer
 
-from MojoSerial.Framework.EDProducer import EDProducer
+from MojoSerial.Framework.EDProducer import EDProducerWithGlobals
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.Framework.Event import Event
 from MojoSerial.Framework.EventSetup import EventSetup
@@ -14,12 +14,11 @@ from MojoSerial.CUDADataFormats.SiPixelClustersSoA import SiPixelClustersSoA
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import PixelTrackHeterogeneous
 from MojoSerial.CUDADataFormats.ZVertexHeterogeneous import ZVertexHeterogeneous
 
-from MojoSerial.MojoBridge.DTypes import Typeable
 
 
 # C++: the counters are globals in an anonymous namespace, updated by the
 # CountValidator of every stream. Mojo has no global var: one of these is
-# shared by all the streams through PluginGlobals (bin/Plugins.mojo).
+# shared by all the streams, as the Globals of the plugin (Framework/EDProducer.mojo).
 # The fields are updated directly, not through `mut self` methods: those could
 # update a copy of the struct (see doc §12).
 struct CountValidatorCounters(Movable):
@@ -40,9 +39,8 @@ struct CountValidatorCounters(Movable):
         self.pending = Atomic[DType.int32](Int32(streams))
 
 
-struct CountValidator (
-    Defaultable, EDProducer, Movable, Typeable
-):
+struct CountValidator(EDProducerWithGlobals):
+    comptime Globals = CountValidatorCounters
 
     var digiClusterCountToken_: EDGetTokenT[DigiClusterCount]
     var trackCountToken_: EDGetTokenT[TrackCount]
@@ -66,6 +64,10 @@ struct CountValidator (
         self.vertexToken_ = EDGetTokenT[ZVertexHeterogeneous]()
 
         self.counters_ = ArcPointer(CountValidatorCounters(1))
+
+    @staticmethod
+    def makeGlobals(streams: Int) -> Self.Globals:
+        return CountValidatorCounters(streams)
 
     # A CountValidator with its own counters, for a single stream.
     def __init__(out self, mut reg: ProductRegistry):
