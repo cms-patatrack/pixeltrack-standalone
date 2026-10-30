@@ -42,13 +42,11 @@ struct PosixClockGettime[CLOCK: ClockIdType]:
     def now() -> Self.rep:
         """Returns clock_gettime in nsec."""
         var t = TimeSpec()
-        debug_assert(
-            external_call[
-                "clock_gettime",
-                c_int,
-                ClockIdType,
-                UnsafePointer[TimeSpec, origin_of(t)],
-            ](Self.CLOCK, UnsafePointer(to=t))
-            == 0
-        )
+        var ret = external_call[
+            "clock_gettime",
+            c_int,
+            ClockIdType,
+            Pointer[TimeSpec, origin_of(t)],
+        ](Self.CLOCK, Pointer(to=t))
+        debug_assert(ret == 0)
         return Int(c_long(t.tv_sec) * Self.period + t.tv_nsec)
