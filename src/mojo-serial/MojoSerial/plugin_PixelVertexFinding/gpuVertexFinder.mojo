@@ -1,4 +1,3 @@
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import (
     PixelTrack as pixelTrack,
     TrackQuality,
@@ -94,7 +93,8 @@ def loadTracks(
         if pt < ptMin:
             continue
 
-        var it = CUDACompat.atomicAdd(ws.ntrks, UInt32(1))
+        var it = ws.ntrks
+        ws.ntrks += 1
         ws.itrk[Int(it)] = UInt16(idx)
         ws.zt[Int(it)] = tracks.zip(idx)
         ws.ezt2[Int(it)] = rebind[Scalar[DType.float32]](

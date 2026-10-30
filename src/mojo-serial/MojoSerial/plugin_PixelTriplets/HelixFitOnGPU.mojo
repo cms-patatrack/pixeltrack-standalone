@@ -1,7 +1,6 @@
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import PixelTrackHeterogeneous
 import MojoSerial.plugin_PixelTriplets.CAConstants as CAConstants
 import MojoSerial.plugin_PixelTriplets.FitResults as FitResults
-from MojoSerial.CUDACore.CUDACompat import CUDAStreamType
 from MojoSerial.MojoBridge.Matrix import Matrix, Map
 from MojoSerial.CUDADataFormats.TrackingRecHit2DHeterogeneous import (
     TrackingRecHit2DHeterogeneous,
@@ -17,8 +16,6 @@ from MojoSerial.plugin_PixelTriplets.RiemannFitOnGPU import (
 from MojoSerial.plugin_PixelTriplets.BrokenLineFitOnGPU import (
     kernelBLFastFitAndFit,
 )
-
-comptime cudaStream_t = CUDAStreamType
 
 struct Rfit:
     # in case of memory issue can be made smaller
@@ -106,27 +103,6 @@ struct HelixFitOnGPU:
 
     def setBField(mut self, bField: Float64):
         self.bField_ = Float32(bField)
-
-    # C++ only declares these (GPU-kernel-launch wrappers); no .cc anywhere in
-    # the serial backend ever defines them -- the CPU backend always calls
-    # the *OnCPU variants below instead (see CAHitNtupletGeneratorOnGPU.cc).
-    def launchRiemannKernels(
-        self,
-        hv: Self.HitsView,
-        nhits: UInt32,
-        maxNumberOfTuples: UInt32,
-        cudaStream: cudaStream_t
-    ):
-        pass
-
-    def launchBrokenLineKernels(
-        self,
-        hv: Self.HitsView,
-        nhits: UInt32,
-        maxNumberOfTuples: UInt32,
-        cudaStream: cudaStream_t
-    ):
-        pass
 
     # C++: HelixFitOnGPU::launchRiemannKernelsOnCPU (RiemannFitOnGPU.cc)
     # C++'s `tuples_d = &soa->hitIndices` aliases `outputSoa_d = soa`; derived

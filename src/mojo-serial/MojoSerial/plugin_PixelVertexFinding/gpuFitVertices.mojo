@@ -1,4 +1,3 @@
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.MojoBridge.DTypes import Float
 from MojoSerial.plugin_PixelVertexFinding.gpuVertexFinder import ZVertices, WorkSpace
 
@@ -44,13 +43,13 @@ def fitVertices(
         if iv[i] > 9990:
 
             comptime if verbose:
-                _ = CUDACompat.atomicAdd(noise, Int32(1))
+                noise += 1
             continue
         debug_assert(iv[i] >= 0)
         debug_assert(iv[i] < Int32(foundClusters))
         var w = 1.0 / ezt2[i]
-        _ = CUDACompat.atomicAdd(zv[Int(iv[i])], zt[i] * w)
-        _ = CUDACompat.atomicAdd(wv[Int(iv[i])], w)
+        zv[Int(iv[i])] += zt[i] * w
+        wv[Int(iv[i])] += w
 
     # reuse nn
     for i in range(foundClusters):
@@ -68,8 +67,8 @@ def fitVertices(
         if c2 > chi2Max:
             iv[i] = 9999
             continue
-        _ = CUDACompat.atomicAdd(chi2[Int(iv[i])], c2)
-        _ = CUDACompat.atomicAdd(nn[Int(iv[i])], Int32(1))
+        chi2[Int(iv[i])] += c2
+        nn[Int(iv[i])] += 1
 
     for i in range(foundClusters):
         if nn[i] > 0:

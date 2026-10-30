@@ -5,7 +5,6 @@ from MojoSerial.plugin_PixelTriplets.CAHitNtupletGeneratorKernels import (
     Counters as KernelCounters,
     Params as KernelParams,
     QualityCuts as KernelQualityCuts,
-    Stream,
 )
 from MojoSerial.plugin_PixelTriplets.HelixFitOnGPU import HelixFitOnGPU
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import (
@@ -78,12 +77,12 @@ struct CAHitNtupletGeneratorOnGPU:
         var tracks = PixelTrackHeterogeneous(Self.OutputSoA())
 
         var kernels = CAHitNtupletGeneratorKernelsCPU(self.m_params)
-        kernels.allocate_on_gpu(Stream())
+        kernels.allocate_on_gpu()
 
-        kernels.build_doublets(hits_d, Stream())
-        kernels.launch_kernels(hits_d, tracks[], Stream(), self.m_counters)
+        kernels.build_doublets(hits_d)
+        kernels.launch_kernels(hits_d, tracks[], self.m_counters)
         # in principle needed only if Hits not "available"
-        kernels.fill_hit_det_indices(hits_d, tracks[], Stream())
+        kernels.fill_hit_det_indices(hits_d, tracks[])
 
         if hits_d.nHits() == 0:
             return tracks^
@@ -110,6 +109,6 @@ struct CAHitNtupletGeneratorOnGPU:
                 CAConstants.maxNumberOfQuadruplets(),
             )
 
-        kernels.classify_tuples(hits_d, tracks[], Stream(), self.m_counters)
+        kernels.classify_tuples(hits_d, tracks[], self.m_counters)
 
         return tracks^

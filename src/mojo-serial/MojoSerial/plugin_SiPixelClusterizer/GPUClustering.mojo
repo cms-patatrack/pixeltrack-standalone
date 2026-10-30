@@ -2,7 +2,6 @@ from std.collections import Span
 
 from MojoSerial.Geometry.Phase1PixelTopology import Phase1PixelTopology
 from MojoSerial.CUDACore.HistoContainer import HistoContainer
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDACore.PrefixScan import blockPrefixScan
 from MojoSerial.CUDADataFormats.GPUClusteringConstants import (
     GPUClusteringConstants,

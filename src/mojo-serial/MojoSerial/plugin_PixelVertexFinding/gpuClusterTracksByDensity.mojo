@@ -1,6 +1,5 @@
 from std.sys import is_defined
 
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDACore.HistoContainer import HistoContainer, forEachInBins
 from MojoSerial.MojoBridge.DTypes import Float
 from MojoSerial.plugin_PixelVertexFinding.gpuVertexFinder import ZVertices, WorkSpace
@@ -159,9 +158,8 @@ def clusterTracksByDensity(
     for i in range(nt):
         if iv[i] == Int32(i):
             if nn[i] >= minT:
-                var old = CUDACompat.atomicInc(
-                    foundClusters, UInt32(0xFFFFFFFF)
-                )
+                var old = foundClusters
+                foundClusters += 1
                 iv[i] = -(Int32(old) + 1)
             else:  # noise
                 iv[i] = -9998

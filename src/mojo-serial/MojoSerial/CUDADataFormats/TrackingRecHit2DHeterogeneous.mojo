@@ -1,7 +1,6 @@
 from std.collections import Span
 from std.sys import size_of
 
-from MojoSerial.CUDACore.CUDACompat import CUDAStreamType, cudaStreamDefault
 from MojoSerial.CUDACore.HistoContainer import HistoContainer
 from MojoSerial.CUDADataFormats.GPUClusteringConstants import (
     GPUClusteringConstants,
@@ -98,7 +97,6 @@ struct TrackingRecHit2DHeterogeneous(Defaultable, Movable, Typeable):
         out self,
         nHits: UInt32,
         hitsModuleStart: Span[UInt32, _],
-        stream: CUDAStreamType = cudaStreamDefault,
     ):
         self.m_nHits = nHits
 

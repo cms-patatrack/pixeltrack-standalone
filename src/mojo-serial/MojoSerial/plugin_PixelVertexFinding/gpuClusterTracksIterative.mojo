@@ -1,6 +1,5 @@
 from std.sys import is_defined
 
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDACore.HistoContainer import HistoContainer, forEachInBins
 from MojoSerial.MojoBridge.DTypes import Float
 from MojoSerial.plugin_PixelVertexFinding.gpuVertexFinder import ZVertices, WorkSpace
@@ -120,11 +119,12 @@ def clusterTracksIterative(
                         return
                     if dist * dist > chi2max * (ezt2[i] + ezt2[Int(j)]):
                         return
-                    var old = CUDACompat.atomicMin(iv[Int(j)], iv[i])
+                    var old = iv[Int(j)]
+                    iv[Int(j)] = min(old, iv[i])
                     if old != iv[i]:
                         # end the loop only if no changes were applied
                         more = True
-                    _ = CUDACompat.atomicMin(iv[i], old)
+                    iv[i] = min(iv[i], old)
 
                 p += 1
                 while p < hist.end(UInt32(be)):
@@ -160,9 +160,8 @@ def clusterTracksIterative(
     for i in range(nt):
         if iv[i] == Int32(i):
             if nn[i] >= minT:
-                var old = CUDACompat.atomicInc(
-                    foundClusters, UInt32(0xFFFFFFFF)
-                )
+                var old = foundClusters
+                foundClusters += 1
                 iv[i] = -(Int32(old) + 1)
             else:  # noise
                 iv[i] = -9998
