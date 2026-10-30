@@ -1,61 +1,19 @@
-from std.utils import Variant
-
 from MojoSerial.Framework.EDGetToken import EDGetTokenT
 from MojoSerial.Framework.EDPutToken import EDPutTokenT
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
+from MojoSerial.Framework.Wrapper import Wrapper
 from MojoSerial.MojoBridge.DTypes import Typeable
-
-from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import (
-    PixelTrackHeterogeneous,
-)
-from MojoSerial.CUDADataFormats.SiPixelClustersSoA import SiPixelClustersSoA
-from MojoSerial.CUDADataFormats.SiPixelDigiErrorsSoA import SiPixelDigiErrorsSoA
-from MojoSerial.CUDADataFormats.TrackingRecHit2DHeterogeneous import (
-    TrackingRecHit2DCPU,
-)
-from MojoSerial.CUDADataFormats.ZVertexHeterogeneous import ZVertexHeterogeneous
-from MojoSerial.DataFormats.BeamSpotPOD import BeamSpotPOD
-from MojoSerial.DataFormats.DigiClusterCount import DigiClusterCount
-from MojoSerial.DataFormats.FEDRawDataCollection import FEDRawDataCollection
-from MojoSerial.CUDADataFormats.SiPixelDigisSoA import SiPixelDigisSoA
-from MojoSerial.DataFormats.TrackCount import TrackCount
-from MojoSerial.DataFormats.VertexCount import VertexCount
 
 comptime StreamID = Int32
 
 
-# C++ leaves the `unique_ptr<WrapperBase>` null; a Variant has no empty state.
-@fieldwise_init
-struct Unset(Copyable, ImplicitlyCopyable, Movable, Typeable):
-    var _unused: UInt8
-
-    @staticmethod
-    @always_inline
-    def dtype() -> String:
-        return "Unset"
-
-
-# C++: vector<unique_ptr<WrapperBase>> with a virtual destructor. See §15.
-comptime Product = Variant[
-    Unset,
-    FEDRawDataCollection,
-    BeamSpotPOD,
-    SiPixelDigisSoA,
-    SiPixelClustersSoA,
-    SiPixelDigiErrorsSoA,
-    TrackingRecHit2DCPU,
-    PixelTrackHeterogeneous,
-    ZVertexHeterogeneous,
-    DigiClusterCount,
-    TrackCount,
-    VertexCount,
-]
-
-
+# C++: vector<unique_ptr<WrapperBase>>, with the products that have not been put
+# yet left null. The types of the products are erased, so that the framework
+# does not depend on the plugins that produce them.
 struct Event(Defaultable, Movable, Typeable):
     var _streamId: StreamID
     var _eventId: Int32
-    var _products: List[Product]
+    var _products: List[Optional[Wrapper]]
 
     @always_inline
     def __init__(out self):
@@ -72,9 +30,9 @@ struct Event(Defaultable, Movable, Typeable):
     ):
         self._streamId = streamId
         self._eventId = eventId
-        self._products = List[Product]()
+        self._products = List[Optional[Wrapper]](capacity=reg.__len__())
         for _ in range(reg.__len__()):
-            self._products.append(Product(Unset(0)))
+            self._products.append(None)
 
     @always_inline
     def __init__(out self, *, deinit move: Self):
@@ -93,16 +51,16 @@ struct Event(Defaultable, Movable, Typeable):
     def get[
         T: Typeable & Movable
     ](self, ref token: EDGetTokenT[T]) -> ref [
-        self._products[token.index()][T]
+        self._products[token.index()].value()
     ] T:
-        return self._products[token.index()][T]
+        return self._products[token.index()].value().product[T]()
 
     # emplace is not possible due to failure in binding the constructor at compile time, so we provide put instead
 
     def put[
-        T: Typeable & Movable
+        T: Typeable & Movable & Deinitable
     ](mut self, ref token: EDPutTokenT[T], var prod: T):
-        self._products[token.index()] = Product(prod^)
+        self._products[token.index()] = Wrapper(prod^)
 
     @staticmethod
     @always_inline

@@ -1,1 +1,1 @@
-# Plugin registration lives in bin/Plugins.mojo -- see §17.
+# The modules of this plugin are registered in Plugin.mojo, the root of the plugin library.

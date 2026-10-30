@@ -1,17 +1,22 @@
 from std.pathlib import Path
 
 from MojoSerial.Framework.EventSetup import EventSetup
-from MojoSerial.bin.Plugins import ed_path, es_path, es_produce, make_es
+from MojoSerial.bin.PluginManager import PluginManager
+
+# Build with -D LIB_DIR=<the directory of the plugin libraries>.
 
 
 def main() raises:
+    var esmodules: List[String] = [
+        "BeamSpotESProducer",
+        "SiPixelFedCablingMapGPUWrapperESProducer",
+        "SiPixelGainCalibrationForHLTGPUESProducer",
+        "PixelCPEFastESProducer",
+    ]
+    var pluginManager = PluginManager(1)
     var evt = EventSetup()
-
-    var esp_names = es_path()
-    for i in range(len(esp_names)):
-        var esp = make_es(esp_names[i], Path("data"))
-        es_produce(esp, evt)
-
-    var ed_names = ed_path(False)
-    for i in range(len(ed_names)):
-        print(ed_names[i])
+    for name in esmodules:
+        pluginManager.load(name)
+        var esp = pluginManager.createES(name, Path("data"))
+        esp.produce(evt)
+        print(name)

@@ -1,8 +1,7 @@
-from std.pathlib import Path
-from std.sys.info import size_of
-from std.memory import memcpy
+from std.atomic import Atomic
+from std.memory import ArcPointer
 
-from MojoSerial.Framework.EDProducer import EDProducer
+from MojoSerial.Framework.EDProducer import EDProducerWithGlobals
 from MojoSerial.Framework.ProductRegistry import ProductRegistry
 from MojoSerial.Framework.Event import Event
 from MojoSerial.Framework.EventSetup import EventSetup
@@ -15,12 +14,33 @@ from MojoSerial.CUDADataFormats.SiPixelClustersSoA import SiPixelClustersSoA
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import PixelTrackHeterogeneous
 from MojoSerial.CUDADataFormats.ZVertexHeterogeneous import ZVertexHeterogeneous
 
-from MojoSerial.MojoBridge.DTypes import Char, Typeable, UChar
-from MojoSerial.MojoBridge.File import read_obj
 
-struct CountValidator (
-    Defaultable, EDProducer, Movable, Typeable
-):
+
+# C++: the counters are globals in an anonymous namespace, updated by the
+# CountValidator of every stream. Mojo has no global var: one of these is
+# shared by all the streams, as the Globals of the plugin (Framework/EDProducer.mojo).
+# The fields are updated directly, not through `mut self` methods: those could
+# update a copy of the struct (see doc §12).
+struct CountValidatorCounters(Movable):
+    var allEvents: Atomic[DType.int32]
+    var goodEvents: Atomic[DType.int32]
+    var sumVertexDifference: Atomic[DType.int32]
+    # C++ protects the sum with a mutex
+    var sumTrackDifference: Atomic[DType.float32]
+    # The number of streams that have not reached endJob yet; the last one
+    # reports the results, once all the events have been processed.
+    var pending: Atomic[DType.int32]
+
+    def __init__(out self, streams: Int):
+        self.allEvents = Atomic[DType.int32](0)
+        self.goodEvents = Atomic[DType.int32](0)
+        self.sumVertexDifference = Atomic[DType.int32](0)
+        self.sumTrackDifference = Atomic[DType.float32](0)
+        self.pending = Atomic[DType.int32](Int32(streams))
+
+
+struct CountValidator(EDProducerWithGlobals):
+    comptime Globals = CountValidatorCounters
 
     var digiClusterCountToken_: EDGetTokenT[DigiClusterCount]
     var trackCountToken_: EDGetTokenT[TrackCount]
@@ -31,15 +51,7 @@ struct CountValidator (
     var trackToken_: EDGetTokenT[PixelTrackHeterogeneous]
     var vertexToken_: EDGetTokenT[ZVertexHeterogeneous]
 
-    # aggregate stats across all events processed by this validator instance.
-    # the C++ original keeps these as anonymous-namespace globals (std::atomic),
-    # since Mojo has no mutable module-level state ("global vars are not
-    # supported"), they live on self instead -- equivalent here since exactly
-    # one CountValidator instance processes all events in this framework.
-    var allEvents_: UInt32
-    var goodEvents_: UInt32
-    var sumTrackDifference_: Float32
-    var sumVertexDifference_: Int32
+    var counters_: ArcPointer[CountValidatorCounters]
 
     def __init__(out self):
         self.digiClusterCountToken_ = EDGetTokenT[DigiClusterCount]()
@@ -51,16 +63,23 @@ struct CountValidator (
         self.trackToken_ = EDGetTokenT[PixelTrackHeterogeneous]()
         self.vertexToken_ = EDGetTokenT[ZVertexHeterogeneous]()
 
-        self.allEvents_ = 0
-        self.goodEvents_ = 0
-        self.sumTrackDifference_ = 0.0
-        self.sumVertexDifference_ = 0
+        self.counters_ = ArcPointer(CountValidatorCounters(1))
 
+    @staticmethod
+    def makeGlobals(streams: Int) -> Self.Globals:
+        return CountValidatorCounters(streams)
+
+    # A CountValidator with its own counters, for a single stream.
     def __init__(out self, mut reg: ProductRegistry):
-        self.allEvents_ = 0
-        self.goodEvents_ = 0
-        self.sumTrackDifference_ = 0.0
-        self.sumVertexDifference_ = 0
+        self = Self(reg, ArcPointer(CountValidatorCounters(1)))
+
+    # A CountValidator updating the counters shared by all the streams.
+    def __init__(
+        out self,
+        mut reg: ProductRegistry,
+        counters: ArcPointer[CountValidatorCounters],
+    ):
+        self.counters_ = counters
         try:
             self.digiClusterCountToken_ = reg.consumes[DigiClusterCount]()
             self.trackCountToken_ = reg.consumes[TrackCount]()
@@ -72,18 +91,6 @@ struct CountValidator (
         except e:
             print("Handled exception in CountValidator: ", e)
             return Self()
-
-    def addTrackDifference(mut self, diff: Float32):
-        self.sumTrackDifference_ += diff
-
-    def addVertexDifference(mut self, diff: Int32):
-        self.sumVertexDifference_ += diff
-
-    def incAllEvents(mut self):
-        self.allEvents_ += 1
-
-    def incGoodEvents(mut self):
-        self.goodEvents_ += 1
 
     @staticmethod
     def strformat[Ty: Writable](str: StringSlice, arg: Ty) -> String:
@@ -104,6 +111,8 @@ struct CountValidator (
     def produce(mut self, mut iEvent: Event, ref iSetup: EventSetup):
         var trackTolerance: Float32 = 0.012  # in 200 runs of 1k events all events are withing this tolerance
         var vertexTolerance: Int32 = 1
+
+        ref counters = self.counters_[]
 
         var errorMsg: String = Self.strformat("Event {} ", iEvent.eventID())
         var ok: Bool = True
@@ -137,7 +146,7 @@ struct CountValidator (
             / Float32(trackCount.nTracks())
         )
         if UInt32(nTracks) != trackCount.nTracks():
-            self.addTrackDifference(rel)
+            _ = counters.sumTrackDifference.fetch_add(rel)
         if rel >= trackTolerance:
             errorMsg += Self.strformat(
                 "\n N(tracks) is {} expected {}",
@@ -153,7 +162,7 @@ struct CountValidator (
 
         var diff: Int32 = abs(Int32(vertices.nvFinal) - Int32(vertexCount.nVertices()))
         if diff != 0:
-            self.addVertexDifference(diff)
+            _ = counters.sumVertexDifference.fetch_add(diff)
         if diff > vertexTolerance:
             errorMsg += Self.strformat(
                 "\n N(vertices) is {} expected {}",
@@ -163,29 +172,36 @@ struct CountValidator (
             errorMsg += Self.strformat(", difference {} is outside tolerance {}", diff, vertexTolerance)
             ok = False
 
-        self.incAllEvents()
+        _ = counters.allEvents.fetch_add(1)
         if ok:
-            self.incGoodEvents()
+            _ = counters.goodEvents.fetch_add(1)
         else:
             print(errorMsg)
 
+    # C++ calls endJob once, on the first stream, after all the streams are
+    # done; here every stream calls it, and the last one reports the results.
     def endJob(mut self) raises:
-        var all = self.allEvents_
-        var good = self.goodEvents_
+        ref counters = self.counters_[]
+        if counters.pending.fetch_sub(1) != 1:
+            return
+        var all = counters.allEvents.load()
+        var good = counters.goodEvents.load()
+        var sumTrackDifference = counters.sumTrackDifference.load()
+        var sumVertexDifference = counters.sumVertexDifference.load()
         if all == good:
             print(Self.strformat("CountValidator: all {} events validated successfully!", all))
-            if self.sumTrackDifference_ > 0:
+            if sumTrackDifference > 0:
                 print(
                     Self.strformat(
                         " Average relative track difference: {} (all within tolerance)",
-                        self.sumTrackDifference_ / Float32(all)
+                        sumTrackDifference / Float32(all)
                     )
                 )
-            if self.sumVertexDifference_ > 0:
+            if sumVertexDifference > 0:
                 print(
                     Self.strformat(
                         " Average absolute vertex difference: {} (all within tolerance)",
-                        Float32(self.sumVertexDifference_) / Float32(all)
+                        Float32(sumVertexDifference) / Float32(all)
                     )
                 )
         else:

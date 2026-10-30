@@ -10,10 +10,10 @@ this source or on an isolated probe — nothing is recalled from documentation.
 > §13) and the whole RecHits chain — `PixelCPEforGPU`, `PixelCPEFast`,
 > `TrackingRecHit2DHeterogeneous`, `PixelRecHits`, `GPUPixelRecHits`,
 > `SiPixelRecHitCUDA` — is at zero, as is the `gpuVertexFinder` cluster.
-> `OwnedPointer` fields are down from 39 to 1 (§12). The plugin factories are
-> deleted in favour of a closed `Variant` set in `bin/Plugins.mojo`, and
-> `StreamSchedule` no longer holds `_source`/`_eventSetup` — **§17 is still owed
-> for that change.** Two tests now *execute*: `GPUClusteringTest` matches the
+> `OwnedPointer` fields are down from 39 to 1 (§12). The plugins are shared
+> libraries again, loaded at run time through `plugins.txt` as in C++, and the
+> Event and EventSetup products are type-erased (§17); `StreamSchedule` no
+> longer holds `_source`/`_eventSetup`. Two tests now *execute*: `GPUClusteringTest` matches the
 > C++ reference byte-for-byte, and a vertex-finder driver passes on hand-checked
 > input.
 >
@@ -1200,7 +1200,8 @@ does not implement the '__is__' method"*.
 `get[T]()`. `Variant` is the only construct in 1.0 that both selects by type and
 knows the arm's concrete type on the far side, which is why §15 uses it rather
 than five named fields — even though named fields would avoid the union
-padding.
+padding. (Superseded by §17: the products are now type-erased, and the typed
+token or the type name, not the container, says what the product is.)
 
 ### Assembly for the real `getHits`: abandoned, and why
 
@@ -1218,6 +1219,119 @@ the real function's assembly would have *confirmed* that, not added to it. Each
 file cleared revealed the next (§8), and the marginal value never justified the
 cost. If it is ever wanted, the way to get it is to extract `getHits` and its
 few dependencies into a standalone file, not to build the real closure.
+
+---
+
+## 17. DONE — plugins are shared libraries, loaded at run time
+
+The port had replaced the C++ plugin system by a closed `Variant` of all the
+modules in `bin/Plugins.mojo`, and the Event and EventSetup products by closed
+`Variant`s of all the product types (§15), so that the framework imported every
+plugin and every data format. Since 1.0 can build shared libraries, the C++
+layout is back:
+
+| C++ (`src/serial`) | Mojo (`src/mojo-serial/MojoSerial`) |
+|---|---|
+| `plugin-X/*.cc` → `lib/serial/pluginX.so` | `plugin_X/Plugin.mojo` → `lib/mojo-serial/pluginX.so` |
+| `plugins.txt` from `nm` of `typeinfo for Maker<T>` | `plugins.txt` from `nm` of `edmplugin_E[DS]Producer_<T>` |
+| `edmplugin::SharedLibrary` (`dlopen`, `dlsym`) | `bin/SharedLibrary.mojo` (`OwnedDLHandle`) |
+| `edmplugin::PluginManager` | `bin/PluginManager.mojo` |
+| `DEFINE_FWK_MODULE(T)`: a static `Registrar<T>` | an `@export`ed function per module, calling `define_fwk_module[T]` |
+| static `Registry` of `unique_ptr<MakerBase>` | `Registry` of `Maker`, owned by the `PluginManager` |
+| `unique_ptr<Worker>` → `WorkerT<T>`, virtual calls | `Worker`: erased pointer + struct of thin function pointers |
+| `unique_ptr<ESProducer>` | `ESProducerPtr`, the same |
+| `unique_ptr<WrapperBase>` → `Wrapper<T>` | `Framework/Wrapper.mojo`: erased pointer + destructor pointer |
+| static variables of a plugin (`CountValidator`, `HistoValidator`) | `EDProducerWithGlobals.Globals`, created when the plugin is registered |
+
+`main` no longer imports any plugin code: `nm -D --defined-only mojo-serial` is
+empty, and `ldd` lists no plugin; each library exports only its registration
+functions. Mojo compiles the imported modules from source, so each library, and
+the executable, carries its own copy of the `Framework`, `DataFormats`, ... code
+it uses. There are no other libraries, and nothing checks that the copies agree:
+everything must be built from the same sources with the same flags, which is
+what `make mojo-serial` does.
+
+### What 1.0 provides — measured on probes
+
+- **`mojo build --emit shared-lib`** works, and the library links the Mojo
+  runtime (`libKGENCompilerRTShared.so`, ...) dynamically, like the executable:
+  memory allocated in a plugin is grown and freed by the executable and vice
+  versa, and an `ArcPointer` is shared between them.
+- **Only the `@export`s reachable from the root file are emitted.** An `@export`
+  in an imported module is silently dropped, even when the root imports it by
+  name; it is emitted only if the root's own exports call it. Hence one root
+  file per library, `plugin_X/Plugin.mojo`, holding the exports.
+- **`@export` wants an `abi("C")` effect**: `def f(p: ErasedPointer) abi("C"):`.
+  The `ABI="C"` argument is deprecated.
+- **No global variables**: *"global variables are not supported; move this into
+  a function body or use 'comptime' to declare a constant"*. So no static
+  registrars, which is why the `PluginManager` calls the registration function
+  of every module that `plugins.txt` lists for a library when it loads it, and
+  no static state in the plugins, which is why `EDProducerWithGlobals` exists.
+- **Thin function pointers are the vtable.** `def(ErasedPointer, mut Event,
+  EventSetup) thin -> None` is a valid field type, including `mut` arguments
+  and `raises`, and an error raised in a plugin propagates through it to the
+  caller in the executable. A thin function cannot bind to a closure-typed
+  parameter (`def(Int) -> T`): pass the type as a trait-bound parameter and
+  take `_create[T]`, `destroy_erased[T]`, ... instead.
+- **`OwnedDLHandle(path, RTLD.LAZY | RTLD.GLOBAL)`**, `check_symbol(name)`, and
+  `get_function[ReturnType](name)(args...)` — the parameter is the return type
+  only, a `def(...)` type is rejected. There is no non-owning `DLHandle`, and
+  `OwnedDLHandle` closes the library when destroyed: `SharedLibrary` leaks it,
+  because C++ never unloads a plugin and the Event, EventSetup and registries
+  hold pointers to functions of the plugins.
+- **Struct fields cannot expose `AnyOrigin`** (*"struct fields cannot expose
+  AnyOrigin in their type"*), so the erased pointer is
+  `OpaquePointer[MutUntrackedOrigin]`, the origin of a heap allocation.
+- **Allocation:** `alloc[T](n)` is deprecated (the `unsafe_alloc` it suggests
+  does not exist); `alloc[T](Layout[T](count=1)).unsafe_leak()` returns a
+  `Pointer[T, MutUntrackedOrigin]`, and `unsafe_write`, `unsafe_deinit_pointee`,
+  `unsafe_free` replace `init_pointee_move`, `destroy_pointee`, `free`.
+- **The reinterpret cast** is `p.unsafe_bitcast[T]()`; to return a `ref` from it,
+  `.unsafe_mut_cast[origin_of(self).mut]().unsafe_origin_cast[origin_of(self)]()`.
+  The caller must then name the exact element expression as the origin —
+  `ref [self._products[token.index()].value()] T`,
+  `ref [self._typeToProduct[T.dtype()]] T` — because `List`, `Dict` and
+  `Optional` return references with field-level origins
+  (`origin_of(self._typeToProduct["value"])`), which `ref [self._typeToProduct]`
+  does not match.
+- **Associated types in traits work** (`comptime Globals: Movable &
+  Deinitable`); without `Deinitable`, `ArcPointer[T.Globals]` *"lacks evidence"*.
+- **Overloads that differ only in a trait bound are ambiguous**, even when one
+  trait refines the other: `define_fwk_module[T: EDProducer]` and
+  `[T: EDProducerWithGlobals]` cannot share a name.
+- **`Dict` hashing agrees across libraries**: the ProductRegistry and the
+  EventSetup are filled by one library and read by another.
+
+### Divergences from C++
+
+- **Loading.** C++ loads the plugins from the `EventProcessor` and
+  `StreamSchedule` constructors, which run in `main` before the streams start.
+  Here each stream builds its own `EventProcessor` inside its task, so `main`
+  loads all the plugins first and the streams only create the modules; nothing
+  in the `PluginManager` is thread safe, and nothing needs to be.
+- **Globals.** The validators' static counters and histograms are created once
+  per process when the plugin is registered (`makeGlobals(streams)`), held by
+  the `Maker`, and an `ArcPointer` to them is passed to each instance.
+- **No type check on `Event.get`**, as in C++: the typed `EDGetTokenT[T]` from
+  the ProductRegistry guarantees the type. The EventSetup checks the type name.
+- **`--empty`** now empties the module lists, as in C++; it was parsed but
+  ignored.
+
+### Validation and throughput
+
+Validation and histograms are byte-identical to the closed-`Variant` build, with
+1, 4 and 8 threads, and with `GLIBC_TUNABLES=glibc.malloc.perturb=165`.
+Throughput, best of 3 interleaved runs (events/s):
+
+| threads | closed `Variant`s | plugin libraries |
+|---:|---:|---:|
+| 1 | 75.8 | 76.2 |
+| 8 | 481.4 | 481.9 |
+
+The difference is within the run-to-run variation: the indirect calls (a few
+per module and event) and the heap allocation of each product cost nothing
+measurable, and the build of the libraries runs in parallel with `make -j`.
 
 ---
 
