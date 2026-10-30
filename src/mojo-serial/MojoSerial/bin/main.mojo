@@ -9,6 +9,7 @@ from MojoSerial.bin.PosixClockGettime import (
     PosixClockGettime,
     CLOCK_THREAD_CPUTIME_ID,
 )
+from MojoSerial.bin.Source import countEvents
 from MojoSerial.MojoBridge.DTypes import Double
 from std.runtime.asyncrt import TaskGroup
 
@@ -107,6 +108,10 @@ def main() raises:
         print("Data directory '", path, "' does not exist", sep="")
         exit(1)
 
+    # -1 means all the events in the input file
+    if runForMinutes < 0 and maxEvents < 0:
+        maxEvents = countEvents(path)
+
     if runForMinutes < 0:
         print("Processing", maxEvents, "events", end="")
     else:
@@ -119,7 +124,7 @@ def main() raises:
     var startEvent = List[Int](length=threads, fill=0)
     var endEvent = List[Int](length=threads, fill=0)
 
-    if maxEvents > 0:
+    if runForMinutes < 0:
         var base = maxEvents // threads
         var rem = maxEvents % threads
 
