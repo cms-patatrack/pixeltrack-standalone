@@ -1,6 +1,5 @@
 import std.math as math
 
-from std.atomic import Atomic, Ordering
 from std.sys import is_defined
 
 
@@ -8,7 +7,6 @@ import MojoSerial.plugin_PixelTriplets.CAConstants as CAConstants
 import MojoSerial.plugin_PixelTriplets.gpuPixelDoublets as gpuPixelDoublets
 from MojoSerial.plugin_PixelTriplets.GPUCACell import GPUCACell
 from MojoSerial.CUDACore.AtomicPairCounter import AtomicPairCounter
-from MojoSerial.CUDACore.CUDACompat import CUDAStreamType
 from MojoSerial.CUDACore.HistoContainer import (
     finalizeBulk,
     launchFinalize,
@@ -30,7 +28,6 @@ comptime TupleMultiplicity = CAConstants.TupleMultiplicity
 comptime Quality = pixelTrack.Quality
 comptime TkSoA = pixelTrack.TrackSoA
 comptime HitContainer = pixelTrack.HitContainer
-comptime Stream = CUDAStreamType
 
 
 @fieldwise_init
@@ -188,55 +185,37 @@ def Kernel_checkOverflows(
     maxNumberOfDoublets: UInt32,
     mut counters: Counters,
 ):
-    var first: UInt32 = 0
-
+    # the counters belong to the generator of this stream: no atomics needed
     ref c = counters
-    if first == 0 :
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nEvents),
-            UInt64(1),
-        )
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nHits),
-            UInt64(nHits),
-        )
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nCells),
-            UInt64(nCells),
-        )
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nTuples),
-            UInt64(apc.get()[1]),
-        )
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nFitTracks),
-            UInt64(tupleMultiplicity.size()),
-        )
+    c.nEvents += 1
+    c.nHits += UInt64(nHits)
+    c.nCells += UInt64(nCells)
+    c.nTuples += UInt64(apc.get()[1])
+    c.nFitTracks += UInt64(tupleMultiplicity.size())
 
     comptime if is_defined["NTUPLE_DEBUG"]():
-        if first == 0:
-            print(
-                "number of found cells",
-                nCells,
-                "found tuples",
-                apc.get()[1],
-                "with total hits",
-                apc.get()[0],
-                "out of",
-                nHits,
+        print(
+            "number of found cells",
+            nCells,
+            "found tuples",
+            apc.get()[1],
+            "with total hits",
+            apc.get()[0],
+            "out of",
+            nHits,
+        )
+        if apc.get()[1] < CAConstants.maxNumberOfQuadruplets():
+            debug_assert(
+                foundNtuplets.size(apc.get()[1]) == 0,
+                "Expected size 0",
             )
-            if apc.get()[1] < CAConstants.maxNumberOfQuadruplets():
-                debug_assert(
-                    foundNtuplets.size(apc.get()[1]) == 0,
-                    "Expected size 0",
-                )
-                debug_assert(
-                    foundNtuplets.size() == apc.get()[0],
-                    "Size mismatch",
-                )
+            debug_assert(
+                foundNtuplets.size() == apc.get()[0],
+                "Size mismatch",
+            )
     comptime if is_defined["NTUPLE_DEBUG"]():
         var nBins = Int(foundNtuplets.nbins())
-        for idx in range(Int(first), nBins, 1):
+        for idx in range(nBins):
             var idx_u = UInt32(idx)
             if foundNtuplets.size(idx_u) > 5:
                 print("ERROR", idx, ",", foundNtuplets.size(idx_u))
@@ -247,51 +226,32 @@ def Kernel_checkOverflows(
             while ih != end:
                 debug_assert(UInt32(ih[]) < nHits)
                 ih += 1
-    if first == 0:
-        if apc.get()[1] >= CAConstants.maxNumberOfQuadruplets():
-            print("Tuples overflow")
-        if nCells >= maxNumberOfDoublets:
-            print("Cells overflow")
-        if cellNeighbors.full():
-            print("cellNeighbors overflow")
-        if cellTracks.full():
-            print("cellTracks overflow")
+    if apc.get()[1] >= CAConstants.maxNumberOfQuadruplets():
+        print("Tuples overflow")
+    if nCells >= maxNumberOfDoublets:
+        print("Cells overflow")
+    if cellNeighbors.full():
+        print("cellNeighbors overflow")
+    if cellTracks.full():
+        print("cellTracks overflow")
 
-    var idx: Int = Int(first)
-    var nt = Int(nCells)
-
-    while idx  < nt:
+    for idx in range(Int(nCells)):
         ref thisCell = cells[idx]
         if (thisCell.outerNeighbors(cellNeighbors).full()) : #++tooManyNeighbors[thisCell.theLayerPairId]
           print("OuterNeighbors overflow ",idx , "in \n", thisCell.theLayerPairId)
         if (thisCell.tracks(cellTracks).full()) : #++tooManyTracks[thisCell.theLayerPairId]
           print("Tracks overflow " , idx , " in \n", thisCell.theLayerPairId)
         if (thisCell.theDoubletId < 0):
-          Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-              UnsafePointer(to=c.nKilledCells),
-              UInt64(1),
-          )
+          c.nKilledCells += 1
         if (thisCell.theUsed == 0):
-          Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-              UnsafePointer(to=c.nEmptyCells),
-              UInt64(1),
-          )
+          c.nEmptyCells += 1
         if (thisCell.tracks(cellTracks).empty()):
-          Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-              UnsafePointer(to=c.nZeroTrackCells),
-              UInt64(1),
-          )
-        idx+=1
+          c.nZeroTrackCells += 1
 
 
-    idx = Int(first)
-    nt = Int(nHits)
-
-    while idx < nt :
+    for idx in range(Int(nHits)):
         if isOuterHitOfCell.full(idx):
             print("OuterHitOfCell ovberflow " , idx , "\n")
-
-        idx += 1
 
 
 def kernel_fishboneCleaner(
@@ -302,7 +262,7 @@ def kernel_fishboneCleaner(
 ):
     comptime bad = trackQuality.bad
     var nt = Int(nCells)
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         ref thisCell = cells[idx]
         if thisCell.theDoubletId >= 0:
             continue
@@ -322,7 +282,7 @@ def kernel_earlyDuplicateRemover(
     comptime dup = trackQuality.dup
 
     var nt = Int(nCells)
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         ref thisCell = cells[idx]
 
         if len(thisCell.tracks(cellTracks)) < 2:
@@ -353,7 +313,7 @@ def kernel_fastDuplicateRemover(
     var loose = trackQuality.loose
 
     var nt = Int(nCells)
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         ref thisCell = cells[idx]
         if len(thisCell.tracks(cellTracks)) < 2:
             continue
@@ -393,16 +353,12 @@ def kernel_connect(
             dcaCutInnerTriplet: Float32,
             dcaCutOuterTriplet: Float32
         ):
-    var firstCellIndex = 0 + 0 * 1
-    var first: UInt32 = 0
-    var stride = 1
+    apc1 = AtomicPairCounter(0)
+    apc2 = AtomicPairCounter(0)
 
-    if(0 == (firstCellIndex + Int(first))):
-        apc1 = AtomicPairCounter(0)
-        apc2 = AtomicPairCounter(0)
-
-    var idx : Int = firstCellIndex
+    var idx = 0
     var nt = Int(nCells)
+    # a while loop: `for idx in range(nt)` executes more instructions here
     #loop on outer cells
     while idx < nt:
         var cellIndex  =idx
@@ -423,7 +379,7 @@ def kernel_connect(
         var zo = cells[idx].get_outer_z(hh)
         var isBarrel = cells[idx].get_inner_detIndex(hh) < Float32(last_barrel_detIndex)
         #loop on inner cells
-        for j in range(Int(first), numberOfPossibleNeighbors, stride):
+        for j in range(numberOfPossibleNeighbors):
             var otherCell = Int(vi[vb + j])
 
             var r1 = cells[otherCell].get_inner_r(hh)
@@ -470,7 +426,7 @@ def kernel_find_ntuplets(
     minHitsPerNtuplet : UInt32
     ):
     var nt = Int(nCells)
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         # a copy, not a ref: find_ntuplets only reads it, and holding a borrow
         # of `cells` here would conflict with passing the array itself
         var thisCell = cells[idx].copy()
@@ -503,7 +459,7 @@ def kernel_mark_used(
     cellTracks: gpuPixelDoublets.CellTracksVector,
 ):
     var nt = Int(nCells)
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         if not cells[idx].tracks(cellTracks).empty():
             cells[idx].theUsed |= 2
 
@@ -511,7 +467,7 @@ def kernel_countMultiplicity(  foundNtuplets : HitContainer,
                               quality : Span[Quality, _],
                               mut tupleMultiplicity : CAConstants.TupleMultiplicity):
     var nt = Int(foundNtuplets.nbins())
-    for it in range(0, nt, 1):
+    for it in range(nt):
         var it_u = UInt32(it)
         var nhits = foundNtuplets.size(it_u)
         if nhits < 3:
@@ -528,7 +484,7 @@ def kernel_fillMultiplicity(foundNtuplets : HitContainer,
                               quality : Span[Quality, _],
                               mut tupleMultiplicity : CAConstants.TupleMultiplicity):
     var nt = Int(foundNtuplets.nbins())
-    for it in range(0, nt, 1):
+    for it in range(nt):
         var it_u = UInt32(it)
         var nhits = foundNtuplets.size(it_u)
         if nhits < 3:
@@ -552,7 +508,7 @@ def kernel_classifyTracks(
     # quality are fields *of* tracks, so taking them separately aliases. One
     # borrow, derived internally.
     var nt = Int(tracks.hitIndices.nbins())
-    for it in range(0, nt, 1):
+    for it in range(nt):
         var it_u = UInt32(it)
         var it_i = Int32(it)
         var nhits = tracks.hitIndices.size(it_u)
@@ -571,7 +527,7 @@ def kernel_classifyTracks(
 
         #if the fit has my invalid parameters , mark it as bad
         var isNaN : Bool = False
-        for i in range(0, 5, 1):
+        for i in range(5):
             isNaN = isNaN or Bool(math.isnan(tracks.stateAtBS.state[it_i][i, 0]))
 
         if isNaN:
@@ -634,23 +590,20 @@ def kernel_doStatsForTracks(tuples  : HitContainer ,
                            quality : Span[Quality, _] ,
                            mut counters : Counters ):
     var nt = Int(tuples.nbins())
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         var idx_u = UInt32(idx)
         if tuples.size(idx_u) == 0:
             break # guard
         if quality[idx] != trackQuality.loose:
             continue
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=(counters.nGoodTracks)),
-            UInt64(1),
-        )
+        counters.nGoodTracks += 1
 
 
 def kernel_countHitInTracks(tuples  : HitContainer ,
                            quality : Span[Quality, _] ,
                            mut hitToTuple : HitToTuple ):
     var nt = Int(tuples.nbins())
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         var idx_u = UInt32(idx)
         if tuples.size(idx_u) == 0:
             break # guard
@@ -667,7 +620,7 @@ def kernel_fillHitInTracks(tuples  : HitContainer ,
                            mut hitToTuple : HitToTuple ):
     var nt = Int(tuples.nbins())
 
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         var idx_u = UInt32(idx)
         if tuples.size(idx_u) == 0:
             break #guard
@@ -687,31 +640,25 @@ def kernel_fillHitDetIndices(tuples  : HitContainer ,
                            mut hitDetIndices : HitContainer ):
     # copy offsets
     var total_bins = Int(tuples.totbins())
-    for idx in range(0, total_bins, 1):
+    for idx in range(total_bins):
         hitDetIndices.off[idx] = tuples.off[idx]
     # fill hit indices
     var nhits = hh.nHits()
     var total_size = Int(tuples.size())
-    for idx in range(0, total_size, 1):
+    for idx in range(total_size):
         debug_assert(UInt32(tuples.bins[idx]) < nhits)
         hitDetIndices.bins[idx] = hh.detectorIndex(Int(tuples.bins[idx]))
 
 def kernel_doStatsForHitInTracks(hitToTuple: HitToTuple , mut counters :  Counters):
     ref c = counters
     var nt = Int(hitToTuple.nbins())
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         var idx_u = UInt32(idx)
         if hitToTuple.size(idx_u) == 0:
             continue # SHALL NOT BE break
-        Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-            UnsafePointer(to=c.nUsedHits),
-            UInt64(1),
-        )
+        c.nUsedHits += 1
         if hitToTuple.size(idx_u) > 1 :
-            Atomic.fetch_add[ordering = Ordering.SEQUENTIAL](
-                UnsafePointer(to=c.nDupHits),
-                UInt64(1),
-            )
+            c.nDupHits += 1
 
 def kernel_tripletCleaner(hh : TrackingRecHit2DHeterogeneous , mut tracks : TkSoA , hitToTuple : HitToTuple):
     # foundNtuplets and quality are fields of tracks; taking them separately
@@ -722,7 +669,7 @@ def kernel_tripletCleaner(hh : TrackingRecHit2DHeterogeneous , mut tracks : TkSo
 
     # loop over hits
     var nt = Int(hitToTuple.nbins())
-    for idx in range(0, nt, 1):
+    for idx in range(nt):
         var idx_u = UInt32(idx)
         if hitToTuple.size(idx_u) < 2:
             continue
@@ -946,7 +893,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         return self.device_tupleMultiplicity_
 
     # C++: CAHitNtupletGeneratorKernelsCPU::allocateOnGPU (CAHitNtupletGeneratorKernelsAlloc.h)
-    def allocate_on_gpu(mut self, stream: Stream):
+    def allocate_on_gpu(mut self):
         #//////////////////////////////////////////////////////////
         #// ALLOCATIONS FOR THE INTERMEDIATE RESULTS (STAYS ON WORKER)
         #//////////////////////////////////////////////////////////
@@ -968,7 +915,7 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         launchZero(self.device_hitToTuple_)  # we may wish to keep it in the edm...
 
     # C++: CAHitNtupletGeneratorKernelsCPU::buildDoublets (CAHitNtupletGeneratorKernels.cc)
-    def build_doublets(mut self, hh: Self.HitsOnCPU, stream: Stream) raises:
+    def build_doublets(mut self, hh: Self.HitsOnCPU) raises:
         var nhits = hh.nHits()
 
         comptime if is_defined["NTUPLE_DEBUG"]():
@@ -1023,7 +970,6 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         mut self,
         hh: Self.HitsOnCPU,
         mut tracks_d: TkSoA,
-        cudaStream: Stream,
         mut counters: Counters,
     ) raises:
         ref tuples_d = tracks_d.hitIndices
@@ -1137,7 +1083,6 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         mut self,
         hh: Self.HitsOnCPU,
         mut tracks_d: TkSoA,
-        cudaStream: Stream,
         mut counters: Counters,
     ) raises:
         ref tuples_d = tracks_d.hitIndices
@@ -1206,19 +1151,12 @@ struct CAHitNtupletGeneratorKernelsCPU(Movable):
         self,
         hh: TrackingRecHit2DHeterogeneous,
         mut tracks_d: TkSoA,
-        cudaStream: Stream,
     ) raises:
         kernel_fillHitDetIndices(
             tracks_d.hitIndices,
             hh,
             tracks_d.detIndices,
         )
-
-    # C++ declares this method but never defines or calls it anywhere in the
-    # serial backend -- the owned fields free themselves when
-    # `self` is destroyed, so there's nothing left to free manually here.
-    def cleanup(self, cudaStream: Stream):
-        pass
 
     @staticmethod
     def print_counters(counters: Counters):

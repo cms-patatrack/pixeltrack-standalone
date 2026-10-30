@@ -1,4 +1,3 @@
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.MojoBridge.DTypes import Float
 from MojoSerial.plugin_PixelVertexFinding.gpuVertexFinder import ZVertices, WorkSpace
 
@@ -40,7 +39,8 @@ def splitVertices(mut data: ZVertices, mut ws: WorkSpace, maxChi2: Float):
         # copy to local
         for k in range(nt):
             if iv[k] == Int32(kv):
-                var old = CUDACompat.atomicInc(nq, UInt32(MAXTK))
+                var old = nq
+                nq += 1
                 zz[Int(old)] = zt[k] - zv[kv]
                 newV[Int(old)] = 0 if zz[Int(old)] < 0 else 1
                 ww[Int(old)] = 1.0 / ezt2[k]
@@ -64,10 +64,8 @@ def splitVertices(mut data: ZVertices, mut ws: WorkSpace, maxChi2: Float):
 
             for k in range(nq):
                 var i = newV[Int(k)]
-                _ = CUDACompat.atomicAdd(
-                    znew[Int(i)], zz[Int(k)] * ww[Int(k)]
-                )
-                _ = CUDACompat.atomicAdd(wnew[Int(i)], ww[Int(k)])
+                znew[Int(i)] += zz[Int(k)] * ww[Int(k)]
+                wnew[Int(i)] += ww[Int(k)]
 
             znew[0] /= wnew[0]
             znew[1] /= wnew[1]
@@ -99,7 +97,8 @@ def splitVertices(mut data: ZVertices, mut ws: WorkSpace, maxChi2: Float):
 
         # get a new global vertex
         var igv: UInt32
-        igv = CUDACompat.atomicAdd(ws.nvIntermediate, UInt32(1))
+        igv = ws.nvIntermediate
+        ws.nvIntermediate += 1
 
         for k in range(nq):
             if newV[Int(k)] == 1:

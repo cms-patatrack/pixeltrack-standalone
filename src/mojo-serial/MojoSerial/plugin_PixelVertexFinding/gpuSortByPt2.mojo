@@ -1,4 +1,3 @@
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.MojoBridge.DTypes import Float
 from MojoSerial.plugin_PixelVertexFinding.gpuVertexFinder import ZVertices, WorkSpace
 
@@ -36,7 +35,7 @@ def sortByPt2(mut data: ZVertices, mut ws: WorkSpace):
     for i in range(nt):
         if iv[i] > 9990:
             continue
-        _ = CUDACompat.atomicAdd(ptv2[Int(iv[i])], ptt2[i])
+        ptv2[Int(iv[i])] += ptt2[i]
 
     if nvFinal == 1:
         sortInd[0] = 0

@@ -1,7 +1,6 @@
 import MojoSerial.plugin_PixelTriplets.CAConstants as CAConstants
 from MojoSerial.plugin_PixelTriplets.GPUCACell import GPUCACell
 from std.sys import is_defined
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDADataFormats.TrackingRecHit2DHeterogeneous import (
     TrackingRecHit2DHeterogeneous,
     Hist,
@@ -99,13 +98,8 @@ def doubletsFromHisto(
     comptime chunkSize = 64
     var selected = InlineArray[UInt32, chunkSize](uninitialized=True)
 
-    # x runs faster
-    var idy = 0
-    var first: UInt32 = 0
-    var stride = 1
-
     var pairLayerId: UInt32 = 0  # cannot go backward
-    var j: UInt32 = UInt32(idy)
+    var j: UInt32 = 0
     while j < ntot:
         while j >= innerLayerCumulativeSize[Int(pairLayerId)]:
             pairLayerId += 1
@@ -278,9 +272,10 @@ def doubletsFromHisto(
                     if doPtCut and ptcut(oh, idphi):
                         continue
 
-                    var ind = CUDACompat.atomicAdd(nCells, UInt32(1))
+                    var ind = nCells
+                    nCells += 1
                     if ind >= maxNumOfDoublets:
-                        _ = CUDACompat.atomicSub(nCells, UInt32(1))
+                        nCells -= 1
                         full = True
                         break
                     cells[Int(ind)].init(

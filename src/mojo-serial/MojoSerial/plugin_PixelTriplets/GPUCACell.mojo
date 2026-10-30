@@ -4,7 +4,6 @@ from std.sys import is_defined
 from MojoSerial.plugin_PixelTriplets import CAConstants
 from MojoSerial.plugin_PixelTriplets.CirclEq import CircleEq
 from MojoSerial.CUDACore.AtomicPairCounter import AtomicPairCounter
-from MojoSerial.CUDACore.CUDACompat import CUDACompat
 from MojoSerial.CUDACore.VecArray import VecArray
 from MojoSerial.CUDADataFormats.PixelTrackHeterogeneous import (
     PixelTrack as pixelTrack,
@@ -102,14 +101,7 @@ struct GPUCACell(Copyable, Defaultable, Movable):
             if i > 0:
                 cellNeighbors[i].reset()
 
-                # C++ CASes the pointer field against `&cellNeighbors[0]`;
-                # against the index that is a plain CAS of 0 -> i.
-                comptime if is_defined["__CUDACC__"]():
-                    _ = CUDACompat.atomicCAS(
-                        Pointer(to=self.theOuterNeighborsIdx), Int32(0), i
-                    )
-                else:
-                    self.theOuterNeighborsIdx = i
+                self.theOuterNeighborsIdx = i
             else:
                 return -1
 
@@ -126,12 +118,7 @@ struct GPUCACell(Copyable, Defaultable, Movable):
             if i > 0:
                 cellTracks[i].reset()
 
-                comptime if is_defined["__CUDACC__"]():
-                    _ = CUDACompat.atomicCAS(
-                        Pointer(to=self.theTracksIdx), Int32(0), i
-                    )
-                else:
-                    self.theTracksIdx = i
+                self.theTracksIdx = i
             else:
                 return -1
 

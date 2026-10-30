@@ -121,18 +121,16 @@ def initDoublets(
     mut cellNeighbors: CellNeighborsVector,
     mut cellTracks: CellTracksVector,
 ):
-    var first: UInt32 = 0
-    if first == 0:
-        # C++ also hands `construct` the container buffer; SimpleVector owns
-        # its storage here.
-        cellNeighbors.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
-        cellTracks.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
-        var i = cellNeighbors.extend()
-        debug_assert(i == 0)
-        cellNeighbors[0].reset()
-        i = cellTracks.extend()
-        debug_assert(i == 0)
-        cellTracks[0].reset()
+    # C++ also hands `construct` the container buffer; SimpleVector owns
+    # its storage here.
+    cellNeighbors.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
+    cellTracks.construct_for_overwrite(Int32(CAConstants.maxNumOfActiveDoublets()))
+    var i = cellNeighbors.extend()
+    debug_assert(i == 0)
+    cellNeighbors[0].reset()
+    i = cellTracks.extend()
+    debug_assert(i == 0)
+    cellTracks[0].reset()
 
 
 # Fill the compact storage of the cells whose outer hit is each hit, from the cells found by getDoubletsFromHisto.
@@ -172,12 +170,6 @@ def fillOuterHitOfCell(
     isOuterHitOfCell.cells = outerCells^
 
 
-comptime getDoubletsFromHistoMaxBlockSize: Int = 64
-comptime getDoubletsFromHistoMinBlocksPerMP: Int = 16
-#TO-DO port this 
-##ifdef __CUDACC__
-# __launch_bounds__(getDoubletsFromHistoMaxBlockSize, getDoubletsFromHistoMinBlocksPerMP)
-##endif
 def getDoubletsFromHisto(
     cells: Span[mut=True, GPUCACell, _],
     mut nCells: UInt32,
